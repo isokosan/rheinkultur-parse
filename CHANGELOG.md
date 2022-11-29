@@ -1,3 +1,10 @@
+## [0.0.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.2...0.0.3) (2022-11-29)
+
+
+### Bug Fixes
+
+* add secret values ([e2102e0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e2102e0781e3b2ac17e8dccf854425e45fc1a06f))
+
 ## [0.0.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.1...0.0.2) (2022-11-29)
 
 
