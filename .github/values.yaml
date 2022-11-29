@@ -23,11 +23,11 @@ ingress:
 
 resources:
   limits:
-    cpu: 250m
-    memory: 256Mi
+    cpu: 1000m
+    memory: 1.5G
   requests:
-    cpu: 250m
-    memory: 256Mi
+    cpu: 1000m
+    memory: 1.5G
 
 maxUnavailable: 1
 

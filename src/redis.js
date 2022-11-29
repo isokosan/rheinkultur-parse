@@ -80,6 +80,7 @@ const awaitConnection = async () => {
   while (redis.status !== 'ready') {
     await new Promise(resolve => setTimeout(resolve, 100))
   }
+  await new Promise(resolve => setTimeout(resolve, 1000))
 }
 
 module.exports = redis
