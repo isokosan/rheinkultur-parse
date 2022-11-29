@@ -40,6 +40,10 @@
     "xlsx": "0.18.5"
   },
   "devDependencies": {
+    "@semantic-release/changelog": "6.0.2",
+    "@semantic-release/git": "10.0.1",
+    "@semantic-release/npm": "9.0.1",
+    "conventional-changelog-eslint": "3.0.9",
     "cross-env": "7.0.3",
     "eslint": "8.28.0",
     "eslint-config-standard": "17.0.0",
@@ -50,7 +54,8 @@
     "eslint-plugin-standard": "5.0.0",
     "husky": "8.0.2",
     "nodemon": "2.0.20",
-    "parse-dashboard": "5.0.0"
+    "parse-dashboard": "5.0.0",
+    "semantic-release": "19.0.5"
   },
   "_moduleAliases": {
     "@": "src"
