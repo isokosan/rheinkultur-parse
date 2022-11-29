@@ -1,3 +1,10 @@
+## [0.0.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.3...0.0.4) (2022-11-29)
+
+
+### Bug Fixes
+
+* rename probe to healthz ([321f755](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/321f75531c40b2676b6e5d127ae1dd1b095f866c))
+
 ## [0.0.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.2...0.0.3) (2022-11-29)
 
 
