@@ -1,3 +1,10 @@
+## [0.0.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.5...0.0.6) (2022-11-29)
+
+
+### Bug Fixes
+
+* wait another second before initializing app ([d282241](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d28224183184e4296d346dce141062a402e2a7f9))
+
 ## [0.0.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.4...0.0.5) (2022-11-29)
 
 
