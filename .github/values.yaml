@@ -30,3 +30,8 @@ resources:
     memory: 256Mi
 
 maxUnavailable: 1
+
+env:
+  secretName: rheinkultur-wawi-env
+googlekey:
+  secretName: rheinkultur-wawi-googlekey
