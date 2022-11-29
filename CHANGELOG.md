@@ -1,3 +1,10 @@
+## [0.0.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.4...0.0.5) (2022-11-29)
+
+
+### Bug Fixes
+
+* await redis connection ([c490182](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c490182f72b262ac77aa908d88792e2a65ac80c0))
+
 ## [0.0.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.3...0.0.4) (2022-11-29)
 
 
