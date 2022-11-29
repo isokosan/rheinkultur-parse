@@ -1,3 +1,10 @@
+## [0.0.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.7...0.0.8) (2022-11-29)
+
+
+### Bug Fixes
+
+* remove rewrite target from ingress completely ([2da1e49](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2da1e492ac10506a36710cd056e9e674b369ecbd))
+
 ## [0.0.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.6...0.0.7) (2022-11-29)
 
 
