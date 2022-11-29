@@ -1,3 +1,10 @@
+## [0.0.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.6...0.0.7) (2022-11-29)
+
+
+### Bug Fixes
+
+* remove additional ingresses, expose all at / ([1402d6f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1402d6f2fbf6021a57ad51290bd8a72f1d25545c))
+
 ## [0.0.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.5...0.0.6) (2022-11-29)
 
 
