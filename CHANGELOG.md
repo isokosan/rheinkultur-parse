@@ -1,3 +1,10 @@
+## [0.0.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.1...0.0.2) (2022-11-29)
+
+
+### Bug Fixes
+
+* googlekey from file ([4a46f68](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4a46f68392a93151be983a9ad6af60959c749958))
+
 # 1.0.0 (2022-11-29)
 
 
