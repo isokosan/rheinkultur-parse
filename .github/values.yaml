@@ -1,0 +1,32 @@
+replicaCount: 3
+
+imagePullSecrets:
+  - name: image-pull-secret
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: 'nginx'
+    cert-manager.io/cluster-issuer: 'letsencrypt-production'
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: 8m
+    nginx.ingress.kubernetes.io/default-backend: ingress-nginx-defaultbackend
+  hosts:
+    - host: prod.wawi.rheinkultur.mammut-cluster.de
+      paths:
+        - path: /v1(/|$)(.*)
+          pathType: Prefix
+  tls:
+    - secretName: prod.wawi.rheinkultur.mammut-cluster.de
+      hosts:
+        - prod.wawi.rheinkultur.mammut-cluster.de
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 256Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+maxUnavailable: 1

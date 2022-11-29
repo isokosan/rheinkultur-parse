@@ -1,0 +1,32 @@
+{
+  "extends": [
+    "config:base",
+    "schedule:nonOfficeHours",
+    ":pinAllExceptPeerDependencies",
+    ":separateMultipleMajorReleases",
+    ":combinePatchMinorReleases",
+    ":renovatePrefix",
+    ":prNotPending",
+    ":automergeDigest",
+    ":automergePatch",
+    ":automergeMinor",
+    ":automergePr",
+    ":automergeRequireAllStatusChecks",
+    ":maintainLockFilesMonthly",
+    ":automergeLinters",
+    ":automergeTesters",
+    ":automergeTypes",
+    ":pinSkipCi",
+    ":enableVulnerabilityAlertsWithLabel(security)",
+    ":semanticCommits",
+    ":timezone(Europe/Berlin)",
+    "docker:disableMajor",
+    "group:allNonMajor",
+    "npm:unpublishSafe",
+    "preview:dockerCompose",
+    "replacements:all"
+  ],
+  "labels": ["dependencies"],
+  "assigneesFromCodeOwners": true,
+  "postUpdateOptions": ["yarnDedupeFewer"]
+}
