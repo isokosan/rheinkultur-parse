@@ -89,7 +89,7 @@ jobs:
           kubectl delete secret rheinkultur-wawi-env -n rheinkultur-wawi --ignore-not-found
           kubectl create secret generic rheinkultur-wawi-env --from-env-file=./secrets/env -n rheinkultur-wawi
           kubectl delete secret rheinkultur-wawi-googlekey -n rheinkultur-wawi --ignore-not-found
-          kubectl create secret generic rheinkultur-wawi-googlekey --from-googlekey-file=./secrets/googlekey -n rheinkultur-wawi
+          kubectl create secret generic rheinkultur-wawi-googlekey --from-file=./secrets/googlekey -n rheinkultur-wawi
 
   deploy:
     needs: [build-image-push, create-secrets]
