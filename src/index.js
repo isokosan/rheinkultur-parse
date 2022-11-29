@@ -12,7 +12,7 @@ const { port, serverURL } = config
 const parseServer = new ParseServer(config)
 
 app.use('/parse', parseServer.app)
-app.get('/probe', async (req, res) => {
+app.get('/healthz', async (req, res) => {
   const { data } = await Parse.Cloud.httpRequest({
     url: serverURL + '/health',
     headers: {
