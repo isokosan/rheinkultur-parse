@@ -130,7 +130,4 @@ jobs:
           helm repo update
 
       - name: Deploy rheinkultur-wawi
-        run: |
-          helm upgrade -f ./.github/values.yaml rheinkultur-wawi mammut-helm/rheinkultur-wawi -n rheinkultur-wawi --set image.tag="${{ steps.prep.outputs.tag }}" --create-namespace --install --atomic --wait --timeout=5m0s
-          kubectl -f ./.github/exports.yaml -n rheinkultur-wawi
-          kubectl -f ./.github/webhooks.yaml -n rheinkultur-wawi
+        run: helm upgrade -f ./.github/values.yaml rheinkultur-wawi mammut-helm/rheinkultur-wawi -n rheinkultur-wawi --set image.tag="${{ steps.prep.outputs.tag }}" --create-namespace --install --atomic --wait --timeout=5m0s
