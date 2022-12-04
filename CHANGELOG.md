@@ -1,3 +1,10 @@
+## [0.0.10](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.9...0.0.10) (2022-12-04)
+
+
+### Bug Fixes
+
+* **deps:** pin dependencies ([c082373](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c082373116f87f3da0bbe03befaac4784a199d76))
+
 ## [0.0.9](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.8...0.0.9) (2022-11-29)
 
 
