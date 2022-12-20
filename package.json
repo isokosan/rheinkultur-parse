@@ -45,7 +45,7 @@
     "@semantic-release/npm": "9.0.1",
     "conventional-changelog-eslint": "3.0.9",
     "cross-env": "7.0.3",
-    "eslint": "8.29.0",
+    "eslint": "8.30.0",
     "eslint-config-standard": "17.0.0",
     "eslint-plugin-import": "2.26.0",
     "eslint-plugin-n": "15.6.0",
