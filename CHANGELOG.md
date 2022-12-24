@@ -1,3 +1,10 @@
+## [0.0.11](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.10...0.0.11) (2022-12-24)
+
+
+### Bug Fixes
+
+* **deps:** update dependency sharp to v0.31.3 ([9557e0f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9557e0f0eaba272b1994d892277a4ac2324cf2a3))
+
 ## [0.0.10](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.9...0.0.10) (2022-12-04)
 
 
