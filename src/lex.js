@@ -91,8 +91,8 @@ const ensureSubscriptions = async () => {
   const subscriptions = await getSubscriptions()
   const unsubscribedEvents = EVENTS.filter(eventType => !subscriptions.find(sub => sub.eventType === eventType))
   return Promise.all(unsubscribedEvents.map(subscribe))
-    .then(events => events.reduce((acc, event) => {
-      acc[event.eventType] = event
+    .then(events => EVENTS.reduce((acc, eventType) => {
+      acc[eventType] = events.find(event => event.eventType === eventType) || subscriptions.find(sub => sub.eventType === eventType)
       return acc
     }, {}))
 }
@@ -162,7 +162,6 @@ Parse.Cloud.define('lex-countries', getCountries, { requireUser: true })
 module.exports = {
   lexApi,
   lexFile,
-  test: () => ensureSubscriptions(),
   getLexDocumentAttachment,
   ensureSubscriptions,
   getCountries
