@@ -162,6 +162,7 @@ Parse.Cloud.define('lex-countries', getCountries, { requireUser: true })
 module.exports = {
   lexApi,
   lexFile,
+  test: () => ensureSubscriptions(),
   getLexDocumentAttachment,
   ensureSubscriptions,
   getCountries

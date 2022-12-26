@@ -10,5 +10,34 @@ const client = new Client({
     : undefined
 })
 
+async function testElasticsearch () {
+  const index = 'rheinkultur-test'
+  // Check if the 'test' index exists
+  const indexExists = await client.indices.exists({ index })
+  // // If the index exists, delete it
+  indexExists && await client.indices.delete({ index })
+
+  // // Create the index
+  await client.indices.create({ index })
+
+  // // Add a document to the index
+  await client.index({
+    index,
+    id: 'test-document',
+    body: {
+      date: new Date().toISOString()
+    }
+  })
+
+  await new Promise(resolve => setTimeout(resolve, 1000))
+
+  // Query the index
+  const { hits } = await client.search({
+    index,
+    body: { query: { ids: { values: ['test-document'] } } }
+  })
+  return hits.hits
+}
+
 module.exports = client
-module.exports.test = () => client.info()
+module.exports.test = testElasticsearch
