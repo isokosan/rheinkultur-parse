@@ -75,9 +75,9 @@ const clearSubscriptions = async () => {
 }
 
 const EVENTS = [
-  // 'contact.created', ?? not sure what to do in this case
+  // 'contact.created', // TODO: allow searching for / picking lex contact
   'contact.changed',
-  // 'contact.deleted', ?? not sure what to do in this case
+  // 'contact.deleted', // TODO: add a deleted from lex office flag
   'invoice.changed',
   // 'invoice.status.changed' unused because the invoice.changed gets triggered also
   'invoice.deleted',
