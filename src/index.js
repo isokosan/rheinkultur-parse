@@ -15,6 +15,8 @@ const initApp = async () => {
 
   const parseServer = new ParseServer(config)
   app.use('/parse', parseServer.app)
+  app.use('/exports', require('./exports'))
+  app.use('/webhooks', require('./webhooks'))
   app.get('/healthz', async (req, res) => {
     const { data } = await Parse.Cloud.httpRequest({
       url: serverURL + '/health',
