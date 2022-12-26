@@ -1,3 +1,10 @@
+## [0.1.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.0...0.1.1) (2022-12-26)
+
+
+### Bug Fixes
+
+* add elastic ([753a1df](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/753a1df958030271ced6e65bcff644a2a89846d8))
+
 # [0.1.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.11...0.1.0) (2022-12-26)
 
 
