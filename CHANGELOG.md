@@ -1,3 +1,10 @@
+## [0.1.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.1...0.1.2) (2022-12-26)
+
+
+### Bug Fixes
+
+* add lexoffice todo ([88319ef](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/88319ef1c2cdaddb65dc0434eb0202e0daa3e320))
+
 ## [0.1.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.0...0.1.1) (2022-12-26)
 
 
