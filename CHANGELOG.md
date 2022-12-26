@@ -1,3 +1,10 @@
+## [0.1.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.3...0.1.4) (2022-12-26)
+
+
+### Bug Fixes
+
+* show successful subscriptions to lex ensure ([f05c3fd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f05c3fdb656b3e91ae7d6690b417ae17d89b301b))
+
 ## [0.1.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.2...0.1.3) (2022-12-26)
 
 
