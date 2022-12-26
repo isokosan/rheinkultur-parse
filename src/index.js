@@ -17,17 +17,6 @@ const initApp = async () => {
   app.use('/parse', parseServer.app)
   app.use('/exports', require('./exports'))
   app.use('/webhooks', require('./webhooks'))
-  app.get('/healthz', async (req, res) => {
-    const { data } = await Parse.Cloud.httpRequest({
-      url: serverURL + '/health',
-      headers: {
-        'X-Parse-Application-Id': process.env.APP_ID,
-        'X-Parse-MASTER-key': process.env.MASTER_KEY,
-        'Content-Type': 'application/json'
-      }
-    })
-    return res.send(data)
-  })
 
   if (process.env.NODE_ENV === 'development') {
     const Dashboard = require('parse-dashboard')

@@ -10,7 +10,7 @@ const client = new Client({
     : undefined
 })
 
-async function testElasticsearch () {
+async function test () {
   const index = 'rheinkultur-test'
   // Check if the 'test' index exists
   const indexExists = await client.indices.exists({ index })
@@ -36,8 +36,8 @@ async function testElasticsearch () {
     index,
     body: { query: { ids: { values: ['test-document'] } } }
   })
-  return hits.hits
+  return hits.hits.length === 1 && hits.hits[0]._id === 'test-document'
 }
 
 module.exports = client
-module.exports.test = testElasticsearch
+module.exports.test = test

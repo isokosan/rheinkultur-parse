@@ -159,10 +159,13 @@ Parse.Cloud.define('lex-clear', clearSubscriptions, { requireMaster: true })
 Parse.Cloud.define('lex-ensure', ensureSubscriptions, { requireMaster: true })
 Parse.Cloud.define('lex-countries', getCountries, { requireUser: true })
 
-module.exports = {
-  lexApi,
-  lexFile,
-  getLexDocumentAttachment,
-  ensureSubscriptions,
-  getCountries
+module.exports = lexApi
+module.exports.lexApi = lexApi
+module.exports.test = async () => {
+  const subscriptions = await ensureSubscriptions()
+  return EVENTS.every(eventType => !subscriptions[eventType].error)
 }
+module.exports.lexFile = lexFile
+module.exports.getLexDocumentAttachment = getLexDocumentAttachment
+module.exports.ensureSubscriptions = ensureSubscriptions
+module.exports.getCountries = getCountries

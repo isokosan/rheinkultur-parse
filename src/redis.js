@@ -86,8 +86,9 @@ const awaitConnection = async () => {
 module.exports = redis
 module.exports.test = async () => {
   await redis.del('ping')
-  await redis.set('ping', 'pong:' + moment().format('YYYY-MM-DD HH:mm:ss'))
-  return redis.get('ping')
+  const time = new Date().toISOString()
+  await redis.set('ping', time)
+  return time === await redis.get('ping')
 }
 module.exports.awaitConnection = awaitConnection
 module.exports.getRedisOptions = getRedisOptions
