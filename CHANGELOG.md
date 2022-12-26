@@ -1,3 +1,10 @@
+# [0.1.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.11...0.1.0) (2022-12-26)
+
+
+### Features
+
+* add connection-tests, lex, elastic and redis ([18da6bb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/18da6bb63c1be35f235a58f0d9a3aedae7a5f671))
+
 ## [0.0.11](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.0.10...0.0.11) (2022-12-24)
 
 
