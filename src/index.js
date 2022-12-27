@@ -20,16 +20,19 @@ const initApp = async () => {
 
   if (process.env.NODE_ENV === 'development') {
     const Dashboard = require('parse-dashboard')
-    app.use('/dashboard', new Dashboard({
-      apps: [
-        {
-          serverURL,
-          appId: process.env.APP_ID,
-          masterKey: process.env.MASTER_KEY,
-          appName: process.env.APP_NAME
-        }
-      ]
-    }))
+    const apps = [{
+      serverURL,
+      appId: process.env.APP_ID,
+      masterKey: process.env.MASTER_KEY,
+      appName: process.env.APP_NAME + ' (dev)'
+    }]
+    process.env.PRODUCTION_SERVER_URL && apps.push({
+      serverURL: process.env.PRODUCTION_SERVER_URL,
+      appId: process.env.APP_ID,
+      masterKey: process.env.MASTER_KEY,
+      appName: process.env.APP_NAME + ' (prod)'
+    })
+    app.use('/dashboard', new Dashboard({ apps }))
   }
 
   const httpServer = require('http').createServer(app)
