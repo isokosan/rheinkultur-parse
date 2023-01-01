@@ -106,6 +106,7 @@ const initApp = async () => {
   app.use('/parse', parseServer.app)
   app.use('/exports', require('./exports'))
   app.use('/webhooks', require('./webhooks'))
+  app.use('/test-services', require('./services/tests'))
 
   if (process.env.NODE_ENV === 'development') {
     const Dashboard = require('parse-dashboard')

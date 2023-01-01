@@ -1,11 +1,5 @@
-const redis = require('./redis')
-const elastic = require('./elastic')
-const lex = require('./lex')
 module.exports = async (req, res) => {
-  const response = await Promise.all([
-    redis.test(),
-    elastic.test(),
-    lex.test()
-  ])
-  return res.send(response)
+  const services = ['redis', 'elastic', 'lex', 'email']
+  const responses = await Promise.all(services.map(async service => ({ service, result: await require('./' + service).test() })))
+  return res.send(responses.reduce((acc, { service, result }) => ({ ...acc, [service]: result }), {}))
 }
