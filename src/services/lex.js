@@ -136,28 +136,28 @@ const getContacts = ({ params: { name, number } } = { name: {} }) => {
   })))
 }
 
-Parse.Cloud.define('lex-contacts', getContacts, { requireUser: true })
-Parse.Cloud.define('lex-contact-create', async ({ params: { name, allowTaxFreeInvoices } }) => {
-  const { id } = await lexApi('/contacts', 'POST', {
-    version: 0,
-    roles: { customer: {} },
-    company: { name, allowTaxFreeInvoices }
-  })
-  const contact = await lexApi('/contacts/' + id, 'GET')
-  return {
-    id,
-    customerNo: contact.roles.customer.number,
-    name,
-    version: contact.version
-  }
-})
+// Parse.Cloud.define('lex-contacts', getContacts, { requireUser: true })
+// Parse.Cloud.define('lex-contact-create', async ({ params: { name, allowTaxFreeInvoices } }) => {
+//   const { id } = await lexApi('/contacts', 'POST', {
+//     version: 0,
+//     roles: { customer: {} },
+//     company: { name, allowTaxFreeInvoices }
+//   })
+//   const contact = await lexApi('/contacts/' + id, 'GET')
+//   return {
+//     id,
+//     customerNo: contact.roles.customer.number,
+//     name,
+//     version: contact.version
+//   }
+// })
 
-Parse.Cloud.define('lex-subscriptions', getSubscriptions, { requireMaster: true })
-Parse.Cloud.define('lex-subscribe', ({ params: { eventType } }) => subscribe(eventType), { requireMaster: true })
-Parse.Cloud.define('lex-unsubscribe', ({ params: { subscriptionId } }) => unsubscribe(subscriptionId), { requireMaster: true })
-Parse.Cloud.define('lex-clear', clearSubscriptions, { requireMaster: true })
-Parse.Cloud.define('lex-ensure', ensureSubscriptions, { requireMaster: true })
-Parse.Cloud.define('lex-countries', getCountries, { requireUser: true })
+// Parse.Cloud.define('lex-subscriptions', getSubscriptions, { requireMaster: true })
+// Parse.Cloud.define('lex-subscribe', ({ params: { eventType } }) => subscribe(eventType), { requireMaster: true })
+// Parse.Cloud.define('lex-unsubscribe', ({ params: { subscriptionId } }) => unsubscribe(subscriptionId), { requireMaster: true })
+// Parse.Cloud.define('lex-clear', clearSubscriptions, { requireMaster: true })
+// Parse.Cloud.define('lex-ensure', ensureSubscriptions, { requireMaster: true })
+// Parse.Cloud.define('lex-countries', getCountries, { requireUser: true })
 
 module.exports = lexApi
 module.exports.lexApi = lexApi
@@ -167,5 +167,8 @@ module.exports.test = async () => {
 }
 module.exports.lexFile = lexFile
 module.exports.getLexDocumentAttachment = getLexDocumentAttachment
-module.exports.ensureSubscriptions = ensureSubscriptions
 module.exports.getCountries = getCountries
+module.exports.getContacts = getContacts
+module.exports.subscribe = subscribe
+module.exports.ensureSubscriptions = ensureSubscriptions
+module.exports.clearSubscriptions = clearSubscriptions

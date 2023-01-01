@@ -20,8 +20,6 @@ module.exports = {
     $cubeLimit: true,
     $parsify: true,
     $pointer: true,
-    $attr: true,
-    $geopoint: true,
     $query: true,
     $getOrFail: true,
     $price: true,
