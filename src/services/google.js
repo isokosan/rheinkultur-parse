@@ -18,5 +18,12 @@ const docs = google.docs({ version: 'v1', auth })
 
 module.exports = {
   drive,
-  docs
+  docs,
+  test: async () => {
+    const { data: { id } } = await drive.files.get({
+      fileId: process.env.GOOGLE_ORIGIN_FILE_ID,
+      fields: '*'
+    })
+    return id === process.env.GOOGLE_ORIGIN_FILE_ID
+  }
 }
