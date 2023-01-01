@@ -1,3 +1,10 @@
+## [0.2.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.0...0.2.1) (2023-01-01)
+
+
+### Bug Fixes
+
+* make sure to consola.error service test errors ([f824a86](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f824a8669d8d622fdc71ba50bfeeb3ff0f996ad3))
+
 # [0.2.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.5...0.2.0) (2023-01-01)
 
 
