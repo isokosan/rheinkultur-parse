@@ -1,3 +1,10 @@
+# [0.2.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.5...0.2.0) (2023-01-01)
+
+
+### Features
+
+* add google services and tests ([203e16c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/203e16c873873b2a918dd93399b15d17cef95369))
+
 ## [0.1.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.1.4...0.1.5) (2022-12-26)
 
 
