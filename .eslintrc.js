@@ -22,7 +22,6 @@ module.exports = {
     $pointer: true,
     $query: true,
     $getOrFail: true,
-    $price: true,
     $notify: true,
     $audit: true,
     $deleteAudits: true,
