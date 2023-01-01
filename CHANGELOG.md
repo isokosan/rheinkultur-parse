@@ -1,3 +1,10 @@
+## [0.2.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.1...0.2.2) (2023-01-01)
+
+
+### Bug Fixes
+
+* Use json key for google auth ([6db68e4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6db68e4362aa4cca83ccb21c973a008ddd15ea7a))
+
 ## [0.2.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.0...0.2.1) (2023-01-01)
 
 
