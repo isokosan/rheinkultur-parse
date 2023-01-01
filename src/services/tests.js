@@ -5,6 +5,7 @@ module.exports = async (req, res) => {
     try {
       response.success = await require('./' + service).test()
     } catch (error) {
+      consola.error(error)
       response.error = error.message
     }
     return response
