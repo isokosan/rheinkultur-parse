@@ -14,11 +14,9 @@ async function test () {
   const index = 'rheinkultur-test'
   // Check if the 'test' index exists
   const indexExists = await client.indices.exists({ index })
-  // // If the index exists, delete it
-  indexExists && await client.indices.delete({ index })
 
-  // // Create the index
-  await client.indices.create({ index })
+  // If the index does not exist, create it
+  !indexExists && await client.indices.create({ index })
 
   // // Add a document to the index
   await client.index({

@@ -14,6 +14,7 @@
   "dependencies": {
     "@elastic/elasticsearch": "8.5.0",
     "@faker-js/faker": "7.6.0",
+    "@googlemaps/google-maps-services-js": "^3.3.16",
     "@parse/s3-files-adapter": "1.6.2",
     "bull": "4.10.2",
     "consola": "2.15.3",

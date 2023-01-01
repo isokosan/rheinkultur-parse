@@ -19,3 +19,7 @@ const getPlaceById = async (place_id) => {
 module.exports = client
 module.exports.getPlacesPredictions = getPlacesPredictions
 module.exports.getPlaceById = getPlaceById
+module.exports.test = async () => {
+  const response = await getPlacesPredictions('Test Street')
+  return Boolean(response.length)
+}

@@ -1,5 +1,5 @@
 module.exports = async (req, res) => {
-  const services = ['redis', 'elastic', 'lex', 'email', 'google']
+  const services = ['redis', 'elastic', 'lex', 'email', 'googleapis', 'google-maps']
   const responses = await Promise.all(services.map(async service => {
     const response = { service }
     try {
