@@ -1,3 +1,10 @@
+## [0.2.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.2...0.2.3) (2023-01-01)
+
+
+### Bug Fixes
+
+* remove $price from eslintignore ([ce3a69e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ce3a69e59497e750cd767f6ef19f989eddf12d1c))
+
 ## [0.2.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.1...0.2.2) (2023-01-01)
 
 
