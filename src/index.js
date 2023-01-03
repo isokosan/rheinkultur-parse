@@ -79,11 +79,11 @@ const initApp = async () => {
     verbose: false,
     schema: {
       ...require('./schema'),
-      beforeMigration (...args) {
-        consola.info('migrating', args)
+      beforeMigration () {
+        consola.info('migrating')
       },
-      afterMigration (...args) {
-        consola.success('migrated', args)
+      afterMigration () {
+        consola.success('migrated')
       }
     },
     liveQuery: {

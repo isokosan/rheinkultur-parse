@@ -1,74 +1,39 @@
-const Order = {
-  CLP: {
-    get: { '*': true },
-    find: { requiresAuthentication: true },
-    count: { requiresAuthentication: true },
-    create: {},
-    update: {},
-    delete: {}
-  },
-  fields: {
-    no: { type: 'String', required: true },
-    // status: { type: 'Number', required: true },
-    company: { type: 'Pointer', targetClass: 'Company', required: true },
-    companyPerson: { type: 'Pointer', targetClass: 'Person' },
-
-    // duration settings
-    startsAt: { type: 'String' },
-    initialDuration: { type: 'Number' },
-    endsAt: { type: 'String' },
-    autoExtendsAt: { type: 'String' },
-    autoExtendsBy: { type: 'Number', default: 12 },
-    noticePeriod: { type: 'Number' },
-    extendedDuration: { type: 'Number' },
-    earlyCancellations: { type: 'Object' },
-
-    // extra data
-    data: { type: 'Object' },
-    // motive: { type: 'String' },
-    // orderNo: { type: 'String' },
-    // campaignNo: { type: 'String' },
-
-    // calculated
-    cubeCount: { type: 'Number' },
-    totalDuration: { type: 'Number' },
-
-    docs: { type: 'Array' },
-    tags: { type: 'Array' },
-    responsibles: { type: 'Array' }
-  }
+const readPublic = {
+  get: { '*': true },
+  find: { '*': true },
+  count: { '*': true }
 }
-
-const OrderCube = {
-  CLP: {
-    get: { '*': true },
-    find: { requiresAuthentication: true },
-    count: { requiresAuthentication: true },
-    create: {},
-    update: {},
-    delete: {}
-  },
-  fields: {
-    cube: { type: 'Pointer', targetClass: 'Cube', required: true },
-    order: { type: 'Pointer', targetClass: 'Order' },
-    // overwrite fields
-    startsAt: { type: 'String' },
-    endsAt: { type: 'String' },
-
-    // price fields
-    price: { type: 'Number', required: true }
-    //   net: Number "RkNetto preis"
-    //   end: Number "Endkunde preis"
-    //   gl: Pointer to Gradual Price
-    //   start: String, // When null then same as order start
-    //   end: String, // When null then same as order end
-
-  }
+const writeMasterOnly = {
+  create: {},
+  update: {},
+  delete: {}
 }
 
 const schemaDefinitions = {
-  Order,
-  OrderCube
+  Cube: {
+    CLP: { ...readPublic, ...writeMasterOnly },
+    fields: {
+      lc: { type: 'String', required: true }, // lessor code
+      media: { type: 'String' }, // Media code
+      ht: { type: 'Pointer', targetClass: 'HousingType' }, // HousingType
+      gp: { type: 'GeoPoint', required: true }, // GeoPoint
+      str: { type: 'String' }, // street
+      hsnr: { type: 'String' }, // house number
+      plz: { type: 'String' }, // postcode
+      ort: { type: 'String' }, // city
+      state: { type: 'Pointer', targetClass: 'State' }, // State
+
+      // warnings
+      MBfD: { type: 'Boolean' }, // Boolean // promoted location (göferderter Standort)
+      PG: { type: 'Boolean' }, // Boolean // Privates Grundstück
+      Agwb: { type: 'Boolean' }, // Boolean // Aus grau wird bunt
+      TTMR: { type: 'Boolean' }, // Boolean // Town Talker / Moskito Rahmen
+      nMR: { type: 'String' }, // No Marketing Rights Reason, if any, in text format
+
+      hti: { type: 'String' }, // housing type string from import
+      importData: { type: 'Object' } // Object
+    }
+  }
 }
 
 const definitions = []
