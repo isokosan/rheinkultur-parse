@@ -1,3 +1,15 @@
+# [0.3.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.3...0.3.0) (2023-01-03)
+
+
+### Bug Fixes
+
+* **deps:** pin dependency @googlemaps/google-maps-services-js to 3.3.16 ([6a3e9c7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6a3e9c7d0e8b0d351901d78d5a9e709494794baa))
+
+
+### Features
+
+* add cube schema for initial import ([6287423](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6287423e06589b8e18a8b35ee8f44476da0fa141))
+
 ## [0.2.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.2...0.2.3) (2023-01-01)
 
 
