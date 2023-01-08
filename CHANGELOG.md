@@ -1,3 +1,10 @@
+## [0.5.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.2...0.5.3) (2023-01-08)
+
+
+### Bug Fixes
+
+* docs enums require ([5754ce6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5754ce6470552fda4f35b2c2fa87766da61881cd))
+
 ## [0.5.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.1...0.5.2) (2023-01-08)
 
 
