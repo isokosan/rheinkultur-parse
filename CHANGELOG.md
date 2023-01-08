@@ -1,3 +1,10 @@
+## [0.5.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.1...0.5.2) (2023-01-08)
+
+
+### Bug Fixes
+
+* print package files enums require bug ([4515372](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4515372913c7d531415a346fac429faa15fc5ca0))
+
 ## [0.5.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.0...0.5.1) (2023-01-08)
 
 
