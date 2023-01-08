@@ -1,4 +1,5 @@
 // const redis = require('@/services/redis')
+const { version } = require('@/../package.json')
 const { getCountries } = require('@/services/lex')
 
 const {
@@ -43,7 +44,7 @@ Parse.Cloud.define('init', async ({ params: { keys = [], force = true } }) => {
   //   }
   // }
   const dictionary = {
-    version: require('@/../package.json').version,
+    version,
     development: DEVELOPMENT,
     today: await $today(),
     users: !keys.length || keys.includes('users')
@@ -79,6 +80,7 @@ Parse.Cloud.define('init', async ({ params: { keys = [], force = true } }) => {
 }, { requireUser: true })
 
 Parse.Cloud.define('enums', () => ({
+  version,
   accTypes,
   bookingStatuses,
   cubeStatuses,
