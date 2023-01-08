@@ -57,7 +57,7 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   const thumb64 = await getThumbnailBase64(file)
   let thumb
   if (thumb64) {
-    thumb = new Parse.File('thumb.png', { base64: thumb64 }, 'image/png', { thumb: true })
+    thumb = new Parse.File('thumb.png', { base64: thumb64 }, 'image/png', { thumb: 'true' })
     await thumb.save({ useMasterKey: true })
   }
   if (cubeId) {
