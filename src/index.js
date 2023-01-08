@@ -47,7 +47,7 @@ const initApp = async () => {
         password: process.env.SMTP_PASS,
         fromAddress: process.env.MAIL_FROM,
         multiTemplate: true,
-        passwordTemplatePath: '/src/templates/emails/password-template.html',
+        passwordTemplatePath: '/src/services/email/templates/password-template.html',
         passwordOptions: {
           subject: 'Setze dein Passwort zurück',
           body: 'Bitte klicken Sie auf den Link unten, um Ihr Passwort zurückzusetzen.',

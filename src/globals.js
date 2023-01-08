@@ -23,9 +23,30 @@ global.$getOrFail = function (className, objectId, include) {
       }
     })
 }
+global.$adminOrMaster = function ({ user, master }) {
+  if (master) {
+    return true
+  }
+  if (user && user.get('accType') === 'admin') {
+    return true
+  }
+  throw new Error('Validation Error')
+}
+
+global.$internOrMaster = function ({ user, master }) {
+  if (master) {
+    return true
+  }
+  if (user && ['admin', 'intern'].includes(user.get('accType'))) {
+    return true
+  }
+  throw new Error('Validation Error')
+}
 
 global.$wawiStart = '2023-01-01'
-global.$today = () => Parse.Config.get().then(config => config.get('today') || moment().format('YYYY-MM-DD'))
+global.$today = async () => DEVELOPMENT
+  ? await Parse.Config.get().then(config => config.get('today') || moment().format('YYYY-MM-DD'))
+  : moment().format('YYYY-MM-DD')
 
 // TODO: Re-adjust limit later
 const CUBE_LIMIT = 1000
