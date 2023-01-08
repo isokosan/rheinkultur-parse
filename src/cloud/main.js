@@ -70,19 +70,6 @@ Parse.Cloud.define('init', async ({ params: { keys = [], force = true } }) => {
     tags: !keys.length || keys.includes('tags')
       ? await fetchTags() // .then(items => items.map(item => item.toJSON()))
       : undefined,
-    accTypes,
-    bookingStatuses,
-    cubeStatuses,
-    contractStatuses,
-    invoiceStatuses,
-    creditNoteStatuses,
-    paymentTypes,
-    billingCycles,
-    printPackageTypes,
-    printPackageFaces,
-    printPackageFiles,
-    interestRates,
-    departureListStatuses,
     gradualPriceMaps: !keys.length || keys.includes('gradualPriceMaps')
       ? await fetchGradualPriceMaps() // .then(items => items.map(item => item.toJSON()))
       : undefined
@@ -90,3 +77,19 @@ Parse.Cloud.define('init', async ({ params: { keys = [], force = true } }) => {
   // await redis.setex('dictionary', 60, JSON.stringify(dictionary))
   return dictionary
 }, { requireUser: true })
+
+Parse.Cloud.define('enums', () => ({
+  accTypes,
+  bookingStatuses,
+  cubeStatuses,
+  contractStatuses,
+  invoiceStatuses,
+  creditNoteStatuses,
+  paymentTypes,
+  billingCycles,
+  printPackageTypes,
+  printPackageFaces,
+  printPackageFiles,
+  interestRates,
+  departureListStatuses
+}), { requireUser: true })
