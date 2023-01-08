@@ -1,3 +1,10 @@
+## [0.5.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.0...0.5.1) (2023-01-08)
+
+
+### Bug Fixes
+
+* parse object metadata boolean bug with aws adapter ([405d43c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/405d43cb85f036385ef0565a938d316f544f27a0))
+
 # [0.5.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.4.1...0.5.0) (2023-01-08)
 
 
