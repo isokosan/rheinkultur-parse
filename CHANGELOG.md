@@ -1,3 +1,10 @@
+# [0.5.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.4.1...0.5.0) (2023-01-08)
+
+
+### Features
+
+* install imagemagick into docker base image node 16 ([c54e5a6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c54e5a6eaf2d4fcf23a6d117768d5dea7b6824e7))
+
 ## [0.4.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.4.0...0.4.1) (2023-01-08)
 
 
