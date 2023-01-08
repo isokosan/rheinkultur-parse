@@ -3,7 +3,7 @@ const { docs, drive } = require('@/services/googleapis')
 const redis = require('@/services/redis')
 const { priceString } = require('@/utils')
 const { getCubeSummaries } = require('@/shared')
-const { PRINT_PACKAGE_TYPES, PRINT_PACKAGE_FACES } = require('@/cloud/classes/print-packages')
+const { PRINT_PACKAGE_TYPES, PRINT_PACKAGE_FACES } = require('@/schema/enums')
 
 const originFileId = '1Nq6R5_OCE-YE2DqcR178pv3WrtXtPuEgg4M3Lx1NfM8'
 
