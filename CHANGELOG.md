@@ -1,3 +1,10 @@
+## [0.5.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.3...0.5.4) (2023-01-08)
+
+
+### Bug Fixes
+
+* aws encodeUriComponent in filename ([ced0a6e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ced0a6ef1ab1e888b1d2d79a23e89941ee569ea1))
+
 ## [0.5.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.2...0.5.3) (2023-01-08)
 
 
