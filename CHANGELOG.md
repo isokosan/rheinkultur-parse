@@ -1,3 +1,10 @@
+## [0.4.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.4.0...0.4.1) (2023-01-08)
+
+
+### Bug Fixes
+
+* separate enums from init dictionary to save bandwith ([e27f5ca](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e27f5cacf92cc5b5f179fbc7395b8906b11888eb))
+
 # [0.4.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.3.0...0.4.0) (2023-01-08)
 
 
