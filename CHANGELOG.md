@@ -1,3 +1,11 @@
+# [0.4.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.3.0...0.4.0) (2023-01-08)
+
+
+### Features
+
+* add seed jsons ([019c7ad](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/019c7ad12c445a7ab7582e740b32a9e5c54a2585))
+* initialize main code ([3dc81f7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3dc81f777b4112fafff7a46f94d420c2ab655bb8))
+
 # [0.3.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.2.3...0.3.0) (2023-01-03)
 
 
