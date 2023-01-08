@@ -3,7 +3,7 @@ const mergeImages = require('merge-base64')
 const { fromBase64 } = require('pdf2pic')
 const { difference } = require('lodash')
 
-const { PRINT_PACKAGE_FILES } = require('./classes/print-packages')
+const { PRINT_PACKAGE_FILES } = require('@/schema/enums')
 const FileObject = Parse.Object.extend('FileObject')
 
 Parse.Cloud.beforeSaveFile(async ({ file }) => {
