@@ -1,3 +1,10 @@
+## [0.9.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.5...0.9.6) (2023-01-09)
+
+
+### Bug Fixes
+
+* revert separateProcess in queues ([f6e1ae9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f6e1ae90db92f68649ac83eed092d75961c5acf8))
+
 ## [0.9.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.4...0.9.5) (2023-01-09)
 
 
