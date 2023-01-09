@@ -1,3 +1,10 @@
+# [0.11.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.10.0...0.11.0) (2023-01-09)
+
+
+### Features
+
+* remove redis from triggers ([0185b25](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0185b25760933361eaa4eb74a18f250f15bc39b6))
+
 # [0.10.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.9...0.10.0) (2023-01-09)
 
 
