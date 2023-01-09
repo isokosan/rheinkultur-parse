@@ -1,3 +1,10 @@
+# [0.8.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.7.0...0.8.0) (2023-01-09)
+
+
+### Features
+
+* add separate seeds ([96204de](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/96204dee6ae69a5b82320e2f90739d1939bc8a11))
+
 # [0.7.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.6.0...0.7.0) (2023-01-09)
 
 
