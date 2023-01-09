@@ -5,7 +5,7 @@
   "description": "Rheinkultur WaWi Parse Server",
   "main": "index.js",
   "scripts": {
-    "start": "export TZ=\"Europe/Berlin\" && node src/index.js",
+    "start": "export TZ=\"Europe/Berlin\" && node src/index.js --trace-warnings",
     "dev": "cross-env NODE_ENV=development TZ=\"Europe/Berlin\" nodemon --watch src src/index.js",
     "upload": "node upload.js",
     "lint": "eslint './**/*.js'",
