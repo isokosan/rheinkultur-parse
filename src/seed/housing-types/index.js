@@ -91,8 +91,9 @@ const getOrUploadHtTemplates = async function (housingTypeCode) {
     const { filename, directory } = templates[template]
     let file = await getFileObjectByName(filename)
     if (!file) {
+      consola.info('UPLOADING', filename)
       file = new Parse.File(
-        filename.replace(/Ü/g, 'UE').replace(/:/g, '-').replace(/ü/g, 'ue'),
+        filename,
         { base64: readFileSync(path.join(directory, filename), { encoding: 'base64' }) },
         'application/pdf',
         { name: filename },

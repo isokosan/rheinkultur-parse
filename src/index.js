@@ -23,9 +23,7 @@ const initApp = async () => {
   const serverURL = `http://localhost:${port}/parse`
   const parseServer = new ParseServer({
     databaseURI: process.env.DATABASE_URI,
-    databaseOptions: {
-      enableSchemaHooks: !DEVELOPMENT
-    },
+    databaseOptions: !DEVELOPMENT ? { enableSchemaHooks: true } : undefined,
     cacheAdapter: parseCacheAdapter,
     appId: process.env.APP_ID,
     appName: process.env.APP_NAME,

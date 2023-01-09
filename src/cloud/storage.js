@@ -14,7 +14,11 @@ Parse.Cloud.beforeSaveFile(async ({ file }) => {
       .withMetadata()
       .toBuffer()
       .then(data => data.toString('base64'))
-    return new Parse.File(encodeURIComponent(file._name), { base64 }, undefined, file._metadata, file._tags)
+    const encodedFilename = encodeURIComponent(file._name)
+    if (file._metadata.name) {
+      file._metadata.name = encodedFilename
+    }
+    return new Parse.File(encodedFilename, { base64 }, undefined, file._metadata, file._tags)
   }
 })
 

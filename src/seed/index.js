@@ -138,9 +138,9 @@ const staticClasses = [
   'GradualPriceMap',
   'Media',
   'Tag',
-  'HousingType',
-  'State',
-  'PLZ'
+  'HousingType'
+  // 'State'
+  // 'PLZ'
 ]
 
 const dynamicClasses = [
@@ -173,8 +173,8 @@ const purgeSeed = async function () {
   await Promise.all(staticClasses.map(className => (new Parse.Schema(className)).purge()))
   consola.success('Static schemas purged')
   await initCache()
-  await seedStates()
-  await seedPlzs()
+  // await seedStates()
+  // await seedPlzs()
   await seedHousingTypes()
   await seedPrintPackages()
   await createMediae()
