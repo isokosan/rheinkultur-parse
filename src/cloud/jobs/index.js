@@ -154,10 +154,9 @@ const startScheduler = async function () {
   const schedule = await getScheduleConfig()
   for (const key of Object.keys(updateQueues)) {
     const queue = updateQueues[key]
-    // separate process
-    queue.process(path.join(__dirname, `/${key}/index.js`))
-    // same process
-    // queue.process(require(`./${key}`))
+    updateJobs[key].separateProcess
+      ? queue.process(path.join(__dirname, `/${key}/index.js`))
+      : queue.process(require(`./${key}`))
     queue.on('failed', queueOnFailed)
     queue.on('error', queueOnError)
     queue.on('completed', queueOnCompleted)
