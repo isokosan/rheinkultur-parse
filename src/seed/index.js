@@ -195,16 +195,6 @@ const purgeSeed = async function () {
   consola.success('done purge-seed')
 }
 
-Parse.Cloud.define('seed-housing-types', () => {
-  seedHousingTypes()
-  return 'ok'
-}, { requireMaster: true })
-
-Parse.Cloud.define('seed-print-packages', () => {
-  seedPrintPackages()
-  return 'ok'
-}, { requireMaster: true })
-
 Parse.Cloud.define('purge-seed', async () => {
   await Parse.Config.save({ today: moment().format('YYYY-MM-DD') })
   purgeSeed()

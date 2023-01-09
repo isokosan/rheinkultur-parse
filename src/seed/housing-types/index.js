@@ -1,111 +1,111 @@
-const path = require('path')
-const { readFileSync, readdirSync } = require('fs')
+// const path = require('path')
+// const { readFileSync, readdirSync } = require('fs')
 const { promisify } = require('node:util')
 const request = promisify(require('request'))
 
-const HousingType = Parse.Object.extend('HousingType')
+// const HousingType = Parse.Object.extend('HousingType')
 
-const getFileObjectByName = function (name) {
-  return $query('FileObject').equalTo('name', name).first({ useMasterKey: true })
-}
+// const getFileObjectByName = function (name) {
+//   return $query('FileObject').equalTo('name', name).first({ useMasterKey: true })
+// }
 
 /**
  * For each kvzGehauseTyp we have [std, alu, foil] * [front, side]
  * Each gehausetyp has the same stdFront and stdSide
  * But each gehausetyp has their own aluFront, aluSide, foilFront and foilSide
  */
-const getOrUploadStandardTemplates = async function () {
-  const items = [
-    {
-      filename: 'Standard Format_Front_515x830.pdf',
-      template: 'stdFrontFile',
-      kvz: true,
-      mfg: true
-    },
-    {
-      filename: 'Standard Format_Seite KVZ_230x830.pdf',
-      template: 'stdSideFile',
-      kvz: true
-    },
-    {
-      filename: 'Standard Format_Seite MFG_450x830.pdf',
-      template: 'stdSideFile',
-      mfg: true
-    }
-  ]
-  const templates = { MFG: {}, KVZ: {} }
-  for (const { filename, template, mfg, kvz } of items) {
-    let file = await getFileObjectByName(filename)
-    if (!file) {
-      file = new Parse.File(
-        filename,
-        { base64: readFileSync(path.join(__dirname, 'templates', filename), { encoding: 'base64' }) },
-        'application/pdf',
-        { name: filename },
-        { assetType: 'print-template' }
-      )
-      await file.save({ useMasterKey: true })
-      file = await getFileObjectByName(filename)
-    }
-    if (kvz) {
-      templates.KVZ[template] = $pointer('FileObject', file.id)
-    }
-    if (mfg) {
-      templates.MFG[template] = $pointer('FileObject', file.id)
-    }
-  }
-  return templates
-}
+// const getOrUploadStandardTemplates = async function () {
+//   const items = [
+//     {
+//       filename: 'Standard Format_Front_515x830.pdf',
+//       template: 'stdFrontFile',
+//       kvz: true,
+//       mfg: true
+//     },
+//     {
+//       filename: 'Standard Format_Seite KVZ_230x830.pdf',
+//       template: 'stdSideFile',
+//       kvz: true
+//     },
+//     {
+//       filename: 'Standard Format_Seite MFG_450x830.pdf',
+//       template: 'stdSideFile',
+//       mfg: true
+//     }
+//   ]
+//   const templates = { MFG: {}, KVZ: {} }
+//   for (const { filename, template, mfg, kvz } of items) {
+//     let file = await getFileObjectByName(filename)
+//     if (!file) {
+//       file = new Parse.File(
+//         filename,
+//         { base64: readFileSync(path.join(__dirname, 'templates', filename), { encoding: 'base64' }) },
+//         'application/pdf',
+//         { name: filename },
+//         { assetType: 'print-template' }
+//       )
+//       await file.save({ useMasterKey: true })
+//       file = await getFileObjectByName(filename)
+//     }
+//     if (kvz) {
+//       templates.KVZ[template] = $pointer('FileObject', file.id)
+//     }
+//     if (mfg) {
+//       templates.MFG[template] = $pointer('FileObject', file.id)
+//     }
+//   }
+//   return templates
+// }
 
-const getOrUploadHtTemplates = async function (housingTypeCode) {
-  const templates = {}
-  const aluPath = path.join(__dirname, 'templates', housingTypeCode, 'Alu')
-  const foilPath = path.join(__dirname, 'templates', housingTypeCode, 'Folie')
-  try {
-    const aluFiles = readdirSync(aluPath)
-    templates.aluFrontFile = {
-      filename: aluFiles.find(filename => filename.includes('Front')),
-      directory: aluPath
-    }
-    templates.aluSideFile = {
-      filename: aluFiles.find(filename => filename.includes('Seite')),
-      directory: aluPath
-    }
-  } catch (error) {
-    consola.error(error)
-  }
-  try {
-    const foilFiles = readdirSync(foilPath)
-    templates.foilFrontFile = {
-      filename: foilFiles.find(filename => filename.includes('Front')),
-      directory: foilPath
-    }
-    templates.foilSideFile = {
-      filename: foilFiles.find(filename => filename.includes('Seite')),
-      directory: foilPath
-    }
-  } catch (error) {
-    consola.error(error)
-  }
-  for (const template of Object.keys(templates)) {
-    const { filename, directory } = templates[template]
-    let file = await getFileObjectByName(filename)
-    if (!file) {
-      consola.info('UPLOADING', filename)
-      file = new Parse.File(
-        encodeURIComponent(filename.replace(/Ü/g, 'UE').replace(/:/g, '-').replace(/ü/g, 'ue')),
-        { base64: readFileSync(path.join(directory, filename), { encoding: 'base64' }) },
-        'application/pdf',
-        { name: filename },
-        { assetType: 'print-template' }
-      )
-      await file.save({ useMasterKey: true })
-      file = await getFileObjectByName(filename)
-    }
-    templates[template] = $pointer('FileObject', file.id)
-  }
-  return templates
-}
+// const getOrUploadHtTemplates = async function (housingTypeCode) {
+//   const templates = {}
+//   const aluPath = path.join(__dirname, 'templates', housingTypeCode, 'Alu')
+//   const foilPath = path.join(__dirname, 'templates', housingTypeCode, 'Folie')
+//   try {
+//     const aluFiles = readdirSync(aluPath)
+//     templates.aluFrontFile = {
+//       filename: aluFiles.find(filename => filename.includes('Front')),
+//       directory: aluPath
+//     }
+//     templates.aluSideFile = {
+//       filename: aluFiles.find(filename => filename.includes('Seite')),
+//       directory: aluPath
+//     }
+//   } catch (error) {
+//     consola.error(error)
+//   }
+//   try {
+//     const foilFiles = readdirSync(foilPath)
+//     templates.foilFrontFile = {
+//       filename: foilFiles.find(filename => filename.includes('Front')),
+//       directory: foilPath
+//     }
+//     templates.foilSideFile = {
+//       filename: foilFiles.find(filename => filename.includes('Seite')),
+//       directory: foilPath
+//     }
+//   } catch (error) {
+//     consola.error(error)
+//   }
+//   for (const template of Object.keys(templates)) {
+//     const { filename, directory } = templates[template]
+//     let file = await getFileObjectByName(filename)
+//     if (!file) {
+//       consola.info('UPLOADING', filename)
+//       file = new Parse.File(
+//         encodeURIComponent(filename.replace(/Ü/g, 'UE').replace(/:/g, '-').replace(/ü/g, 'ue')),
+//         { base64: readFileSync(path.join(directory, filename), { encoding: 'base64' }) },
+//         'application/pdf',
+//         { name: filename },
+//         { assetType: 'print-template' }
+//       )
+//       await file.save({ useMasterKey: true })
+//       file = await getFileObjectByName(filename)
+//     }
+//     templates[template] = $pointer('FileObject', file.id)
+//   }
+//   return templates
+// }
 
 const seed = async () => {
   const housingTypes = [
@@ -357,18 +357,18 @@ const seed = async () => {
     json: true,
     body: { requests }
   })
-  const standardTemplates = await getOrUploadStandardTemplates()
-  const hts = await $query(HousingType).find({ useMasterKey: true })
-  for (const ht of hts) {
-    for (const key of Object.keys(standardTemplates[ht.get('media')])) {
-      ht.set(key, standardTemplates[ht.get('media')][key])
-    }
-    const htTemplates = await getOrUploadHtTemplates(ht.get('code'))
-    for (const key of Object.keys(htTemplates)) {
-      ht.set(key, htTemplates[key])
-    }
-    await ht.save(null, { useMasterKey: true })
-  }
+  // const standardTemplates = await getOrUploadStandardTemplates()
+  // const hts = await $query(HousingType).find({ useMasterKey: true })
+  // for (const ht of hts) {
+  //   for (const key of Object.keys(standardTemplates[ht.get('media')])) {
+  //     ht.set(key, standardTemplates[ht.get('media')][key])
+  //   }
+  //   const htTemplates = await getOrUploadHtTemplates(ht.get('code'))
+  //   for (const key of Object.keys(htTemplates)) {
+  //     ht.set(key, htTemplates[key])
+  //   }
+  //   await ht.save(null, { useMasterKey: true })
+  // }
 }
 
 module.exports = {
