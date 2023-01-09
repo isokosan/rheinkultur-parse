@@ -57,12 +57,14 @@ const updateJobs = {
   reindex_autocompletes: {
     name: 'Aktualisierung von Suchindexen (Straßen und Orte).',
     timeoutMinutes: 15,
-    cron: '0 0 * * *' // nightly
+    cron: '0 0 * * *', // nightly
+    notificationDuration: 48
   },
   reindex_search: {
     name: 'Aktualisierung von Suchindexen (CityCubes).',
     timeoutMinutes: 60,
-    cron: '0 0 * * *' // nightly
+    cron: '0 0 * * *', // nightly
+    notificationDuration: 48
   },
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',

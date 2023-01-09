@@ -117,6 +117,7 @@ Parse.Cloud.define('search', async ({
     c,
     r,
     s,
+    cId,
     verifiable,
     from,
     pagination,
@@ -218,6 +219,7 @@ Parse.Cloud.define('search', async ({
       break
     case '5':
       bool.must.push({ term: { s } })
+      cId && bool.must.push({ match: { 'order.company.objectId': cId } })
       break
     case '7':
       bool.must.push({ exists: { field: 'TTMR' } })
