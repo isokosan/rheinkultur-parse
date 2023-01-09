@@ -93,10 +93,10 @@ const getOrUploadHtTemplates = async function (housingTypeCode) {
     if (!file) {
       consola.info('UPLOADING', filename)
       file = new Parse.File(
-        filename,
+        encodeURIComponent(filename),
         { base64: readFileSync(path.join(directory, filename), { encoding: 'base64' }) },
         'application/pdf',
-        { name: filename },
+        { name: encodeURIComponent(filename) },
         { assetType: 'print-template' }
       )
       await file.save({ useMasterKey: true })
