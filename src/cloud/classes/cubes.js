@@ -54,6 +54,17 @@ Parse.Cloud.beforeDelete(Cube, async ({ object: cube }) => {
 
 Parse.Cloud.afterDelete(Cube, $deleteAudits)
 
+Parse.Cloud.define('redis-test', async () => {
+  let i = 0
+  for (let plz = 10000; plz < 20000; plz++) {
+    if (await redis.sismember('no-marketing-rights', `${plz}`) === 1) {
+      i++
+    }
+    plz++
+  }
+  return i
+})
+
 Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
   for (const cube of cubes) {
     // TODO: Remove (open issue -> js sdk does not encodeURI so some chars in ID throw errors, whereas rest api works)
