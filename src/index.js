@@ -6,7 +6,7 @@ const path = require('path')
 const express = require('express')
 const { default: ParseServer } = require('parse-server')
 const S3Adapter = require('@parse/s3-files-adapter')
-const { awaitConnection, pubSubAdapter } = require('@/services/redis')
+const { awaitConnection, pubSubAdapter, parseCacheAdapter } = require('@/services/redis')
 
 function replaceLocalIp (url) {
   if (!url.includes('0.0.0.0')) {
@@ -24,8 +24,9 @@ const initApp = async () => {
   const parseServer = new ParseServer({
     databaseURI: process.env.DATABASE_URI,
     databaseOptions: {
-      enableSchemaHooks: true
+      enableSchemaHooks: !DEVELOPMENT
     },
+    cacheAdapter: parseCacheAdapter,
     appId: process.env.APP_ID,
     appName: process.env.APP_NAME,
     masterKey: process.env.MASTER_KEY,
@@ -110,7 +111,7 @@ const initApp = async () => {
   app.use('/webhooks', require('./webhooks'))
   app.use('/test-services', require('./services/tests'))
 
-  if (process.env.NODE_ENV === 'development') {
+  if (DEVELOPMENT) {
     const Dashboard = require('parse-dashboard')
     const apps = [{
       serverURL,
@@ -132,7 +133,7 @@ const initApp = async () => {
     consola.success(`${process.env.APP_NAME} Parse Server is running on ${serverURL}`)
     ParseServer.createLiveQueryServer(httpServer, { pubSubAdapter })
     consola.success(`${process.env.APP_NAME} Parse LiveQueryServer running on ws://localhost:${port}`)
-    process.env.NODE_ENV === 'development' && consola.success(`${process.env.APP_NAME} Parse Dashboard is running on http://localhost:${port}/dashboard`)
+    DEVELOPMENT && consola.success(`${process.env.APP_NAME} Parse Dashboard is running on http://localhost:${port}/dashboard`)
   })
 }
 initApp()

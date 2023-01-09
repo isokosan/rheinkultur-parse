@@ -21,23 +21,23 @@ if (process.env.REDIS_MODE === 'cluster') {
   queueOptions.createClient = function (type) {
     if (type === 'client') {
       if (!client) {
-        client = getRedisClient()
+        client = getRedisClient({ db: 3 })
       }
       return client
     }
     if (type === 'subscriber') {
       if (!subscriber) {
-        subscriber = getRedisClient()
+        subscriber = getRedisClient({ db: 3 })
       }
       return subscriber
     }
     if (type === 'bclient') {
-      return getRedisClient()
+      return getRedisClient({ db: 3 })
     }
     throw new Error(`Unexpected connection type: ${type}`)
   }
 } else {
-  queueOptions.redis = getRedisOptions({ db: process.env.REDIS_BULL_DB })
+  queueOptions.redis = getRedisOptions({ db: 3 })
 }
 
 const createQueue = key => new Queue(key, queueOptions)
