@@ -1,3 +1,10 @@
+## [0.8.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.3...0.8.4) (2023-01-09)
+
+
+### Bug Fixes
+
+* attempt to fix filename error by encoding both filename and metadata at housing-type seed level ([79fbe02](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/79fbe02e0e51d5dcf09eada043f846d162393f87))
+
 ## [0.8.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.2...0.8.3) (2023-01-09)
 
 
