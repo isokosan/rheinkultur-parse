@@ -41,7 +41,7 @@ const INDEXES = {
         }
       }
     },
-    parseQuery: $query('Cube').include(['deleted', 'contract', 'booking']),
+    parseQuery: $query('Cube').include(['deleted']),
     datasetMap: cubes => cubes.map(cube => ({
       _id: cube.id,
       doc: {
@@ -62,7 +62,8 @@ const INDEXES = {
           lon: cube.get('gp').longitude
         },
 
-        // scouting
+        dAt: cube.get('dAt'),
+        cAt: cube.get('cAt'),
         sAt: cube.get('sAt'),
         vAt: cube.get('vAt'),
 

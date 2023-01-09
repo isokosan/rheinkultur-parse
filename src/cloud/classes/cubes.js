@@ -61,9 +61,9 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
 
     if (cube.get('lc') === 'TLK') {
       cube.set('klsId', cube.get('importData')?.klsId)
-      await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
-        ? cube.set('bPLZ', true)
-        : cube.unset('bPLZ')
+      // await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
+      //   ? cube.set('bPLZ', true)
+      //   : cube.unset('bPLZ')
     }
 
     cube.set('s', cube.getStatus())
