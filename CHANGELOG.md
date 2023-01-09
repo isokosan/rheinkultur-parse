@@ -1,3 +1,10 @@
+# [0.6.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.4...0.6.0) (2023-01-09)
+
+
+### Features
+
+* enable schema hooks, remove enableSingleSchemaCache ([dbf1a16](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dbf1a167bcd0d59fb1335ba29e5d3d6fbdb119a2))
+
 ## [0.5.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.3...0.5.4) (2023-01-08)
 
 
