@@ -54,57 +54,57 @@ Parse.Cloud.beforeDelete(Cube, async ({ object: cube }) => {
 
 Parse.Cloud.afterDelete(Cube, $deleteAudits)
 
-Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
-  for (const cube of cubes) {
-    // TODO: Remove (open issue -> js sdk does not encodeURI so some chars in ID throw errors, whereas rest api works)
-    cube.id = encodeURI(cube.id)
+// Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
+//   for (const cube of cubes) {
+//     // TODO: Remove (open issue -> js sdk does not encodeURI so some chars in ID throw errors, whereas rest api works)
+//     cube.id = encodeURI(cube.id)
 
-    if (cube.get('lc') === 'TLK') {
-      cube.set('klsId', cube.get('importData')?.klsId)
-      // await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
-      //   ? cube.set('bPLZ', true)
-      //   : cube.unset('bPLZ')
-    }
+//     if (cube.get('lc') === 'TLK') {
+//       cube.set('klsId', cube.get('importData')?.klsId)
+//       // await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
+//       //   ? cube.set('bPLZ', true)
+//       //   : cube.unset('bPLZ')
+//     }
 
-    cube.set('s', cube.getStatus())
+//     cube.set('s', cube.getStatus())
 
-    if (!cube.get('media') && cube.get('ht')) {
-      await cube.get('ht').fetch({ useMasterKey: true })
-      cube.set('media', cube.get('ht').get('media'))
-    }
+//     if (!cube.get('media') && cube.get('ht')) {
+//       await cube.get('ht').fetch({ useMasterKey: true })
+//       cube.set('media', cube.get('ht').get('media'))
+//     }
 
-    if (query._include.includes('orders')) {
-      const contracts = await $query('Contract')
-        .equalTo('cubeIds', cube.id)
-        .find({ useMasterKey: true })
-        .then(contracts => contracts.map(contract => ({
-          className: 'Contract',
-          ...contract.toJSON(),
-          earlyCanceledAt: contract.get('earlyCancellations')?.[cube.id],
-          endsAt: contract.get('earlyCancellations')?.[cube.id] || contract.get('endsAt')
-        })))
-      const bookings = await $query('Booking')
-        .equalTo('cubeIds', cube.id)
-        .find({ useMasterKey: true })
-        .then(bookings => bookings.map(booking => ({
-          className: 'Booking',
-          ...booking.toJSON(),
-          earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id],
-          endsAt: booking.get('earlyCancellations')?.[cube.id] || booking.get('endsAt')
-        })))
-      cube.set('orders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
-    }
+//     if (query._include.includes('orders')) {
+//       const contracts = await $query('Contract')
+//         .equalTo('cubeIds', cube.id)
+//         .find({ useMasterKey: true })
+//         .then(contracts => contracts.map(contract => ({
+//           className: 'Contract',
+//           ...contract.toJSON(),
+//           earlyCanceledAt: contract.get('earlyCancellations')?.[cube.id],
+//           endsAt: contract.get('earlyCancellations')?.[cube.id] || contract.get('endsAt')
+//         })))
+//       const bookings = await $query('Booking')
+//         .equalTo('cubeIds', cube.id)
+//         .find({ useMasterKey: true })
+//         .then(bookings => bookings.map(booking => ({
+//           className: 'Booking',
+//           ...booking.toJSON(),
+//           earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id],
+//           endsAt: booking.get('earlyCancellations')?.[cube.id] || booking.get('endsAt')
+//         })))
+//       cube.set('orders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
+//     }
 
-    if (query._include.includes('scoutSubmissions')) {
-      const scoutSubmissions = await $query('ScoutSubmission')
-        .equalTo('cube', cube)
-        .find({ useMasterKey: true })
-        .then(scoutSubmissions => scoutSubmissions.map(b => b.toJSON()))
-      cube.set('scoutSubmissions', scoutSubmissions)
-    }
-  }
-  return cubes
-})
+//     if (query._include.includes('scoutSubmissions')) {
+//       const scoutSubmissions = await $query('ScoutSubmission')
+//         .equalTo('cube', cube)
+//         .find({ useMasterKey: true })
+//         .then(scoutSubmissions => scoutSubmissions.map(b => b.toJSON()))
+//       cube.set('scoutSubmissions', scoutSubmissions)
+//     }
+//   }
+//   return cubes
+// })
 
 const getNewUnknownCubeId = prefix => getNewNo(prefix, Cube, 'objectId', 4)
 
