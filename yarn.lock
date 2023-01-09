@@ -183,16 +183,16 @@
   resolved "https://registry.yarnpkg.com/@gar/promisify/-/promisify-1.1.3.tgz#555193ab2e3bb3b6adc3d551c9c030d9e860daf6"
   integrity sha512-k2Ty1JcVojjJFwrg/ThKi2ujJ7XNLYaFGNB/bWT9wGR+oSMJHMa5w+CUq6p/pVrKeNNgA7pCqEcjSnHVoqJQFw==
 
-"@googlemaps/google-maps-services-js@3.3.16":
-  version "3.3.16"
-  resolved "https://registry.yarnpkg.com/@googlemaps/google-maps-services-js/-/google-maps-services-js-3.3.16.tgz#91ac24bd7ed6b087101188a3118fbfd7622b8813"
-  integrity sha512-0YxWVR5tRCK4kgQNP48+K8yVMZt9Nvel49Ra37q25oopdUkxtLyO39DYCLFrqyk1K1ne+RmuNDKavPyQKpWMSw==
+"@googlemaps/google-maps-services-js@3.3.26":
+  version "3.3.26"
+  resolved "https://registry.yarnpkg.com/@googlemaps/google-maps-services-js/-/google-maps-services-js-3.3.26.tgz#0bdbd3d05387e7b84ea6ecbb52dd585b6d2787bd"
+  integrity sha512-/t0J/vLxPJcFsygSJU50WHgz2R3noAr7SkicthukD1HaEpMQ/O+llYt80R5yoO5cV9vMMDSqGUO7TvIEqiy3Ig==
   dependencies:
     "@googlemaps/url-signature" "^1.0.4"
     agentkeepalive "^4.1.0"
-    axios "^0.27.0"
-    query-string "^7.0.1"
-    retry-axios "^2.2.1"
+    axios "0.27.2"
+    query-string "7.1.3"
+    retry-axios "2.6.0"
 
 "@googlemaps/url-signature@^1.0.4":
   version "1.0.28"
@@ -1854,7 +1854,7 @@ aws4@^1.8.0:
   resolved "https://registry.yarnpkg.com/aws4/-/aws4-1.11.0.tgz#d61f46d83b2519250e2784daf5b09479a8b41c59"
   integrity sha512-xh1Rl34h6Fi1DC2WWKfxUTVqRsNnr6LsKz2+hfwDxQJWmrx8+c7ylaqBMcHfl1U1r2dsifOvKX3LQuLNZ+XSvA==
 
-axios@^0.27.0:
+axios@0.27.2:
   version "0.27.2"
   resolved "https://registry.yarnpkg.com/axios/-/axios-0.27.2.tgz#207658cc8621606e586c85db4b41a750e756d972"
   integrity sha512-t+yRIyySRTp/wua5xEr+z1q60QmLq8ABsS5O9Me1AsE5dfKqgnCFzwiCZZ/cGNd1lq4/7akDWMxdhVlucjmnOQ==
@@ -7425,7 +7425,7 @@ qs@~6.5.2:
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.5.3.tgz#3aeeffc91967ef6e35c0e488ef46fb296ab76aad"
   integrity sha512-qxXIEh4pCGfHICj1mAJQ2/2XVZkjCDTcEgfoSQxc/fYivUZxTkk7L3bDBJSoNrEzXI17oUO5Dp07ktqE5KzczA==
 
-query-string@^7.0.1:
+query-string@7.1.3:
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/query-string/-/query-string-7.1.3.tgz#a1cf90e994abb113a325804a972d98276fe02328"
   integrity sha512-hh2WYhq4fi8+b+/2Kg9CEge4fDPvHS534aOOvOZeQ3+Vf2mCFsaFBYj0i+iXcAq6I9Vzp5fjMFBlONvayDC1qg==
@@ -7982,7 +7982,7 @@ restore-cursor@^3.1.0:
     onetime "^5.1.0"
     signal-exit "^3.0.2"
 
-retry-axios@^2.2.1:
+retry-axios@2.6.0:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/retry-axios/-/retry-axios-2.6.0.tgz#d4dc5c8a8e73982e26a705e46a33df99a28723e0"
   integrity sha512-pOLi+Gdll3JekwuFjXO3fTq+L9lzMQGcSq7M5gIjExcl3Gu1hd4XXuf5o3+LuSBsaULQH7DiNbsqPd1chVpQGQ==
