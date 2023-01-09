@@ -36,9 +36,9 @@ const getRedisOptions = ({ db } = {}) => {
     port: process.env.REDIS_PORT ?? 6379,
     password: process.env.REDIS_PASS,
     username: process.env.REDIS_USER,
-    db,
-    enableReadyCheck: false,
-    maxRetriesPerRequest: null
+    db
+    // enableReadyCheck: false,
+    // maxRetriesPerRequest: null
   }
 }
 

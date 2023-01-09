@@ -6,7 +6,7 @@ const path = require('path')
 const express = require('express')
 const { default: ParseServer } = require('parse-server')
 const S3Adapter = require('@parse/s3-files-adapter')
-const { awaitConnection, pubSubAdapter, parseCacheAdapter } = require('@/services/redis')
+const { awaitConnection, pubSubAdapter } = require('@/services/redis')
 
 function replaceLocalIp (url) {
   if (!url.includes('0.0.0.0')) {
@@ -24,7 +24,7 @@ const initApp = async () => {
   const parseServer = new ParseServer({
     databaseURI: process.env.DATABASE_URI,
     databaseOptions: !DEVELOPMENT ? { enableSchemaHooks: true } : undefined,
-    cacheAdapter: parseCacheAdapter,
+    // cacheAdapter: parseCacheAdapter,
     appId: process.env.APP_ID,
     appName: process.env.APP_NAME,
     masterKey: process.env.MASTER_KEY,
