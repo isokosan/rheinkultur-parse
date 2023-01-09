@@ -1,3 +1,10 @@
+## [0.8.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.5...0.8.6) (2023-01-09)
+
+
+### Bug Fixes
+
+* seed without uploading files ([85b8410](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/85b841012882fe0857310848166e2797aeb0c3c4))
+
 ## [0.8.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.4...0.8.5) (2023-01-09)
 
 
