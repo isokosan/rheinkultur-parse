@@ -1,3 +1,10 @@
+## [0.8.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.2...0.8.3) (2023-01-09)
+
+
+### Bug Fixes
+
+* increase limits during seed ([eb445bb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eb445bb5d9c993c363b0649409f6ebe09954b636))
+
 ## [0.8.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.1...0.8.2) (2023-01-09)
 
 
