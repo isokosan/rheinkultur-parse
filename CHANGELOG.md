@@ -1,3 +1,10 @@
+## [0.9.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.0...0.9.1) (2023-01-09)
+
+
+### Bug Fixes
+
+* metadata encoding error with aws ([480f3d2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/480f3d29af1cdecad558cca6b6e495738603cea9))
+
 # [0.9.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.6...0.9.0) (2023-01-09)
 
 
