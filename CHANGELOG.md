@@ -1,3 +1,10 @@
+# [0.7.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.6.0...0.7.0) (2023-01-09)
+
+
+### Features
+
+* add redis cache and separate databases ([e2bc604](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e2bc60473243aad56453add5b5f83dc9ac9291ce))
+
 # [0.6.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.5.4...0.6.0) (2023-01-09)
 
 
