@@ -23,6 +23,9 @@ const initApp = async () => {
   const serverURL = `http://localhost:${port}/parse`
   const parseServer = new ParseServer({
     databaseURI: process.env.DATABASE_URI,
+    databaseOptions: {
+      enableSchemaHooks: true
+    },
     appId: process.env.APP_ID,
     appName: process.env.APP_NAME,
     masterKey: process.env.MASTER_KEY,
@@ -61,7 +64,6 @@ const initApp = async () => {
       passwordResetSuccess: `${process.env.WEBAPP_URL}/password-reset-success`
     },
     enableAnonymousUsers: false,
-    enableSingleSchemaCache: true,
     accountLockout: {
       duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
       threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
