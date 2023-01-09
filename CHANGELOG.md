@@ -1,3 +1,10 @@
+## [0.8.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.4...0.8.5) (2023-01-09)
+
+
+### Bug Fixes
+
+* attempt to only encode filename on Parse.File creation and encode the metadata in beforeSave hook ([d0448fa](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d0448fad38334103e4715d547207c36228746f60))
+
 ## [0.8.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.3...0.8.4) (2023-01-09)
 
 
