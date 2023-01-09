@@ -191,6 +191,26 @@ class PubSubAdapter {
 }
 
 const redis = getRedisClient({ db: 1 })
+
+redis.on('connect', () => {
+  consola.success('redis connected')
+})
+redis.on('ready', () => {
+  consola.success('redis ready')
+})
+redis.on('error', (error) => {
+  consola.error('redis errored', error)
+})
+redis.on('close', () => {
+  consola.warn('redis closed')
+})
+redis.on('reconnecting', () => {
+  consola.info('redis reconnecting')
+})
+redis.on('wait', () => {
+  consola.info('redis waiting')
+})
+
 const awaitConnection = async () => {
   while (redis.status !== 'ready') {
     await new Promise(resolve => setTimeout(resolve, 100))
