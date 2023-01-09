@@ -187,7 +187,9 @@ module.exports = {
             for (const year of Object.keys(value)) {
               if (`${year}`.length !== 4) {
                 delete value[year]
+                continue
               }
+              value[year] = parseFloat(`${value[year]}`.replace(',', '.'))
             }
             return Object.keys(value).length ? value : undefined
           }
