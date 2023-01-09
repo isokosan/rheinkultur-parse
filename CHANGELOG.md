@@ -1,3 +1,10 @@
+## [0.9.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.7...0.9.8) (2023-01-09)
+
+
+### Bug Fixes
+
+* attempt disabling maxRetries and enableReachCheck from redis options ([527152b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/527152b6f8093eac7cac5ad028cf093cb17803d9))
+
 ## [0.9.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.6...0.9.7) (2023-01-09)
 
 
