@@ -1,3 +1,10 @@
+## [0.8.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.0...0.8.1) (2023-01-09)
+
+
+### Bug Fixes
+
+* log housing types in seed ([5582d76](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5582d769233e35f07dd33db2b21e4f7411f92af5))
+
 # [0.8.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.7.0...0.8.0) (2023-01-09)
 
 
