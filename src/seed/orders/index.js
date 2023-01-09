@@ -164,6 +164,11 @@ const seedOrders = async ({ purge, orderNo, orderNos, customerNo, setCubeStatuse
     no = type === 'booking' ? 'B' + no : 'V' + no
 
     if (type === 'booking') {
+      const exists = await $query('Booking').equalTo('no', no).first({ useMasterKey: true })
+      if (exists) {
+        consola.info('skipping seeded booking', no)
+        return
+      }
       const pricingModel = company.get('distributor').pricingModel
       let booking = await Parse.Cloud.run('booking-create', {
         no,
@@ -238,6 +243,11 @@ const seedOrders = async ({ purge, orderNo, orderNos, customerNo, setCubeStatuse
           : moment(booking.get('endsAt')).add(1, 'days').format('YYYY-MM-DD')
       })
     } else {
+      const exists = await $query('Contract').equalTo('no', no).first({ useMasterKey: true })
+      if (exists) {
+        consola.info('skipping seeded contract', no)
+        return
+      }
       let pricingModel = company.get('contractDefaults')?.pricingModel
       const differentInvoiceAddress = invoiceAddress?.id !== address.id
 
@@ -342,8 +352,8 @@ const seedOrders = async ({ purge, orderNo, orderNos, customerNo, setCubeStatuse
           : moment(contract.get('endsAt')).add(1, 'days').format('YYYY-MM-DD')
       })
     }
-
     production && await production.save(null, { useMasterKey: true })
+    return true
   }
 
   if (orderNo) {

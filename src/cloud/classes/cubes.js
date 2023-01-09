@@ -1,5 +1,5 @@
-const { getNewNo } = require('@/shared')
 const redis = require('@/services/redis')
+const { getNewNo } = require('@/shared')
 const { indexCube, unindexCube } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
@@ -34,9 +34,9 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
     cube.set('media', ht.get('media'))
   }
 
-  cube.get('lc') === 'TLK' && await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
-    ? cube.set('bPLZ', true)
-    : cube.unset('bPLZ')
+  // cube.get('lc') === 'TLK' && await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
+  //   ? cube.set('bPLZ', true)
+  //   : cube.unset('bPLZ')
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
 
@@ -72,9 +72,9 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
 
     if (cube.get('lc') === 'TLK') {
       cube.set('klsId', cube.get('importData')?.klsId)
-      await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
-        ? cube.set('bPLZ', true)
-        : cube.unset('bPLZ')
+      // await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
+      //   ? cube.set('bPLZ', true)
+      //   : cube.unset('bPLZ')
     }
 
     cube.set('s', cube.getStatus())
