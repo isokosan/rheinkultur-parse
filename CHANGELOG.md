@@ -1,3 +1,10 @@
+## [0.9.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.4...0.9.5) (2023-01-09)
+
+
+### Bug Fixes
+
+* re-introduce redis query in after find cubes ([ea224b9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ea224b9a4e8672148d8c311685258333ac5d8247))
+
 ## [0.9.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.3...0.9.4) (2023-01-09)
 
 
