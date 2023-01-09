@@ -1,38 +1,10 @@
+const path = require('path')
 const fs = require('fs').promises
 const { round2 } = require('@/utils')
 const { getCompanyByImportNo } = require('./../companies')
 
-function normalizeFields (order) {
-  for (const key of Object.keys(order)) {
-    if (order[key] === '-' || order[key] === '') {
-      delete order[key]
-      continue
-    }
-    order[key] = order[key]?.trim ? order[key]?.trim() : order[key]
-  }
-  return order
-}
-
-const getOrders = () => require('@/../imports/orders.json')
-  .filter(({ rowNo }) => Boolean(rowNo))
-  .map(normalizeFields)
-  .map((order) => {
-    delete order.telekomPacht
-    order.no = order.orderNo
-    delete order.orderNo
-    if (order.start?.includes('.')) {
-      order.start = order.start.split('.').reverse().join('-')
-    }
-    order.autoExtends = order.autoExtends === 'Ja'
-    order.kundenNetto = parseFloat(order.kundenNetto)
-    order.billingCycle = parseInt(order.customerNo) === 40 ? 3 : parseInt(order.billingCycle)
-    order.initialDuration = parseInt(order.duration || order.initialDuration)
-    order.paymentType = order.paymentType?.trim() || 'Überweisung'
-    return order
-  })
-
 const seedCubeHtMedia = async () => {
-  const updates = await fs.readFile('./prepared-order-cubes.json').then(JSON.parse)
+  const updates = await fs.readFile(path.join(BASE_DIR, '/seed/data/prepared-order-cubes.json')).then(JSON.parse)
   const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
   const housingTypes = await fetchHousingTypes()
   const updateIds = Object.keys(updates)
@@ -66,7 +38,7 @@ Parse.Cloud.define('seed-cube-ht-media', async () => {
 })
 
 const seedCubeComments = async () => {
-  const updates = await fs.readFile('./prepared-order-cubes.json').then(JSON.parse)
+  const updates = await fs.readFile(path.join(BASE_DIR, '/seed/data/prepared-order-cubes.json')).then(JSON.parse)
   const updateIds = Object.keys(updates)
   let u = 0
   let s = 0
@@ -131,7 +103,7 @@ const seedOrders = async ({ purge, orderNo, orderNos, customerNo, setCubeStatuse
   purge && await purgeOrders()
   const skippedOrderNos = await $query('SkippedOrderImport').distinct('no', { useMasterKey: true })
   let skippedOrders = 0
-  const { orders } = await fs.readFile('./processed-orders.json').then(JSON.parse)
+  const { orders } = await fs.readFile(path.join(BASE_DIR, '/seed/data/processed-orders.json')).then(JSON.parse)
   const errors = []
   const today = await $today()
 
@@ -424,7 +396,3 @@ Parse.Cloud.define('seed-test-orders', async () => {
   seedOrders({ purge: true, orderNos, setCubeStatuses: true })
   return 'ok'
 })
-
-module.exports = {
-  getOrders
-}

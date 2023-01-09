@@ -1,3 +1,6 @@
+const path = require('path')
+const fs = require('fs').promises
+
 const { createFakeObj } = require('./../utils')
 const { fakeUser } = require('./../users')
 
@@ -35,9 +38,10 @@ function landToCode (row) {
   throw new Error(`${row.importNo} ${row.name} - No land in address`)
 }
 
-function getCustomers () {
+async function getCustomers () {
   const customers = {}
-  for (const row of require('@/../processed-companies.json')) {
+  const processedCompanies = await fs.readFile(path.join(BASE_DIR, '/seed/data/processed-companies.json')).then(JSON.parse)
+  for (const row of processedCompanies) {
     if (!row.name || !row.importNo) {
       continue
     }
@@ -241,7 +245,7 @@ const seed = async function () {
     }
   }
 
-  const customers = getCustomers()
+  const customers = await getCustomers()
   for (const customer of Object.values(customers)) {
     if (customer.name === 'MA Lionsgroup BV') {
       continue
@@ -411,7 +415,7 @@ const seed = async function () {
 const seedAddresses = async function () {
   consola.info('seeding addresses')
   const companies = await getCompanies()
-  const customers = getCustomers()
+  const customers = await getCustomers()
   for (const company of companies) {
     const name = company.get('name')
     for (const address of customers[name]?.addresses || []) {

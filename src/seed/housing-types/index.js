@@ -374,3 +374,11 @@ const seed = async () => {
 module.exports = {
   seed
 }
+
+// FIGURE OUT filename error
+// Get base64 of 1px png
+// Iterate over names of files and save each one on the local test database, to our AWS
+
+// After figuring out filename error:
+// First purge seed without files
+// Then write function to seed files into housing types
