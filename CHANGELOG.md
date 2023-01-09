@@ -1,3 +1,10 @@
+## [0.8.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.1...0.8.2) (2023-01-09)
+
+
+### Bug Fixes
+
+* attempt to also encode metadata filename ([fe9b255](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fe9b255e3ad239f3aa7f21963e303025ab33d30e))
+
 ## [0.8.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.0...0.8.1) (2023-01-09)
 
 
