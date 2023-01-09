@@ -1,3 +1,10 @@
+# [0.9.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.6...0.9.0) (2023-01-09)
+
+
+### Features
+
+* move seed files and use file read ([8f10ba0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8f10ba03c94a57048228a3480d77235188b1bae8))
+
 ## [0.8.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.8.5...0.8.6) (2023-01-09)
 
 
