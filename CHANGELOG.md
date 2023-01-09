@@ -1,3 +1,10 @@
+# [0.13.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.12.1...0.13.0) (2023-01-09)
+
+
+### Features
+
+* production fixes and totals ([480c7b6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/480c7b6a7be8e6a832016f2fcbf039ae5b9eb2a4))
+
 ## [0.12.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.12.0...0.12.1) (2023-01-09)
 
 
