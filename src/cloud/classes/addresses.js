@@ -1,6 +1,5 @@
 const { addresses: { normalizeFields, UNSET_NULL_FIELDS } } = require('@/schema/normalizers')
-const redis = require('@/services/redis')
-const lexApi = require('@/services/lex')
+const { lexApi, getCountries } = require('@/services/lex')
 
 const Address = Parse.Object.extend('Address')
 
@@ -8,8 +7,8 @@ Parse.Cloud.beforeSave(Address, async ({ object: address }) => {
   UNSET_NULL_FIELDS.forEach(field => !address.get(field) && address.unset(field))
   const countryCode = address.get('countryCode')
   if (countryCode) {
-    const exists = await redis.hexists('countries', countryCode)
-    if (!exists) {
+    const countries = await getCountries()
+    if (!countries[countryCode]) {
       throw new Error(`Country ${countryCode} is not recognized.`)
     }
   }

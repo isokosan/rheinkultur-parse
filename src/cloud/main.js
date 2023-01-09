@@ -1,4 +1,3 @@
-// const redis = require('@/services/redis')
 const { version } = require('@/../package.json')
 const { getCountries } = require('@/services/lex')
 
@@ -35,14 +34,7 @@ const {
 
 process.env.SEED && require('@/seed')
 
-Parse.Cloud.define('init', async ({ params: { keys = [], force = true } }) => {
-  // if (!force) {
-  //   const cached = await redis.get('dictionary')
-  //   if (cached) {
-  //     consola.success('cached dictionary')
-  //     return JSON.parse(cached)
-  //   }
-  // }
+Parse.Cloud.define('init', async ({ params: { keys = [] } }) => {
   const dictionary = {
     version,
     development: DEVELOPMENT,
@@ -75,7 +67,6 @@ Parse.Cloud.define('init', async ({ params: { keys = [], force = true } }) => {
       ? await fetchGradualPriceMaps() // .then(items => items.map(item => item.toJSON()))
       : undefined
   }
-  // await redis.setex('dictionary', 60, JSON.stringify(dictionary))
   return dictionary
 }, { requireUser: true })
 
@@ -95,3 +86,14 @@ Parse.Cloud.define('enums', () => ({
   interestRates,
   departureListStatuses
 }), { requireUser: true })
+
+// temporary solution to PLZ's without redis
+global.$noMarketingRights = {}
+async function syncNoMarketingRights () {
+  const plzs = await $query('PLZ').equalTo('nMR', true).distinct('objectId', { useMasterKey: true })
+  for (const plz of plzs) {
+    $noMarketingRights[plz] = true
+  }
+  consola.success('stored no marketing rights in memory')
+}
+syncNoMarketingRights()

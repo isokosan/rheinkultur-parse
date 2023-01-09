@@ -394,7 +394,7 @@ Parse.Cloud.define('credit-note-discard', async ({ params: { id: creditNoteId },
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('credit-note-lex-sync', async ({ params: { id: creditNoteId, resourceId: lexId } }) => {
+Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, resourceId: lexId } }) => {
   if (!creditNoteId && !lexId) {
     throw new Error('Either id or resourceId is required.')
   }

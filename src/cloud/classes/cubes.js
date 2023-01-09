@@ -37,6 +37,11 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
   // cube.get('lc') === 'TLK' && await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
   //   ? cube.set('bPLZ', true)
   //   : cube.unset('bPLZ')
+
+  cube.get('lc') === 'TLK' && $noMarketingRights[cube.get('plz')]
+    ? cube.set('bPLZ', true)
+    : cube.unset('bPLZ')
+
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
 
@@ -75,6 +80,9 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
       // await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
       //   ? cube.set('bPLZ', true)
       //   : cube.unset('bPLZ')
+      await $noMarketingRights[cube.get('plz')]
+        ? cube.set('bPLZ', true)
+        : cube.unset('bPLZ')
     }
 
     cube.set('s', cube.getStatus())

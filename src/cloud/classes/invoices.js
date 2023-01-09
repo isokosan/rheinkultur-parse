@@ -192,6 +192,8 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
     const { voucherNumber, voucherStatus } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
     invoice.set({ lexNo: voucherNumber, voucherStatus })
   }
+
+  invoice.unset('lexDocument')
 })
 
 Parse.Cloud.afterSave(Invoice, ({ object: invoice, context: { audit } }) => { $audit(invoice, audit) })
@@ -504,7 +506,7 @@ Parse.Cloud.define('invoice-reset-introduction', async ({ params: { id: invoiceI
   return invoice.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('invoice-lex-sync', async ({ params: { id: invoiceId, resourceId: lexId } }) => {
+Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourceId: lexId } }) => {
   if (!invoiceId && !lexId) {
     throw new Error('Either id or resourceId is required.')
   }

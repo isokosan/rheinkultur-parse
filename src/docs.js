@@ -1,6 +1,6 @@
 const { sum } = require('lodash')
 const { docs, drive } = require('@/services/googleapis')
-const redis = require('@/services/redis')
+const { getCountries } = require('@/services/lex')
 const { priceString } = require('@/utils')
 const { getCubeSummaries } = require('@/shared')
 const { PRINT_PACKAGE_TYPES, PRINT_PACKAGE_FACES } = require('@/schema/enums')
@@ -11,11 +11,12 @@ const freshCopy = name => drive.files.copy({ fileId: originFileId })
   .then(res => drive.files.update({ fileId: res.data.id, requestBody: { name } }))
   .then(res => res.data.id)
 
-const getCountryText = value => value === 'DE' ? '' : redis.hget('countries', value)
-
 async function getReplaceTextRequests (contract) {
   const company = contract.get('company')
   const billingCycle = contract.get('billingCycle')
+
+  const countryNames = await getCountries()
+  const getCountryText = value => value === 'DE' ? '' : countryNames[value]
 
   const productionTotal = Object.keys(contract.get('production')?.get('prices') || {}).length
     ? priceString(sum(Object.values(contract.get('production').get('prices'))))
