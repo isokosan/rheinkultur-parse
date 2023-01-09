@@ -1,3 +1,10 @@
+# [0.10.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.9...0.10.0) (2023-01-09)
+
+
+### Features
+
+* remove redis from cube afterFind ([91c0e4d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/91c0e4d50b1a3c5ff0609442716bd9b0f181bb06))
+
 ## [0.9.9](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.8...0.9.9) (2023-01-09)
 
 
