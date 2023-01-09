@@ -1,3 +1,10 @@
+## [0.9.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.2...0.9.3) (2023-01-09)
+
+
+### Bug Fixes
+
+* attempt to disable afterFind completely ([3a50ff6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3a50ff6f91e2b93e2d9c97e41db94674d5031281))
+
 ## [0.9.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.1...0.9.2) (2023-01-09)
 
 
