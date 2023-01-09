@@ -1,3 +1,11 @@
+# [0.12.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.11.0...0.12.0) (2023-01-09)
+
+
+### Features
+
+* add companyId to search if booked filter present ([206054a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/206054adb94f3a9c117252020a2c7314dc8395f8))
+* disable end/extend/issue jobs ([0363e8b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0363e8b7ae59b08f3d7e078406362e94bf46094d))
+
 # [0.11.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.10.0...0.11.0) (2023-01-09)
 
 
