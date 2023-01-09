@@ -7,6 +7,9 @@ const { PRINT_PACKAGE_FILES } = require('@/schema/enums')
 const FileObject = Parse.Object.extend('FileObject')
 
 Parse.Cloud.beforeSaveFile(async ({ file }) => {
+  if (file._metadata.name) {
+    file._metadata.name = encodeURIComponent(file._metadata.name)
+  }
   const extension = file._name.split('.').reverse()[0].toLowerCase()
   if (['jpeg', 'jpg'].includes(extension)) {
     const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
@@ -14,9 +17,6 @@ Parse.Cloud.beforeSaveFile(async ({ file }) => {
       .withMetadata()
       .toBuffer()
       .then(data => data.toString('base64'))
-    if (file._metadata.name) {
-      file._metadata.name = encodeURIComponent(file._metadata.name)
-    }
     return new Parse.File(file._name, { base64 }, undefined, file._metadata, file._tags)
   }
 })
@@ -88,6 +88,12 @@ const FILE_OBJECT_REFERENCES = {
   Invoice: ['docs'],
   CreditNote: ['docs']
 }
+
+Parse.Cloud.afterFind(FileObject, ({ objects }) => {
+  for (const object of objects) {
+    object.set('name', decodeURIComponent(object.get('name')))
+  }
+})
 
 // The FileObject will not be deleted unless the file associated with it is successfuly deleted, or is already not found
 Parse.Cloud.beforeDelete(FileObject, async ({ object }) => {
