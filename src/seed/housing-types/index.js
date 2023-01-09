@@ -93,10 +93,10 @@ const getOrUploadHtTemplates = async function (housingTypeCode) {
     if (!file) {
       consola.info('UPLOADING', filename)
       file = new Parse.File(
-        encodeURIComponent(filename),
+        encodeURIComponent(filename.replace(/Ü/g, 'UE').replace(/:/g, '-').replace(/ü/g, 'ue')),
         { base64: readFileSync(path.join(directory, filename), { encoding: 'base64' }) },
         'application/pdf',
-        { name: encodeURIComponent(filename) },
+        { name: filename },
         { assetType: 'print-template' }
       )
       await file.save({ useMasterKey: true })
@@ -357,11 +357,9 @@ const seed = async () => {
     json: true,
     body: { requests }
   })
-  consola.info('uploading and seeding templates')
   const standardTemplates = await getOrUploadStandardTemplates()
   const hts = await $query(HousingType).find({ useMasterKey: true })
   for (const ht of hts) {
-    consola.info(`seeding templates for ${ht.get('code')}`)
     for (const key of Object.keys(standardTemplates[ht.get('media')])) {
       ht.set(key, standardTemplates[ht.get('media')][key])
     }
