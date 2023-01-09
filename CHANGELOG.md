@@ -1,3 +1,10 @@
+## [0.9.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.6...0.9.7) (2023-01-09)
+
+
+### Bug Fixes
+
+* test 10 thousand sismember queries ([fb1de24](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fb1de248f3870d663bc7949fb99ac3278747d306))
+
 ## [0.9.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.5...0.9.6) (2023-01-09)
 
 
