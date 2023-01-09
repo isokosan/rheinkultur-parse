@@ -1,3 +1,10 @@
+## [0.9.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.3...0.9.4) (2023-01-09)
+
+
+### Bug Fixes
+
+* re-introduce afterFind, without media fetch and without redis ([c2f128b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c2f128bc29d3651f1725a6940aaef8c5e7e2348f))
+
 ## [0.9.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.2...0.9.3) (2023-01-09)
 
 
