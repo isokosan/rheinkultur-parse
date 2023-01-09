@@ -356,9 +356,11 @@ const seed = async () => {
     json: true,
     body: { requests }
   })
+  consola.info('uploading and seeding templates')
   const standardTemplates = await getOrUploadStandardTemplates()
   const hts = await $query(HousingType).find({ useMasterKey: true })
   for (const ht of hts) {
+    consola.info(`seeding templates for ${ht.get('code')}`)
     for (const key of Object.keys(standardTemplates[ht.get('media')])) {
       ht.set(key, standardTemplates[ht.get('media')][key])
     }
