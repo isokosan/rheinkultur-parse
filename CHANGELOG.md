@@ -1,3 +1,10 @@
+## [0.9.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.1...0.9.2) (2023-01-09)
+
+
+### Bug Fixes
+
+* attempt to remove redis query per cube in cubes afterfind ([be22637](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/be22637b5b7d6b58c2ef9b9bee8d92e0a776b170))
+
 ## [0.9.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.0...0.9.1) (2023-01-09)
 
 
