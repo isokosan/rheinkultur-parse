@@ -1,3 +1,10 @@
+## [0.9.9](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.8...0.9.9) (2023-01-09)
+
+
+### Bug Fixes
+
+* attempt to log redis events ([0e7f929](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0e7f929a489505bab3ba5d9838785e670c555274))
+
 ## [0.9.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.9.7...0.9.8) (2023-01-09)
 
 
