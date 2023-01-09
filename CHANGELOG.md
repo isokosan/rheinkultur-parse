@@ -1,3 +1,10 @@
+## [0.12.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.12.0...0.12.1) (2023-01-09)
+
+
+### Bug Fixes
+
+* contract commissions normalizer bug ([9f47d00](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9f47d00d66f7b7d80c2337f2a2dcd4c68ee6e16e))
+
 # [0.12.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.11.0...0.12.0) (2023-01-09)
 
 
