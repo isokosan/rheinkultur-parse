@@ -84,6 +84,12 @@ module.exports.PRINT_PACKAGE_FACES = {
   back: 'Rückseite'
 }
 
+module.exports.INTEREST_RATES = {
+  12: 5,
+  24: 10,
+  36: 15
+}
+
 module.exports.DEPARTURE_LIST_STATUSES = {
   0: 'Entwurf',
   appointed: 'Beauftragt',

@@ -467,8 +467,8 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   const periodEnd = invoice.get('periodEnd')
   const mediaItems = invoice.get('media')?.items || []
   const productionItems = invoice.get('production')?.items || []
-  const mediaItemIds = (invoice.get('media')?.items || []).map(item => item.cubeId)
-  const productionItemIds = (invoice.get('production')?.items || []).map(item => item.cubeId)
+  const mediaItemIds = mediaItems.map(item => item.cubeId)
+  const productionItemIds = productionItems.map(item => item.cubeId)
   const cubeIds = [...new Set([...mediaItemIds, ...productionItemIds])]
   const cubeSummaries = await getCubeSummaries(cubeIds)
   const orderNo = (invoice.get('contract') || invoice.get('booking'))?.get('no')
@@ -589,13 +589,13 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
     invoice.get('production')?.installments
       ? columns.push(...[
         {
-          header: 'Monthly installment',
+          header: 'Production Monthly',
           key: 'monthlyProduction',
           style: priceStyle,
           width: 20
         },
         {
-          header: 'Installments',
+          header: 'Anzahl Monate',
           key: 'periodInstallments',
           style: {
             alignment: { horizontal: 'right' }
@@ -603,7 +603,7 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
           width: 20
         },
         {
-          header: 'Period installments',
+          header: 'Zwischensumme Produktion',
           key: 'periodProduction',
           style: priceStyle,
           width: 20

@@ -300,7 +300,7 @@ Parse.Cloud.define('booking-update', async ({
   let productionChanges = {}
   const existingProduction = await $query('Production').equalTo('booking', booking).first({ useMasterKey: true })
   if (production) {
-    const { billing, printPackages, prices, extras, extrasWI } = production
+    const { billing, printPackages, interestRate, prices, extras, totals } = production
     const cubeIds = booking.get('cubeIds') || []
     // clean print packages for missing cubes in booking
     for (const cubeId of Object.keys(printPackages || {})) {
@@ -317,20 +317,20 @@ Parse.Cloud.define('booking-update', async ({
       })
       : { added: true }
     production = existingProduction || new (Parse.Object.extend('Production'))()
-    production.set({ booking, billing, printPackages, prices: null, extras: null, extrasWI: null })
+    production.set({ booking, billing, printPackages, interestRate: null, prices: null, extras: null, totals: null })
     if (billing) {
       const installments = billing > 1 ? billing : null
       let productionTotal = 0
-      production.set({ prices, extras, extrasWI })
+      production.set({ prices, extras, totals })
       const monthlies = {}
       for (const cubeId of Object.keys(printPackages)) {
-        const cubeTotal = (prices?.[cubeId] || 0) + (extrasWI?.[cubeId] || 0)
+        const cubeTotal = totals?.[cubeId] || 0
         if (installments) {
           monthlies[cubeId] = round2(cubeTotal / installments)
         }
         productionTotal += cubeTotal
       }
-      installments && production.set({ monthlies })
+      installments && production.set({ interestRate, monthlies })
       production.set({ total: round2(productionTotal) })
     }
     await production.save(null, { useMasterKey: true })
@@ -463,13 +463,15 @@ Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingI
     return 'Invoice is already issued'
   }
   const company = booking.get('company')
-  const productionItems = {}
+  const productionItems = []
   for (const cubeId of Object.keys(production.get('printPackages'))) {
-    const itemTotal = round2((production.get('prices')?.[cubeId] || 0) + (production.get('extrasWI')?.[cubeId] || 0))
-    productionItems[cubeId] = {
+    const itemTotal = round2(production.get('totals')?.[cubeId] || 0)
+    productionItems.push({
+      cubeId,
+      orderId: `B:${booking.id}`,
       no: production.get('printPackages')?.[cubeId]?.no,
       total: itemTotal
-    }
+    })
   }
   invoice.set({
     status: 0,

@@ -232,15 +232,16 @@ async function getInvoicesPreview (contract) {
         productionTotal = productionSum
       }
 
-      const productionItems = {}
+      const productionItems = []
       for (const cubeId of Object.keys(production.get('printPackages'))) {
-        const itemTotal = round2((production.get('prices')?.[cubeId] || 0) + (production.get('extrasWI')?.[cubeId] || 0))
-        productionItems[cubeId] = {
+        const total = production.get('totals')?.[cubeId] || 0
+        productionItems.push({
+          cubeId,
+          orderId: `C:${contract.id}`,
           no: production.get('printPackages')?.[cubeId]?.no,
-          total: itemTotal,
           monthly: monthlies?.[cubeId],
-          periodTotal: installments ? round2(monthlies[cubeId] * periodInstallments) : undefined
-        }
+          total: installments ? round2(monthlies[cubeId] * periodInstallments) : total
+        })
       }
       invoice.production = {
         id: production.id,
@@ -597,7 +598,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   let productionChanges = {}
   const existingProduction = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
   if (production) {
-    const { billing, printPackages, prices, extras, extrasWI } = production
+    const { billing, printPackages, interestRate, prices, extras, totals } = production
     const cubeIds = contract.get('cubeIds') || []
     // clean print packages for missing cubes in contract
     for (const cubeId of Object.keys(printPackages || {})) {
@@ -614,20 +615,20 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
       })
       : { added: true }
     production = existingProduction || new (Parse.Object.extend('Production'))()
-    production.set({ contract, billing, printPackages, prices: null, extras: null, extrasWI: null })
+    production.set({ contract, billing, printPackages, interestRate: null, prices: null, extras: null, totals: null })
     if (billing) {
       const installments = billing > 1 ? billing : null
       let productionTotal = 0
-      production.set({ prices, extras, extrasWI })
+      production.set({ prices, extras, totals })
       const monthlies = {}
       for (const cubeId of Object.keys(printPackages)) {
-        const cubeTotal = (prices?.[cubeId] || 0) + (extrasWI?.[cubeId] || 0)
+        const cubeTotal = totals?.[cubeId] || 0
         if (installments) {
           monthlies[cubeId] = round2(cubeTotal / installments)
         }
         productionTotal += cubeTotal
       }
-      installments && production.set({ monthlies })
+      installments && production.set({ interestRate, monthlies })
       production.set({ total: round2(productionTotal) })
     }
     await production.save(null, { useMasterKey: true })

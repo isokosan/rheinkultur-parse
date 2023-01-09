@@ -469,9 +469,10 @@ const schemaDefinitions = {
       booking: { type: 'Pointer', targetClass: 'Booking' },
       billing: { type: 'Number' }, // invoicing and installments combined into billing: null or 0 for no invoice, 1 for single payment, 12, 24 or 36 for installments
       printPackages: { type: 'Object' },
+      interestRate: { type: 'Number' }, // interest rate applied
       prices: { type: 'Object' }, // price of the item
       extras: { type: 'Object' }, // extra costs
-      extrasWI: { type: 'Object' }, // extra costs with interest
+      totals: { type: 'Object' }, // total costs
       total: { type: 'Number' }, // all around total of the production
       monthlies: { type: 'Object' }, // only if installments
       // Assembly

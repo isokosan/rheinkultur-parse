@@ -14,13 +14,19 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
 
   !production.get('billing') && production.set({
     monthlies: null,
+    interestRate: null,
     prices: null,
     extras: null,
-    extrasWI: null,
+    totals: null,
     total: null
   })
 
   !(production.get('billing') > 1) && production.set({ monthlies: null })
+
+  if (production.get('billing') && !production.get('total')) {
+    // TOTRANSLATE
+    throw new Error('Total is required for billing')
+  }
 
   const bookingOrContract = production.get('booking') || production.get('contract')
   await bookingOrContract.fetch({ useMasterKey: true })
@@ -142,7 +148,7 @@ Parse.Cloud.afterFind(Production, async ({ query, objects }) => {
 
 Parse.Cloud.define('production-update-cubes', async ({ params: { id: productionId, cubeIds } }) => {
   const production = await $getOrFail(Production, productionId)
-  for (const key of ['printPackages', 'monthlies', 'prices', 'extras', 'extrasWI']) {
+  for (const key of ['printPackages', 'monthlies', 'prices', 'extras', 'totals']) {
     const obj = production.get(key) || {}
     for (const cubeId of Object.keys(obj)) {
       if (!cubeIds.includes(cubeId)) {
@@ -151,10 +157,7 @@ Parse.Cloud.define('production-update-cubes', async ({ params: { id: productionI
     }
     production.set({ key: obj })
   }
-  const total = round2(sum([
-    ...Object.values(production.get('prices') || {}),
-    ...Object.values(production.get('extrasWI') || {})
-  ]))
+  const total = round2(sum(Object.values(production.get('totals') || {})))
   production.set({ total })
   return production.save(null, { useMasterKey: true })
 }, { requireUser: true })

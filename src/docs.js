@@ -1,7 +1,7 @@
 const { sum } = require('lodash')
 const { docs, drive } = require('@/services/googleapis')
 const { getCountries } = require('@/services/lex')
-const { priceString } = require('@/utils')
+const { priceString, round2 } = require('@/utils')
 const { getCubeSummaries } = require('@/shared')
 const { PRINT_PACKAGE_TYPES, PRINT_PACKAGE_FACES } = require('@/schema/enums')
 
@@ -18,13 +18,15 @@ async function getReplaceTextRequests (contract) {
   const countryNames = await getCountries()
   const getCountryText = value => value === 'DE' ? '' : countryNames[value]
 
-  const productionTotal = Object.keys(contract.get('production')?.get('prices') || {}).length
-    ? priceString(sum(Object.values(contract.get('production').get('prices'))))
-    : '-'
+  // production totals
+  let pTotal = sum(Object.values(contract.get('production').get('prices') || {}))
+  let eTotal = sum(Object.values(contract.get('production').get('extras') || {}))
+  const interestRate = contract.get('production').get('interestRate') || 0
+  pTotal = round2(pTotal * (1 + interestRate / 100))
+  eTotal = round2(eTotal * (1 + interestRate / 100))
 
-  const extrasTotal = Object.keys(contract.get('production')?.get('extrasWI') || {}).length
-    ? priceString(sum(Object.values(contract.get('production').get('extrasWI'))))
-    : '-'
+  const productionTotal = pTotal ? priceString(pTotal) : '-'
+  const extrasTotal = eTotal ? priceString(eTotal) : '-'
 
   const companyPerson = contract.get('companyPerson')
   let contactPersonName = ''
@@ -99,6 +101,7 @@ const getCubeAddress = ({ str, hsnr, plz, ort }) => [str, hsnr + ',', plz, ort].
 async function getCubesListReplaceRequest (contract) {
   const cubes = await getCubeSummaries(contract.get('cubeIds'))
   const production = contract.get('production')
+  const interestRate = production.get('interestRate') || 0
   let cubesListText = ''
   let i = 1
   for (const cube of Object.values(cubes)) {
@@ -120,7 +123,7 @@ async function getCubesListReplaceRequest (contract) {
         printFaces.push(PRINT_PACKAGE_FACES[face])
       }
       productionPrice = production.get('prices')?.[cube.objectId]
-      extraPrice = production.get('extrasWI')?.[cube.objectId]
+      extraPrice = production.get('extras')?.[cube.objectId]
       productionMonthlyPrice = production.get('monthlies')?.[cube.objectId]
       text += `\nBelegung: ${printFaces.join(' + ')}`
       text += `\nMaterial: ${PRINT_PACKAGE_TYPES[printPackage.type]} Nr.: ${printPackage.no}`
@@ -130,9 +133,11 @@ async function getCubesListReplaceRequest (contract) {
       : `Monatsmiete: ${priceString(contract.get('monthlyMedia')[cube.objectId])} EUR`
     text += '\n\n' + monthlyPriceLine
     if (productionPrice) {
+      productionPrice = round2(productionPrice * (1 + interestRate / 100))
       text += `\nProduktions- und Montagekosten: ${priceString(productionPrice)} EUR`
     }
     if (extraPrice) {
+      extraPrice = round2(extraPrice * (1 + interestRate / 100))
       text += `\nSonderkosten: ${priceString(extraPrice)} EUR`
     }
     if (productionMonthlyPrice) {
