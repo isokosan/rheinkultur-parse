@@ -641,7 +641,7 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   const headerRow = worksheet.getRow(1)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
   headerRow.height = 24
-  const filename = `Rechnung ${invoice.get('lexNo') || ''} Standorte`
+  const filename = `${invoice.get('lexNo') || ''} Rechnungsdetails`.trim()
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
   return workbook.xlsx.write(res).then(function () {

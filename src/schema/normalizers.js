@@ -37,12 +37,12 @@ module.exports = {
         companyId: defined,
         companyPersonId: defined,
         accType (val) {
-          return ACC_TYPES.includes(val) ? val : null
+          return Object.keys(ACC_TYPES).includes(val) ? val : null
         },
         distributorRoles (val) {
           val = val || []
           if (!Array.isArray(val)) val = [val]
-          val = val.filter(role => DISTRIBUTOR_ROLES.includes(role))
+          val = val.filter(role => Object.values(DISTRIBUTOR_ROLES).includes(role))
           return val.length ? val : null
         }
       }

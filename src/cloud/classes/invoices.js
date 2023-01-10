@@ -62,7 +62,7 @@ const Invoice = Parse.Object.extend('Invoice', {
     if (periodStart && periodEnd) {
       const [start, end] = [periodStart, periodEnd]
         .map(dateString => moment(dateString).format('DD.MM.YYYY'))
-      lines.push(`Abrechnungszeitraum: ${start} - ${end} (${durationString(periodEnd, periodStart)})`)
+      lines.push(`Abrechnungszeitraum: von ${start} bis ${end} (${durationString(periodEnd, periodStart)})`)
     }
     const motive = booking?.get('motive') || contract?.get('motive')
     if (motive) {
