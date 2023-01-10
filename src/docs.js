@@ -19,9 +19,9 @@ async function getReplaceTextRequests (contract) {
   const getCountryText = value => value === 'DE' ? '' : countryNames[value]
 
   // production totals
-  let pTotal = sum(Object.values(contract.get('production').get('prices') || {}))
-  let eTotal = sum(Object.values(contract.get('production').get('extras') || {}))
-  const interestRate = contract.get('production').get('interestRate') || 0
+  let pTotal = sum(Object.values(contract.get('production')?.get('prices') || {}))
+  let eTotal = sum(Object.values(contract.get('production')?.get('extras') || {}))
+  const interestRate = contract.get('production')?.get('interestRate') || 0
   pTotal = round2(pTotal * (1 + interestRate / 100))
   eTotal = round2(eTotal * (1 + interestRate / 100))
 
@@ -101,7 +101,7 @@ const getCubeAddress = ({ str, hsnr, plz, ort }) => [str, hsnr + ',', plz, ort].
 async function getCubesListReplaceRequest (contract) {
   const cubes = await getCubeSummaries(contract.get('cubeIds'))
   const production = contract.get('production')
-  const interestRate = production.get('interestRate') || 0
+  const interestRate = production?.get('interestRate') || 0
   let cubesListText = ''
   let i = 1
   for (const cube of Object.values(cubes)) {

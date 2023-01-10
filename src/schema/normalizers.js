@@ -61,7 +61,7 @@ module.exports = {
       const FIELD_NORMALIZERS = {
         name: normalizeString,
         dueDays: x => normalizeInt(x) ?? 14,
-        paymentType: x => ['0', '1'].includes(x) || '0',
+        paymentType: x => parseInt(['0', '1'].includes(x) ? x : '0'),
         contractDefaults (defaults = {}) {
           const { pricingModel, fixedPrice, fixedPriceMap, gradualPriceMapId } = defaults
           const billingCycle = normalizeInt(defaults.billingCycle) || undefined

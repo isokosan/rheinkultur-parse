@@ -41,8 +41,8 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   const worksheet = workbook.addWorksheet('CityCubes')
   worksheet.columns = [
     { header: 'CityCube ID', key: 'id', width: 30 },
+    { header: 'Verifiziert', key: 'verified', width: 20 },
     { header: 'Gehäusetyp', key: 'htCode', width: 20 },
-    { header: 'Gehäusetyp TLK', key: 'hti', width: 20 },
     { header: 'Straße', key: 'str', width: 15 },
     { header: 'Hausnummer', key: 'hsnr', width: 15 },
     { header: 'PLZ', key: 'plz', width: 10 },
@@ -78,7 +78,8 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
     }
     pointInTimeId = pit_id
     for (const row of hits.map(({ _source: doc }) => {
-      doc.htCode = housingTypes[doc.htId]?.code || ''
+      doc.verified = doc.vAt ? 'Ja' : ''
+      doc.htCode = housingTypes[doc.htId]?.code || doc.hti
       doc.stateName = states[doc.stateId]?.name || ''
       doc.lat = doc.gp.lat
       doc.lon = doc.gp.lon

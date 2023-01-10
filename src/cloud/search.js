@@ -198,8 +198,7 @@ Parse.Cloud.define('search', async ({
       bool.must.push({
         bool: {
           should: [
-            { bool: { must_not: { exists: { field: 'booking' } } } },
-            { bool: { must_not: { exists: { field: 'contract' } } } },
+            { bool: { must_not: { exists: { field: 'order' } } } },
             { bool: { must_not: { exists: { field: 'nMR' } } } },
             { bool: { must_not: { exists: { field: 'MBfD' } } } },
             { bool: { must_not: { exists: { field: 'PG' } } } },
