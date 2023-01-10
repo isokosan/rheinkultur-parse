@@ -1,3 +1,10 @@
+## [0.13.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.1...0.13.2) (2023-01-10)
+
+
+### Bug Fixes
+
+* bug in paymentType normalizer ([fc1ad26](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fc1ad26346fcfbcdf4f15802fda67915008f6225))
+
 ## [0.13.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.0...0.13.1) (2023-01-10)
 
 
