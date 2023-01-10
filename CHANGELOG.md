@@ -1,3 +1,10 @@
+## [0.13.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.2...0.13.3) (2023-01-10)
+
+
+### Bug Fixes
+
+* email code ([d1783fb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d1783fbe59e6544d6ef23143be282f0acd7d8129))
+
 ## [0.13.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.1...0.13.2) (2023-01-10)
 
 
