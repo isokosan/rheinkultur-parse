@@ -22,30 +22,29 @@ const buildMailHtml = ({ template, variables }) => fs
   .readFile(path.join(BASE_DIR, `/services/email/templates/${template}.html`))
   .then(file => eval('`' + file.toString() + '`')) // eslint-disable-line no-eval
 
-const sendMail = async function ({ from, to, cc, bcc, replyTo, subject, html, template, variables, attachments }, skip) {
+const sendMail = async function ({ to, subject, html, template, variables, attachments }, skip) {
   if (!html && template) {
     html = await buildMailHtml({ template, variables })
   }
   const text = htmlToText(html, { wordwrap: 130 })
-  from = from || process.env.MAIL_FROM
-  const devTo = await Parse.Config.get().then(config => config.get('mailToDevelopment'))
+  const devTo = DEVELOPMENT && process.env.MAIL_DEV_TO
   const mail = {
-    from,
-    replyTo,
+    from: process.env.MAIL_FROM,
     to: devTo || to,
-    cc: devTo ? undefined : cc,
-    bcc: devTo ? undefined : bcc,
+    replyTo: process.env.MAIL_REPLY_TO,
+    cc: devTo ? undefined : process.env.MAIL_CC,
+    bcc: devTo ? undefined : process.env.MAIL_BCC,
     subject,
     html,
     text,
     attachments
   }
-  DEVELOPMENT && consola.info('sending email', mail)
+  process.env.NODE_ENV === 'development' && consola.info('sending email', mail)
   if (skip) {
     return { skipped: 'skip', sentAt: (new Date()).toISOString(), accepted: [to], rejected: [] }
   }
   const response = await transporter.sendMail(mail)
-  DEVELOPMENT && consola.success('Preview message:', nodemailer.getTestMessageUrl(response) || response)
+  process.env.NODE_ENV === 'development' && consola.success('Preview message:', nodemailer.getTestMessageUrl(response) || response)
   const { accepted, rejected } = response
   if (!accepted.length) {
     throw new Error('E-Mail Adresse nicht akzeptiert.')

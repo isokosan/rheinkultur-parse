@@ -310,15 +310,6 @@ async function validateContractFinalize (contract, skipCubeValidations) {
     throw new Error('Sie müssen mindestens einen CityCube hinzugefügt haben, um den Vertrag zu finalisieren.')
   }
 
-  // check if all cubes are verified
-  const unverifiedCubes = await $query('Cube')
-    .containedIn('objectId', cubeIds)
-    .equalTo('vAt', null)
-    .count({ useMasterKey: true })
-  if (unverifiedCubes > 0 && !skipCubeValidations) {
-    throw new Error('Alle CityCubes müssen verifiziert sein, um den Vertrag zu finalisieren.')
-  }
-
   // check if all cubes are available
   await checkIfCubesAreAvailable(cubeIds, contract.get('startsAt'))
 

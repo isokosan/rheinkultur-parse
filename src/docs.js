@@ -110,7 +110,7 @@ async function getCubesListReplaceRequest (contract) {
     let extraPrice
     let productionMonthlyPrice
     let text = `\n${i}. Standort: ${address}`
-    text += `\nGehäusetyp: ${cube.ht ? cube.ht.code : 'Unbekkant'}`
+    text += `\nGehäusetyp: ${cube.ht ? cube.ht.code : 'Unbekannt'}`
     text += `\nCityCube ID: ${cube.objectId}`
     if (production) {
       const printPackage = production.get('printPackages')[cube.objectId]
