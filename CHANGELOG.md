@@ -1,3 +1,10 @@
+## [0.13.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.0...0.13.1) (2023-01-10)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @googlemaps/google-maps-services-js to v3.3.26 ([003293c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/003293ca8be09efc76284c838a3eee0f6e154323))
+
 # [0.13.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.12.1...0.13.0) (2023-01-09)
 
 
