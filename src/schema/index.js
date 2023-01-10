@@ -378,7 +378,7 @@ const schemaDefinitions = {
       // Payment
       paymentType: { type: 'Number' }, // PAYMENT_TYPES
       dueDays: { type: 'Number', required: true, default: 14 },
-      dueDate: { type: 'Date', required: true },
+      // dueDate: { type: 'String', required: true },
 
       media: { type: 'Object' },
       /*

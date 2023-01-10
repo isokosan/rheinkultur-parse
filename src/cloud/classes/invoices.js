@@ -180,7 +180,7 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
   }
 
   // dueDate
-  invoice.set('dueDate', moment(invoice.get('date')).add(invoice.get('dueDays'), 'days').toDate())
+  // invoice.set('dueDate', moment(invoice.get('date')).add(invoice.get('dueDays'), 'days').format('YYYY-MM-DD'))
 
   // total
   if (invoice.get('status') < 2 && invoice.get('lineItems')) {

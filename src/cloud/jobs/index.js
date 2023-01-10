@@ -44,16 +44,18 @@ const createQueue = key => new Queue(key, queueOptions)
 
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
-  // end_extend: {
-  //   name: 'Verträge/Buchungen beenden/verlängern.',
-  //   timeoutMinutes: 30
-  //   // cron: '0 0 * * *' // nightly
-  // },
-  // issue_invoices: {
-  //   name: 'Rechnungen mit heutigen Datum abschliessen.',
-  //   timeoutMinutes: 120
-  //   // cron: '0 * * * *' // hourly
-  // },
+  end_extend: {
+    onlyDev: true,
+    name: 'Verträge/Buchungen beenden/verlängern.',
+    timeoutMinutes: 30
+    // cron: '0 0 * * *' // nightly
+  },
+  issue_invoices: {
+    onlyDev: true,
+    name: 'Rechnungen mit heutigen Datum abschliessen.',
+    timeoutMinutes: 120
+    // cron: '0 * * * *' // hourly
+  },
   reindex_autocompletes: {
     name: 'Aktualisierung von Suchindexen (Straßen und Orte).',
     timeoutMinutes: 15,
@@ -91,7 +93,7 @@ Parse.Cloud.define('setScheduleNotificationsEmailConfig', function ({ params: { 
 let healthQueue
 const updateQueues = {}
 for (const key of Object.keys(updateJobs)) {
-  if (process.env.PARSE_SERVER_MODE === 'production' && updateJobs[key].onlyDev) {
+  if (!DEVELOPMENT && updateJobs[key].onlyDev) {
     continue
   }
   updateQueues[key] = createQueue(key)

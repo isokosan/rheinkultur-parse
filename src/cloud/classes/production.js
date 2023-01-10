@@ -25,7 +25,7 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
 
   if (production.get('billing') && !production.get('total')) {
     // TOTRANSLATE
-    throw new Error('Total is required for billing')
+    throw new Error('Preis kann nicht null sein, bitte Preis eintragen oder Produktion nicht abrechnen auswählen.')
   }
 
   const bookingOrContract = production.get('booking') || production.get('contract')
