@@ -1,3 +1,10 @@
+## [0.13.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.3...0.13.4) (2023-01-10)
+
+
+### Bug Fixes
+
+* contract-cancel disassembly bug ([ca508c7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ca508c7369269fe8298b1cb597bcd2e039d93230))
+
 ## [0.13.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.2...0.13.3) (2023-01-10)
 
 
