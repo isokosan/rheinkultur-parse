@@ -1010,7 +1010,7 @@ Parse.Cloud.define('contract-cancel', async ({
     audit.data.discardedInvoices = discardedInvoices
   }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true, recalculateGradualInvoices: true } })
-  if (disassemblyStart) {
+  if (contract.get('production') && disassemblyStart) {
     await contract.get('production')
       .set({ disassemblyStart })
       .save(null, { useMasterKey: true })
