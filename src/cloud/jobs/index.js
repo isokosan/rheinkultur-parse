@@ -51,7 +51,6 @@ const updateJobs = {
     // cron: '0 0 * * *' // nightly
   },
   issue_invoices: {
-    onlyDev: true,
     name: 'Rechnungen mit heutigen Datum abschliessen.',
     timeoutMinutes: 120
     // cron: '0 * * * *' // hourly

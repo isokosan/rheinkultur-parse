@@ -444,7 +444,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
 
   let message = 'Rechnung ausgestellt.'
   if (email === true) {
-    email = invoice.get('address').email
+    email = invoice.get('address').get('email')
   }
   email && await Parse.Cloud.run('invoice-send-mail', { id: invoice.id, email }, { useMasterKey: true })
     .then(() => { message += ` Email an ${email} gesendet.` })
