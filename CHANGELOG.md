@@ -1,3 +1,11 @@
+# [0.16.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.15.0...0.16.0) (2023-01-11)
+
+
+### Features
+
+* allow sending auto-invoices ([2b52055](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2b520551dfe7b58e3b30182afaa3b756ce6df9fb))
+* regenerate invoices (for when biling cycle changes) ([43e2e8d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/43e2e8d9191759d1c40c3d2f47b9ad042eeb7d07))
+
 # [0.15.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.14.2...0.15.0) (2023-01-11)
 
 
