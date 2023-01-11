@@ -744,6 +744,29 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   return i
 }, { requireUser: true })
 
+// deletes and recreates planned invoices
+// TODO: add extended planned invoices as well
+Parse.Cloud.define('contract-regenerate-planned-invoices', async ({ params: { id: contractId }, user }) => {
+  const contract = await $getOrFail(Contract, contractId, ['company'])
+  const plannedInvoices = await $query('Invoice').equalTo('contract', contract).equalTo('status', 1).find({ useMasterKey: true })
+  for (const invoice of plannedInvoices) {
+    await invoice.destroy({ useMasterKey: true })
+  }
+  // generate invoices
+  const Invoice = Parse.Object.extend('Invoice')
+  for (const item of await getInvoicesPreview(contract)) {
+    consola.info(item.date, item.total)
+    const sameDateInvoice = await $query(Invoice).equalTo('contract', contract).equalTo('date', item.date).first({ useMasterKey: true })
+    if (sameDateInvoice) {
+      consola.warn(sameDateInvoice.id)
+      continue
+    }
+    consola.success('saving invoice')
+    const invoice = new Invoice(item)
+    await invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } })
+  }
+}, { requireUser: true })
+
 Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params: { id: contractId, cancellations }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
   // check if there are issued invoices that fall under the cancellation dates

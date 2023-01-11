@@ -15,6 +15,33 @@ Parse.Cloud.beforeSave(Address, async ({ object: address }) => {
 })
 
 Parse.Cloud.afterSave(Address, async ({ object: address, context: { audit } }) => { $audit(address.get('company'), audit) })
+
+Parse.Cloud.beforeDelete(Address, async ({ object: address }) => {
+  // check primaryAddress / secondaryAddress
+  const company = address.get('company')
+  await company.fetch({ useMasterKey: true })
+  if (company.get('address')?.id === address.id) {
+    throw new Error('Please unset as primary address before deleting it.')
+  }
+  if (company.get('invoiceAddress')?.id === address.id) {
+    throw new Error('Please unset as primary invoice address before deleting it.')
+  }
+  // check all contracts
+  // check all invoices
+  // check all creditNotes
+  await Promise.all([
+    $query('Contract').equalTo('address', address),
+    $query('Contract').equalTo('invoiceAddress', address),
+    $query('Invoice').equalTo('address', address),
+    $query('CreditNote').equalTo('address', address)
+  ].map(async query => {
+    const count = await query.count({ useMasterKey: true })
+    if (count) {
+      throw new Error('Address is used in a contract, invoice or credit note.')
+    }
+  }))
+})
+
 Parse.Cloud.afterDelete(Address, async ({ object: address, context: { audit } }) => { $audit(address.get('company'), audit) })
 
 Parse.Cloud.afterFind(Address, ({ objects: addresses }) => {
