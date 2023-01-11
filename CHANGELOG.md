@@ -1,3 +1,10 @@
+## [0.14.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.14.1...0.14.2) (2023-01-11)
+
+
+### Bug Fixes
+
+* password reset email ([cdcee2a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cdcee2ab5ee202ea98ba6f74880113151d167cc2))
+
 ## [0.14.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.14.0...0.14.1) (2023-01-11)
 
 
