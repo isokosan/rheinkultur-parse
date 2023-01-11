@@ -37,9 +37,16 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
   contract.set('cubeCount', (contract.get('cubeIds') || []).length)
 })
 
-Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculateGradualInvoices } }) => {
+Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculatePlannedInvoices, recalculateGradualInvoices } }) => {
   setCubeStatuses && await setCubeOrderStatus(contract)
 
+  if (recalculatePlannedInvoices) {
+    Parse.Cloud.run(
+      'contract-update-planned-invoices',
+      { id: contract.id },
+      { useMasterKey: true }
+    )
+  }
   if (recalculateGradualInvoices && contract.get('gradualPriceMap')) {
     Parse.Cloud.run(
       'recalculate-gradual-invoices',

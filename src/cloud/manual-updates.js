@@ -106,3 +106,16 @@ Parse.Cloud.define('manual-updates-update-company-due-days', () => {
   updateCompanyDueDates()
   return 'ok'
 }, { requireMaster: true })
+
+// Update contract cube statuses and recalculate planned invoices
+async function refreshContracts (contractNos) {
+  const contracts = await $query('Contract').containedIn('no', contractNos).find({ useMasterKey: true })
+  for (const contract of contracts) {
+    await contract.save(null, { useMasterKey: true, context: { setCubeStatuses: true, recalculatePlannedInvoices: true } })
+    consola.info(`refreshed contract ${contract.get('no')}`)
+  }
+}
+Parse.Cloud.define('manual-updates-refresh-contracts', () => {
+  refreshContracts()
+  return 'ok'
+}, { requireMaster: true })
