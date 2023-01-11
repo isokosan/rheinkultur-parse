@@ -1,3 +1,10 @@
+## [0.14.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.14.0...0.14.1) (2023-01-11)
+
+
+### Bug Fixes
+
+* rollback semantic (node version incompatible) ([1ef0f32](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1ef0f32d2e27512b33a1cb33665363ac78170223))
+
 # [0.14.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.4...0.14.0) (2023-01-11)
 
 
