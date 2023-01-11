@@ -1,3 +1,15 @@
+# [0.15.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.14.2...0.15.0) (2023-01-11)
+
+
+### Bug Fixes
+
+* missing params from contract refresh fn ([b82836f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b82836f5bd45a86d7afadf89f8686c57467018b5))
+
+
+### Features
+
+* add manual update function for contract updates ([338a95c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/338a95cce146a4d5aa5c72bea7d6f4ab7a5d4cbc))
+
 ## [0.14.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.14.1...0.14.2) (2023-01-11)
 
 
