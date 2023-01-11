@@ -1,3 +1,10 @@
+# [0.14.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.4...0.14.0) (2023-01-11)
+
+
+### Features
+
+* validate credit note and invoice dates, checking future and previous year documents ([768734a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/768734a9f5918d9f86eadab5ac5e3fe4374f7a7d))
+
 ## [0.13.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.13.3...0.13.4) (2023-01-10)
 
 
