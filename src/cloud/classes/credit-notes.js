@@ -92,6 +92,22 @@ const CreditNote = Parse.Object.extend('CreditNote', {
 // late belegungstart (contract) OK
 // special cases (custom)
 
+async function validateCreditNoteDate (dateOfNewCreditNote) {
+  if (!dateOfNewCreditNote) { throw new Error('Es fehlt das Datum der Gutschrift.') }
+  if (moment(await $today()).isBefore(dateOfNewCreditNote, 'day')) {
+    throw new Error('Das Datum der Gutschrift ist noch nicht erreicht.')
+  }
+  const lastIssuedCreditNoteDate = await $query(CreditNote)
+    .greaterThanOrEqualTo('status', 2)
+    .descending('date')
+    .select('date')
+    .first({ useMasterKey: true })
+    .then(creditNote => creditNote ? creditNote.get('date') : null)
+  if (lastIssuedCreditNoteDate && moment(lastIssuedCreditNoteDate).isAfter(dateOfNewCreditNote, 'year')) {
+    throw new Error('Sie können keine Gutschrift für das vergangene Jahr ausstellen, wenn Sie bereits eine Gutschrift für das neue Jahr ausgestellt haben.')
+  }
+}
+
 function getCreditNoteTotals (lineItems, date) {
   let netTotal = 0
   for (const item of lineItems) {
@@ -270,9 +286,9 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
   if (creditNote.get('status') > 1) {
     throw new Error('Can only issue draft or planned creditNotes')
   }
-  if (moment(await $today()).isBefore(creditNote.get('date'), 'day')) {
-    throw new Error('Can\'t issue future creditNote')
-  }
+
+  await validateCreditNoteDate(creditNote.get('date'))
+
   if (creditNote.get('total') === 0) {
     throw new Error('Can\'t issue 0€ creditNote')
   }

@@ -90,6 +90,22 @@ const Invoice = Parse.Object.extend('Invoice', {
   }
 })
 
+async function validateInvoiceDate (dateOfNewInvoice) {
+  if (!dateOfNewInvoice) { throw new Error('Das Rechnungsdatum fehlt.') }
+  if (moment(await $today()).isBefore(dateOfNewInvoice, 'day')) {
+    throw new Error('Rechnungsdatum ist noch nicht erreicht.')
+  }
+  const lastIssuedInvoiceDate = await $query(Invoice)
+    .greaterThanOrEqualTo('status', 2)
+    .descending('date')
+    .select('date')
+    .first({ useMasterKey: true })
+    .then(invoice => invoice ? invoice.get('date') : null)
+  if (lastIssuedInvoiceDate && moment(lastIssuedInvoiceDate).isAfter(dateOfNewInvoice, 'year')) {
+    throw new Error('Sie können keine Rechnung für das vergangene Jahr ausstellen, wenn Sie bereits eine Rechnung für das neue Jahr ausgestellt haben.')
+  }
+}
+
 function getInvoiceTotals (lineItems, date) {
   let netTotal = 0
   for (const item of lineItems) {
@@ -363,9 +379,9 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
   if (invoice.get('status') > 1) {
     throw new Error('Diese Rechnung wurde bereits ausgestellt.')
   }
-  if (moment(await $today()).isBefore(invoice.get('date'), 'day')) {
-    throw new Error('Rechnungsdatum ist noch nicht erreicht.')
-  }
+
+  await validateInvoiceDate(invoice.get('date'))
+
   if (invoice.get('total') === 0) {
     throw new Error('Rechnungen mit einem Gesamtbetrag von 0€ können nicht ausgestellt werden.')
   }
