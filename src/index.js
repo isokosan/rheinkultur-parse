@@ -51,7 +51,7 @@ const initApp = async () => {
         multiTemplate: true,
         passwordTemplatePath: '/src/services/email/templates/password-template.html',
         passwordOptions: {
-          subject: 'Setze dein Passwort zurück',
+          subject: 'Passwort zurücksetzen',
           body: 'Bitte klicken Sie auf den Link unten, um Ihr Passwort zurückzusetzen.',
           btn: 'Passwort zurücksetzen'
         }
