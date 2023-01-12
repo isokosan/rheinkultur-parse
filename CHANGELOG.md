@@ -1,3 +1,10 @@
+## [0.19.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.0...0.19.1) (2023-01-12)
+
+
+### Bug Fixes
+
+* fetch with include contract addresses for invoice-regeneration ([2847a9d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2847a9da9c62d7899574223b9b40a19f11acf83a))
+
 # [0.19.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.18.1...0.19.0) (2023-01-12)
 
 
