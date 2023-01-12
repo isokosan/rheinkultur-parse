@@ -1,5 +1,9 @@
 module.exports = async function (job) {
-  const extendContractsQuery = $query('Contract')
+  const addressHasEmailQuery = $query('Address').notEqualTo('email', null)
+  const extendContractsQuery = Parse.Query.or(
+    $query('Contract').notEqualTo('invoiceAddress', null).matchesQuery('invoiceAddress', addressHasEmailQuery),
+    $query('Contract').equalTo('invoiceAddress', null).matchesQuery('address', addressHasEmailQuery)
+  )
     .equalTo('status', 3)
     .equalTo('canceledAt', null)
     .lessThan('autoExtendsAt', await $today())
@@ -37,7 +41,7 @@ module.exports = async function (job) {
     if (!contract) {
       break
     }
-    await Parse.Cloud.run('contract-extend', { id: contract.id }, { useMasterKey: true })
+    await Parse.Cloud.run('contract-extend', { id: contract.id, email: !DEVELOPMENT }, { useMasterKey: true })
     extendedContracts++
     job.progress(parseInt(100 * (extendedContracts + endedContracts + extendedBookings + endedBookings) / total))
   }

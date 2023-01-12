@@ -3,6 +3,7 @@ const { normalizeDateString, normalizeString, contracts: { UNSET_NULL_FIELDS, no
 const { round2, round5, priceString } = require('@/utils')
 const { getNewNo, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatus } = require('@/shared')
 const { generateContract } = require('@/docs')
+const sendMail = require('@/services/email')
 const { getInvoiceTotals } = require('./invoices')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
 
@@ -37,20 +38,12 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
   contract.set('cubeCount', (contract.get('cubeIds') || []).length)
 })
 
-Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculatePlannedInvoices, recalculateGradualInvoices } }) => {
+Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculatePlannedInvoices } }) => {
   setCubeStatuses && await setCubeOrderStatus(contract)
-
   if (recalculatePlannedInvoices) {
     Parse.Cloud.run(
       'contract-update-planned-invoices',
       { id: contract.id },
-      { useMasterKey: true }
-    )
-  }
-  if (recalculateGradualInvoices && contract.get('gradualPriceMap')) {
-    Parse.Cloud.run(
-      'recalculate-gradual-invoices',
-      { id: contract.get('gradualPriceMap').id },
       { useMasterKey: true }
     )
   }
@@ -298,7 +291,7 @@ async function getInvoicesPreview (contract) {
 }
 
 function validateProduction (production, cubeIds) {
-  const printPackages = production.get('printPackages')
+  const printPackages = production.get('printPackages') || {}
   for (const cubeId of cubeIds) {
     if (!(cubeId in printPackages) || !printPackages[cubeId]) {
       throw new Error('Sie müssen für alle CityCubes ein Belegungspaket auswählen.')
@@ -683,7 +676,7 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   contract.set({ status: 3 })
   const audit = { user, fn: 'contract-finalize' }
 
-  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: setCubeStatuses !== false, recalculateGradualInvoices: recalculateGradualInvoices !== false } })
+  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: setCubeStatuses !== false } })
 }, { requireUser: true })
 
 // TOAUDIT: regenerate changes
@@ -858,10 +851,11 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
  *   extended years is incremented
  *   new upcoming invoices are generated and current ones are updated if necessary
  */
-Parse.Cloud.define('contract-extend', async ({ params: { id: contractId }, user, context: { seedAsId } }) => {
+// email: true (the email defined in invoice address will be used) | string (the custom email will be used) | false (no email will be send)
+Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
-  const contract = await $getOrFail(Contract, contractId)
+  const contract = await $getOrFail(Contract, contractId, ['address', 'invoiceAddress'])
   if (contract.get('status') !== 3) {
     throw new Error('Nur laufende Verträge können verlängert werden.')
   }
@@ -884,107 +878,147 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId }, user,
     extendedDuration: (contract.get('extendedDuration') || 0) + autoExtendsBy
   })
   const audit = { user, fn: 'contract-extend', data: { autoExtendsBy, endsAt: [endsAt, contract.get('endsAt')] } }
-  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true, recalculateGradualInvoices: true } })
+  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  let message = 'Vertrag wurde verlängert.'
 
-  const newInvoices = []
-  // Generate new periodic invoices for one year
-  let periodStart = moment(endsAt).add(1, 'day')
-  while (true) {
-    const addMonths = billingCycle - (periodStart.month() % billingCycle)
-    const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
-    // if the periodStart carry reached the contractEnd break
-    const periodEnd = newEndsAt.isBetween(periodStart, nextPeriodStart)
-      ? newEndsAt.clone()
-      : nextPeriodStart.clone().subtract(1, 'days')
+  if (contract.get('pricingModel') !== 'zero') {
+    const newInvoices = []
+    // Generate new periodic invoices for one year
+    let periodStart = moment(endsAt).add(1, 'day')
+    while (true) {
+      const addMonths = billingCycle - (periodStart.month() % billingCycle)
+      const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
+      // if the periodStart carry reached the contractEnd break
+      const periodEnd = newEndsAt.isBetween(periodStart, nextPeriodStart)
+        ? newEndsAt.clone()
+        : nextPeriodStart.clone().subtract(1, 'days')
 
-    let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
-    if (periodStart.isAfter(invoiceDate, 'year')) {
-      invoiceDate = periodStart.clone().set('date', 2).format('YYYY-MM-DD')
-    }
-    // if invoicing period is at the end
-    if (contract.get('invoicingAt') === 'end') {
-      invoiceDate = periodEnd.clone().add(1, 'day').format('YYYY-MM-DD')
-      if (periodEnd.isBefore(invoiceDate, 'year')) {
-        invoiceDate = moment(invoiceDate).set('date', 2).format('YYYY-MM-DD')
+      let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
+      if (periodStart.isAfter(invoiceDate, 'year')) {
+        invoiceDate = periodStart.clone().set('date', 2).format('YYYY-MM-DD')
       }
-    }
-    const invoice = {
-      status: 1,
-      date: invoiceDate,
-      company: contract.get('company'),
-      address: contract.get('invoiceAddress') || contract.get('address'),
-      companyPerson: contract.get('companyPerson'),
-      paymentType: contract.get('paymentType'),
-      dueDays: contract.get('dueDays'),
-      contract,
-      tags: contract.get('tags'),
-      periodStart: periodStart.format('YYYY-MM-DD'),
-      periodEnd: periodEnd.format('YYYY-MM-DD'),
-      cubeCount: contract.get('cubeCount'),
-      agency: contract.get('agency')
-    }
-
-    const mediaItems = []
-    let monthlyTotal = 0
-    let mediaTotal = 0
-
-    if (contract.get('pricingModel') === 'gradual') {
-      const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
-      invoice.gradualCount = gradualCount
-      invoice.gradualPrice = gradualPrice
-    }
-
-    const earlyCancellations = contract.get('earlyCancellations') || {}
-    for (const cubeId of contract.get('cubeIds')) {
-      const monthly = invoice.gradualPrice || contract.get('monthlyMedia')?.[cubeId]
-      monthlyTotal += monthly
-      const cubeCanceledAt = earlyCancellations[cubeId]
-        ? moment(earlyCancellations[cubeId])
-        : null
-      // if cube is canceledEarly, and the early cancelation is before periodStart, skip
-      if (cubeCanceledAt && cubeCanceledAt.isBefore(periodStart)) {
-        continue
+      // if invoicing period is at the end
+      if (contract.get('invoicingAt') === 'end') {
+        invoiceDate = periodEnd.clone().add(1, 'day').format('YYYY-MM-DD')
+        if (periodEnd.isBefore(invoiceDate, 'year')) {
+          invoiceDate = moment(invoiceDate).set('date', 2).format('YYYY-MM-DD')
+        }
+      }
+      const invoice = {
+        status: 1,
+        date: invoiceDate,
+        company: contract.get('company'),
+        address: contract.get('invoiceAddress') || contract.get('address'),
+        companyPerson: contract.get('companyPerson'),
+        paymentType: contract.get('paymentType'),
+        dueDays: contract.get('dueDays'),
+        contract,
+        tags: contract.get('tags'),
+        periodStart: periodStart.format('YYYY-MM-DD'),
+        periodEnd: periodEnd.format('YYYY-MM-DD'),
+        cubeCount: contract.get('cubeCount'),
+        agency: contract.get('agency')
       }
 
-      const { total, months } = getPeriodTotal(periodStart, cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd) ? cubeCanceledAt : periodEnd, monthly)
-      mediaTotal += total
+      const mediaItems = []
+      let monthlyTotal = 0
+      let mediaTotal = 0
 
-      const mediaItem = {
-        cubeId,
-        orderId: `C:${contract.id}`,
-        months,
-        monthly,
-        total
+      if (contract.get('pricingModel') === 'gradual') {
+        const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
+        invoice.gradualCount = gradualCount
+        invoice.gradualPrice = gradualPrice
       }
-      if (cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd)) {
-        mediaItem.periodEnd = cubeCanceledAt.format('YYYY-MM-DD')
+
+      const earlyCancellations = contract.get('earlyCancellations') || {}
+      for (const cubeId of contract.get('cubeIds')) {
+        const monthly = invoice.gradualPrice || contract.get('monthlyMedia')?.[cubeId]
+        monthlyTotal += monthly
+        const cubeCanceledAt = earlyCancellations[cubeId]
+          ? moment(earlyCancellations[cubeId])
+          : null
+        // if cube is canceledEarly, and the early cancelation is before periodStart, skip
+        if (cubeCanceledAt && cubeCanceledAt.isBefore(periodStart)) {
+          continue
+        }
+
+        const { total, months } = getPeriodTotal(periodStart, cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd) ? cubeCanceledAt : periodEnd, monthly)
+        mediaTotal += total
+
+        const mediaItem = {
+          cubeId,
+          orderId: `C:${contract.id}`,
+          months,
+          monthly,
+          total
+        }
+        if (cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd)) {
+          mediaItem.periodEnd = cubeCanceledAt.format('YYYY-MM-DD')
+        }
+        mediaItems.push(mediaItem)
       }
-      mediaItems.push(mediaItem)
-    }
-    invoice.media = {
-      items: mediaItems,
-      monthlyTotal: round2(monthlyTotal),
-      total: round2(mediaTotal)
+      invoice.media = {
+        items: mediaItems,
+        monthlyTotal: round2(monthlyTotal),
+        total: round2(mediaTotal)
+      }
+
+      if (invoice.agency) {
+        invoice.commissionRate = getContractCommissionForYear(contract, periodStart.year())
+      }
+
+      invoice.lineItems = getInvoiceLineItems({ media: invoice.media })
+
+      Boolean(mediaTotal) && newInvoices.push(invoice)
+      if (periodEnd.format('YYYY-MM-DD') >= newEndsAt.format('YYYY-MM-DD')) {
+        break
+      }
+      periodStart = periodEnd.clone().add(1, 'days')
     }
 
-    if (invoice.agency) {
-      invoice.commissionRate = getContractCommissionForYear(contract, periodStart.year())
-    }
-
-    invoice.lineItems = getInvoiceLineItems({ media: invoice.media })
-
-    Boolean(mediaTotal) && newInvoices.push(invoice)
-    if (periodEnd.format('YYYY-MM-DD') >= newEndsAt.format('YYYY-MM-DD')) {
-      break
-    }
-    periodStart = periodEnd.clone().add(1, 'days')
+    await Parse.Object.saveAll(
+      newInvoices.map(item => new (Parse.Object.extend('Invoice'))(item)),
+      { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } }
+    )
+    message += ` ${newInvoices.length} neue Rechnungen generiert.`
   }
+  if (email === true) {
+    const address = contract.get('invoiceAddress') || contract.get('address')
+    email = address.get('email')
+    consola.warn(email, address.attributes)
+  }
+  email && await Parse.Cloud.run('contract-extend-send-mail', { id: contract.id, email }, { useMasterKey: true })
+    .then(() => { message += ` Email an ${email} gesendet.` })
+    .catch(consola.error)
 
-  await Parse.Object.saveAll(
-    newInvoices.map(item => new (Parse.Object.extend('Invoice'))(item)),
-    { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } }
-  )
-  return contract
+  return message
+}, { requireUser: true })
+
+Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractId, email }, user }) => {
+  if (!email) {
+    throw new Error(`Bad email ${email}`)
+  }
+  const contract = await $getOrFail(Contract, contractId, ['address', 'invoiceAddress'])
+  if (contract.get('status') !== 3) {
+    throw new Error('Can\'t send inactive contract extend mails')
+  }
+  const attachments = [{
+    filename: `${contract.get('no')} Verlängerung.pdf`,
+    contentType: 'application/pdf',
+    href: process.env.EXPORTS_SERVER_URL + '/contract-extend-pdf/' + contract.id
+  }]
+  const template = 'contract-extend'
+  const mailStatus = await sendMail({
+    to: email,
+    subject: `Vertragsverlängerung - ${contract.get('no')}`,
+    template,
+    variables: {
+      contract: contract.toJSON()
+    },
+    attachments
+  })
+  const audit = { fn: 'send-email', user, data: { template, mailStatus } }
+  return contract.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 /**
@@ -1039,7 +1073,7 @@ Parse.Cloud.define('contract-cancel', async ({
   if (Object.keys(discardedInvoices).length) {
     audit.data.discardedInvoices = discardedInvoices
   }
-  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true, recalculateGradualInvoices: true } })
+  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   if (contract.get('production') && disassemblyStart) {
     await contract.get('production')
       .set({ disassemblyStart })
@@ -1063,7 +1097,7 @@ Parse.Cloud.define('contract-end', async ({ params: { id: contractId }, user }) 
   }
   contract.set({ status: contract.get('canceledAt') ? 4 : 5 })
   const audit = { user, fn: 'contract-end' }
-  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true, recalculateGradualInvoices: true } })
+  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 
 /**

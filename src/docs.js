@@ -5,85 +5,16 @@ const { priceString, round2 } = require('@/utils')
 const { getCubeSummaries } = require('@/shared')
 const { PRINT_PACKAGE_TYPES, PRINT_PACKAGE_FACES } = require('@/schema/enums')
 
-const originFileId = '1Nq6R5_OCE-YE2DqcR178pv3WrtXtPuEgg4M3Lx1NfM8'
+const TEMPLATE_IDS = {
+  CONTRACT: '1Nq6R5_OCE-YE2DqcR178pv3WrtXtPuEgg4M3Lx1NfM8',
+  CONTRACT_EXTEND: '1soPjCe7rCQ9R_N-8aOFcwkCV6Shn-ZbdbGw2ouJ2_6I'
+}
 
-const freshCopy = name => drive.files.copy({ fileId: originFileId })
+const freshCopy = (fileId, name) => drive.files.copy({ fileId })
   .then(res => drive.files.update({ fileId: res.data.id, requestBody: { name } }))
   .then(res => res.data.id)
 
-async function getReplaceTextRequests (contract) {
-  const company = contract.get('company')
-  const billingCycle = contract.get('billingCycle')
-
-  const countryNames = await getCountries()
-  const getCountryText = value => value === 'DE' ? '' : countryNames[value]
-
-  // production totals
-  let pTotal = sum(Object.values(contract.get('production')?.get('prices') || {}))
-  let eTotal = sum(Object.values(contract.get('production')?.get('extras') || {}))
-  const interestRate = contract.get('production')?.get('interestRate') || 0
-  pTotal = round2(pTotal * (1 + interestRate / 100))
-  eTotal = round2(eTotal * (1 + interestRate / 100))
-
-  const productionTotal = pTotal ? priceString(pTotal) : '-'
-  const extrasTotal = eTotal ? priceString(eTotal) : '-'
-
-  const companyPerson = contract.get('companyPerson')
-  let contactPersonName = ''
-  if (companyPerson) {
-    const { prefix, firstName, lastName } = companyPerson.attributes
-    contactPersonName = [prefix, firstName, lastName].filter(x => x).join(' ')
-  }
-
-  const companyAddress = [
-    contract.get('address').get('name'),
-    contactPersonName,
-    contract.get('address').get('supplement'),
-    contract.get('address').get('street'),
-    `${contract.get('address').get('zip')} ${contract.get('address').get('city')}` + await getCountryText(contract.get('address').get('countryCode'))
-  ].filter(x => x).join('\n')
-
-  const invoiceAddress = !contract.get('invoiceAddress')
-    ? '(X) entspricht der Adresse Mieter'
-    : [
-      contract.get('invoiceAddress').get('name'),
-      contract.get('invoiceAddress').get('supplement'),
-      contract.get('invoiceAddress').get('street'),
-      `${contract.get('invoiceAddress').get('zip')} ${contract.get('invoiceAddress').get('city')}` + await getCountryText(contract.get('invoiceAddress').get('countryCode'))
-    ].filter(x => x).join('\n')
-
-  let autoExtends = 'verlängert sich nicht automatisch'
-  let autoExtendDetails = '.'
-  if (contract.get('autoExtendsAt')) {
-    autoExtends = 'verlängert sich automatisch'
-    autoExtendDetails = ` um jeweils weitere ${contract.get('autoExtendsBy') || 12} Monate, wenn er nicht ${contract.get('noticePeriod')} Monate vor Vertragsablauf schriftlich gekündigt wird.`
-  }
-
-  const replacements = {
-    companyName: company.get('name') || '',
-    COMPANY_NAME: (company.get('name') || '').toUpperCase(),
-    companyAddress,
-    invoiceAddress,
-    companyTaxNo: company.get('taxNo') || '',
-    contractNo: contract.get('no'),
-    motiv: contract.get('motive') ? 'Motiv: ' : '',
-    motive: contract.get('motive') ? `${contract.get('motive')}\n` : '',
-    monthlyMediaTotal: contract.get('pricingModel') === 'gradual'
-      ? 'Staffelkonditionen'
-      : priceString(sum(Object.values(contract.get('monthlyMedia')))),
-    productionTotal,
-    extrasTotal,
-    startsAt: moment(contract.get('startsAt')).format('DD.MM.YYYY'),
-    initialDuration: contract.get('initialDuration'),
-    autoExtends,
-    autoExtendDetails,
-    today: moment(await $today()).format('DD.MM.YYYY'),
-    m: billingCycle === 1 ? 'X' : '  ',
-    v: billingCycle === 3 ? 'X' : '  ',
-    h: billingCycle === 6 ? 'X' : '  ',
-    j: billingCycle === 12 ? 'X' : '  ',
-    contactPersonSig: contactPersonName ? `(${contactPersonName})` : ''
-  }
+function replacementsToRequests (replacements) {
   const requests = []
   for (const key of Object.keys(replacements)) {
     requests.push({
@@ -98,67 +29,142 @@ async function getReplaceTextRequests (contract) {
 
 const getCubeAddress = ({ str, hsnr, plz, ort }) => [str, hsnr + ',', plz, ort].join(' ')
 
-async function getCubesListReplaceRequest (contract) {
-  const cubes = await getCubeSummaries(contract.get('cubeIds'))
-  const production = contract.get('production')
-  const interestRate = production?.get('interestRate') || 0
-  let cubesListText = ''
-  let i = 1
-  for (const cube of Object.values(cubes)) {
-    const address = getCubeAddress(cube)
-    let productionPrice
-    let extraPrice
-    let productionMonthlyPrice
-    let text = `\n${i}. Standort: ${address}`
-    text += `\nGehäusetyp: ${cube.ht ? cube.ht.code : 'Unbekannt'}`
-    text += `\nCityCube ID: ${cube.objectId}`
-    if (production) {
-      const printPackage = production.get('printPackages')[cube.objectId]
-      const printFaces = []
-      for (const face of Object.keys(printPackage.faces)) {
-        if (face === 'side') {
-          printFaces.push(printPackage.faces[face] === 1 ? 'Eine Seite' : 'Beide Seite')
-          continue
-        }
-        printFaces.push(PRINT_PACKAGE_FACES[face])
-      }
-      productionPrice = production.get('prices')?.[cube.objectId]
-      extraPrice = production.get('extras')?.[cube.objectId]
-      productionMonthlyPrice = production.get('monthlies')?.[cube.objectId]
-      text += `\nBelegung: ${printFaces.join(' + ')}`
-      text += `\nMaterial: ${PRINT_PACKAGE_TYPES[printPackage.type]} Nr.: ${printPackage.no}`
-    }
-    const monthlyPriceLine = contract.get('pricingModel') === 'gradual'
-      ? 'Monatsmiete: Staffelkonditionen'
-      : `Monatsmiete: ${priceString(contract.get('monthlyMedia')[cube.objectId])} EUR`
-    text += '\n\n' + monthlyPriceLine
-    if (productionPrice) {
-      productionPrice = round2(productionPrice * (1 + interestRate / 100))
-      text += `\nProduktions- und Montagekosten: ${priceString(productionPrice)} EUR`
-    }
-    if (extraPrice) {
-      extraPrice = round2(extraPrice * (1 + interestRate / 100))
-      text += `\nSonderkosten: ${priceString(extraPrice)} EUR`
-    }
-    if (productionMonthlyPrice) {
-      text += `\n(Monatlich: ${priceString(productionMonthlyPrice)} EUR)`
-    }
-    text += '\n'
-    cubesListText += text
-    i++
-  }
-  return {
-    replaceAllText: {
-      replaceText: cubesListText,
-      containsText: { text: '{cubesList}', matchCase: true }
-    }
-  }
-}
-
 const generateContract = async (contract) => {
+  async function getReplaceTextRequests (contract) {
+    const company = contract.get('company')
+    const billingCycle = contract.get('billingCycle')
+
+    const countryNames = await getCountries()
+    const getCountryText = value => value === 'DE' ? '' : countryNames[value]
+
+    // production totals
+    let pTotal = sum(Object.values(contract.get('production')?.get('prices') || {}))
+    let eTotal = sum(Object.values(contract.get('production')?.get('extras') || {}))
+    const interestRate = contract.get('production')?.get('interestRate') || 0
+    pTotal = round2(pTotal * (1 + interestRate / 100))
+    eTotal = round2(eTotal * (1 + interestRate / 100))
+
+    const productionTotal = pTotal ? priceString(pTotal) : '-'
+    const extrasTotal = eTotal ? priceString(eTotal) : '-'
+
+    const companyPerson = contract.get('companyPerson')
+    let contactPersonName = ''
+    if (companyPerson) {
+      const { prefix, firstName, lastName } = companyPerson.attributes
+      contactPersonName = [prefix, firstName, lastName].filter(x => x).join(' ')
+    }
+
+    const companyAddress = [
+      contract.get('address').get('name'),
+      contactPersonName,
+      contract.get('address').get('supplement'),
+      contract.get('address').get('street'),
+      `${contract.get('address').get('zip')} ${contract.get('address').get('city')}` + await getCountryText(contract.get('address').get('countryCode'))
+    ].filter(x => x).join('\n')
+
+    const invoiceAddress = !contract.get('invoiceAddress')
+      ? '(X) entspricht der Adresse Mieter'
+      : [
+        contract.get('invoiceAddress').get('name'),
+        contract.get('invoiceAddress').get('supplement'),
+        contract.get('invoiceAddress').get('street'),
+        `${contract.get('invoiceAddress').get('zip')} ${contract.get('invoiceAddress').get('city')}` + await getCountryText(contract.get('invoiceAddress').get('countryCode'))
+      ].filter(x => x).join('\n')
+
+    let autoExtends = 'verlängert sich nicht automatisch'
+    let autoExtendDetails = '.'
+    if (contract.get('autoExtendsAt')) {
+      autoExtends = 'verlängert sich automatisch'
+      autoExtendDetails = ` um jeweils weitere ${contract.get('autoExtendsBy') || 12} Monate, wenn er nicht ${contract.get('noticePeriod')} Monate vor Vertragsablauf schriftlich gekündigt wird.`
+    }
+
+    return replacementsToRequests({
+      companyName: company.get('name') || '',
+      COMPANY_NAME: (company.get('name') || '').toUpperCase(),
+      companyAddress,
+      invoiceAddress,
+      companyTaxNo: company.get('taxNo') || '',
+      contractNo: contract.get('no'),
+      motiv: contract.get('motive') ? 'Motiv: ' : '',
+      motive: contract.get('motive') ? `${contract.get('motive')}\n` : '',
+      monthlyMediaTotal: contract.get('pricingModel') === 'gradual'
+        ? 'Staffelkonditionen'
+        : priceString(sum(Object.values(contract.get('monthlyMedia')))),
+      productionTotal,
+      extrasTotal,
+      startsAt: moment(contract.get('startsAt')).format('DD.MM.YYYY'),
+      initialDuration: contract.get('initialDuration'),
+      autoExtends,
+      autoExtendDetails,
+      today: moment(await $today()).format('DD.MM.YYYY'),
+      m: billingCycle === 1 ? 'X' : '  ',
+      v: billingCycle === 3 ? 'X' : '  ',
+      h: billingCycle === 6 ? 'X' : '  ',
+      j: billingCycle === 12 ? 'X' : '  ',
+      contactPersonSig: contactPersonName ? `(${contactPersonName})` : ''
+    })
+  }
+
+  async function getCubesListReplaceRequest (contract) {
+    const cubes = await getCubeSummaries(contract.get('cubeIds'))
+    const production = contract.get('production')
+    const interestRate = production?.get('interestRate') || 0
+    let cubesListText = ''
+    let i = 1
+    for (const cube of Object.values(cubes)) {
+      const address = getCubeAddress(cube)
+      let productionPrice
+      let extraPrice
+      let productionMonthlyPrice
+      let text = `\n${i}. Standort: ${address}`
+      text += `\nGehäusetyp: ${cube.ht ? cube.ht.code : 'Unbekannt'}`
+      text += `\nCityCube ID: ${cube.objectId}`
+      if (production) {
+        const printPackage = production.get('printPackages')[cube.objectId]
+        const printFaces = []
+        for (const face of Object.keys(printPackage.faces)) {
+          if (face === 'side') {
+            printFaces.push(printPackage.faces[face] === 1 ? 'Eine Seite' : 'Beide Seite')
+            continue
+          }
+          printFaces.push(PRINT_PACKAGE_FACES[face])
+        }
+        productionPrice = production.get('prices')?.[cube.objectId]
+        extraPrice = production.get('extras')?.[cube.objectId]
+        productionMonthlyPrice = production.get('monthlies')?.[cube.objectId]
+        text += `\nBelegung: ${printFaces.join(' + ')}`
+        text += `\nMaterial: ${PRINT_PACKAGE_TYPES[printPackage.type]} Nr.: ${printPackage.no}`
+      }
+      const monthlyPriceLine = contract.get('pricingModel') === 'gradual'
+        ? 'Monatsmiete: Staffelkonditionen'
+        : `Monatsmiete: ${priceString(contract.get('monthlyMedia')[cube.objectId])} EUR`
+      text += '\n\n' + monthlyPriceLine
+      if (productionPrice) {
+        productionPrice = round2(productionPrice * (1 + interestRate / 100))
+        text += `\nProduktions- und Montagekosten: ${priceString(productionPrice)} EUR`
+      }
+      if (extraPrice) {
+        extraPrice = round2(extraPrice * (1 + interestRate / 100))
+        text += `\nSonderkosten: ${priceString(extraPrice)} EUR`
+      }
+      if (productionMonthlyPrice) {
+        text += `\n(Monatlich: ${priceString(productionMonthlyPrice)} EUR)`
+      }
+      text += '\n'
+      cubesListText += text
+      i++
+    }
+    return {
+      replaceAllText: {
+        replaceText: cubesListText,
+        containsText: { text: '{cubesList}', matchCase: true }
+      }
+    }
+  }
+
   await contract.fetchWithInclude(['company', 'address', 'invoiceAddress', 'companyPerson', 'production'], { useMasterKey: true })
   const name = `${contract.get('status') < 2 ? 'Angebot' : 'Vertrag'} ${contract.get('no')}`
-  const fileId = await freshCopy(name)
+  const fileId = await freshCopy(TEMPLATE_IDS.CONTRACT, name)
   // Figured it out, you can only use G Suite domains. It is a bummer but in order to share file permission exclusively with a domain you need to have a G Suite account and verify that you own that domain - the domain needs to be linked with your G Suite account.
   await drive.permissions.create({
     fileId,
@@ -195,18 +201,56 @@ const generateContract = async (contract) => {
   return data.documentId
 }
 
+const generateContractExtend = async (contract) => {
+  async function getReplaceTextRequests (contract) {
+    const countryNames = await getCountries()
+    const getCountryText = value => value === 'DE' ? '' : countryNames[value]
+
+    const companyAddress = [
+      contract.get('address').get('name'),
+      contract.get('address').get('supplement'),
+      contract.get('address').get('street'),
+      `${contract.get('address').get('zip')} ${contract.get('address').get('city')}` + await getCountryText(contract.get('address').get('countryCode'))
+    ].filter(x => x).join('\n')
+
+    return replacementsToRequests({
+      companyAddress,
+      contractNo: contract.get('no'),
+      date: moment().format('DD.MM.YYYY')
+    })
+  }
+
+  await contract.fetchWithInclude(['address'], { useMasterKey: true })
+  const name = `${contract.get('no')} Verlängerung`
+  const fileId = await freshCopy(TEMPLATE_IDS.CONTRACT_EXTEND, name)
+
+  const { data } = await docs.documents.batchUpdate({
+    documentId: fileId,
+    requestBody: { requests: await getReplaceTextRequests(contract) }
+  })
+  return data.documentId
+}
+
+// TODO: Add a check to not remove fileIds saved in contracts BUT! we have to check production server
 // const cleanup = async () => {
-//   const fileIds = await drive.files.list({
-//     pageSize: 100,
-//     fields: 'nextPageToken, files(id, name)'
-//   }).then(res => res.data.files.map(file => file.id))
-//   return Promise.all(fileIds
-//     .filter(id => id !== originFileId)
-//     .map(fileId => drive.files.delete({ fileId }))
-//   )
+//   let i = 0
+//   while(true) {
+//     const fileIds = await drive.files.list({
+//       pageSize: 20,
+//       fields: 'nextPageToken, files(id, name)'
+//     })
+//       .then(res => res.data.files.map(file => file.id))
+//       .then(fileIds => fileIds.filter(fileId => !Object.values(TEMPLATE_IDS).includes(fileId)))
+//     consola.info('cleaning files', fileIds.length)
+//     if (!fileIds.length) { break }
+//     await Promise.all(fileIds.map(fileId => drive.files.delete({ fileId })))
+//     i += fileIds.length
+//   }
+//   consola.success(`cleaned ${i} files`)
 // }
 // cleanup()
 
 module.exports = {
-  generateContract
+  generateContract,
+  generateContractExtend
 }

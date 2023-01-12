@@ -45,13 +45,19 @@ const createQueue = key => new Queue(key, queueOptions)
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
   end_extend: {
-    onlyDev: true,
     name: 'Verträge/Buchungen beenden/verlängern.',
-    timeoutMinutes: 30
+    description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
+    timeoutMinutes: 120
     // cron: '0 0 * * *' // nightly
   },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
+    timeoutMinutes: 120
+    // cron: '0 * * * *' // hourly
+  },
+  send_issued_invoice_emails: {
+    name: 'Versenden von E-Mails mit ausgestellten Rechnungen.',
+    description: 'Sends emails with issued invoices, that have an email but none were sent. (Past 3 days)',
     timeoutMinutes: 120
     // cron: '0 * * * *' // hourly
   },
@@ -65,6 +71,12 @@ const updateJobs = {
     name: 'Aktualisierung von Suchindexen (CityCubes).',
     timeoutMinutes: 60,
     cron: '0 0 * * *', // nightly
+    notificationDuration: 48
+  },
+  recalculate_gradual_prices: {
+    name: 'Aktualisierung von ALDI preisen.',
+    timeoutMinutes: 5,
+    cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
   lex_ensure: {

@@ -122,6 +122,7 @@ async function getLexDocumentId (lexId) {
 }
 
 function updateGradualInvoice (invoice, gradualCount, gradualPrice) {
+  consola.info('updateGradualInvoice', invoice.id, gradualCount, gradualPrice)
   invoice.set('gradualCount', gradualCount)
   invoice.set('gradualPrice', gradualPrice)
   const { total: periodGradualTotal } = getPeriodTotal(invoice.get('periodStart'), invoice.get('periodEnd'), gradualPrice)
@@ -560,7 +561,7 @@ Parse.Cloud.define('invoice-recalculate-gradual-prices', async ({
 }, { requireUser: true })
 
 Parse.Cloud.define('recalculate-gradual-invoices', async ({ params: { id: gradualId } }) => {
-  consola.info('recalculating gradual invoices for ', gradualId)
+  consola.info(`Recalculating gradual invoices for ${gradualId}`)
   const gradualPriceMap = await $getOrFail('GradualPriceMap', gradualId)
   const contractsQuery = $query('Contract')
     .equalTo('gradualPriceMap', gradualPriceMap)
@@ -573,15 +574,16 @@ Parse.Cloud.define('recalculate-gradual-invoices', async ({ params: { id: gradua
     .distinct('date')
     .then(dates => Promise.all(dates.map(async date => ({ date, gradualCount: await getGradualCubeCount(gradualPriceMap, date) }))))
   for (const { date, gradualCount } of dates) {
+    // TODO: Check limit
     await baseQuery
       .equalTo('date', date)
+      .limit(1000)
       .find({ useMasterKey: true })
       .then(invoices => Promise.all(invoices.map((invoice) => {
         const gradualPrice = getGradualPrice(gradualCount, gradualPriceMap.get('map'))
         return updateGradualInvoice(invoice, gradualCount, gradualPrice)
       })))
   }
-  consola.success('recalculated gradual invoices')
 }, { requireMaster: true })
 
 module.exports = {

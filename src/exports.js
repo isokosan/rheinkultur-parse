@@ -9,10 +9,12 @@ Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MAS
 const excel = require('exceljs')
 
 const elastic = require('@/services/elastic')
+const { drive } = require('@/services/googleapis')
 const { getCubeSummaries } = require('@/shared')
 const { round2 } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
+const { generateContractExtend } = require('@/docs')
 
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
@@ -758,6 +760,21 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
+router.get('/contract-extend-pdf/:contractId', handleErrorAsync(async (req, res) => {
+  const { contractId } = req.params
+  const contract = await $getOrFail('Contract', contractId)
+  const fileId = await generateContractExtend(contract)
+  const response = await drive.files.export({ fileId, mimeType: 'application/pdf' }, { responseType: 'stream' })
+  return response.data
+    .on('error', consola.error)
+    .pipe(res)
+    .on('error', consola.error)
+    .on('finish', () => {
+      res.status(200).end()
+      drive.files.delete({ fileId })
+    })
 }))
 
 module.exports = router
