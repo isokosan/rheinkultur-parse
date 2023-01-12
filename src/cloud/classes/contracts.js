@@ -877,6 +877,7 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
     autoExtendsAt: newEndsAt.clone().subtract(contract.get('noticePeriod'), 'months').format('YYYY-MM-DD'),
     extendedDuration: (contract.get('extendedDuration') || 0) + autoExtendsBy
   })
+  let message = 'Vertrag wurde verlängert.'
 
   if (email === true) {
     const address = contract.get('invoiceAddress') || contract.get('address')
@@ -887,7 +888,6 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
 
   const audit = { user, fn: 'contract-extend', data: { autoExtendsBy, endsAt: [endsAt, contract.get('endsAt')] } }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-  let message = 'Vertrag wurde verlängert.'
 
   if (contract.get('pricingModel') !== 'zero') {
     const newInvoices = []
