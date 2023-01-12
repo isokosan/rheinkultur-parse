@@ -1,3 +1,10 @@
+## [0.19.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.1...0.19.2) (2023-01-12)
+
+
+### Bug Fixes
+
+* match planned invoice from periodStart-end ([f4f9d1a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f4f9d1aaf7a7131a787b50759a567f5cf170b76a))
+
 ## [0.19.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.0...0.19.1) (2023-01-12)
 
 
