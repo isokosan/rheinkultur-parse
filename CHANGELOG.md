@@ -1,3 +1,10 @@
+# [0.18.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.17.0...0.18.0) (2023-01-12)
+
+
+### Features
+
+* try to send email before extending contract, so that it only extends if customer is notified succesfully ([4240936](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4240936f2a5009b5bb424e001c0b22ac210c4d82))
+
 # [0.17.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.16.0...0.17.0) (2023-01-12)
 
 
