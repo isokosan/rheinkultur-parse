@@ -760,6 +760,20 @@ Parse.Cloud.define('contract-regenerate-planned-invoices', async ({ params: { id
   }
 }, { requireUser: true })
 
+// recreates canceled invoice
+Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id: invoiceId }, user }) => {
+  const canceledInvoice = await $getOrFail('Invoice', invoiceId, ['contract'])
+  const Invoice = Parse.Object.extend('Invoice')
+  // TODO: add extended planned invoices as well
+  const found = await getInvoicesPreview(canceledInvoice.get('contract'))
+    .then(items => items.filter(({ date }) => date === canceledInvoice.get('date')))
+  if (!found || found.length > 1) {
+    throw new Error('Can\'t find invoice or found multiple invoices.')
+  }
+  const invoice = new Invoice(found[0])
+  return invoice.save(null, { useMasterKey: true, context: { audit: { user, fn: 'invoice-regenerate-from-canceled' } } })
+}, { requireUser: true })
+
 Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params: { id: contractId, cancellations }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
   // check if there are issued invoices that fall under the cancellation dates

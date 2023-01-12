@@ -121,3 +121,25 @@ Parse.Cloud.define('manual-updates-refresh-contracts', ({ params: { nos } }) => 
   refreshContracts(nos)
   return 'ok'
 }, { requireMaster: true })
+
+Parse.Cloud.define('manual-updates-contract-external-order-nos', async ({ params: { dict } }) => {
+  let i = 0
+  let s = 0
+  for (const no of Object.keys(dict)) {
+    const contract = await $query('Contract').equalTo('no', no).first({ useMasterKey: true })
+    if (!contract) {
+      throw new Error(`Contract ${no} not found`)
+    }
+    const externalOrderNo = dict[no]
+    const changes = $changes(contract, { externalOrderNo })
+    if (!Object.keys(changes).length) {
+      s++
+      continue
+    }
+    contract.set({ externalOrderNo })
+    const audit = { fn: 'contract-update', data: { changes } }
+    await contract.save(null, { useMasterKey: true, context: { audit, recalculatePlannedInvoices: true } })
+    i++
+  }
+  return { i, s }
+}, { requireMaster: true })

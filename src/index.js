@@ -37,7 +37,7 @@ const initApp = async () => {
     allowClientClassCreation: false,
     allowCustomObjectId: true,
     cloud: path.join(__dirname, '/cloud/main.js'),
-    maxUploadSize: '500mb',
+    maxUploadSize: '100mb',
     sessionLength: 60 * 60 * 24 * 90, // 90 days
     emailAdapter: {
       module: 'parse-smtp-template',
