@@ -985,7 +985,6 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
   if (email === true) {
     const address = contract.get('invoiceAddress') || contract.get('address')
     email = address.get('email')
-    consola.warn(email, address.attributes)
   }
   email && await Parse.Cloud.run('contract-extend-send-mail', { id: contract.id, email }, { useMasterKey: true })
     .then(() => { message += ` Email an ${email} gesendet.` })
