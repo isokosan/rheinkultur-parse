@@ -1,3 +1,10 @@
+# [0.19.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.18.1...0.19.0) (2023-01-12)
+
+
+### Features
+
+* add update-external-order-nos to manual update fns ([1b9ff7e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1b9ff7ed66145b8a9983a25d32f2b6afab3affaa))
+
 ## [0.18.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.18.0...0.18.1) (2023-01-12)
 
 
