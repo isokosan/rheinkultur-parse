@@ -12,6 +12,7 @@ Parse.Cloud.beforeSave(Address, async ({ object: address }) => {
       throw new Error(`Country ${countryCode} is not recognized.`)
     }
   }
+  address.get('lex') && address.set('name', address.get('lex').name)
 })
 
 Parse.Cloud.afterSave(Address, async ({ object: address, context: { audit } }) => { $audit(address.get('company'), audit) })

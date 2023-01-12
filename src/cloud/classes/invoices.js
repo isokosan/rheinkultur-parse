@@ -389,7 +389,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
   if (invoice.get('total') === 0) {
     throw new Error('Rechnungen mit einem Gesamtbetrag von 0€ können nicht ausgestellt werden.')
   }
-  const { lex, name, supplement, street, zip, city, countryCode } = invoice.get('address').attributes
+  const { lex, supplement, street, zip, city, countryCode } = invoice.get('address').attributes
   if (!lex?.id) {
     throw new Error(`Die Abrechnungsaddresse ist noch nicht vollständig hinterlegt. Bitte überprüfen Sie die Stammdaten. (${invoice.id})`)
   }
@@ -402,7 +402,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
     voucherDate: moment(invoice.get('date'), 'YYYY-MM-DD').toDate(),
     address: {
       contactId: lex.id,
-      name,
+      name: lex.name,
       supplement,
       street,
       zip,

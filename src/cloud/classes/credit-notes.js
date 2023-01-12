@@ -300,7 +300,7 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
     }
   }
 
-  const { lex, name, supplement, street, zip, city, countryCode } = creditNote.get('address').attributes
+  const { lex, supplement, street, zip, city, countryCode } = creditNote.get('address').attributes
   if (!lex?.id) {
     throw new Error(`Die Abrechnungsaddresse ist noch nicht vollständig hinterlegt. Bitte überprüfen Sie die Stammdaten. (${invoice.id})`)
   }
@@ -309,8 +309,8 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
     archived: false,
     voucherDate: moment(creditNote.get('date'), 'YYYY-MM-DD').toDate(),
     address: {
-      contactId: lex?.id,
-      name,
+      contactId: lex.id,
+      name: lex.name,
       supplement,
       street,
       zip,
