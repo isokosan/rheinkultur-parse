@@ -1,3 +1,10 @@
+# [0.17.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.16.0...0.17.0) (2023-01-12)
+
+
+### Features
+
+* contract extend emails, invoice resend emails, gradual price jobs ([5a3530b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5a3530b934a356dd5afed01f877caf393b2e30ab))
+
 # [0.16.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.15.0...0.16.0) (2023-01-11)
 
 
