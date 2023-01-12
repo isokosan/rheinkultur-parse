@@ -877,6 +877,14 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
     autoExtendsAt: newEndsAt.clone().subtract(contract.get('noticePeriod'), 'months').format('YYYY-MM-DD'),
     extendedDuration: (contract.get('extendedDuration') || 0) + autoExtendsBy
   })
+
+  if (email === true) {
+    const address = contract.get('invoiceAddress') || contract.get('address')
+    email = address.get('email')
+  }
+  email && await Parse.Cloud.run('contract-extend-send-mail', { id: contract.id, email }, { useMasterKey: true })
+    .then(() => { message += ` Email an ${email} gesendet.` })
+
   const audit = { user, fn: 'contract-extend', data: { autoExtendsBy, endsAt: [endsAt, contract.get('endsAt')] } }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   let message = 'Vertrag wurde verlängert.'
@@ -982,14 +990,6 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
     )
     message += ` ${newInvoices.length} neue Rechnungen generiert.`
   }
-  if (email === true) {
-    const address = contract.get('invoiceAddress') || contract.get('address')
-    email = address.get('email')
-  }
-  email && await Parse.Cloud.run('contract-extend-send-mail', { id: contract.id, email }, { useMasterKey: true })
-    .then(() => { message += ` Email an ${email} gesendet.` })
-    .catch(consola.error)
-
   return message
 }, { requireUser: true })
 
