@@ -1,3 +1,10 @@
+## [0.18.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.18.0...0.18.1) (2023-01-12)
+
+
+### Bug Fixes
+
+* contract-extend message bug ([0b5187d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0b5187ddf2c3d84ef28ae3094d7b776205a9de0b))
+
 # [0.18.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.17.0...0.18.0) (2023-01-12)
 
 
