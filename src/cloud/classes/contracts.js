@@ -1024,7 +1024,7 @@ Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractI
   const template = 'contract-extend'
   const mailStatus = await sendMail({
     to: email,
-    subject: `Vertragsverlängerung - ${contract.get('no')}`,
+    subject: `CityCube Vertragsverlängerung ${contract.get('no')}`,
     template,
     variables: {
       contract: contract.toJSON()

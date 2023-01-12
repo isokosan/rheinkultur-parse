@@ -122,7 +122,7 @@ Parse.Cloud.define('manual-updates-refresh-contracts', ({ params: { nos } }) => 
   return 'ok'
 }, { requireMaster: true })
 
-Parse.Cloud.define('manual-updates-contract-external-order-nos', async ({ params: { dict } }) => {
+async function updateContractExternalNos (dict) {
   let i = 0
   let s = 0
   for (const no of Object.keys(dict)) {
@@ -141,5 +141,10 @@ Parse.Cloud.define('manual-updates-contract-external-order-nos', async ({ params
     await contract.save(null, { useMasterKey: true, context: { audit, recalculatePlannedInvoices: true } })
     i++
   }
-  return { i, s }
+  consola.info('updated contract external nos', { s, i })
+}
+
+Parse.Cloud.define('manual-updates-contract-external-order-nos', ({ params: { dict } }) => {
+  updateContractExternalNos(dict)
+  return 'ok'
 }, { requireMaster: true })

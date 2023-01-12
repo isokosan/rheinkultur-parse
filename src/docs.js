@@ -216,7 +216,7 @@ const generateContractExtend = async (contract) => {
     return replacementsToRequests({
       companyAddress,
       contractNo: contract.get('no'),
-      date: moment().format('DD.MM.YYYY')
+      date: moment(await $today()).format('DD.MM.YYYY')
     })
   }
 
