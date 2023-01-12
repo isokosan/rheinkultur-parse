@@ -1,3 +1,10 @@
+## [0.19.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.2...0.19.3) (2023-01-12)
+
+
+### Bug Fixes
+
+* use lex name in invoices, and make sure address name is updated when lex name is updated ([bba22d3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bba22d3102b7e46a93b9897f0b103ca827d027a2))
+
 ## [0.19.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.1...0.19.2) (2023-01-12)
 
 
