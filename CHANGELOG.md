@@ -1,3 +1,10 @@
+## [0.19.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.3...0.19.4) (2023-01-12)
+
+
+### Bug Fixes
+
+* manual updates timeout ([811f8e0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/811f8e0e5dc19e562551549f0a8eca0b077509b6))
+
 ## [0.19.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.2...0.19.3) (2023-01-12)
 
 
