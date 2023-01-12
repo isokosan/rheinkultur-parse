@@ -165,6 +165,9 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
   invoice.get('voucherStatus') === 'voided' && invoice.set('status', 3)
 
   const address = invoice.get('address')
+  if (!address) {
+    throw new Error('You can\'t save an invoice without an address')
+  }
   if (!address.get('lex')) {
     await address.fetch({ useMasterKey: true })
     if (!address.get('lex')) {
