@@ -67,7 +67,8 @@ const Invoice = Parse.Object.extend('Invoice', {
       lines.push(...[
         'Kunde: Telekom Deutschland GmbH',
         'Auftraggeber: Kinetic Germany GmbH',
-        'Produkt/Medium: CityCube'
+        'Produkt/Medium: CityCube',
+        'Belegungsart:  Frontbelegung des jeweiligen Schaltschrankes'
       ])
     }
 

@@ -60,7 +60,8 @@ const CreditNote = Parse.Object.extend('CreditNote', {
       lines.push(...[
         'Kunde: Telekom Deutschland GmbH',
         'Auftraggeber: Kinetic Germany GmbH',
-        'Produkt/Medium: CityCube'
+        'Produkt/Medium: CityCube',
+        'Belegungsart:  Frontbelegung des jeweiligen Schaltschrankes'
       ])
     }
 
