@@ -1,3 +1,10 @@
+# [0.21.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.20.0...0.21.0) (2023-01-13)
+
+
+### Features
+
+* add credit-note endpoints for pdf ([a2c33b0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a2c33b039aec21db9fe06d36be2825437f28255d))
+
 # [0.20.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.4...0.20.0) (2023-01-13)
 
 
