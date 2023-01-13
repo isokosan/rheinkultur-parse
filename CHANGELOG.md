@@ -1,3 +1,10 @@
+## [0.21.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.0...0.21.1) (2023-01-13)
+
+
+### Bug Fixes
+
+* add missing kinetic ([3aafca3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3aafca395a2b815dd7823917166e1db54e9e0e12))
+
 # [0.21.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.20.0...0.21.0) (2023-01-13)
 
 
