@@ -1,3 +1,10 @@
+## [0.21.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.1...0.21.2) (2023-01-13)
+
+
+### Bug Fixes
+
+* attempt to increase ingress timeouts ([ffad69e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ffad69e7351df20651876dd1daba2227fc9d12b0))
+
 ## [0.21.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.0...0.21.1) (2023-01-13)
 
 
