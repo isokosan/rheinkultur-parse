@@ -1,3 +1,11 @@
+# [0.22.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.3...0.22.0) (2023-01-13)
+
+
+### Features
+
+* end booking or contract when canceled and end date is changed to before today. ([afa8aea](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/afa8aeac81a6aec1cf646d1dbee2636b2b97eacf))
+* use contract normal address for contract-extend mails ([db2ae59](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/db2ae596aa37e7f98c2bd24aab8112687adc81b4))
+
 ## [0.21.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.2...0.21.3) (2023-01-13)
 
 
