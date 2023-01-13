@@ -37,37 +37,33 @@ module.exports = async function (job) {
   let endedBookings = 0
 
   while (true) {
-    const contract = await extendContractsQuery.first({ useMasterKey: true })
-    if (!contract) {
-      break
-    }
+    const contract = await extendContractsQuery.include(['address', 'invoiceAddress']).first({ useMasterKey: true })
+    if (!contract) { break }
+    consola.info('auto extending contract', contract.id, contract.get('invoiceAddress')?.get('email') || contract.get('address')?.get('email'))
     await Parse.Cloud.run('contract-extend', { id: contract.id, email: !DEVELOPMENT }, { useMasterKey: true })
     extendedContracts++
     job.progress(parseInt(100 * (extendedContracts + endedContracts + extendedBookings + endedBookings) / total))
   }
   while (true) {
     const contract = await endContractsQuery.first({ useMasterKey: true })
-    if (!contract) {
-      break
-    }
+    if (!contract) { break }
+    consola.info('auto ending contract', contract.id)
     await Parse.Cloud.run('contract-end', { id: contract.id }, { useMasterKey: true })
     endedContracts++
     job.progress(parseInt(100 * (extendedContracts + endedContracts + extendedBookings + endedBookings) / total))
   }
   while (true) {
     const booking = await extendBookingsQuery.first({ useMasterKey: true })
-    if (!booking) {
-      break
-    }
+    if (!booking) { break }
+    consola.info('auto extending booking', booking.id)
     await Parse.Cloud.run('booking-extend', { id: booking.id }, { useMasterKey: true })
     extendedBookings++
     job.progress(parseInt(100 * (extendedContracts + endedContracts + extendedBookings + endedBookings) / total))
   }
   while (true) {
     const booking = await endBookingsQuery.first({ useMasterKey: true })
-    if (!booking) {
-      break
-    }
+    if (!booking) { break }
+    consola.info('auto ending booking', booking.id)
     await Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
     endedBookings++
     job.progress(parseInt(100 * (extendedContracts + endedContracts + extendedBookings + endedBookings) / total))
