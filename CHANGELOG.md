@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.4...0.20.0) (2023-01-13)
+
+
+### Features
+
+* add invoice-pdf in exports endpoint ([c9ab142](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c9ab1424fc66cd87870ce1babc4947c55eae89a9))
+
 ## [0.19.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.19.3...0.19.4) (2023-01-12)
 
 
