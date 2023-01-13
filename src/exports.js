@@ -10,7 +10,7 @@ const excel = require('exceljs')
 
 const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
-const { getLexFile, getLexInvoiceDocument } = require('@/services/lex')
+const { getLexFile, getLexInvoiceDocument, getLexCreditNoteDocument } = require('@/services/lex')
 const { getCubeSummaries } = require('@/shared')
 const { round2 } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
@@ -664,7 +664,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     companyName: { header: 'Kunde', width: 40 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
-    campaignNo: { header: 'Kampagnensnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
     objectId: { header: 'CityCube Id', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
@@ -780,6 +780,14 @@ router.get('/contract-extend-pdf/:contractId', handleErrorAsync(async (req, res)
 
 router.get('/invoice-pdf/:resourceId', handleErrorAsync(async (req, res) => {
   const lexDocument = await getLexInvoiceDocument(req.params.resourceId)
+  const response = await getLexFile(lexDocument.files.documentFileId)
+  res.set('Content-Type', 'application/pdf')
+  res.set('Content-Disposition', `inline; filename="${lexDocument.voucherNumber}.pdf"`)
+  return res.send(response.buffer)
+}))
+
+router.get('/credit-note-pdf/:resourceId', handleErrorAsync(async (req, res) => {
+  const lexDocument = await getLexCreditNoteDocument(req.params.resourceId)
   const response = await getLexFile(lexDocument.files.documentFileId)
   res.set('Content-Type', 'application/pdf')
   res.set('Content-Disposition', `inline; filename="${lexDocument.voucherNumber}.pdf"`)

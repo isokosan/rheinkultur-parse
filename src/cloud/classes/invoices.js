@@ -29,6 +29,7 @@ const Invoice = Parse.Object.extend('Invoice', {
       lines.push('Leistung: Dauerhinweiswerbung auf Schaltkasten (CityCube)')
     }
     const contract = this.get('contract')
+    let orderDurationText
     if (contract) {
       if (!contract.get('no')) {
         await contract.fetch({ useMasterKey: true })
@@ -41,7 +42,7 @@ const Invoice = Parse.Object.extend('Invoice', {
       if (extendedDuration) {
         duration += ` + ${extendedDuration}`
       }
-      lines.push(`Vertragszeitraum: von ${start} bis ${end} (${duration} Monate)`)
+      orderDurationText = `Vertragszeitraum: von ${start} bis ${end} (${duration} Monate)`
     }
     const booking = this.get('booking')
     if (booking) {
@@ -56,14 +57,20 @@ const Invoice = Parse.Object.extend('Invoice', {
       if (extendedDuration) {
         duration += ` + ${extendedDuration}`
       }
-      lines.push(`Buchungszeitraum: von ${start} bis ${end} (${duration} Monate)`)
+      orderDurationText = `Buchungszeitraum: von ${start} bis ${end} (${duration} Monate)`
     }
-    const [periodStart, periodEnd] = [this.get('periodStart'), this.get('periodEnd')]
-    if (periodStart && periodEnd) {
-      const [start, end] = [periodStart, periodEnd]
-        .map(dateString => moment(dateString).format('DD.MM.YYYY'))
-      lines.push(`Abrechnungszeitraum: von ${start} bis ${end} (${durationString(periodEnd, periodStart)})`)
+
+    // if kinetic, add a few more custom lines
+    const company = this.get('company')
+    !company.get('name') && await company.fetch({ useMasterKey: true })
+    if (company.get('name') === 'Kinetic Germany GmbH') {
+      lines.push(...[
+        'Kunde: Telekom Deutschland GmbH',
+        'Auftraggeber: Kinetic Germany GmbH',
+        'Produkt/Medium: CityCube'
+      ])
     }
+
     const motive = booking?.get('motive') || contract?.get('motive')
     if (motive) {
       lines.push(`Motiv: ${motive}`)
@@ -75,9 +82,18 @@ const Invoice = Parse.Object.extend('Invoice', {
     }
     const campaignNo = booking?.get('campaignNo') || contract?.get('campaignNo')
     if (campaignNo) {
-      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnensnr.'
+      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnennr.'
       lines.push(`${label}: ${campaignNo}`)
     }
+
+    orderDurationText && lines.push(orderDurationText)
+    const [periodStart, periodEnd] = [this.get('periodStart'), this.get('periodEnd')]
+    if (periodStart && periodEnd) {
+      const [start, end] = [periodStart, periodEnd]
+        .map(dateString => moment(dateString).format('DD.MM.YYYY'))
+      lines.push(`Abrechnungszeitraum: von ${start} bis ${end} (${durationString(periodEnd, periodStart)})`)
+    }
+
     if (this.get('media')?.items) {
       lines.push(`Anzahl CityCubes: ${this.get('media').items.length}`)
     } else if (this.get('production')?.items) {

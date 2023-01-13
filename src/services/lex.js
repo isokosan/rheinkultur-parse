@@ -40,6 +40,12 @@ const getLexInvoiceDocument = async (lexId) => {
   return lexApi('/invoices/' + lexId, 'GET')
 }
 
+const getLexCreditNoteDocument = async (lexId) => {
+  // Must be triggered to make sure lex has rendered the document
+  await lexApi('/credit-notes/' + lexId + '/document', 'GET')
+  return lexApi('/credit-notes/' + lexId, 'GET')
+}
+
 const getLexFileAsAttachment = (documentId) => {
   return {
     contentType: 'application/pdf',
@@ -177,6 +183,7 @@ module.exports.test = async () => {
 }
 module.exports.getLexFile = getLexFile
 module.exports.getLexInvoiceDocument = getLexInvoiceDocument
+module.exports.getLexCreditNoteDocument = getLexCreditNoteDocument
 module.exports.getLexFileAsAttachment = getLexFileAsAttachment
 module.exports.getCountries = getCountries
 module.exports.getContacts = getContacts

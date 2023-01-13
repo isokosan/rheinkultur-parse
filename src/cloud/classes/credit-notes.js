@@ -19,6 +19,7 @@ const CreditNote = Parse.Object.extend('CreditNote', {
   async getIntroduction () {
     const lines = []
     const contract = this.get('contract')
+    let orderDurationText
     if (contract) {
       if (!contract.get('no')) {
         await contract.fetch({ useMasterKey: true })
@@ -31,7 +32,7 @@ const CreditNote = Parse.Object.extend('CreditNote', {
       if (extendedDuration) {
         duration += ` + ${extendedDuration}`
       }
-      lines.push(`Vertragszeitraum: von ${start} bis ${end} (${duration} Monate)`)
+      orderDurationText = `Vertragszeitraum: von ${start} bis ${end} (${duration} Monate)`
     }
     if (contract?.get('invoiceDescription')) {
       lines.push(contract.get('invoiceDescription'))
@@ -49,15 +50,20 @@ const CreditNote = Parse.Object.extend('CreditNote', {
       if (extendedDuration) {
         duration += ` + ${extendedDuration}`
       }
-      lines.push(`Buchungszeitraum: von ${start} bis ${end} (${duration} Monate)`)
+      orderDurationText = `Buchungszeitraum: von ${start} bis ${end} (${duration} Monate)`
     }
-    const invoice = this.get('invoice')
-    if (invoice) {
-      if (!invoice.get('lexNo')) {
-        await invoice.fetch({ useMasterKey: true })
-      }
-      lines.push(`Rechnungsnr.: ${invoice.get('lexNo')}`)
+
+    // if kinetic, add a few more custom lines
+    const company = this.get('company')
+    !company.get('name') && await company.fetch({ useMasterKey: true })
+    if (company.get('name') === 'Kinetic Germany GmbH') {
+      lines.push(...[
+        'Kunde: Telekom Deutschland GmbH',
+        'Auftraggeber: Kinetic Germany GmbH',
+        'Produkt/Medium: CityCube'
+      ])
     }
+
     const motive = booking?.get('motive') || contract?.get('motive')
     if (motive) {
       lines.push(`Motiv: ${motive}`)
@@ -69,18 +75,18 @@ const CreditNote = Parse.Object.extend('CreditNote', {
     }
     const campaignNo = booking?.get('campaignNo') || contract?.get('campaignNo')
     if (campaignNo) {
-      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnensnr.'
+      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnennr.'
       lines.push(`${label}: ${campaignNo}`)
     }
+
+    orderDurationText && lines.push(orderDurationText)
     const [periodStart, periodEnd] = [this.get('periodStart'), this.get('periodEnd')]
     if (periodStart && periodEnd) {
       const [start, end] = [periodStart, periodEnd]
         .map(dateString => moment(dateString).format('DD.MM.YYYY'))
       lines.push(`Gutschrift-Zeitraum: von ${start} bis ${end} (${durationString(periodEnd, periodStart)})`)
     }
-    if (this.get('reason')) {
-      lines.push(`Grund für Gutschrift: ${this.get('reason')}`)
-    }
+    lines.push(`Grund für Gutschrift: ${this.get('reason') || ''}`)
     return normalizeString(lines.join('\n'))
   }
 })
