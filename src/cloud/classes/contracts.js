@@ -438,7 +438,7 @@ Parse.Cloud.define('contract-create', async ({ params, user, master, context: { 
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, ...params }, user }) => {
-  const contract = await $getOrFail(Contract, contractId)
+  const contract = await $getOrFail(Contract, contractId, 'company')
   if (contract.get('status') > 2) {
     throw new Error('Finalisierte Verträge können nicht mehr geändert werden.')
   }
@@ -450,6 +450,32 @@ Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, .
     throw new Error('Keine Änderungen')
   }
   contract.set({ cubeIds })
+
+  // if zero or fixed pricing update monthly media
+  if (contract.get('pricingModel') === 'zero') {
+    const monthlyMedia = {}
+    for (const cubeId of cubeIds) {
+      monthlyMedia[cubeId] = 0
+    }
+    contract.set({ monthlyMedia })
+  }
+  if (contract.get('pricingModel') === 'fixed') {
+    const { fixedPrice, fixedPriceMap } = contract.get('company')?.get('contractDefaults') || {}
+    if (!fixedPriceMap && !fixedPrice) { return }
+    const cubes = await $query('Cube')
+      .containedIn('objectId', cubeIds)
+      .limit(cubeIds.length)
+      .find({ useMasterKey: true })
+    const monthlyMedia = {}
+    for (const cube of cubes) {
+      const price = fixedPrice || fixedPriceMap[cube.get('media')]
+      if (price) {
+        monthlyMedia[cube.id] = price
+      }
+    }
+    contract.set({ monthlyMedia })
+  }
+
   const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
   if (production) {
     await Parse.Cloud.run('production-update-cubes', { id: production.id, cubeIds }, { useMasterKey: true })
@@ -1075,13 +1101,13 @@ Parse.Cloud.define('contract-cancel', async ({
     discardedInvoices[discarded.id] = discarded.get('date')
   }
   const changes = $changes(contract, { endsAt, cancelNotes })
-  contract.set({ endsAt, canceledAt: new Date(), cancelNotes })
-  if (contract.get('production') && contract.get('production').get('disassemblyStart') !== disassemblyStart) {
-    changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
-  }
   const audit = { user, fn: 'contract-cancel', data: { changes } }
   if (contract.get('canceledAt')) {
     audit.data.wasCanceled = true
+  }
+  contract.set({ endsAt, canceledAt: new Date(), cancelNotes })
+  if (contract.get('production') && contract.get('production').get('disassemblyStart') !== disassemblyStart) {
+    changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
   }
   if (Object.keys(discardedInvoices).length) {
     audit.data.discardedInvoices = discardedInvoices
@@ -1091,6 +1117,9 @@ Parse.Cloud.define('contract-cancel', async ({
     await contract.get('production')
       .set({ disassemblyStart })
       .save(null, { useMasterKey: true })
+  }
+  if (moment(endsAt).isBefore(await $today(), 'day')) {
+    return Parse.Cloud.run('contract-end', { id: contract.id }, { useMasterKey: true })
   }
   return contract
 }, { requireUser: true })

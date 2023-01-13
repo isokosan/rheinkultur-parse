@@ -409,7 +409,10 @@ Parse.Cloud.define('booking-cancel', async ({
   if (wasCanceled) {
     audit.data.wasCanceled = true
   }
-  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  if (moment(endsAt).isBefore(await $today(), 'day')) {
+    return Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
+  }
 }, { requireUser: true })
 
 /**
