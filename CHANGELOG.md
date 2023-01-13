@@ -1,3 +1,10 @@
+## [0.21.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.2...0.21.3) (2023-01-13)
+
+
+### Bug Fixes
+
+* jobs for auto-contract-email extend ([4d7fdd6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4d7fdd6cbfb6579c0c051e8a10dee930d18c9727))
+
 ## [0.21.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.1...0.21.2) (2023-01-13)
 
 
