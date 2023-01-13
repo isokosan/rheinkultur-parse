@@ -1,7 +1,7 @@
 const { normalizeString, creditNotes: { normalizeFields } } = require('@/schema/normalizers')
 const { getTaxRateOnDate } = require('@/shared')
 const { round2, durationString } = require('@/utils')
-const { lexApi, getLexDocumentAttachment } = require('@/services/lex')
+const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const sendMail = require('@/services/email')
 
 const CreditNote = Parse.Object.extend('CreditNote', {
@@ -118,6 +118,7 @@ function getCreditNoteTotals (lineItems, date) {
   return { netTotal, taxTotal, total }
 }
 
+// Need to fetch documents here, as otherwise Lex might not generate the document
 async function getLexDocumentId (lexId) {
   return lexApi('/credit-notes/' + lexId + '/document', 'GET')
     .then(({ documentFileId }) => documentFileId)
@@ -376,7 +377,7 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
   const lexDocumentId = await getLexDocumentId(creditNote.get('lexId'))
   lexDocumentId && attachments.push({
     filename: creditNote.get('lexNo') + '.pdf',
-    ...getLexDocumentAttachment(lexDocumentId)
+    ...getLexFileAsAttachment(lexDocumentId)
   })
   for (const doc of creditNote.get('docs') || []) {
     attachments.push({

@@ -1,7 +1,7 @@
 const { normalizeString, invoices: { normalizeFields } } = require('@/schema/normalizers')
 const { getTaxRateOnDate, getPeriodTotal } = require('@/shared')
 const { round2, priceString, durationString } = require('@/utils')
-const { lexApi, getLexDocumentAttachment } = require('@/services/lex')
+const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
 const sendMail = require('@/services/email')
 
@@ -116,6 +116,7 @@ function getInvoiceTotals (lineItems, date) {
   return { netTotal, taxTotal, total }
 }
 
+// Need to fetch documents here, as otherwise Lex might not generate the document
 async function getLexDocumentId (lexId) {
   return lexApi('/invoices/' + lexId + '/document', 'GET')
     .then(({ documentFileId }) => documentFileId)
@@ -470,7 +471,7 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
   const lexDocumentId = await getLexDocumentId(invoice.get('lexId'))
   lexDocumentId && attachments.push({
     filename: invoice.get('lexNo') + '.pdf',
-    ...getLexDocumentAttachment(lexDocumentId)
+    ...getLexFileAsAttachment(lexDocumentId)
   })
   if (invoice.get('media') || invoice.get('production')) {
     attachments.push({

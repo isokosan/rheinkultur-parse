@@ -1,9 +1,10 @@
 const redis = require('./redis')
 
+const Authorization = `Bearer ${process.env.LEX_ACCESS_TOKEN}`
 const headers = {
-  Authorization: `Bearer ${process.env.LEX_ACCESS_TOKEN}`,
-  'Content-Type': 'application/json',
-  Accept: 'application/json'
+  Authorization,
+  Accept: 'application/json',
+  'Content-Type': 'application/json'
 }
 
 const htmlEncode = val => val.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
@@ -24,17 +25,26 @@ const lexApi = async (resourceurl, method = 'GET', body = {}) => Parse.Cloud.htt
   })
   .then(({ data }) => data)
 
-const lexFile = async (documentId) => Parse.Cloud.httpRequest({
+const getLexFile = documentId => Parse.Cloud.httpRequest({
   url: 'https://api.lexoffice.io/v1/files/' + documentId,
   method: 'GET',
-  headers
+  headers: {
+    Authorization,
+    Accept: 'application/pdf'
+  }
 })
 
-const getLexDocumentAttachment = (documentId) => {
+const getLexInvoiceDocument = async (lexId) => {
+  // Must be triggered to make sure lex has rendered the document
+  await lexApi('/invoices/' + lexId + '/document', 'GET')
+  return lexApi('/invoices/' + lexId, 'GET')
+}
+
+const getLexFileAsAttachment = (documentId) => {
   return {
     contentType: 'application/pdf',
     href: 'https://api.lexoffice.io/v1/files/' + documentId,
-    httpHeaders: { Authorization: `Bearer ${process.env.LEX_ACCESS_TOKEN}` }
+    httpHeaders: { Authorization }
   }
 }
 
@@ -165,8 +175,9 @@ module.exports.test = async () => {
   const subscriptions = await ensureSubscriptions()
   return EVENTS.every(eventType => !subscriptions[eventType].error)
 }
-module.exports.lexFile = lexFile
-module.exports.getLexDocumentAttachment = getLexDocumentAttachment
+module.exports.getLexFile = getLexFile
+module.exports.getLexInvoiceDocument = getLexInvoiceDocument
+module.exports.getLexFileAsAttachment = getLexFileAsAttachment
 module.exports.getCountries = getCountries
 module.exports.getContacts = getContacts
 module.exports.subscribe = subscribe

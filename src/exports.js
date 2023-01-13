@@ -10,6 +10,7 @@ const excel = require('exceljs')
 
 const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
+const { getLexFile, getLexInvoiceDocument } = require('@/services/lex')
 const { getCubeSummaries } = require('@/shared')
 const { round2 } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
@@ -775,6 +776,14 @@ router.get('/contract-extend-pdf/:contractId', handleErrorAsync(async (req, res)
       res.status(200).end()
       drive.files.delete({ fileId })
     })
+}))
+
+router.get('/invoice-pdf/:resourceId', handleErrorAsync(async (req, res) => {
+  const lexDocument = await getLexInvoiceDocument(req.params.resourceId)
+  const response = await getLexFile(lexDocument.files.documentFileId)
+  res.set('Content-Type', 'application/pdf')
+  res.set('Content-Disposition', `inline; filename="${lexDocument.voucherNumber}.pdf"`)
+  return res.send(response.buffer)
 }))
 
 module.exports = router
