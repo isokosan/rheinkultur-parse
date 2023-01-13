@@ -87,7 +87,7 @@ const CreditNote = Parse.Object.extend('CreditNote', {
         .map(dateString => moment(dateString).format('DD.MM.YYYY'))
       lines.push(`Gutschrift-Zeitraum: von ${start} bis ${end} (${durationString(periodEnd, periodStart)})`)
     }
-    lines.push(`Grund für Gutschrift: ${this.get('reason') || ''}`)
+    lines.push(`Grund der Gutschrift: ${this.get('reason') || ''}`)
     return normalizeString(lines.join('\n'))
   }
 })
