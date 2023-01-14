@@ -128,7 +128,7 @@ Parse.Cloud.define('address-delete', async ({ params: { id: addressId }, user })
   return address.destroy({ useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId } }) => {
+Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId, force } }) => {
   if (!resourceId) {
     throw new Error('resourceId is required.')
   }
@@ -136,14 +136,12 @@ Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId } }) => {
   const { name, allowTaxFreeInvoices } = lexContact.company
   let i = 0
   while (true) {
-    const addresses = await $query(Address)
-      .equalTo('lex.id', resourceId)
-      .notEqualTo('lex.version', lexContact.version)
-      .find({ useMasterKey: true })
+    const query = $query(Address).equalTo('lex.id', resourceId)
+    !force && query.notEqualTo('lex.version', lexContact.version)
+    const addresses = await query.skip(i).find({ useMasterKey: true })
     if (!addresses.length) {
       break
     }
-    i += addresses.length
     for (const address of addresses) {
       const changes = $changes(address, { name, allowTaxFreeInvoices })
       const audit = { fn: 'address-update-lex', data: { name, allowTaxFreeInvoices, changes } }
@@ -156,6 +154,7 @@ Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId } }) => {
       })
       await address.save(null, { useMasterKey: true, context: { audit } })
     }
+    i += addresses.length
   }
   return i
 }, {

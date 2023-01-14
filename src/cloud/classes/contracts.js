@@ -1,10 +1,9 @@
 const { sum } = require('lodash')
 const { normalizeDateString, normalizeString, contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const { round2, round5, priceString } = require('@/utils')
-const { getNewNo, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatus } = require('@/shared')
+const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatus } = require('@/shared')
 const { generateContract } = require('@/docs')
 const sendMail = require('@/services/email')
-const { getInvoiceTotals } = require('./invoices')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
 
 const Contract = Parse.Object.extend('Contract')
@@ -124,7 +123,7 @@ function getInvoiceLineItems ({ production, media }) {
 
 // Note: we do not consider early cancellations here since this is only used before contract finalization
 async function getInvoicesPreview (contract) {
-  await contract.fetchWithInclude('production', { useMasterKey: true })
+  await contract.fetchWithInclude(['address', 'invoiceAddress', 'production'], { useMasterKey: true })
 
   const invoicesPreview = []
   const contractStart = moment(contract.get('startsAt'))
@@ -275,7 +274,7 @@ async function getInvoicesPreview (contract) {
   }
   return invoicesPreview
     .map((invoice) => {
-      const { netTotal, taxTotal, total } = getInvoiceTotals(invoice.lineItems, invoice.date)
+      const { netTotal, taxTotal, total } = getDocumentTotals(invoice.address.get('lex').allowTaxFreeInvoices, invoice.lineItems, invoice.date)
       invoice.netTotal = netTotal
       invoice.taxTotal = taxTotal
       invoice.total = total

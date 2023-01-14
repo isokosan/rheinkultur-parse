@@ -1,6 +1,6 @@
 const { normalizeString, creditNotes: { normalizeFields } } = require('@/schema/normalizers')
-const { getTaxRateOnDate } = require('@/shared')
-const { round2, durationString } = require('@/utils')
+const { getDocumentTotals, getTaxRatePercentage } = require('@/shared')
+const { durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const sendMail = require('@/services/email')
 
@@ -105,7 +105,7 @@ async function validateCreditNoteDate (dateOfNewCreditNote) {
     throw new Error('Das Datum der Gutschrift ist noch nicht erreicht.')
   }
   const lastIssuedCreditNoteDate = await $query(CreditNote)
-    .greaterThanOrEqualTo('status', 2)
+    .notEqualTo('lexId', null)
     .descending('date')
     .select('date')
     .first({ useMasterKey: true })
@@ -113,16 +113,6 @@ async function validateCreditNoteDate (dateOfNewCreditNote) {
   if (lastIssuedCreditNoteDate && moment(lastIssuedCreditNoteDate).isAfter(dateOfNewCreditNote, 'year')) {
     throw new Error('Sie können keine Gutschrift für das vergangene Jahr ausstellen, wenn Sie bereits eine Gutschrift für das neue Jahr ausgestellt haben.')
   }
-}
-
-function getCreditNoteTotals (lineItems, date) {
-  let netTotal = 0
-  for (const item of lineItems) {
-    netTotal = round2(netTotal + item.price)
-  }
-  const taxTotal = round2(netTotal * getTaxRateOnDate(date) / 100)
-  const total = round2(netTotal + taxTotal)
-  return { netTotal, taxTotal, total }
 }
 
 // Need to fetch documents here, as otherwise Lex might not generate the document
@@ -149,13 +139,24 @@ Parse.Cloud.beforeSave(CreditNote, async ({ object: creditNote, context: { rewri
   creditNote.get('status') === undefined && creditNote.set('status', 0)
   creditNote.get('voucherStatus') === 'voided' && creditNote.set('status', 3)
 
+  const address = creditNote.get('address')
+  if (!address) {
+    throw new Error('You can\'t save a credit note without an address')
+  }
+  if (!address.get('lex')) {
+    await address.fetch({ useMasterKey: true })
+    if (!address.get('lex')) {
+      throw new Error('Gutschriftsaddresse muss auf LexOffice gespeichert sein')
+    }
+  }
+
   if (creditNote.isNew() || rewriteIntroduction) {
     creditNote.set('introduction', await creditNote.getIntroduction())
   }
 
   // total
   if (creditNote.get('status') < 2 && creditNote.get('lineItems')) {
-    const { netTotal, taxTotal, total } = getCreditNoteTotals(creditNote.get('lineItems'), creditNote.get('date'))
+    const { netTotal, taxTotal, total } = getDocumentTotals(creditNote.get('address').get('lex').allowTaxFreeInvoices, creditNote.get('lineItems'), creditNote.get('date'))
     creditNote.set({ netTotal, taxTotal, total })
   }
 
@@ -335,7 +336,7 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
         unitPrice: {
           currency: 'EUR',
           netAmount: item.price,
-          taxRatePercentage: lex.allowTaxFreeInvoices ? 0 : getTaxRateOnDate(creditNote.get('date'))
+          taxRatePercentage: getTaxRatePercentage(lex.allowTaxFreeInvoices, creditNote.get('date'))
         },
         discountPercentage: 0
       }
@@ -429,16 +430,19 @@ Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, 
   if (!creditNote) {
     throw new Error('CreditNote not found')
   }
-  const { voucherStatus } = await lexApi('/credit-notes/' + creditNote.get('lexId'), 'GET')
-  const changes = $changes(creditNote, { voucherStatus })
-  if (changes.voucherStatus) {
-    creditNote.set({ voucherStatus })
+  const {
+    voucherStatus,
+    totalPrice: {
+      totalNetAmount: netTotal,
+      totalTaxAmount: taxTotal,
+      totalGrossAmount: total
+    }
+  } = await lexApi('/credit-notes/' + creditNote.get('lexId'), 'GET')
+  const changes = $changes(creditNote, { voucherStatus, netTotal, taxTotal, total })
+  if (Object.keys(changes).length) {
+    creditNote.set({ voucherStatus, netTotal, taxTotal, total })
     const audit = { fn: 'credit-note-update-lex', data: { changes } }
     await creditNote.save(null, { useMasterKey: true, context: { audit } })
   }
   return creditNote
 }, { requireUser: true })
-
-module.exports = {
-  getCreditNoteTotals
-}

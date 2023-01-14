@@ -1,5 +1,5 @@
 const { normalizeString, invoices: { normalizeFields } } = require('@/schema/normalizers')
-const { getTaxRateOnDate, getPeriodTotal } = require('@/shared')
+const { getDocumentTotals, getTaxRatePercentage, getPeriodTotal } = require('@/shared')
 const { round2, priceString, durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
@@ -113,7 +113,7 @@ async function validateInvoiceDate (dateOfNewInvoice) {
     throw new Error('Rechnungsdatum ist noch nicht erreicht.')
   }
   const lastIssuedInvoiceDate = await $query(Invoice)
-    .greaterThanOrEqualTo('status', 2)
+    .notEqualTo('lexId', null)
     .descending('date')
     .select('date')
     .first({ useMasterKey: true })
@@ -121,16 +121,6 @@ async function validateInvoiceDate (dateOfNewInvoice) {
   if (lastIssuedInvoiceDate && moment(lastIssuedInvoiceDate).isAfter(dateOfNewInvoice, 'year')) {
     throw new Error('Sie können keine Rechnung für das vergangene Jahr ausstellen, wenn Sie bereits eine Rechnung für das neue Jahr ausgestellt haben.')
   }
-}
-
-function getInvoiceTotals (lineItems, date) {
-  let netTotal = 0
-  for (const item of lineItems) {
-    netTotal = round2(netTotal + item.price)
-  }
-  const taxTotal = round2(netTotal * getTaxRateOnDate(date) / 100)
-  const total = round2(netTotal + taxTotal)
-  return { netTotal, taxTotal, total }
 }
 
 // Need to fetch documents here, as otherwise Lex might not generate the document
@@ -199,6 +189,7 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
       invoice.set('dueDays', 14)
     }
   }
+
   if (invoice.isNew() || rewriteIntroduction) {
     invoice.set('introduction', await invoice.getIntroduction())
   }
@@ -222,7 +213,7 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
 
   // total
   if (invoice.get('status') < 2 && invoice.get('lineItems')) {
-    const { netTotal, taxTotal, total } = getInvoiceTotals(invoice.get('lineItems'), invoice.get('date'))
+    const { netTotal, taxTotal, total } = getDocumentTotals(invoice.get('address').get('lex').allowTaxFreeInvoices, invoice.get('lineItems'), invoice.get('date'))
     invoice.set({ netTotal, taxTotal, total })
   }
 
@@ -437,7 +428,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
         unitPrice: {
           currency: 'EUR',
           netAmount: item.price,
-          taxRatePercentage: lex.allowTaxFreeInvoices ? 0 : getTaxRateOnDate(invoice.get('date'))
+          taxRatePercentage: getTaxRatePercentage(lex.allowTaxFreeInvoices, invoice.get('date'))
         },
         discountPercentage: 0
       }
@@ -555,10 +546,17 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
   if (!invoice) {
     throw new Error('Invoice not found')
   }
-  const { voucherStatus } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
-  const changes = $changes(invoice, { voucherStatus })
-  if (changes.voucherStatus) {
-    invoice.set({ voucherStatus })
+  const {
+    voucherStatus,
+    totalPrice: {
+      totalNetAmount: netTotal,
+      totalTaxAmount: taxTotal,
+      totalGrossAmount: total
+    }
+  } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
+  const changes = $changes(invoice, { voucherStatus, netTotal, taxTotal, total })
+  if (Object.keys(changes).length) {
+    invoice.set({ voucherStatus, netTotal, taxTotal, total })
     const audit = { fn: 'invoice-update-lex', data: { changes } }
     await invoice.save(null, { useMasterKey: true, context: { audit } })
   }
@@ -606,7 +604,3 @@ Parse.Cloud.define('recalculate-gradual-invoices', async ({ params: { id: gradua
       })))
   }
 }, { requireMaster: true })
-
-module.exports = {
-  getInvoiceTotals
-}

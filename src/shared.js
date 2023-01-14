@@ -16,10 +16,23 @@ const getNewNo = async function (prefix, className, field, digits) {
   return prefix + parseAsDigitString(1, digits)
 }
 
-const getTaxRateOnDate = function (date) {
-  return moment(date).isBetween('2020-07-01', '2020-12-31', undefined, '[]')
-    ? 16
-    : 19
+const getTaxRateOnDate = date => moment(date).isBetween('2020-07-01', '2020-12-31', undefined, '[]')
+  ? 16
+  : 19
+
+const getTaxRatePercentage = (allowTaxFreeInvoices, date) => allowTaxFreeInvoices
+  ? 0
+  : getTaxRateOnDate(date)
+
+function getDocumentTotals (allowTaxFreeInvoices, lineItems, date) {
+  let netTotal = 0
+  for (const item of lineItems || []) {
+    netTotal = round2(netTotal + item.price)
+  }
+  const taxRate = getTaxRatePercentage(allowTaxFreeInvoices, date)
+  const taxTotal = round2(netTotal * taxRate / 100)
+  const total = round2(netTotal + taxTotal)
+  return { netTotal, taxTotal, total }
 }
 
 const getPeriodTotal = function (periodStart, periodEnd, monthlyTotal) {
@@ -165,7 +178,8 @@ async function setCubeOrderStatus (bookingOrContract) {
 }
 
 module.exports = {
-  getTaxRateOnDate,
+  getDocumentTotals,
+  getTaxRatePercentage,
   getCubeSummaries,
   getPeriodTotal,
   getQuarterStartEnd,
