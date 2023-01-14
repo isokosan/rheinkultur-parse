@@ -1,3 +1,10 @@
+# [0.23.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.22.0...0.23.0) (2023-01-14)
+
+
+### Features
+
+* credit note and addresses sync totals with lex ([b182d0f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b182d0fbab6bf451d6dab2c498d55f34cdb06abc))
+
 # [0.22.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.21.3...0.22.0) (2023-01-13)
 
 
