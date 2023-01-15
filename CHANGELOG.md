@@ -1,3 +1,10 @@
+## [0.23.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.23.0...0.23.1) (2023-01-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency proj4 to v2.8.1 ([55d9090](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/55d909062572a150c17fe13b8e610f6db1100836))
+
 # [0.23.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.22.0...0.23.0) (2023-01-14)
 
 
