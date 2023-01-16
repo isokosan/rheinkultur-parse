@@ -1,3 +1,10 @@
+## [0.23.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.23.1...0.23.2) (2023-01-16)
+
+
+### Bug Fixes
+
+* address save name from lex to name field also ([698ad1a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/698ad1a38321967b6c6ef9cda30b1ec7b3e204ce))
+
 ## [0.23.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.23.0...0.23.1) (2023-01-15)
 
 
