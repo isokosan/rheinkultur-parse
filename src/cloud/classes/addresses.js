@@ -145,6 +145,7 @@ Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId, force } })
     for (const address of addresses) {
       const changes = $changes(address, { name, allowTaxFreeInvoices })
       const audit = { fn: 'address-update-lex', data: { name, allowTaxFreeInvoices, changes } }
+      address.set('name', name)
       address.set('lex', {
         id: resourceId,
         name,
