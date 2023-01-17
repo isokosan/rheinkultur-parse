@@ -122,6 +122,33 @@ Parse.Cloud.define('manual-updates-refresh-contracts', ({ params: { nos } }) => 
   return 'ok'
 }, { requireMaster: true })
 
+async function updateContractCampaignNos (dict) {
+  let i = 0
+  let s = 0
+  for (const no of Object.keys(dict)) {
+    const contract = await $query('Contract').equalTo('no', no).first({ useMasterKey: true })
+    if (!contract) {
+      throw new Error(`Contract ${no} not found`)
+    }
+    const campaignNo = dict[no]
+    const changes = $changes(contract, { campaignNo })
+    if (!Object.keys(changes).length) {
+      s++
+      continue
+    }
+    contract.set({ campaignNo })
+    const audit = { fn: 'contract-update', data: { changes } }
+    await contract.save(null, { useMasterKey: true, context: { audit, recalculatePlannedInvoices: true } })
+    i++
+  }
+  consola.info('updated contract campaign nos', { s, i })
+}
+
+Parse.Cloud.define('manual-updates-contract-campaign-nos', ({ params: { dict } }) => {
+  updateContractCampaignNos(dict)
+  return 'ok'
+}, { requireMaster: true })
+
 async function updateContractExternalNos (dict) {
   let i = 0
   let s = 0
