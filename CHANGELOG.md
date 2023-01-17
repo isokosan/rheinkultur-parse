@@ -1,3 +1,10 @@
+# [0.24.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.23.2...0.24.0) (2023-01-17)
+
+
+### Features
+
+* add manual update contract campaign nos ([6156323](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/61563236819c74ee102669f566055960d2ec3abb))
+
 ## [0.23.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.23.1...0.23.2) (2023-01-16)
 
 
