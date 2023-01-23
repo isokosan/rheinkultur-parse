@@ -1,3 +1,16 @@
+# [0.25.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.24.0...0.25.0) (2023-01-23)
+
+
+### Bug Fixes
+
+* htCode in docs ([700668e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/700668e4f974266cc7065466703d19e7df34db67))
+* pricing model normalizer ([8f9973d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8f9973d3314751b556c7181e8bd2acfe988dd765))
+
+
+### Features
+
+* add company emaili and use company email for auto contact-extend ([fb8ac4e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fb8ac4ef090b18ce83885782437802388b7bbf4a))
+
 # [0.24.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.23.2...0.24.0) (2023-01-17)
 
 
