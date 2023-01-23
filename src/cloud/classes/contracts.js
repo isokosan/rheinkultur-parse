@@ -895,7 +895,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
 Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
-  const contract = await $getOrFail(Contract, contractId, ['address', 'invoiceAddress'])
+  const contract = await $getOrFail(Contract, contractId, ['company', 'address', 'invoiceAddress'])
   if (contract.get('status') !== 3) {
     throw new Error('Nur laufende Verträge können verlängert werden.')
   }
@@ -920,7 +920,7 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
   let message = 'Vertrag wurde verlängert.'
 
   if (email === true) {
-    email = contract.get('address').get('email')
+    email = contract.get('company').get('email')
   }
   email && await Parse.Cloud.run('contract-extend-send-mail', { id: contract.id, email }, { useMasterKey: true })
     .then(() => { message += ` Email an ${email} gesendet.` })
@@ -1036,7 +1036,7 @@ Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractI
   if (!email) {
     throw new Error(`Bad email ${email}`)
   }
-  const contract = await $getOrFail(Contract, contractId, ['address', 'invoiceAddress'])
+  const contract = await $getOrFail(Contract, contractId)
   if (contract.get('status') !== 3) {
     throw new Error('Can\'t send inactive contract extend mails')
   }

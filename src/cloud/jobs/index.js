@@ -45,7 +45,7 @@ const createQueue = key => new Queue(key, queueOptions)
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
   end_extend: {
-    name: 'Verträge/Buchungen beenden/verlängern.',
+    name: 'Verträge/Buchungen beenden/verlängern (außer Kinetic).',
     description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
     timeoutMinutes: 120
     // cron: '0 0 * * *' // nightly

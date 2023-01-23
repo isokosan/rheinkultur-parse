@@ -124,6 +124,7 @@ Parse.Cloud.define('company-update-info', async ({
 
   const {
     name,
+    email,
     paymentType,
     dueDays,
     contractDefaults
@@ -132,6 +133,7 @@ Parse.Cloud.define('company-update-info', async ({
   const company = await $getOrFail(Company, companyId)
   const changes = $changes(company, {
     name,
+    email,
     paymentType,
     dueDays,
     contractDefaults
@@ -140,7 +142,7 @@ Parse.Cloud.define('company-update-info', async ({
   if (!Object.keys(changes).length) {
     throw new Error('Keine Änderungen')
   }
-  company.set({ name, paymentType, dueDays, contractDefaults })
+  company.set({ name, email, paymentType, dueDays, contractDefaults })
 
   const audit = { user, fn: 'company-update-info', data: { changes } }
   return company.save(null, { useMasterKey: true, context: { audit } })

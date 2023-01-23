@@ -1,6 +1,8 @@
 module.exports = async function (job) {
+  const kinetic = await $query('Company').equalTo('name', 'Kinetic Germany GmbH').first({ useMasterKey: true })
   const extendContractsQuery = $query('Contract')
-    .matchesQuery('address', $query('Address').notEqualTo('email', null))
+    .notEqualTo('company', kinetic)
+    .matchesQuery('company', $query('Company').notEqualTo('email', null))
     .equalTo('status', 3)
     .equalTo('canceledAt', null)
     .lessThan('autoExtendsAt', await $today())
@@ -9,6 +11,7 @@ module.exports = async function (job) {
     $query('Contract').notEqualTo('canceledAt', null),
     $query('Contract').equalTo('autoExtendsAt', null)
   )
+    .notEqualTo('company', kinetic)
     .equalTo('status', 3)
     .lessThan('endsAt', await $today())
     .ascending('endsAt')
@@ -34,9 +37,9 @@ module.exports = async function (job) {
   let endedBookings = 0
 
   while (true) {
-    const contract = await extendContractsQuery.include(['address']).first({ useMasterKey: true })
+    const contract = await extendContractsQuery.include(['company']).first({ useMasterKey: true })
     if (!contract) { break }
-    consola.info('auto extending contract', contract.id, contract.get('address').get('email'))
+    consola.info('auto extending contract', contract.id, contract.get('company').get('email'))
     await Parse.Cloud.run('contract-extend', { id: contract.id, email: !DEVELOPMENT }, { useMasterKey: true })
     extendedContracts++
     job.progress(parseInt(100 * (extendedContracts + endedContracts + extendedBookings + endedBookings) / total))
