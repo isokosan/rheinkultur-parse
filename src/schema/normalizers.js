@@ -60,6 +60,7 @@ module.exports = {
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
         name: normalizeString,
+        email: normalizeString,
         dueDays: x => normalizeInt(x) ?? 14,
         paymentType: x => parseInt(['0', '1'].includes(x) ? x : '0'),
         contractDefaults (defaults = {}) {
@@ -70,6 +71,9 @@ module.exports = {
           }
           if (pricingModel === 'gradual') {
             return { pricingModel, billingCycle, gradualPriceMapId }
+          }
+          if (pricingModel === 'default') {
+            return { billingCycle }
           }
           return { pricingModel, billingCycle }
         }
