@@ -117,7 +117,7 @@ const generateContract = async (contract) => {
       let extraPrice
       let productionMonthlyPrice
       let text = `\n${i}. Standort: ${address}`
-      text += `\nGehäusetyp: ${cube.ht ? cube.ht.code : 'Unbekannt'}`
+      text += `\nGehäusetyp: ${cube.htCode || 'Unbekannt'}`
       text += `\nCityCube ID: ${cube.objectId}`
       if (production) {
         const printPackage = production.get('printPackages')[cube.objectId]
