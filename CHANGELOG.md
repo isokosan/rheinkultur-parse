@@ -1,3 +1,11 @@
+## [0.25.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.25.0...0.25.1) (2023-01-24)
+
+
+### Bug Fixes
+
+* contract cubes update monthly media ([7a26541](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7a265415d3809450765d5ab0c02a9365b5f96f59))
+* no company booking activate ([7807ad1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7807ad1a674c699b4894d2eaf3b949fc14ba78cc))
+
 # [0.25.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.24.0...0.25.0) (2023-01-23)
 
 
