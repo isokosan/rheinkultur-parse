@@ -127,7 +127,7 @@ async function setCubeOrderStatus (bookingOrContract) {
     objectId,
     booking: className === 'Booking' ? bookingOrContract.toPointer() : undefined,
     contract: className === 'Contract' ? bookingOrContract.toPointer() : undefined,
-    company: company.toPointer(),
+    company: company?.toPointer(),
     no,
     status,
     startsAt,
