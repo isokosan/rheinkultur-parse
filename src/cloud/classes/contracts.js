@@ -450,15 +450,15 @@ Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, .
   }
   contract.set({ cubeIds })
 
-  // if zero or fixed pricing update monthly media
   if (contract.get('pricingModel') === 'zero') {
+    // if zero or fixed pricing update monthly media
     const monthlyMedia = {}
     for (const cubeId of cubeIds) {
       monthlyMedia[cubeId] = 0
     }
     contract.set({ monthlyMedia })
-  }
-  if (contract.get('pricingModel') === 'fixed') {
+  } else if (contract.get('pricingModel') === 'fixed') {
+    // if fixed pricing, set monthly media to fixed price
     const { fixedPrice, fixedPriceMap } = contract.get('company')?.get('contractDefaults') || {}
     if (!fixedPriceMap && !fixedPrice) { return }
     const cubes = await $query('Cube')
@@ -471,6 +471,13 @@ Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, .
       if (price) {
         monthlyMedia[cube.id] = price
       }
+    }
+    contract.set({ monthlyMedia })
+  } else if (contract.get('pricingModel') !== 'gradual') {
+    // if not gradual pricing, make sure at least all cubes have monthly media at 0
+    const monthlyMedia = contract.get('monthlyMedia') || {}
+    for (const cubeId of cubeIds) {
+      monthlyMedia[cubeId] = monthlyMedia[cubeId] || 0
     }
     contract.set({ monthlyMedia })
   }
