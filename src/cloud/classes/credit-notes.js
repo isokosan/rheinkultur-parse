@@ -409,16 +409,6 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('credit-note-discard', async ({ params: { id: creditNoteId }, user }) => {
-  const creditNote = await $getOrFail(CreditNote, creditNoteId)
-  if (creditNote.get('status') !== 1) {
-    throw new Error('Can only discard planned creditNote')
-  }
-  const audit = { user, fn: 'credit-note-discard' }
-  creditNote.set({ status: 4 })
-  return creditNote.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
-
 Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, resourceId: lexId } }) => {
   if (!creditNoteId && !lexId) {
     throw new Error('Either id or resourceId is required.')

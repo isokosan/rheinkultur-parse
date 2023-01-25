@@ -42,7 +42,7 @@ module.exports = {
         distributorRoles (val) {
           val = val || []
           if (!Array.isArray(val)) val = [val]
-          val = val.filter(role => Object.values(DISTRIBUTOR_ROLES).includes(role))
+          val = val.filter(role => Object.keys(DISTRIBUTOR_ROLES).includes(role))
           return val.length ? val : null
         }
       }
