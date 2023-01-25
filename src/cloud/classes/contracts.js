@@ -816,16 +816,34 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
 // recreates canceled invoice
 Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id: invoiceId }, user }) => {
   const canceledInvoice = await $getOrFail('Invoice', invoiceId, ['contract'])
-  const Invoice = Parse.Object.extend('Invoice')
-  // TODO: search extended previews, and consider production in initial previews
-  const found = await getInvoicesPreview(canceledInvoice.get('contract'))
-    .then(items => items.filter(({ periodStart, periodEnd }) => periodStart === canceledInvoice.get('periodStart') && periodEnd === canceledInvoice.get('periodEnd')))
-  if (!found || found.length > 1) {
-    throw new Error('Can\'t find invoice or found multiple invoices.')
+  const contract = canceledInvoice.get('contract')
+  if (await $query('Invoice').equalTo('duplicateOf', canceledInvoice).first({ useMasterKey: true })) {
+    throw new Error('Sie haben diese Rechnung bereits einmal dupliziert.')
   }
-  consola.info(found[0])
-  const invoice = new Invoice(found[0])
-  return invoice.save(null, { useMasterKey: true, context: { audit: { user, fn: 'invoice-regenerate-from-canceled', data: { invoiceNo: canceledInvoice.get('lexNo') } } } })
+  const Invoice = Parse.Object.extend('Invoice')
+  const invoice = new Invoice({
+    status: 1,
+    date: canceledInvoice.get('date'),
+    company: contract.get('company'),
+    address: contract.get('invoiceAddress') || contract.get('address'),
+    paymentType: contract.get('paymentType'),
+    dueDays: contract.get('dueDays'),
+    companyPerson: contract.get('companyPerson'),
+    contract,
+    tags: contract.get('tags'),
+    periodStart: canceledInvoice.get('periodStart'),
+    periodEnd: canceledInvoice.get('periodEnd'),
+    cubeCount: canceledInvoice.get('cubeCount'),
+    agency: canceledInvoice.get('agency'),
+    media: canceledInvoice.get('media'),
+    producion: canceledInvoice.get('production'),
+    lineItems: canceledInvoice.get('lineItems'),
+    duplicateOf: canceledInvoice.toPointer()
+  })
+  // recalculate commission rate at date
+  invoice.get('agency') && invoice.set('commissionRate', getContractCommissionForYear(contract, moment(invoice.get('date')).year()))
+  const audit = { user, fn: 'invoice-regenerate-from-canceled', data: { invoiceNo: canceledInvoice.get('lexNo') } }
+  return invoice.save(null, { useMasterKey: true, context: { audit, rewriteIntroduction: true } })
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params: { id: contractId, cancellations }, user }) => {

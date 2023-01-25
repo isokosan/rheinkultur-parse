@@ -434,7 +434,10 @@ const schemaDefinitions = {
       docs: { type: 'Array' },
       tags: { type: 'Array' },
 
-      mailStatus: { type: 'Object' }
+      mailStatus: { type: 'Object' },
+
+      // for tracking duplications from canceled invoices
+      duplicateOf: { type: 'Pointer', targetClass: 'Invoice' }
     }
   },
   Person: {
