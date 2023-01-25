@@ -1,3 +1,10 @@
+## [0.26.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.26.0...0.26.1) (2023-01-25)
+
+
+### Bug Fixes
+
+* regenerate canceled via duplication ([5d7ccac](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5d7ccac03033bcd9ac84b19ec3b6bd644433084c))
+
 # [0.26.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.25.1...0.26.0) (2023-01-25)
 
 
