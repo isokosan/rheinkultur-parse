@@ -1,3 +1,15 @@
+# [0.26.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.25.1...0.26.0) (2023-01-25)
+
+
+### Bug Fixes
+
+* distributor roles normalizer ([d51e449](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d51e4491f39793601a286fc1df0c90ca395378d9))
+
+
+### Features
+
+* add contract-cancel-cancel ([1719325](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1719325c3aa6346ffafb003a3fbc36d2bb45647a))
+
 ## [0.25.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.25.0...0.25.1) (2023-01-24)
 
 
