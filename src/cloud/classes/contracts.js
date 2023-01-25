@@ -666,19 +666,19 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   return contract.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('offer-mark-as-sent', async ({ params: { id: contractId }, user }) => {
-  const contract = await $getOrFail(Contract, contractId)
-  contract.set({ status: 1 })
-  const audit = { user, fn: 'offer-mark-as-sent' }
-  return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+// Parse.Cloud.define('offer-mark-as-sent', async ({ params: { id: contractId }, user }) => {
+//   const contract = await $getOrFail(Contract, contractId)
+//   contract.set({ status: 1 })
+//   const audit = { user, fn: 'offer-mark-as-sent' }
+//   return contract.save(null, { useMasterKey: true, context: { audit } })
+// }, { requireUser: true })
 
-Parse.Cloud.define('offer-mark-as-unsent', async ({ params: { id: contractId }, user }) => {
-  const contract = await $getOrFail(Contract, contractId)
-  contract.set({ status: 0 })
-  const audit = { user, fn: 'offer-mark-as-unsent' }
-  return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+// Parse.Cloud.define('offer-mark-as-unsent', async ({ params: { id: contractId }, user }) => {
+//   const contract = await $getOrFail(Contract, contractId)
+//   contract.set({ status: 0 })
+//   const audit = { user, fn: 'offer-mark-as-unsent' }
+//   return contract.save(null, { useMasterKey: true, context: { audit } })
+// }, { requireUser: true })
 
 Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
@@ -711,14 +711,45 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: setCubeStatuses !== false } })
 }, { requireUser: true })
 
-// TOAUDIT: regenerate changes
+// Updates all planned and discarded invoices of contract
+// Updates gradual prices, periodEnd and early canceled cubes
 Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
-  const plannedInvoices = await $query('Invoice').equalTo('contract', contract).equalTo('status', 1).find({ useMasterKey: true })
+  const invoices = await $query('Invoice')
+    .equalTo('contract', contract)
+    .containedIn('status', [1, 4])
+    .find({ useMasterKey: true })
   const earlyCancellations = contract.get('earlyCancellations') || {}
   let i = 0
-  for (const invoice of plannedInvoices) {
-    const { periodStart, periodEnd } = invoice.attributes
+  const contractEnd = contract.get('endsAt')
+  for (const invoice of invoices) {
+    const periodStart = invoice.get('periodStart')
+    // discard and continue if period is after contract end
+    if (periodStart > contractEnd) {
+      if (invoice.get('status') === 1) {
+        const invoiceAudit = { user, fn: 'invoice-discard', data: { reason: 'Vertrag enddatum geändert.' } }
+        await Parse.Cloud.run(
+          'invoice-discard',
+          { id: invoice.id },
+          { useMasterKey: true, context: { audit: invoiceAudit } }
+        )
+        i++
+      }
+      continue
+    }
+
+    // adjust periodEnd if after contract end
+    let periodEnd = invoice.get('periodEnd')
+    if (contractEnd < periodEnd) {
+      periodEnd = contractEnd
+    } else {
+      // readjust period end, if it was shortened, and then a later change in cancel date re-lengthened the contract
+      const shouldEnd = moment(periodStart).add(contract.get('billingCycle'), 'months').subtract(1, 'days').format('YYYY-MM-DD')
+      if (shouldEnd !== periodEnd) {
+        periodEnd = contractEnd > shouldEnd ? shouldEnd : contractEnd
+      }
+    }
+
     if (contract.get('pricingModel') === 'gradual') {
       const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
       invoice.set('gradualCount', gradualCount)
@@ -754,49 +785,39 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
       }
       mediaItems.push(mediaItem)
     }
-    invoice.set('media', {
+    let replanned = false
+    if (invoice.get('status') === 4) {
+      invoice.set('status', 1)
+      replanned = true
+    }
+    const media = {
       items: mediaItems,
       monthlyTotal: round2(monthlyTotal),
       total: round2(mediaTotal)
+    }
+    // production never changes!
+    const lineItems = getInvoiceLineItems({ production: invoice.get('production'), media })
+    const changes = $changes(invoice, { periodEnd, lineItems })
+    if (!replanned && !Object.keys(changes).length) {
+      continue
+    }
+    invoice.set({
+      periodEnd,
+      media,
+      lineItems
     })
-
-    invoice.set('lineItems', getInvoiceLineItems({ production: invoice.get('production'), media: invoice.get('media') }))
-    const audit = { user, fn: 'invoice-regenerate' }
-    // TOAUDIT: changes
+    const audit = { user, fn: 'invoice-regenerate', data: { changes, replanned } }
     await invoice.save(null, { useMasterKey: true, context: { rewriteIntroduction: true, audit } })
     i++
   }
   return i
 }, { requireUser: true })
 
-// deletes and recreates planned invoices
-// TODO: add extended planned invoices as well
-Parse.Cloud.define('contract-regenerate-planned-invoices', async ({ params: { id: contractId }, user }) => {
-  const contract = await $getOrFail(Contract, contractId, ['company'])
-  const plannedInvoices = await $query('Invoice').equalTo('contract', contract).equalTo('status', 1).find({ useMasterKey: true })
-  for (const invoice of plannedInvoices) {
-    await invoice.destroy({ useMasterKey: true })
-  }
-  // generate invoices
-  const Invoice = Parse.Object.extend('Invoice')
-  for (const item of await getInvoicesPreview(contract)) {
-    consola.info(item.date, item.total)
-    const sameDateInvoice = await $query(Invoice).equalTo('contract', contract).equalTo('date', item.date).first({ useMasterKey: true })
-    if (sameDateInvoice) {
-      consola.warn(sameDateInvoice.id)
-      continue
-    }
-    consola.success('saving invoice')
-    const invoice = new Invoice(item)
-    await invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } })
-  }
-}, { requireUser: true })
-
 // recreates canceled invoice
 Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id: invoiceId }, user }) => {
   const canceledInvoice = await $getOrFail('Invoice', invoiceId, ['contract'])
   const Invoice = Parse.Object.extend('Invoice')
-  // TODO: add extended planned invoices as well
+  // TODO: search extended previews, and consider production in initial previews
   const found = await getInvoicesPreview(canceledInvoice.get('contract'))
     .then(items => items.filter(({ periodStart, periodEnd }) => periodStart === canceledInvoice.get('periodStart') && periodEnd === canceledInvoice.get('periodEnd')))
   if (!found || found.length > 1) {
@@ -1069,14 +1090,12 @@ Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractI
 /**
  * When a contract is canceled on a given date
  *   the cubes will become available when endsAt date is reached
- *   the selected upcoming invoices will be auto-discarded
  */
 Parse.Cloud.define('contract-cancel', async ({
   params: {
     id: contractId,
     endsAt,
     disassemblyStart,
-    discardInvoiceIds,
     notes: cancelNotes
   }, user
 }) => {
@@ -1089,45 +1108,72 @@ Parse.Cloud.define('contract-cancel', async ({
     throw new Error('Nur laufende Verträge können gekündigt werden.')
   }
 
-  // delete upcoming invoices, if any specified
-  const invoices = await $query('Invoice')
-    .equalTo('contract', contract)
-    .equalTo('status', 1)
-    .containedIn('objectId', discardInvoiceIds)
-    .limit(discardInvoiceIds.length)
-    .find({ useMasterKey: true })
-  const discardedInvoices = {}
-  const invoiceAudit = { user, fn: 'invoice-discard', data: { reason: 'Vertrag gekündigt.' } }
-  for (const invoice of invoices) {
-    const discarded = await Parse.Cloud.run(
-      'invoice-discard',
-      { id: invoice.id },
-      { useMasterKey: true, context: { audit: invoiceAudit } }
-    )
-    discardedInvoices[discarded.id] = discarded.get('date')
-  }
   const changes = $changes(contract, { endsAt, cancelNotes })
   const audit = { user, fn: 'contract-cancel', data: { changes } }
+  let message = 'Vertrag gekündigt.'
   if (contract.get('canceledAt')) {
     audit.data.wasCanceled = true
+    message = 'Kündigung geändert.'
   }
+
   contract.set({ endsAt, canceledAt: new Date(), cancelNotes })
   if (contract.get('production') && contract.get('production').get('disassemblyStart') !== disassemblyStart) {
     changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
-  }
-  if (Object.keys(discardedInvoices).length) {
-    audit.data.discardedInvoices = discardedInvoices
   }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   if (contract.get('production') && disassemblyStart) {
     await contract.get('production')
       .set({ disassemblyStart })
       .save(null, { useMasterKey: true })
+    message += ' Demontage ab datum geändert.'
   }
   if (moment(endsAt).isBefore(await $today(), 'day')) {
-    return Parse.Cloud.run('contract-end', { id: contract.id }, { useMasterKey: true })
+    await Parse.Cloud.run('contract-end', { id: contract.id }, { useMasterKey: true })
+    message += ' Vertrag beendet.'
   }
-  return contract
+  const updatedInvoices = await Parse.Cloud.run(
+    'contract-update-planned-invoices',
+    { id: contract.id },
+    { useMasterKey: true }
+  )
+  message += ` ${updatedInvoices} Rechnungen aktualisiert.`
+  return message
+}, { requireUser: true })
+
+/**
+ * When a contract is canceled on a given date
+ *   the cubes will become available when endsAt date is reached
+ */
+Parse.Cloud.define('contract-cancel-cancel', async ({
+  params: {
+    id: contractId,
+    endsAt
+  }, user
+}) => {
+  const contract = await $getOrFail(Contract, contractId, ['production'])
+  endsAt = normalizeDateString(endsAt)
+  const changes = $changes(contract, { endsAt })
+  const audit = { user, fn: 'contract-cancel-cancel', data: { changes } }
+  contract.set({ endsAt, canceledAt: null, cancelNotes: null })
+  const disassemblyStart = null
+  if (contract.get('production') && contract.get('production').get('disassemblyStart')) {
+    changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
+  }
+  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  let message = 'Kündigung zurückgezogen.'
+  if (contract.get('production') && contract.get('production').get('disassemblyStart')) {
+    await contract.get('production')
+      .set({ disassemblyStart })
+      .save(null, { useMasterKey: true })
+    message += ' Demontage ab datum gelöscht.'
+  }
+  const updatedInvoices = await Parse.Cloud.run(
+    'contract-update-planned-invoices',
+    { id: contract.id },
+    { useMasterKey: true }
+  )
+  message += ` ${updatedInvoices} Rechnungen aktualisiert.`
+  return message
 }, { requireUser: true })
 
 /**
