@@ -206,10 +206,13 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
     if (!invoice.get('commissionRate')) {
       throw new Error('Provisionssatz ist erforderlich, wenn die Rechnung eine Agentur enthält.')
     }
+    const netRate = 1 - (invoice.get('commissionRate') / 100)
+    const net = round2(invoice.get('media')?.total * netRate)
+    invoice.set('commission', { net })
   }
 
   // dueDate
-  // invoice.set('dueDate', moment(invoice.get('date')).add(invoice.get('dueDays'), 'days').format('YYYY-MM-DD'))
+  invoice.set('dueDate', moment(invoice.get('date')).add(invoice.get('dueDays'), 'days').format('YYYY-MM-DD'))
 
   // total
   if (invoice.get('status') < 2 && invoice.get('lineItems')) {
@@ -552,11 +555,14 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
       totalNetAmount: netTotal,
       totalTaxAmount: taxTotal,
       totalGrossAmount: total
-    }
+    },
+    dueDate: dueDateISO
   } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
-  const changes = $changes(invoice, { voucherStatus, netTotal, taxTotal, total })
+
+  const dueDate = moment(dueDateISO).format('YYYY-MM-DD')
+  const changes = $changes(invoice, { voucherStatus, dueDate, netTotal, taxTotal, total })
   if (Object.keys(changes).length) {
-    invoice.set({ voucherStatus, netTotal, taxTotal, total })
+    invoice.set({ voucherStatus, dueDate, netTotal, taxTotal, total })
     const audit = { fn: 'invoice-update-lex', data: { changes } }
     await invoice.save(null, { useMasterKey: true, context: { audit } })
   }
