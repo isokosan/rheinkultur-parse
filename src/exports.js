@@ -281,90 +281,91 @@ router.get('/control', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
-router.get('/disassembly-list', handleErrorAsync(async (req, res) => {
-  const housingTypes = await fetchHousingTypes()
-  const states = await fetchStates()
-  // dissasemly list might be for one production, or many in date range
-  const { id, from, to } = req.query
-  const query = Parse.Query.or(
-    $query('Production').matchesQuery('contract', $query('Contract').greaterThanOrEqualTo('status', 3)),
-    $query('Production').matchesQuery('booking', $query('Booking').greaterThanOrEqualTo('status', 3))
-  )
-    .equalTo('disassemblyRMV', true)
-    .notEqualTo('disassemblyCompleted', true)
-    .ascending('disassemblyStart')
-  id && query.equalTo('objectId', id)
-  from && query.greaterThanOrEqualTo('disassemblyStart', from)
-  to && query.lessThanOrEqualTo('disassemblyStart', to)
-  if (!id && !from && !to) {
-    query.lessThanOrEqualTo('disassemblyStart', moment().add(6, 'months').format('YYYY-MM-DD'))
-  }
+// TODO: Apply new structure
+// router.get('/disassembly-list', handleErrorAsync(async (req, res) => {
+//   const housingTypes = await fetchHousingTypes()
+//   const states = await fetchStates()
+//   // dissasemly list might be for one production, or many in date range
+//   const { id, from, to } = req.query
+//   const query = Parse.Query.or(
+//     $query('Production').matchesQuery('contract', $query('Contract').greaterThanOrEqualTo('status', 3)),
+//     $query('Production').matchesQuery('booking', $query('Booking').greaterThanOrEqualTo('status', 3))
+//   )
+//     .equalTo('disassemblyRMV', true)
+//     .notEqualTo('disassemblyCompleted', true)
+//     .ascending('disassemblyStart')
+//   id && query.equalTo('objectId', id)
+//   from && query.greaterThanOrEqualTo('disassemblyStart', from)
+//   to && query.lessThanOrEqualTo('disassemblyStart', to)
+//   if (!id && !from && !to) {
+//     query.lessThanOrEqualTo('disassemblyStart', moment().add(6, 'months').format('YYYY-MM-DD'))
+//   }
 
-  const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet('Abbauliste')
-  const { columns, headerRowValues } = getColumnHeaders({
-    cbNo: { header: 'Vertragsnr.', width: 20 },
-    companyName: { header: 'Kunde', width: 20 },
-    motive: { header: 'Kunde/Motiv', width: 20 },
-    ab: { header: 'wer baut ab', width: 20 },
-    stateName: { header: 'Bundesland', width: 30 },
-    plz: { header: 'PLZ', width: 15 },
-    ort: { header: 'Ort', width: 15 },
-    str: { header: 'Straße', width: 20 },
-    hsnr: { header: 'Hsnr.', width: 20 },
-    htCode: { header: 'Gehäusetyp', width: 20 },
-    objectId: { header: 'KVZ Id', width: 20 },
-    disassemblyStart: { header: 'Demontage ab', width: 20, style: dateStyle },
-    dissasemlyEnd: { header: 'abgebaut am', width: 20, style: dateStyle },
-    later1: { header: 'In Auftragsliste übertragen:', width: 30 },
-    later2: { header: 'Fotos', width: 30 },
-    later3: { header: 'abgerechnet', width: 30 }
-  })
-  worksheet.columns = columns
-  const headerRow = worksheet.addRow(headerRowValues)
-  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
-  headerRow.height = 24
+//   const workbook = new excel.Workbook()
+//   const worksheet = workbook.addWorksheet('Abbauliste')
+//   const { columns, headerRowValues } = getColumnHeaders({
+//     cbNo: { header: 'Vertragsnr.', width: 20 },
+//     companyName: { header: 'Kunde', width: 20 },
+//     motive: { header: 'Kunde/Motiv', width: 20 },
+//     ab: { header: 'wer baut ab', width: 20 },
+//     stateName: { header: 'Bundesland', width: 30 },
+//     plz: { header: 'PLZ', width: 15 },
+//     ort: { header: 'Ort', width: 15 },
+//     str: { header: 'Straße', width: 20 },
+//     hsnr: { header: 'Hsnr.', width: 20 },
+//     htCode: { header: 'Gehäusetyp', width: 20 },
+//     objectId: { header: 'KVZ Id', width: 20 },
+//     disassemblyStart: { header: 'Demontage ab', width: 20, style: dateStyle },
+//     dissasemlyEnd: { header: 'abgebaut am', width: 20, style: dateStyle },
+//     later1: { header: 'In Auftragsliste übertragen:', width: 30 },
+//     later2: { header: 'Fotos', width: 30 },
+//     later3: { header: 'abgerechnet', width: 30 }
+//   })
+//   worksheet.columns = columns
+//   const headerRow = worksheet.addRow(headerRowValues)
+//   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+//   headerRow.height = 24
 
-  let skip = 0
-  while (true) {
-    const productions = await query.limit(10).skip(skip).find({ useMasterKey: true })
-    if (!productions.length) {
-      break
-    }
-    skip += productions.length
-    for (const production of productions) {
-      const contractOrBooking = production.get('booking') || production.get('contract')
-      await contractOrBooking.fetchWithInclude('company', { useMasterKey: true })
-      const cubeIds = contractOrBooking.get('cubeIds') || []
-      const earlyCancellations = contractOrBooking.get('earlyCancellations') || {}
-      const cubes = await (new Parse.Query('Cube'))
-        // remove earlyCancellations
-        .containedIn('objectId', cubeIds.filter(id => !earlyCancellations[id]))
-        .limit(cubeIds.length)
-        .find({ useMasterKey: true })
-      for (const cube of cubes) {
-        worksheet.addRow({
-          objectId: cube.id,
-          cbNo: contractOrBooking.get('no'),
-          companyName: contractOrBooking.get('company').get('name'),
-          htCode: housingTypes[cube.get('ht')?.id]?.code || '',
-          str: cube.get('str'),
-          hsnr: cube.get('hsnr'),
-          plz: cube.get('plz'),
-          ort: cube.get('ort'),
-          stateName: states[cube.get('state')?.id]?.name || '',
-          motive: contractOrBooking.get('motive'),
-          disassemblyStart: production.get('disassemblyStart')
-            ? moment(production.get('disassemblyStart')).format('DD.MM.YYYY')
-            : '-'
-        })
-      }
-    }
-  }
-  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', 'attachment; filename=Abbaulist.xlsx')
-  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
-}))
+//   let skip = 0
+//   while (true) {
+//     const productions = await query.limit(10).skip(skip).find({ useMasterKey: true })
+//     if (!productions.length) {
+//       break
+//     }
+//     skip += productions.length
+//     for (const production of productions) {
+//       const contractOrBooking = production.get('booking') || production.get('contract')
+//       await contractOrBooking.fetchWithInclude('company', { useMasterKey: true })
+//       const cubeIds = contractOrBooking.get('cubeIds') || []
+//       const earlyCancellations = contractOrBooking.get('earlyCancellations') || {}
+//       const cubes = await (new Parse.Query('Cube'))
+//         // remove earlyCancellations
+//         .containedIn('objectId', cubeIds.filter(id => !earlyCancellations[id]))
+//         .limit(cubeIds.length)
+//         .find({ useMasterKey: true })
+//       for (const cube of cubes) {
+//         worksheet.addRow({
+//           objectId: cube.id,
+//           cbNo: contractOrBooking.get('no'),
+//           companyName: contractOrBooking.get('company').get('name'),
+//           htCode: housingTypes[cube.get('ht')?.id]?.code || '',
+//           str: cube.get('str'),
+//           hsnr: cube.get('hsnr'),
+//           plz: cube.get('plz'),
+//           ort: cube.get('ort'),
+//           stateName: states[cube.get('state')?.id]?.name || '',
+//           motive: contractOrBooking.get('motive'),
+//           disassemblyStart: production.get('disassemblyStart')
+//             ? moment(production.get('disassemblyStart')).format('DD.MM.YYYY')
+//             : '-'
+//         })
+//       }
+//     }
+//   }
+//   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+//   res.set('Content-Disposition', 'attachment; filename=Abbaulist.xlsx')
+//   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+// }))
 
 router.get('/departure-list', handleErrorAsync(async (req, res) => {
   const departureList = await (new Parse.Query('DepartureList')).include('company').get(req.query.id, { useMasterKey: true })

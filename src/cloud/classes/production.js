@@ -7,6 +7,10 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   if (production.get('booking') && production.get('contract')) {
     throw new Error('Production cannot be tied to a booking and a contract simultaneously')
   }
+
+  const bookingOrContract = production.get('booking') || production.get('contract')
+  await bookingOrContract.fetch({ useMasterKey: true })
+
   // clear cubeIds if tied to booking or contract
   if (production.get('booking') || production.get('contract')) {
     production.unset('cubeIds')
@@ -24,12 +28,8 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   !(production.get('billing') > 1) && production.set({ monthlies: null })
 
   if (production.get('billing') && !production.get('total')) {
-    // TOTRANSLATE
     throw new Error('Preis kann nicht null sein, bitte Preis eintragen oder Produktion nicht abrechnen auswählen.')
   }
-
-  const bookingOrContract = production.get('booking') || production.get('contract')
-  await bookingOrContract.fetch({ useMasterKey: true })
 
   !production.get('assembly') && production
     .unset('assembly')
@@ -90,21 +90,6 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
     production.set('printTemplates', printTemplates)
     !production.get('printFiles') && production.set('printFiles', {})
     !production.get('printNotes') && production.set('printNotes', {})
-  }
-
-  !production.get('disassembly') && production
-    .unset('disassemblyRMV')
-    .unset('disassemblyStart')
-
-  if (production.get('disassembly')) {
-    // if the contract or booking is not auto-extending or its canceled and if the disassembly date is not given
-    if (!bookingOrContract.get('willExtend') && !production.get('disassemblyStart')) {
-      production.set('disassemblyStart', moment(bookingOrContract.get('endsAt')).add(1, 'days').format('YYYY-MM-DD'))
-    }
-    // if the contract or booking is going to extend but a disassembly date has been set, clear it
-    if (bookingOrContract.get('willExtend') && production.get('disassemblyStart')) {
-      production.unset('disassemblyStart')
-    }
   }
 })
 
@@ -215,25 +200,5 @@ Parse.Cloud.define('production-update-assembly', async ({
   }
   production.set({ printFiles, printNotes })
 
-  return production.save(null, { useMasterKey: true })
-}, { requireUser: true })
-
-Parse.Cloud.define('production-add-disassembly', async ({ params: { productionId } }) => {
-  const production = await $getOrFail(Production, productionId)
-  production.set({ disassembly: true })
-  return production.save(null, { useMasterKey: true })
-}, { requireUser: true })
-
-Parse.Cloud.define('production-update-disassembly', async ({
-  params: {
-    productionId,
-    disassemblyRMV,
-    disassemblyStart,
-    disassemblyCompleted
-  }
-}) => {
-  const production = await $getOrFail(Production, productionId)
-  // const changes = $changes(production, { disassemblyRMV, disassemblyStart, disassemblyCompleted })
-  production.set({ disassemblyRMV, disassemblyStart, disassemblyCompleted })
   return production.save(null, { useMasterKey: true })
 }, { requireUser: true })

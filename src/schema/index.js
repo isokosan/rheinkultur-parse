@@ -96,6 +96,8 @@ const schemaDefinitions = {
 
       cubeIds: { type: 'Array', default: [] },
 
+      // disassembly: { type: 'Boolean' } // demontage von Rheinkultur
+
       docs: { type: 'Array' },
       tags: { type: 'Array' },
       responsibles: { type: 'Array' },
@@ -231,6 +233,8 @@ const schemaDefinitions = {
       agencyPerson: { type: 'Pointer', targetClass: 'Person' },
       commissions: { type: 'Object' },
       commission: { type: 'Number' },
+
+      // disassembly: { type: 'Boolean' } // demontage von Rheinkultur
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
@@ -486,10 +490,7 @@ const schemaDefinitions = {
       assemblyStart: { type: 'String' }, // montagebeginn - default one week before contract/booking start
       realizedDate: { type: 'String' }, // belegungstart: realized date when montage is completed (generate gutschein )
       printFiles: { type: 'Object' }, // druckdaten
-      printNotes: { type: 'Object' }, // hinweise
-      disassembly: { type: 'Boolean' },
-      disassemblyStart: { type: 'String' }, // demontagebeginn - default contract end
-      disassemblyRMV: { type: 'Boolean' } // demontage von Rheinkultur
+      printNotes: { type: 'Object' } // hinweise
     }
   },
   PLZ: {
