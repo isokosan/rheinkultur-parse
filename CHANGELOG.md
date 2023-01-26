@@ -1,3 +1,10 @@
+# [0.27.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.26.1...0.27.0) (2023-01-26)
+
+
+### Features
+
+* add undo-contract-finalize, and 2.1 status for changes to running contract ([b1f43a4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b1f43a45f24d13642004ba7405ffa102e441702b))
+
 ## [0.26.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.26.0...0.26.1) (2023-01-25)
 
 
