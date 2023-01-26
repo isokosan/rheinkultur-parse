@@ -231,7 +231,7 @@ router.get('/control', handleErrorAsync(async (req, res) => {
     str: { header: 'Straße', width: 20 },
     hsnr: { header: 'Hsnr.', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
-    objectId: { header: 'KVZ Id', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
     startsAt: { header: 'Startdatum', width: 20, style: dateStyle },
     endsAt: { header: 'Enddatum', width: 20, style: dateStyle }
   })
@@ -374,7 +374,7 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
 
   const infos = [
     { label: 'Auftraggeber', content: departureList.get('company')?.get('name') || '-' },
-    { label: 'Abfahrtslist', content: departureList.get('name') },
+    { label: 'Abfahrtsliste', content: departureList.get('name') },
     { label: 'Fälligkeitsdatum', content: departureList.get('dueDate') ? moment(departureList.get('dueDate')).format('DD.MM.YYYY') : '' }
   ]
   if (departureList.get('type') === 'scout') {
@@ -393,7 +393,7 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
   i++
 
   const { columns, headerRowValues } = getColumnHeaders({
-    objectId: { header: 'KVZ Id', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     hti: { header: 'Gehäusetyp TLK', width: 20 },
     address: { header: 'Anschrift', width: 30 },
@@ -441,7 +441,8 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
 
-  const query = departureList.get('cubesQuery')
+  // add extra cubes for briefings in area
+  const query = departureList.get('briefing') && departureList.get('cubesQuery')
   if (query) {
     query.s = 'available'
     query.pagination = 1000
@@ -512,7 +513,7 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   })
   const columns = [
     {
-      header: 'KVZ Id',
+      header: 'CityCube ID',
       key: 'objectId',
       width: 15
     },

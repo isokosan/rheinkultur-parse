@@ -26,6 +26,7 @@ module.exports.CONTRACT_STATUSES = {
   0.2: 'Abgelehnt', // offers ????
   0.3: 'Accepted', // offers ????
   2: 'Entwurf',
+  2.1: 'In Bearbeitung',
   3: 'Aktiv',
   4: 'Gekündigt',
   5: 'Ausgelaufen'

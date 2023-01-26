@@ -114,6 +114,7 @@ Parse.Cloud.define('control-source', async ({ params: { sourceClass, sourceId, d
       $query('Cube').matchesKeyInQuery('order.booking.objectId', 'objectId', bookingsQuery)
     )
   }
+  // TODO: Add ends at date, to filter out early canceled cubes or non-extending cubes.
   if (sourceClass === 'Company') {
     const company = await $getOrFail('Company', sourceId)
     cubesQuery = $query('Cube').equalTo('order.company', company).greaterThan('order.status', 2)
