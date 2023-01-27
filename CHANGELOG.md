@@ -1,3 +1,10 @@
+## [0.28.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.28.0...0.28.1) (2023-01-27)
+
+
+### Bug Fixes
+
+* update cube-photo respond with p1 and p2 performance optimization ([9aba804](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9aba8045658525128bf1571ec8d0b85c6c536e0c))
+
 # [0.28.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.27.0...0.28.0) (2023-01-27)
 
 
