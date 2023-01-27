@@ -1,3 +1,10 @@
+# [0.29.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.28.1...0.29.0) (2023-01-27)
+
+
+### Features
+
+* add ml into cube searches ([331e334](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/331e3347360891b697f6c3edcf98f015860a92b7))
+
 ## [0.28.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.28.0...0.28.1) (2023-01-27)
 
 
