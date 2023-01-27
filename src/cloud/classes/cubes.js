@@ -332,7 +332,7 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
     }
   }
   await cube.save(null, { useMasterKey: true })
-  return message
+  return { message, p1: cube.get('p1'), p2: cube.get('p2') }
 }, { requireUser: true })
 
 Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, cancellations, generateCreditNote }, user }) => {
