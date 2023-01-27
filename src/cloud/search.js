@@ -117,6 +117,7 @@ Parse.Cloud.define('search', async ({
     c,
     r,
     s,
+    ml,
     cId,
     verifiable,
     from,
@@ -125,6 +126,7 @@ Parse.Cloud.define('search', async ({
   }
 }) => {
   // BUILD QUERY
+
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']
   id && bool.must.push({ match_phrase_prefix: { id } })
@@ -173,6 +175,11 @@ Parse.Cloud.define('search', async ({
     })))
   }
 
+  // ml case
+  let className, objectId
+  if (s === 'ml' && ml) {
+    [className, objectId] = ml.split('-')
+  }
   if (!s) {
     // no initial filter
     bool.must_not.push({ exists: { field: 'bPLZ' } })
@@ -240,11 +247,15 @@ Parse.Cloud.define('search', async ({
     case '9':
       bool.must.push({ exists: { field: 'dAt' } })
       break
+    case 'ml':
+      bool.filter.push({ terms: { 'id.keyword': await $query(className).select('cubeIds').get(objectId, { useMasterKey: true }).then(marklist => marklist.get('cubeIds')) } })
+      break
     default:
       bool.must.push({ exists: { field: s } })
       break
     }
   }
+
   if (returnQuery) {
     return {
       index: 'rheinkultur-cubes',
