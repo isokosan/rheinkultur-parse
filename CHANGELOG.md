@@ -1,3 +1,10 @@
+# [0.28.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.27.0...0.28.0) (2023-01-27)
+
+
+### Features
+
+* remove disassembly export ([3a4b4ea](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3a4b4ea3aba7c4a1292b29269eb36c3b1968201c))
+
 # [0.27.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.26.1...0.27.0) (2023-01-26)
 
 
