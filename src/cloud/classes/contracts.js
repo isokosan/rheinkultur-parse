@@ -734,7 +734,7 @@ Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }
   }
 
   // set contract status to active
-  contract.set({ status: 2 })
+  contract.set({ status: 2.1 })
   const audit = { user, fn: 'contract-undo-finalize' }
 
   return contract.save(null, { useMasterKey: true, context: { audit } })
