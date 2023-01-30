@@ -1,3 +1,10 @@
+# [0.31.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.30.0...0.31.0) (2023-01-30)
+
+
+### Features
+
+* add manual updates for kinetic, seed sg housing types ([ec7b1b9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ec7b1b97711db1b656b14d309e328b63007bfab3))
+
 # [0.30.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.29.0...0.30.0) (2023-01-30)
 
 
