@@ -1,3 +1,10 @@
+# [0.30.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.29.0...0.30.0) (2023-01-30)
+
+
+### Features
+
+* add cube-undo-verify function ([4a422c2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4a422c2d8d0861d4ec44c640ed8a5d76409b858b))
+
 # [0.29.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.28.1...0.29.0) (2023-01-27)
 
 
