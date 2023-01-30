@@ -8,6 +8,7 @@ const isValidTTL = ttl => typeof ttl === 'number' && ttl > 0
 // 1: Rheinkultur-WaWi Cache
 // 2: PubSubAdapter
 // 3: Bull-Queues
+// 9: Rheinkultur Scouting
 
 const getNodes = () => process.env.REDIS_NODES.split(',').map(node => {
   const [host, port] = node.split(':')
