@@ -57,10 +57,10 @@ const getOrUploadStandardTemplates = async function () {
   return templates
 }
 
-const getOrUploadHtTemplates = async function (housingTypeCode) {
+const getOrUploadHtTemplates = async function (housingTypeCode, folder = 'templates') {
   const templates = {}
-  const aluPath = path.join(__dirname, 'templates', housingTypeCode, 'Alu')
-  const foilPath = path.join(__dirname, 'templates', housingTypeCode, 'Folie')
+  const aluPath = path.join(__dirname, folder, housingTypeCode, 'Alu')
+  const foilPath = path.join(__dirname, folder, housingTypeCode, 'Folie')
   try {
     const aluFiles = readdirSync(aluPath)
     templates.aluFrontFile = {
@@ -89,6 +89,11 @@ const getOrUploadHtTemplates = async function (housingTypeCode) {
   }
   for (const template of Object.keys(templates)) {
     const { filename, directory } = templates[template]
+    if (!filename) {
+      consola.error(`${housingTypeCode} missing ${template}`)
+      delete templates[template]
+      continue
+    }
     let file = await getFileObjectByName(filename)
     if (!file) {
       consola.info('UPLOADING', filename)
@@ -371,6 +376,55 @@ const seed = async () => {
   }
 }
 
+const seedSG = async () => {
+  let hts = await $query(HousingType).startsWith('code', 'SG_').find({ useMasterKey: true })
+  if (!hts.length) {
+    const SG_HOUSING_TYPES = [
+      { code: 'SG_1', media: 'KVZ' },
+      { code: 'SG_2', media: 'KVZ' },
+      { code: 'SG_3', media: 'MFG' },
+      { code: 'SG_4', media: 'KVZ' },
+      { code: 'SG_5', media: 'KVZ' },
+      { code: 'SG_6', media: 'KVZ' },
+      { code: 'SG_7', media: 'MFG' },
+      { code: 'SG_8', media: 'KVZ' },
+      { code: 'SG_9', media: 'MFG' },
+      { code: 'SG_10', media: 'KVZ' },
+      { code: 'SG_11', media: 'KVZ' },
+      { code: 'SG_12', media: 'KVZ' },
+      { code: 'SG_13', media: 'KVZ' },
+      { code: 'SG_14', media: 'MFG' },
+      { code: 'SG_15', media: 'KVZ' },
+      { code: 'SG_16', media: 'KVZ' },
+      { code: 'SG_17', media: 'KVZ' },
+      { code: 'SG_18', media: 'MFG' }
+    ]
+    for (const { code, media } of SG_HOUSING_TYPES) {
+      const ht = new HousingType({ code, media })
+      await ht.save(null, { useMasterKey: true }).catch(consola.error)
+    }
+    hts = await $query(HousingType).startsWith('code', 'SG_').find({ useMasterKey: true })
+  }
+
+  const standardTemplates = await getOrUploadStandardTemplates()
+  for (const ht of hts) {
+    for (const key of Object.keys(standardTemplates[ht.get('media')])) {
+      ht.set(key, standardTemplates[ht.get('media')][key])
+    }
+    try {
+      const htTemplates = await getOrUploadHtTemplates(ht.get('code'), 'SG')
+      for (const key of Object.keys(htTemplates)) {
+        ht.set(key, htTemplates[key])
+      }
+      await ht.save(null, { useMasterKey: true })
+    } catch (error) {
+      consola.error(error)
+    }
+  }
+  consola.success('SG Housing Types seeded')
+}
+
 module.exports = {
-  seed
+  seed,
+  seedSG
 }
