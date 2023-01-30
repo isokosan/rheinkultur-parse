@@ -753,31 +753,11 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   const contractEnd = contract.get('endsAt')
   for (const invoice of invoices) {
     const periodStart = invoice.get('periodStart')
-    // discard and continue if period is after contract end
-    if (periodStart > contractEnd) {
-      if (invoice.get('status') === 1) {
-        const invoiceAudit = { user, fn: 'invoice-discard', data: { reason: 'Vertrag enddatum geändert.' } }
-        await Parse.Cloud.run(
-          'invoice-discard',
-          { id: invoice.id },
-          { useMasterKey: true, context: { audit: invoiceAudit } }
-        )
-        i++
-      }
-      continue
-    }
-
     // adjust periodEnd if after contract end
-    let periodEnd = invoice.get('periodEnd')
-    if (contractEnd < periodEnd) {
-      periodEnd = contractEnd
-    } else {
-      // readjust period end, if it was shortened, and then a later change in cancel date re-lengthened the contract
-      const shouldEnd = moment(periodStart).add(contract.get('billingCycle'), 'months').subtract(1, 'days').format('YYYY-MM-DD')
-      if (shouldEnd !== periodEnd) {
-        periodEnd = contractEnd > shouldEnd ? shouldEnd : contractEnd
-      }
-    }
+    const shouldEnd = moment(periodStart).add(contract.get('billingCycle'), 'months').subtract(1, 'days').format('YYYY-MM-DD')
+    const periodEnd = periodStart <= contractEnd && contractEnd <= shouldEnd
+      ? contractEnd
+      : shouldEnd
 
     if (contract.get('pricingModel') === 'gradual') {
       const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
@@ -814,22 +794,26 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
       }
       mediaItems.push(mediaItem)
     }
+
     let replanned = false
-    if (invoice.get('status') === 4) {
+    if (periodStart <= contractEnd && invoice.get('status') === 4) {
       invoice.set('status', 1)
       replanned = true
     }
+
     const media = {
       items: mediaItems,
       monthlyTotal: round2(monthlyTotal),
       total: round2(mediaTotal)
     }
+
     // production never changes!
     const lineItems = getInvoiceLineItems({ production: invoice.get('production'), media })
     const changes = $changes(invoice, { periodEnd, lineItems })
     if (!replanned && !Object.keys(changes).length) {
       continue
     }
+
     invoice.set({
       periodEnd,
       media,
@@ -837,6 +821,18 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     })
     const audit = { user, fn: 'invoice-regenerate', data: { changes, replanned } }
     await invoice.save(null, { useMasterKey: true, context: { rewriteIntroduction: true, audit } })
+    // discard if starts after contract ends
+    if (periodStart > contractEnd) {
+      // discard if period is after contract end
+      if (invoice.get('status') === 1) {
+        const invoiceAudit = { user, fn: 'invoice-discard', data: { reason: 'Vertrag enddatum geändert.' } }
+        await Parse.Cloud.run(
+          'invoice-discard',
+          { id: invoice.id },
+          { useMasterKey: true, context: { audit: invoiceAudit } }
+        )
+      }
+    }
     i++
   }
   return i
