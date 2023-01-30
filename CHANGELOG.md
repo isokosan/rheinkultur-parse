@@ -1,3 +1,10 @@
+## [0.31.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.31.0...0.31.1) (2023-01-30)
+
+
+### Bug Fixes
+
+* contract-undo-finalize status bug ([4f727f4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4f727f411d21d44cf4aa09577ffcaf0d44affb64))
+
 # [0.31.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.30.0...0.31.0) (2023-01-30)
 
 
