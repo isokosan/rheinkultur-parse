@@ -6,19 +6,15 @@ imagePullSecrets:
 ingress:
   enabled: true
   annotations:
-    kubernetes.io/ingress.class: 'nginx'
-    cert-manager.io/cluster-issuer: 'letsencrypt-production'
-    nginx.ingress.kubernetes.io/rewrite-target: /$1
-    nginx.ingress.kubernetes.io/proxy-connect-timeout: "360"
-    nginx.ingress.kubernetes.io/proxy-send-timeout: "360"
-    nginx.ingress.kubernetes.io/proxy-read-timeout: "360"
-    nginx.ingress.kubernetes.io/proxy-body-size: 100m
-    nginx.ingress.kubernetes.io/client-body-buffer-size: 100m
-    nginx.ingress.kubernetes.io/default-backend: ingress-nginx-defaultbackend
+    kubernetes.io/ingress.class: traefik
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    traefik.frontend.passHostHeader: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
   hosts:
     - host: prod.wawi.rheinkultur.mammut-cluster.de
       paths:
-        - path: /(.*)
+        - path: /
           pathType: Prefix
   tls:
     - secretName: prod.wawi.rheinkultur.mammut-cluster.de
@@ -30,8 +26,8 @@ resources:
     cpu: 2000m
     memory: 4G
   requests:
-    cpu: 2000m
-    memory: 4G
+    cpu: 500m
+    memory: 1G
 
 maxUnavailable: 1
 
