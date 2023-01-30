@@ -1,3 +1,10 @@
+## [0.31.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.31.1...0.31.2) (2023-01-30)
+
+
+### Bug Fixes
+
+* recalcualte all invoices before discarding/replanning ([8a75bb2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8a75bb262525b0a5c31ab21b399b71120bd1c0ae))
+
 ## [0.31.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.31.0...0.31.1) (2023-01-30)
 
 
