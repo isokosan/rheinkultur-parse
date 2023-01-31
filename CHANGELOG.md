@@ -1,3 +1,15 @@
+# [0.33.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.32.1...0.33.0) (2023-01-31)
+
+
+### Bug Fixes
+
+* update thumbs to 270px ([be46563](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/be46563247c57d800e85889a797fd23dce1ad9e5))
+
+
+### Features
+
+* rewrite aldi gradual invoice updates fn and job ([137c676](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/137c676c44df46cc406ce692a24dd2255d41a602))
+
 ## [0.32.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.32.0...0.32.1) (2023-01-31)
 
 
