@@ -116,3 +116,20 @@ Parse.Cloud.define('manual-updates-sg-housing-types', () => {
   seedSG()
   return 'OK'
 }, { requireMaster: true })
+
+const manualUpdates1000Sizes = async () => {
+  while (true) {
+    const cubePhotos = await $query('CubePhoto').equalTo('size1000', null).limit(10).find({ useMasterKey: true })
+    if (!cubePhotos.length) { break }
+    for (const cubePhoto of cubePhotos) {
+      await cubePhoto.save(null, { useMasterKey: true })
+      consola.info('generated size1000')
+    }
+  }
+  consola.success('DONE')
+}
+
+Parse.Cloud.define('manual-updates-1000-sizes', () => {
+  manualUpdates1000Sizes()
+  return 'ok'
+})
