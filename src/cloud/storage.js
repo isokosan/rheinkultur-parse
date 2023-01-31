@@ -22,10 +22,10 @@ Parse.Cloud.beforeSaveFile(async ({ file }) => {
 })
 
 const getThumbnailBase64 = async (file) => {
-  const contentType = file._source.type
   if (file._metadata.thumb) {
     return
   }
+  const contentType = file._source.type
   const base64 = await file.getData()
   if (contentType.endsWith('pdf')) {
     const options = {
@@ -45,6 +45,22 @@ const getThumbnailBase64 = async (file) => {
   }
   return sharp(Buffer.from(base64, 'base64'))
     .resize({ height: 200, fit: sharp.fit.contain })
+    .withMetadata()
+    .toBuffer()
+    .then(data => data.toString('base64'))
+    .catch((error) => {
+      consola.error(error)
+      return null
+    })
+}
+
+const getSize1000Base64 = async (file) => {
+  if (file._metadata.thumb) {
+    return
+  }
+  const base64 = await file.getData()
+  return sharp(Buffer.from(base64, 'base64'))
+    .resize({ height: 1000, width: 1000, fit: sharp.fit.inside })
     .withMetadata()
     .toBuffer()
     .then(data => data.toString('base64'))
@@ -133,6 +149,16 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto }) => {
   await user.fetch({ useMasterKey: true })
   if (user.get('accType') !== 'scout') {
     cubePhoto.set('approved', true)
+  }
+})
+
+Parse.Cloud.afterSave('CubePhoto', async ({ object: cubePhoto }) => {
+  if (!cubePhoto.get('size1000')) {
+    const base64 = await getSize1000Base64(cubePhoto.get('file'))
+    const size1000 = new Parse.File('size1000.png', { base64 }, 'image/png', { thumb: 'size1000' })
+    await size1000.save({ useMasterKey: true })
+    cubePhoto.set({ size1000 })
+    await cubePhoto.save(null, { useMasterKey: true })
   }
 })
 
