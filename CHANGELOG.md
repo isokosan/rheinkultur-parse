@@ -1,3 +1,10 @@
+## [0.32.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.32.0...0.32.1) (2023-01-31)
+
+
+### Bug Fixes
+
+* agency commission updates and yearly commissions ([b3ff17a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b3ff17aad0481a9fd92cfb59b8f58d439c268c3a))
+
 # [0.32.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.31.2...0.32.0) (2023-01-31)
 
 
