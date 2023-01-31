@@ -73,7 +73,7 @@ jobs:
           mkdir $HOME/.kube
           echo "$KUBECONFIG" > $HOME/.kube/config
         env:
-          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+          KUBECONFIG: ${{ secrets.KUBECONFIG_AC0 }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@e1be5e75ed9741a7c467f4832ecb259a83174311 # v3
@@ -112,7 +112,7 @@ jobs:
           mkdir $HOME/.kube
           echo "$KUBECONFIG" > $HOME/.kube/config
         env:
-          KUBECONFIG: ${{ secrets.KUBECONFIG }}
+          KUBECONFIG: ${{ secrets.KUBECONFIG_AC0 }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@e1be5e75ed9741a7c467f4832ecb259a83174311 # v3
