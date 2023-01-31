@@ -1,3 +1,10 @@
+## [0.33.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.0...0.33.1) (2023-01-31)
+
+
+### Bug Fixes
+
+* update-planned-invoices bug ([a03eb93](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a03eb93949d3daccef3de7c45d567b35712ee825))
+
 # [0.33.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.32.1...0.33.0) (2023-01-31)
 
 
