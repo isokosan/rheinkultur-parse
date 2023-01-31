@@ -31,8 +31,8 @@ const getThumbnailBase64 = async (file) => {
     const options = {
       format: 'png',
       width: null,
-      height: 200,
-      quality: 50,
+      height: 270,
+      quality: 70,
       density: 36
     }
     return fromBase64(base64, options).bulk(-1, true)
@@ -44,7 +44,7 @@ const getThumbnailBase64 = async (file) => {
       })
   }
   return sharp(Buffer.from(base64, 'base64'))
-    .resize({ height: 200, fit: sharp.fit.contain })
+    .resize({ height: 270, width: 270, fit: sharp.fit.inside })
     .withMetadata()
     .toBuffer()
     .then(data => data.toString('base64'))
