@@ -73,9 +73,9 @@ const updateJobs = {
     cron: '0 0 * * *', // nightly
     notificationDuration: 48
   },
-  recalculate_gradual_prices: {
+  recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
-    timeoutMinutes: 5,
+    timeoutMinutes: 15,
     cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },

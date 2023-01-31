@@ -11,7 +11,6 @@ Parse.Cloud.beforeSave(GradualPriceMap, async ({ object: gradualPriceMap }) => {
 })
 
 Parse.Cloud.afterSave(GradualPriceMap, async ({ object: gradualPriceMap, context: { audit } }) => {
-  Parse.Cloud.run('recalculate-gradual-invoices', { id: gradualPriceMap.id }, { useMasterKey: true })
   $audit(gradualPriceMap, audit)
 })
 

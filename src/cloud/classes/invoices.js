@@ -130,7 +130,9 @@ async function getLexDocumentId (lexId) {
 }
 
 function updateGradualInvoice (invoice, gradualCount, gradualPrice) {
-  consola.info('updateGradualInvoice', invoice.id, gradualCount, gradualPrice)
+  if (gradualCount === invoice.get('gradualCount') && gradualPrice === invoice.get('gradualPrice')) {
+    return false
+  }
   invoice.set('gradualCount', gradualCount)
   invoice.set('gradualPrice', gradualPrice)
   const { total: periodGradualTotal } = getPeriodTotal(invoice.get('periodStart'), invoice.get('periodEnd'), gradualPrice)
@@ -587,30 +589,34 @@ Parse.Cloud.define('invoice-recalculate-gradual-prices', async ({
 
 Parse.Cloud.define('recalculate-gradual-invoices', async ({ params: { id: gradualId } }) => {
   consola.info(`Recalculating gradual invoices for ${gradualId}`)
+  let i = 0
   const gradualPriceMap = await $getOrFail('GradualPriceMap', gradualId)
   const contractsQuery = $query('Contract')
     .equalTo('gradualPriceMap', gradualPriceMap)
     .equalTo('pricingModel', 'gradual')
-  const baseQuery = $query(Invoice)
+  const dates = await $query(Invoice)
     .matchesQuery('contract', contractsQuery)
     .notEqualTo('media', null)
-    .lessThan('status', 2)
-  const dates = await baseQuery
+    .containedIn('status', [0, 1, 4])
     .distinct('date')
     .then(dates => Promise.all(dates.map(async date => ({ date, gradualCount: await getGradualCubeCount(gradualPriceMap, date) }))))
   for (const { date, gradualCount } of dates) {
     const gradualPrice = getGradualPrice(gradualCount, gradualPriceMap.get('map'))
     let skip = 0
     while (true) {
-      const invoices = await baseQuery
+      const invoices = await $query(Invoice)
+        .matchesQuery('contract', contractsQuery)
+        .notEqualTo('media', null)
+        .containedIn('status', [0, 1, 4])
         .equalTo('date', date)
         .skip(skip)
         .find({ useMasterKey: true })
       if (!invoices.length) { break }
       for (const invoice of invoices) {
-        await updateGradualInvoice(invoice, gradualCount, gradualPrice)
+        await updateGradualInvoice(invoice, gradualCount, gradualPrice) && (i++)
       }
       skip += invoices.length
     }
   }
+  return i
 }, { requireMaster: true })
