@@ -1,3 +1,10 @@
+## [0.33.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.1...0.33.2) (2023-01-31)
+
+
+### Bug Fixes
+
+* allow updating canceled contracts that have ended status ([7bcf390](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7bcf390d67218c3b158059550f37c59f5f56379e))
+
 ## [0.33.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.0...0.33.1) (2023-01-31)
 
 
