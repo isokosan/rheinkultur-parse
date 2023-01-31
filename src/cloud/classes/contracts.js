@@ -758,6 +758,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   let i = 0
   const contractEnd = contract.get('endsAt')
   for (const invoice of invoices) {
+    let updated = false
     const periodStart = invoice.get('periodStart')
     // adjust periodEnd if after contract end
     const shouldEnd = moment(periodStart).add(contract.get('billingCycle'), 'months').subtract(1, 'days').format('YYYY-MM-DD')
@@ -816,17 +817,17 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     // production never changes!
     const lineItems = getInvoiceLineItems({ production: invoice.get('production'), media })
     const changes = $changes(invoice, { periodEnd, lineItems })
-    if (!replanned && !Object.keys(changes).length) {
-      continue
+    if (replanned || !Object.keys(changes).length) {
+      invoice.set({
+        periodEnd,
+        media,
+        lineItems
+      })
+      const audit = { user, fn: 'invoice-regenerate', data: { changes, replanned } }
+      await invoice.save(null, { useMasterKey: true, context: { rewriteIntroduction: true, audit } })
+      updated = true
     }
 
-    invoice.set({
-      periodEnd,
-      media,
-      lineItems
-    })
-    const audit = { user, fn: 'invoice-regenerate', data: { changes, replanned } }
-    await invoice.save(null, { useMasterKey: true, context: { rewriteIntroduction: true, audit } })
     // discard if starts after contract ends
     if (periodStart > contractEnd) {
       // discard if period is after contract end
@@ -837,9 +838,10 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
           { id: invoice.id },
           { useMasterKey: true, context: { audit: invoiceAudit } }
         )
+        updated = true
       }
     }
-    i++
+    updated && (i++)
   }
   return i
 }, { requireUser: true })
