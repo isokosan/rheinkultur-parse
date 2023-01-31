@@ -48,7 +48,6 @@ global.$today = async () => DEVELOPMENT
   ? await Parse.Config.get().then(config => config.get('today') || moment().format('YYYY-MM-DD'))
   : moment().format('YYYY-MM-DD')
 
-// TODO: Re-adjust limit later
 const CUBE_LIMIT = 1000
 global.$cubeLimit = (count) => {
   if (count > CUBE_LIMIT) {

@@ -599,14 +599,18 @@ Parse.Cloud.define('recalculate-gradual-invoices', async ({ params: { id: gradua
     .distinct('date')
     .then(dates => Promise.all(dates.map(async date => ({ date, gradualCount: await getGradualCubeCount(gradualPriceMap, date) }))))
   for (const { date, gradualCount } of dates) {
-    // TODO: Check limit
-    await baseQuery
-      .equalTo('date', date)
-      .limit(1000)
-      .find({ useMasterKey: true })
-      .then(invoices => Promise.all(invoices.map((invoice) => {
-        const gradualPrice = getGradualPrice(gradualCount, gradualPriceMap.get('map'))
-        return updateGradualInvoice(invoice, gradualCount, gradualPrice)
-      })))
+    const gradualPrice = getGradualPrice(gradualCount, gradualPriceMap.get('map'))
+    let skip = 0
+    while (true) {
+      const invoices = await baseQuery
+        .equalTo('date', date)
+        .skip(skip)
+        .find({ useMasterKey: true })
+      if (!invoices.length) { break }
+      for (const invoice of invoices) {
+        await updateGradualInvoice(invoice, gradualCount, gradualPrice)
+      }
+      skip += invoices.length
+    }
   }
 }, { requireMaster: true })

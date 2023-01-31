@@ -161,6 +161,7 @@ Parse.Cloud.beforeLogin(({ object: user }) => {
   user.save(null, { useMasterKey: true })
 })
 
+// TODO: watch for limit
 const fetchUsers = async function () {
   const items = await $query(Parse.User)
     .limit(1000)

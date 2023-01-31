@@ -4,13 +4,12 @@ const fs = require('fs').promises
 const { createFakeObj } = require('./../utils')
 const { fakeUser } = require('./../users')
 
-// limit 250
 let items = []
 async function getCompanies () {
   if (!items.length) {
     items = await $query('Company')
       .include(['address', 'invoiceAddress'])
-      .limit(250)
+      .limit(1000)
       .find({ useMasterKey: true })
   }
   return items

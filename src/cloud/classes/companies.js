@@ -327,6 +327,7 @@ Parse.Cloud.define('company-restore', async ({ params: { id: companyId }, user }
   return company.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
+// TODO: watch for limit
 const fetchCompanies = () => $query(Company)
   .include('deleted')
   .limit(1000)
