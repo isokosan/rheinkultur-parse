@@ -185,7 +185,7 @@ module.exports = {
         endsAt: normalizeDateString,
         agencyId: defined,
         agencyPersonId: defined,
-        commission: value => parseFloat(`${value}`.replace(',', '.')),
+        commission: value => value ? parseFloat(`${value}`.replace(',', '.')) : null,
         commissions (value) {
           if (value) {
             for (const year of Object.keys(value)) {
@@ -193,10 +193,16 @@ module.exports = {
                 delete value[year]
                 continue
               }
-              value[year] = parseFloat(`${value[year]}`.replace(',', '.'))
+              const rate = parseFloat(`${value[year]}`.replace(',', '.'))
+              if (typeof rate !== 'number') {
+                delete value[year]
+                continue
+              }
+              value[year] = rate
             }
-            return Object.keys(value).length ? value : undefined
+            return Object.keys(value).length ? value : null
           }
+          return null
         },
         initialDuration: normalizeInt,
         billingCycle: normalizeInt,
@@ -217,16 +223,16 @@ module.exports = {
         normalized.differentInvoiceAddress = false
       }
       if (!normalized.differentInvoiceAddress) {
-        normalized.invoiceAddressId = undefined
+        normalized.invoiceAddressId = null
       }
       if (!normalized.agencyId) {
-        normalized.agencyPersonId = undefined
-        normalized.commission = undefined
-        normalized.commissions = undefined
+        normalized.agencyPersonId = null
+        normalized.commission = null
+        normalized.commissions = null
       }
       if (!normalized.autoExtendsBy) {
-        normalized.noticePeriod = undefined
-        normalized.autoExtendsAt = undefined
+        normalized.noticePeriod = null
+        normalized.autoExtendsAt = null
       }
       return normalized
     }

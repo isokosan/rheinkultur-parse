@@ -293,8 +293,11 @@ const schemaDefinitions = {
     },
     fields: {
       cubeId: { type: 'String', required: true },
+      createdBy: { type: 'Pointer', targetClass: '_User' },
+      approved: { type: 'Boolean' },
       file: { type: 'File', required: true },
-      thumb: { type: 'File', required: true }
+      thumb: { type: 'File', required: true },
+      size1000: { type: 'File' }
     }
   },
   CreditNote: {

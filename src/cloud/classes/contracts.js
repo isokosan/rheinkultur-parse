@@ -86,7 +86,9 @@ Parse.Cloud.afterDelete(Contract, $deleteAudits)
 
 function getContractCommissionForYear (contract, year) {
   if (contract.get('commissions')) {
-    return contract.get('commissions')[year] || contract.get('commission')
+    return contract.get('commissions')[year] !== undefined
+      ? contract.get('commissions')[year]
+      : contract.get('commission')
   }
   return contract.get('commission')
 }
@@ -281,6 +283,10 @@ async function getInvoicesPreview (contract) {
       // commissions
       if (invoice.media?.total && invoice.agency) {
         invoice.commissionRate = getContractCommissionForYear(contract, moment(invoice.date).year())
+        if (!invoice.commissionRate) {
+          delete invoice.agency
+          return invoice
+        }
         const net = round2((invoice.commissionRate || 0) * invoice.media.total / 100)
         invoice.commission = { net }
       }
@@ -866,7 +872,9 @@ Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id
     duplicateOf: canceledInvoice.toPointer()
   })
   // recalculate commission rate at date
-  invoice.get('agency') && invoice.set('commissionRate', getContractCommissionForYear(contract, moment(invoice.get('date')).year()))
+  invoice.get('agency')
+    ? invoice.set('commissionRate', getContractCommissionForYear(contract, moment(invoice.get('date')).year()))
+    : invoice.unset('commissionRate')
   const audit = { user, fn: 'invoice-regenerate-from-canceled', data: { invoiceNo: canceledInvoice.get('lexNo') } }
   return invoice.save(null, { useMasterKey: true, context: { audit, rewriteIntroduction: true } })
 }, { requireUser: true })
@@ -1082,7 +1090,12 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
       }
 
       if (invoice.agency) {
-        invoice.commissionRate = getContractCommissionForYear(contract, periodStart.year())
+        const commissionRate = getContractCommissionForYear(contract, periodStart.year())
+        if (commissionRate) {
+          invoice.commissionRate = commissionRate
+        } else {
+          delete invoice.agency
+        }
       }
 
       invoice.lineItems = getInvoiceLineItems({ media: invoice.media })
@@ -1293,7 +1306,7 @@ Parse.Cloud.define('contract-change-commission', async ({
   params: {
     id: contractId,
     hasCommission,
-    invoiceIds,
+    commissionType,
     ...params
   }, user
 }) => {
@@ -1304,7 +1317,12 @@ Parse.Cloud.define('contract-change-commission', async ({
   if (!hasCommission) {
     params.agencyId = null
   }
+  if (commissionType !== 'yearly') {
+    params.commissions = null
+  }
   const { agencyId, agencyPersonId, commission, commissions } = normalizeFields(params)
+
+  consola.info({ agencyId, hasCommission, commissionType, commission, commissions })
 
   const changes = {}
   if (agencyId !== contract.get('agency')?.id) {
@@ -1323,22 +1341,22 @@ Parse.Cloud.define('contract-change-commission', async ({
 
   const invoices = await $query('Invoice')
     .equalTo('contract', contract)
-    .equalTo('status', 1)
-    .containedIn('objectId', invoiceIds)
+    .containedIn('status', [1, 4])
     .find({ useMasterKey: true })
 
   for (const invoice of invoices) {
     const commissionRate = getContractCommissionForYear(contract, moment(invoice.get('date')).year())
     const invoiceChanges = $changes(invoice, { commissionRate })
-    if (agencyId !== invoice.get('agency')?.id) {
-      invoiceChanges.agencyId = [invoice.get('agency')?.id, agencyId]
+    const invoiceAgencyId = commissionRate ? agencyId : null
+    if (invoiceAgencyId !== invoice.get('agency')?.id) {
+      invoiceChanges.agencyId = [invoice.get('agency')?.id, invoiceAgencyId]
     }
     if (!Object.keys(invoiceChanges).length) {
       continue
     }
     const invoiceAudit = { user, fn: 'invoice-update', data: { changes: invoiceChanges } }
     invoice.set({
-      agency: agencyId ? await $getOrFail('Company', agencyId) : null,
+      agency: invoiceAgencyId ? await $getOrFail('Company', invoiceAgencyId) : null,
       commissionRate
     })
     await invoice.save(null, { useMasterKey: true, context: { audit: invoiceAudit } })
