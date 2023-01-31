@@ -1,3 +1,11 @@
+# [0.32.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.31.2...0.32.0) (2023-01-31)
+
+
+### Features
+
+* add cube photo manual updates to generate size1000 ([71d5073](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/71d5073cfd2d00f5bdf107bae3851d91407c694f))
+* resize1000 to cube photos ([54dd76f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/54dd76fa06e0fff44bd812b1d803107a88a0cc45))
+
 ## [0.31.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.31.1...0.31.2) (2023-01-30)
 
 
