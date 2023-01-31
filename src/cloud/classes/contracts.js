@@ -1162,8 +1162,8 @@ Parse.Cloud.define('contract-cancel', async ({
   disassemblyStart = normalizeDateString(disassemblyStart)
   cancelNotes = normalizeString(cancelNotes)
 
-  if (contract.get('status') !== 3) {
-    throw new Error('Nur laufende Verträge können gekündigt werden.')
+  if (contract.get('status') < 3) {
+    throw new Error('Nur finalisierte Verträge können gekündigt werden.')
   }
 
   const changes = $changes(contract, { endsAt, cancelNotes })
@@ -1178,6 +1178,10 @@ Parse.Cloud.define('contract-cancel', async ({
   if (contract.get('production') && contract.get('production').get('disassemblyStart') !== disassemblyStart) {
     changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
   }
+  if (contract.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+    contract.set('status', 3)
+    message += ' Vertrag status auf Aktiv gestellt.'
+  }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   if (contract.get('production') && disassemblyStart) {
     await contract.get('production')
@@ -1185,7 +1189,7 @@ Parse.Cloud.define('contract-cancel', async ({
       .save(null, { useMasterKey: true })
     message += ' Demontage ab datum geändert.'
   }
-  if (moment(endsAt).isBefore(await $today(), 'day')) {
+  if (moment(endsAt).isBefore(await $today(), 'day') && contract.get('status') === 3) {
     await Parse.Cloud.run('contract-end', { id: contract.id }, { useMasterKey: true })
     message += ' Vertrag beendet.'
   }
@@ -1217,8 +1221,13 @@ Parse.Cloud.define('contract-cancel-cancel', async ({
   if (contract.get('production') && contract.get('production').get('disassemblyStart')) {
     changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
   }
-  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   let message = 'Kündigung zurückgezogen.'
+  if (contract.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+    contract.set('status', 3)
+    contract.set('canceledAt', null)
+    message += ' Vertrag status auf Aktiv gestellt.'
+  }
+  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   if (contract.get('production') && contract.get('production').get('disassemblyStart')) {
     await contract.get('production')
       .set({ disassemblyStart })
