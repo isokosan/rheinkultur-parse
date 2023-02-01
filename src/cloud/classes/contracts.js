@@ -753,6 +753,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   const invoices = await $query('Invoice')
     .equalTo('contract', contract)
     .containedIn('status', [1, 4])
+    .ascending('date')
     .find({ useMasterKey: true })
   const earlyCancellations = contract.get('earlyCancellations') || {}
   let i = 0
@@ -817,7 +818,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     // production never changes!
     const lineItems = getInvoiceLineItems({ production: invoice.get('production'), media })
     const changes = $changes(invoice, { periodEnd, lineItems })
-    if (replanned || !Object.keys(changes).length) {
+    if (replanned || Object.keys(changes).length) {
       invoice.set({
         periodEnd,
         media,
@@ -921,7 +922,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
       }
       if (moment(cubeEnd).isBefore(periodEnd)) {
         const { monthly, total } = mediaItem
-        const { total: newTotal } = getPeriodTotal(periodStart, periodEnd, monthly)
+        const { total: newTotal } = getPeriodTotal(periodStart, cubeEnd, monthly)
         // cube canceled within the invoice period
         cubes.push({
           cubeId,
@@ -942,6 +943,12 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     invoices[cube.invoiceNo] += cube.diff
   }
 
+  const price = round2(sum(cubes.map((cube) => cube.diff)))
+
+  if (!price) {
+    return
+  }
+
   const creditNote = $parsify('CreditNote')
   creditNote.set({
     company: contract.get('company'),
@@ -950,10 +957,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     contract,
     status: 0,
     date: await $today(),
-    lineItems: [{
-      name: 'CityCubes entfallen von Vertrag',
-      price: round2(sum(cubes.map((cube) => cube.diff)))
-    }],
+    lineItems: [{ name: 'CityCubes entfallen von Vertrag', price }],
     reason: [
       'Folgende CityCubes entfallen von Vertrag:',
       Object.keys(cancellations).map(cubeId => `${cubeId}: ${moment(cancellations[cubeId]).format('DD.MM.YYYY')}`).join(', '),
@@ -1332,8 +1336,6 @@ Parse.Cloud.define('contract-change-commission', async ({
     params.commissions = null
   }
   const { agencyId, agencyPersonId, commission, commissions } = normalizeFields(params)
-
-  consola.info({ agencyId, hasCommission, commissionType, commission, commissions })
 
   const changes = {}
   if (agencyId !== contract.get('agency')?.id) {
