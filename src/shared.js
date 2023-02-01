@@ -136,9 +136,19 @@ async function setCubeOrderStatus (bookingOrContract) {
     autoExtendsAt,
     canceledAt
   }
-  // remove all cubes associated with order if draft
   if (status < 3) {
+    // remove all cubes associated with order if draft
     await $query('Cube')
+      .equalTo('order.className', order.className)
+      .equalTo('order.objectId', order.objectId)
+      .each(cube => {
+        cube.unset('order')
+        return cube.save(null, { useMasterKey: true })
+      }, { useMasterKey: true })
+  } else {
+    // remove all cubes that reference the contract despite the contract having them removed
+    await $query('Cube')
+      .notContainedIn('objectId', cubeIds)
       .equalTo('order.className', order.className)
       .equalTo('order.objectId', order.objectId)
       .each(cube => {
