@@ -1,3 +1,10 @@
+## [0.33.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.2...0.33.3) (2023-02-01)
+
+
+### Bug Fixes
+
+* contract-early-cancel credit note bug and invoice-regenerate bug ([e329e56](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e329e568a830c101611c22985ab9df7f54d53f29))
+
 ## [0.33.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.1...0.33.2) (2023-01-31)
 
 
