@@ -134,8 +134,8 @@ Parse.Cloud.define('search', async ({
   }, user, master
 }) => {
   const isPublic = !master && !user
-  if (isPublic && s && s !== 'available') {
-    s = null
+  if (isPublic && s !== ['available'] && s !== []) {
+    s = []
   }
 
   // BUILD QUERY
