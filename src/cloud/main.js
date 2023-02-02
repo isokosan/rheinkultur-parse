@@ -34,7 +34,8 @@ const {
 
 process.env.SEED && require('@/seed')
 
-Parse.Cloud.define('init', async ({ params: { keys = [] } }) => {
+Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
+  if (!user) { keys = ['states'] }
   const dictionary = {
     version,
     development: DEVELOPMENT,
@@ -68,7 +69,7 @@ Parse.Cloud.define('init', async ({ params: { keys = [] } }) => {
       : undefined
   }
   return dictionary
-}, { requireUser: true })
+})
 
 Parse.Cloud.define('enums', () => ({
   version,
