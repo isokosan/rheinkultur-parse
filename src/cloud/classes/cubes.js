@@ -93,6 +93,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
           cube.unset(key)
         }
       }
+      cube.get('s') >= 5 ? cube.set('s', 9) : cube.set('s', 0)
       continue
     }
 
