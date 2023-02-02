@@ -189,13 +189,8 @@ Parse.Cloud.define('search', async ({
     })))
   }
 
-  // ml case
-  let className, objectId
-  if (s === 'ml' && ml) {
-    [className, objectId] = ml.split('-')
-  }
-  switch (s) {
-  case 'available':
+  // STATUS
+  if (s.includes('available')) {
     bool.must.push({
       bool: {
         should: [
@@ -205,33 +200,45 @@ Parse.Cloud.define('search', async ({
         minimum_should_match: 1
       }
     })
-    break
-  case '0':
-    bool.must.push({
-      bool: {
-        should: [
-          { bool: { must_not: { exists: { field: 's' } } } },
-          { term: { s } }
-        ],
-        minimum_should_match: 1
+  }
+
+  if (s.includes('ml') && ml) {
+    const [className, objectId] = ml.split('-')
+    bool.filter.push({
+      terms: {
+        'objectId.keyword': await $query(className)
+          .select('cubeIds')
+          .get(objectId, { useMasterKey: true })
+          .then(marklist => marklist.get('cubeIds'))
       }
     })
-    break
-  case '2':
+  }
+
+  // Unscouted
+  if (s.includes('0')) {
+    bool.must_not.push({ exists: { field: 'sAt' } })
+    bool.must_not.push({ exists: { field: 'vAt' } })
+  }
+  // Scouted but not verified
+  if (s.includes('2')) {
     bool.must.push({ exists: { field: 'sAt' } })
     bool.must_not.push({ exists: { field: 'vAt' } })
-    break
-  case '3':
+  }
+  // Verified
+  if (s.includes('3')) {
     bool.must.push({ exists: { field: 'vAt' } })
-    break
-  case '5':
-    bool.must.push({ term: { s } })
+  }
+  // Booked
+  if (s.includes('5')) {
+    bool.must.push({ term: { s: 5 } })
     cId && bool.must.push({ match: { 'order.company.objectId': cId } })
-    break
-  case '7':
+  }
+  // Rahmenbelegung
+  if (s.includes('6')) {
     bool.must.push({ exists: { field: 'TTMR' } })
-    break
-  case '8':
+  }
+  // Nicht vermarktungsfähig
+  if (s.includes('7')) {
     bool.must.push({
       bool: {
         should: [
@@ -244,13 +251,17 @@ Parse.Cloud.define('search', async ({
         minimum_should_match: 1
       }
     })
-    break
-  case '9':
+  }
+  // single issues
+  s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
+  s.includes('nMR') && bool.must.push({ exists: { field: 'nMR' } })
+  s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
+  s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })
+  s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
+
+  // Nicht gefunden
+  if (s.includes('8')) {
     bool.must.push({ exists: { field: 'dAt' } })
-    break
-  case 'ml':
-    bool.filter.push({ terms: { 'objectId.keyword': await $query(className).select('cubeIds').get(objectId, { useMasterKey: true }).then(marklist => marklist.get('cubeIds')) } })
-    break
   }
 
   if (returnQuery) {

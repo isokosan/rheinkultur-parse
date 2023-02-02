@@ -43,7 +43,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   const workbook = new excel.stream.xlsx.WorkbookWriter({})
   const worksheet = workbook.addWorksheet('CityCubes')
   worksheet.columns = [
-    { header: 'CityCube ID', key: 'id', width: 30 },
+    { header: 'CityCube ID', key: 'objectId', width: 30 },
     { header: 'Verifiziert', key: 'verified', width: 20 },
     { header: 'Gehäusetyp', key: 'htCode', width: 20 },
     { header: 'Straße', key: 'str', width: 15 },
@@ -84,8 +84,8 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
       doc.verified = doc.vAt ? 'Ja' : ''
       doc.htCode = housingTypes[doc.htId]?.code || doc.hti
       doc.stateName = states[doc.stateId]?.name || ''
-      doc.lat = doc.gp.lat
-      doc.lon = doc.gp.lon
+      doc.lat = doc.gp.latitude
+      doc.lon = doc.gp.longitude
       return doc
     })) {
       worksheet.addRow(row).commit()

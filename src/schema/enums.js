@@ -32,13 +32,13 @@ module.exports.CONTRACT_STATUSES = {
   5: 'Ausgelaufen'
 }
 module.exports.CUBE_STATUSES = {
-  0: 'Unbekannt',
+  0: 'Nicht gescouted',
   2: 'Gescouted',
   3: 'Verifiziert',
-  5: 'Gebucht',
-  7: 'Belegt',
-  8: 'Nicht vermarktungsfähig',
-  9: 'Ausgeblendet'
+  5: 'Vermarktet',
+  6: 'Rahmenbelegung',
+  7: 'Nicht vermarktungsfähig',
+  8: 'Nicht gefunden'
 }
 module.exports.INVOICE_STATUSES = {
   0: 'Entwurf',
