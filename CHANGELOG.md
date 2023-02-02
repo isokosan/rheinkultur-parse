@@ -1,3 +1,10 @@
+## [0.34.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.34.1...0.34.2) (2023-02-02)
+
+
+### Bug Fixes
+
+* cube status either 0 or 9 for public ([818965c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/818965c43c9a00657d7c82d354343ff9106cc735))
+
 ## [0.34.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.34.0...0.34.1) (2023-02-02)
 
 
