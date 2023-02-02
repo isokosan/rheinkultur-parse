@@ -1,3 +1,10 @@
+## [0.34.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.34.0...0.34.1) (2023-02-02)
+
+
+### Bug Fixes
+
+* s array ([0ab42ca](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0ab42cac634b78418e32d0351877623105402e50))
+
 # [0.34.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.3...0.34.0) (2023-02-02)
 
 
