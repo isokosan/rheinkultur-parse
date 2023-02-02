@@ -1,3 +1,14 @@
+# [0.34.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.3...0.34.0) (2023-02-02)
+
+
+### Features
+
+* hide cube fields if public in after find ([a9508cd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a9508cdbd67cdb81afc90aa4b3eec782028687c2))
+* limit search response fields if map request ([37f4e2e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/37f4e2e2b5453281fb330400353004863ee6b953))
+* remove cubes that are not in cubeIds from cube order statuses ([8886589](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/888658976006cb574192b75cc50fc43a68e00475))
+* update cube statuses ([c2e5984](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c2e598477ff2ed28ec3cbabc14a6c9f5df3c03a7))
+* use multiple fields in status search ([c161b7d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c161b7d894d0fc5bf9d4cb837bd9e1b99ba1ab54))
+
 ## [0.33.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.33.2...0.33.3) (2023-02-01)
 
 
