@@ -296,12 +296,6 @@ Parse.Cloud.define('search', async ({
     ]
   }
 
-  if (DEVELOPMENT) {
-    for (const key of Object.keys(bool)) {
-      consola.info(key, bool[key])
-    }
-  }
-
   const searchResponse = await client.search({
     index: 'rheinkultur-cubes',
     body: {
