@@ -41,14 +41,16 @@ const INDEXES = {
         }
       }
     },
-    parseQuery: $query('Cube').include(['deleted']),
+    parseQuery: $query('Cube'),
     datasetMap: cubes => cubes.map(cube => ({
       _id: cube.id,
       doc: {
         objectId: cube.id,
         lc: cube.get('lc'),
         media: cube.get('media'),
-        ht: cube.get('ht') ? $pointer('HousingType', cube.get('ht').id) : undefined,
+        ht: cube.get('ht')
+          ? { __type: 'Pointer', className: 'HousingType', objectId: cube.get('ht').id }
+          : undefined,
         hti: cube.get('hti'),
 
         // address
@@ -56,7 +58,9 @@ const INDEXES = {
         hsnr: cube.get('hsnr'),
         plz: cube.get('plz'),
         ort: cube.get('ort'),
-        state: cube.get('state') ? $pointer('State', cube.get('state').id) : undefined,
+        state: cube.get('state')
+          ? { __type: 'Pointer', className: 'State', objectId: cube.get('state').id }
+          : undefined,
         stateId: cube.get('state')?.id,
         gp: cube.get('gp')?.toJSON(),
         geo: {
@@ -123,6 +127,7 @@ Parse.Cloud.define('search', async ({
     ml,
     cId,
     verifiable,
+    isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
     returnQuery
@@ -268,6 +273,13 @@ Parse.Cloud.define('search', async ({
       'ort',
       'state',
       'stateId',
+      'gp',
+      's'
+    ]
+  }
+  if (isMap) {
+    includes = [
+      'objectId',
       'gp',
       's'
     ]
