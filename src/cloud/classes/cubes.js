@@ -47,13 +47,6 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
   cube.unset('s').unset('bPLZ').unset('klsId')
 })
 
-Parse.Cloud.beforeFind(Cube, ({ query, user, master }) => {
-  const isPublic = !user && !master
-  if (isPublic) {
-    query.select(['p1', 'p2'])
-  }
-})
-
 Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit } }) => {
   audit && $audit(cube, audit)
 })
@@ -75,7 +68,9 @@ Parse.Cloud.define('redis-test', async () => {
   return i
 })
 
-Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
+const PUBLIC_FIELDS = ['str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2']
+Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
+  const isPublic = !user && !master
   for (const cube of cubes) {
     // TODO: Remove (open issue -> js sdk does not encodeURI so some chars in ID throw errors, whereas rest api works)
     cube.id = encodeURI(cube.id)
@@ -91,6 +86,15 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query }) => {
     }
 
     cube.set('s', cube.getStatus())
+
+    if (isPublic) {
+      for (const key of Object.keys(cube.attributes)) {
+        if (!PUBLIC_FIELDS.includes(key)) {
+          cube.unset(key)
+        }
+      }
+      continue
+    }
 
     if (query._include.includes('orders')) {
       const contracts = await $query('Contract')
