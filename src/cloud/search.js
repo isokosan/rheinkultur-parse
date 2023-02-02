@@ -37,7 +37,7 @@ const INDEXES = {
     config: {
       mappings: {
         properties: {
-          gp: { type: 'geo_point' }
+          geo: { type: 'geo_point' }
         }
       }
     },
@@ -45,10 +45,10 @@ const INDEXES = {
     datasetMap: cubes => cubes.map(cube => ({
       _id: cube.id,
       doc: {
-        id: cube.id,
+        objectId: cube.id,
         lc: cube.get('lc'),
         media: cube.get('media'),
-        htId: cube.get('ht')?.id,
+        ht: cube.get('ht') ? $pointer('HousingType', cube.get('ht').id) : undefined,
         hti: cube.get('hti'),
 
         // address
@@ -56,8 +56,10 @@ const INDEXES = {
         hsnr: cube.get('hsnr'),
         plz: cube.get('plz'),
         ort: cube.get('ort'),
+        state: cube.get('state') ? $pointer('State', cube.get('state').id) : undefined,
         stateId: cube.get('state')?.id,
-        gp: {
+        gp: cube.get('gp')?.toJSON(),
+        geo: {
           lat: cube.get('gp').latitude,
           lon: cube.get('gp').longitude
         },
@@ -75,10 +77,11 @@ const INDEXES = {
         Agwb: cube.get('Agwb'),
         TTMR: cube.get('TTMR'),
 
-        // status (calculated attribute)
-        s: cube.get('s'),
+        klsId: cube.get('importData')?.klsId,
         order: cube.get('order'),
-        klsId: cube.get('importData')?.klsId
+
+        // status (calculated attribute)
+        s: cube.get('s')
       }
     }))
   }
@@ -123,35 +126,41 @@ Parse.Cloud.define('search', async ({
     from,
     pagination,
     returnQuery
-  }
+  }, user, master
 }) => {
-  // BUILD QUERY
+  const isPublic = !master && !user
+  if (isPublic && s && s !== 'available') {
+    s = null
+  }
 
+  // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']
-  id && bool.must.push({ match_phrase_prefix: { id } })
+  id && bool.must.push({ match_phrase_prefix: { objectId: id } })
   klsId && bool.filter.push({ match_phrase_prefix: { klsId } })
   lc && bool.filter.push({ term: { 'lc.keyword': lc } })
   media && bool.filter.push({ term: { 'media.keyword': media } })
-  htId && bool.filter.push({ term: { 'htId.keyword': htId } })
+  htId && bool.filter.push({ term: { 'ht.objectId.keyword': htId } })
   str && bool.filter.push({ term: { 'str.keyword': str } })
   hsnr && bool.filter.push({ match_phrase_prefix: { hsnr } })
   plz && bool.filter.push({ match_phrase_prefix: { plz } })
   ort && bool.filter.push({ term: { 'ort.keyword': ort } })
-  stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
+  stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
-    bool.filter.push({
+    // if radius is specified add geo radius filter
+    r && bool.filter.push({
       geo_distance: {
-        distance: (r || 1000000) + 'm',
-        gp: { lat, lon }
+        distance: r + 'm',
+        geo: { lat, lon }
       }
     })
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
+    // sort by distance if c is given (map)
     sort.unshift({
       _geo_distance: {
-        gp: { lat, lon },
+        geo: { lat, lon },
         order: 'asc',
         // unit : 'km', // default m
         mode: 'min',
@@ -161,12 +170,12 @@ Parse.Cloud.define('search', async ({
     })
   } else {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
-    sort.unshift({ 'id.keyword': 'asc' })
+    sort.unshift({ 'objectId.keyword': 'asc' })
     !id && sort.unshift({ 'str.keyword': 'asc' })
   }
 
   if (verifiable) {
-    const requiredFields = ['htId', 'str', 'hsnr', 'plz', 'ort', 'stateId']
+    const requiredFields = ['ht', 'str', 'hsnr', 'plz', 'ort', 'state']
     bool.must.push(...requiredFields.map(field => ({
       bool: {
         filter: { exists: { field } },
@@ -180,80 +189,63 @@ Parse.Cloud.define('search', async ({
   if (s === 'ml' && ml) {
     [className, objectId] = ml.split('-')
   }
-  if (!s) {
-    // no initial filter
-    bool.must_not.push({ exists: { field: 'bPLZ' } })
-    bool.must_not.push({ exists: { field: 'nMR' } })
-    bool.must_not.push({ exists: { field: 'MBfD' } })
-    bool.must_not.push({ exists: { field: 'PG' } })
-    bool.must_not.push({ exists: { field: 'Agwb' } })
-    bool.must_not.push({ exists: { field: 'dAt' } })
-  } else {
-    switch (s) {
-    case '0':
-      bool.must.push({
-        bool: {
-          should: [
-            { bool: { must_not: { exists: { field: 's' } } } },
-            { term: { s } }
-          ],
-          minimum_should_match: 1
-        }
-      })
-      break
-    case 'available':
-      bool.must.push({
-        bool: {
-          should: [
-            { bool: { must_not: { exists: { field: 'order' } } } },
-            { bool: { must_not: { exists: { field: 'nMR' } } } },
-            { bool: { must_not: { exists: { field: 'MBfD' } } } },
-            { bool: { must_not: { exists: { field: 'PG' } } } },
-            { bool: { must_not: { exists: { field: 'Agwb' } } } },
-            { bool: { must_not: { exists: { field: 'TTMR' } } } }
-          ],
-          minimum_should_match: 1
-        }
-      })
-      break
-    case '2':
-      bool.must.push({ exists: { field: 'sAt' } })
-      bool.must_not.push({ exists: { field: 'vAt' } })
-      break
-    case '3':
-      bool.must.push({ exists: { field: 'vAt' } })
-      break
-    case '5':
-      bool.must.push({ term: { s } })
-      cId && bool.must.push({ match: { 'order.company.objectId': cId } })
-      break
-    case '7':
-      bool.must.push({ exists: { field: 'TTMR' } })
-      break
-    case '8':
-      bool.must.push({
-        bool: {
-          should: [
-            { exists: { field: 'bPLZ' } },
-            { exists: { field: 'nMR' } },
-            { exists: { field: 'MBfD' } },
-            { exists: { field: 'PG' } },
-            { exists: { field: 'Agwb' } }
-          ],
-          minimum_should_match: 1
-        }
-      })
-      break
-    case '9':
-      bool.must.push({ exists: { field: 'dAt' } })
-      break
-    case 'ml':
-      bool.filter.push({ terms: { 'id.keyword': await $query(className).select('cubeIds').get(objectId, { useMasterKey: true }).then(marklist => marklist.get('cubeIds')) } })
-      break
-    default:
-      bool.must.push({ exists: { field: s } })
-      break
-    }
+  switch (s) {
+  case 'available':
+    bool.must.push({
+      bool: {
+        should: [
+          { bool: { must_not: { exists: { field: 's' } } } },
+          { range: { s: { lt: 5 } } }
+        ],
+        minimum_should_match: 1
+      }
+    })
+    break
+  case '0':
+    bool.must.push({
+      bool: {
+        should: [
+          { bool: { must_not: { exists: { field: 's' } } } },
+          { term: { s } }
+        ],
+        minimum_should_match: 1
+      }
+    })
+    break
+  case '2':
+    bool.must.push({ exists: { field: 'sAt' } })
+    bool.must_not.push({ exists: { field: 'vAt' } })
+    break
+  case '3':
+    bool.must.push({ exists: { field: 'vAt' } })
+    break
+  case '5':
+    bool.must.push({ term: { s } })
+    cId && bool.must.push({ match: { 'order.company.objectId': cId } })
+    break
+  case '7':
+    bool.must.push({ exists: { field: 'TTMR' } })
+    break
+  case '8':
+    bool.must.push({
+      bool: {
+        should: [
+          { exists: { field: 'bPLZ' } },
+          { exists: { field: 'nMR' } },
+          { exists: { field: 'MBfD' } },
+          { exists: { field: 'PG' } },
+          { exists: { field: 'Agwb' } }
+        ],
+        minimum_should_match: 1
+      }
+    })
+    break
+  case '9':
+    bool.must.push({ exists: { field: 'dAt' } })
+    break
+  case 'ml':
+    bool.filter.push({ terms: { 'objectId.keyword': await $query(className).select('cubeIds').get(objectId, { useMasterKey: true }).then(marklist => marklist.get('cubeIds')) } })
+    break
   }
 
   if (returnQuery) {
@@ -263,6 +255,30 @@ Parse.Cloud.define('search', async ({
       sort
     }
   }
+
+  const excludes = ['geo']
+  let includes
+  if (isPublic) {
+    includes = [
+      'objectId',
+      'media',
+      'str',
+      'hsnr',
+      'plz',
+      'ort',
+      'state',
+      'stateId',
+      'gp',
+      's'
+    ]
+  }
+
+  if (DEVELOPMENT) {
+    for (const key of Object.keys(bool)) {
+      consola.info(key, bool[key])
+    }
+  }
+
   const searchResponse = await client.search({
     index: 'rheinkultur-cubes',
     body: {
@@ -270,12 +286,58 @@ Parse.Cloud.define('search', async ({
       sort,
       track_total_hits: true
     },
+    _source: { excludes, includes },
     from,
     size: pagination || 50
   })
   const { hits: { hits, total: { value: count } } } = searchResponse
-  return { hits, count }
+  let results = hits.map(hit => hit._source)
+  if (isPublic) {
+    results = results.map(result => {
+      if (result.s >= 5) {
+        result.s = 9
+      }
+      return result
+    })
+  }
+  return { results, count }
 }, { validateMasterKey: true })
+
+Parse.Cloud.define('booked-cubes', async () => {
+  const keepAlive = '1m'
+  const size = 5000
+  // Sorting should be by _shard_doc or at least include _shard_doc
+  const index = ['rheinkultur-cubes']
+  const sort = [{ _shard_doc: 'desc' }]
+  const query = { bool: { must: [{ term: { s: 5 } }] } }
+  let searchAfter
+  let pointInTimeId = (await client.openPointInTime({ index, keep_alive: keepAlive })).id
+  const cubes = []
+  while (true) {
+    const { pit_id, hits: { hits } } = await client.search({
+      body: {
+        pit: {
+          id: pointInTimeId,
+          keep_alive: keepAlive
+        },
+        size,
+        track_total_hits: false,
+        query,
+        sort,
+        search_after: searchAfter
+      },
+      _source: { includes: ['objectId', 's', 'gp'] }
+    })
+    if (!hits?.length) { break }
+    pointInTimeId = pit_id
+    cubes.push(...hits.map(hit => hit._source))
+    if (hits.length < size) { break }
+    // search after has to provide value for each sort
+    const lastHit = hits[hits.length - 1]
+    searchAfter = lastHit.sort
+  }
+  return cubes
+}, $adminOrMaster)
 
 // Before is only defined if address is changing
 const indexCube = async (cube, before) => {
