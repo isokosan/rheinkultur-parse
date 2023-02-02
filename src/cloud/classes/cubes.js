@@ -3,17 +3,15 @@ const { getNewNo } = require('@/shared')
 const { indexCube, unindexCube } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
-    if (this.get('dAt')) { return 9 }
     if (this.get('order')) { return 5 }
+    if (this.get('dAt')) { return 8 }
     if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb')) {
-      return 8
-    }
-    if (this.get('TTMR')) {
       return 7
     }
-
+    if (this.get('TTMR')) { return 6 }
     if (this.get('vAt')) { return 3 }
     if (this.get('sAt')) { return 2 }
+    return 0
   }
 })
 
@@ -47,6 +45,13 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
 
   // make sure computed values are unset and not persisted in DB
   cube.unset('s').unset('bPLZ').unset('klsId')
+})
+
+Parse.Cloud.beforeFind(Cube, ({ query, user, master }) => {
+  const isPublic = !user && !master
+  if (isPublic) {
+    query.select(['p1', 'p2'])
+  }
 })
 
 Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit } }) => {
