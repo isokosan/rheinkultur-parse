@@ -1,3 +1,10 @@
+# [0.35.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.34.2...0.35.0) (2023-02-03)
+
+
+### Features
+
+* add post status to invoices and credit notes ([891b0e5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/891b0e582ea3af15e96c8716f0abf7e5410ac457))
+
 ## [0.34.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.34.1...0.34.2) (2023-02-02)
 
 
