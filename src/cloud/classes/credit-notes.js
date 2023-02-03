@@ -366,7 +366,7 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
   }
 
   email && await Parse.Cloud.run('credit-note-send-mail', { id: creditNote.id, email }, { useMasterKey: true })
-    .then(() => { message += ` Email an ${email} gesendet.` })
+    .then((emailMessage) => { message += (' ' + emailMessage) })
     .catch(consola.error)
   return message
 }, { requireUser: true })
@@ -404,9 +404,24 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
     },
     attachments
   })
+  mailStatus.attachments = attachments.map(attachment => attachment.filename)
   creditNote.set({ mailStatus })
   const audit = { fn: 'send-email', user, data: { mailStatus } }
-  return creditNote.save(null, { useMasterKey: true, context: { audit } })
+  await creditNote.save(null, { useMasterKey: true, context: { audit } })
+  return `E-mail an ${email} gesendet.`
+}, { requireUser: true })
+
+Parse.Cloud.define('credit-note-toggle-post', async ({ params: { id: creditNoteId }, user }) => {
+  const creditNote = await $getOrFail(CreditNote, creditNoteId)
+  if (creditNote.get('status') < 2) {
+    throw new Error('Can\'t post draft credit note')
+  }
+  const postStatus = creditNote.get('postStatus') ? null : { sentAt: moment().format('YYYY-MM-DD') }
+  const message = 'Rechnung als ' + (creditNote.get('postStatus') ? 'nicht ' : '') + 'versendet markiert'
+  creditNote.set({ postStatus })
+  const audit = { user, fn: 'toggle-post', data: { postStatus } }
+  await creditNote.save(null, { useMasterKey: true, context: { audit } })
+  return message
 }, { requireUser: true })
 
 Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, resourceId: lexId } }) => {

@@ -465,7 +465,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
     email = invoice.get('address').get('email')
   }
   email && await Parse.Cloud.run('invoice-send-mail', { id: invoice.id, email }, { useMasterKey: true })
-    .then(() => { message += ` Email an ${email} gesendet.` })
+    .then((emailMessage) => { message += (' ' + emailMessage) })
     .catch(consola.error)
   return message
 }, { requireUser: true })
@@ -510,9 +510,24 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
     },
     attachments
   })
+  mailStatus.attachments = attachments.map(attachment => attachment.filename)
   invoice.set({ mailStatus })
   const audit = { fn: 'send-email', user, data: { mailStatus } }
-  return invoice.save(null, { useMasterKey: true, context: { audit } })
+  await invoice.save(null, { useMasterKey: true, context: { audit } })
+  return `E-mail an ${email} gesendet.`
+}, { requireUser: true })
+
+Parse.Cloud.define('invoice-toggle-post', async ({ params: { id: invoiceId }, user }) => {
+  const invoice = await $getOrFail(Invoice, invoiceId)
+  if (invoice.get('status') < 2) {
+    throw new Error('Can\'t post draft invoice')
+  }
+  const postStatus = invoice.get('postStatus') ? null : { sentAt: moment().format('YYYY-MM-DD') }
+  const message = 'Rechnung als ' + (invoice.get('postStatus') ? 'nicht ' : '') + 'versendet markiert'
+  invoice.set({ postStatus })
+  const audit = { user, fn: 'toggle-post', data: { postStatus } }
+  await invoice.save(null, { useMasterKey: true, context: { audit } })
+  return message
 }, { requireUser: true })
 
 Parse.Cloud.define('invoice-discard', async ({ params: { id: invoiceId }, user, context: { audit: predefinedAudit } }) => {

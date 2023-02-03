@@ -326,7 +326,8 @@ const schemaDefinitions = {
       docs: { type: 'Array' },
       tags: { type: 'Array' },
 
-      mailStatus: { type: 'Object' }
+      mailStatus: { type: 'Object' },
+      postStatus: { type: 'Object' }
     }
   },
   FileObject: {
@@ -431,7 +432,6 @@ const schemaDefinitions = {
       // cached values
       // netTotal, taxTotal, total, alternative: total: { net, tax, gross }
       // cubeCount
-      // mailStatus
 
       lineItems: { type: 'Array', required: true }, // required for lex office
 
@@ -442,6 +442,7 @@ const schemaDefinitions = {
       tags: { type: 'Array' },
 
       mailStatus: { type: 'Object' },
+      postStatus: { type: 'Object' },
 
       // for tracking duplications from canceled invoices
       duplicateOf: { type: 'Pointer', targetClass: 'Invoice' }
