@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.0.0...1.0.1) (2023-02-03)
+
+
+### Bug Fixes
+
+* remove manual-updates assemblies ([bb29f2f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bb29f2fcee7c6031607ca95afbdbec3bfa5f8d40))
+
 # [0.36.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.35.1...0.36.0) (2023-02-03)
 
 
