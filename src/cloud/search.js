@@ -190,8 +190,11 @@ Parse.Cloud.define('search', async ({
     })))
   }
 
-  // STATUS
-  if (s.includes('available')) {
+  // STATUS PUBLIC
+  // TODO: add filter for distributors (external users who are not scouts)
+  isPublic && bool.must_not.push({ exists: { field: 'dAt' } })
+
+  if (s.includes('available') || s.includes('0')) {
     bool.must.push({
       bool: {
         should: [
@@ -215,45 +218,29 @@ Parse.Cloud.define('search', async ({
     })
   }
 
-  // Unscouted
-  if (s.includes('0')) {
-    bool.must_not.push({ exists: { field: 'sAt' } })
-    bool.must_not.push({ exists: { field: 'vAt' } })
-  }
-  // Scouted but not verified
-  if (s.includes('2')) {
-    bool.must.push({ exists: { field: 'sAt' } })
-    bool.must_not.push({ exists: { field: 'vAt' } })
-  }
-  // Verified
-  if (s.includes('3')) {
-    bool.must.push({ exists: { field: 'vAt' } })
-  }
   // Booked
   if (s.includes('5')) {
-    bool.must.push({ term: { s: 5 } })
+    bool.must.push({ exists: { field: 'order' } })
     cId && bool.must.push({ match: { 'order.company.objectId': cId } })
   }
-  // Rahmenbelegung
-  if (s.includes('6')) {
-    bool.must.push({ exists: { field: 'TTMR' } })
-  }
   // Nicht vermarktungsfähig
-  if (s.includes('7')) {
-    bool.must.push({
-      bool: {
-        should: [
-          { exists: { field: 'bPLZ' } },
-          { exists: { field: 'nMR' } },
-          { exists: { field: 'MBfD' } },
-          { exists: { field: 'PG' } },
-          { exists: { field: 'Agwb' } }
-        ],
-        minimum_should_match: 1
-      }
-    })
-  }
+  s.includes('7') && bool.must.push({
+    bool: {
+      should: [
+        { exists: { field: 'bPLZ' } },
+        { exists: { field: 'nMR' } },
+        { exists: { field: 'MBfD' } },
+        { exists: { field: 'PG' } },
+        { exists: { field: 'Agwb' } }
+      ],
+      minimum_should_match: 1
+    }
+  })
+
   // single issues
+  s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
+  s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
+  s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
   s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
   s.includes('nMR') && bool.must.push({ exists: { field: 'nMR' } })
   s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
@@ -261,9 +248,7 @@ Parse.Cloud.define('search', async ({
   s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
 
   // Nicht gefunden
-  if (s.includes('8')) {
-    bool.must.push({ exists: { field: 'dAt' } })
-  }
+  s.includes('8') && bool.must.push({ exists: { field: 'dAt' } })
 
   if (returnQuery) {
     return {

@@ -3,14 +3,12 @@ const { getNewNo } = require('@/shared')
 const { indexCube, unindexCube } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
+    // available, booked, not available, not found
     if (this.get('order')) { return 5 }
     if (this.get('dAt')) { return 8 }
     if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb')) {
       return 7
     }
-    if (this.get('TTMR')) { return 6 }
-    if (this.get('vAt')) { return 3 }
-    if (this.get('sAt')) { return 2 }
     return 0
   }
 })
@@ -68,6 +66,13 @@ Parse.Cloud.define('redis-test', async () => {
   return i
 })
 
+// if query is coming from public api, hide soft deleted cubes
+// TODO: Also hide for external users like distributors that do not scout
+Parse.Cloud.beforeFind(Cube, async ({ query, user, master }) => {
+  const isPublic = !user && !master
+  isPublic && query.equalTo('dAt', null)
+})
+
 const PUBLIC_FIELDS = ['str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2']
 Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   const isPublic = !user && !master
@@ -93,7 +98,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
           cube.unset(key)
         }
       }
-      cube.get('s') >= 5 ? cube.set('s', 9) : cube.set('s', 0)
+      cube.get('s') === 5 ? cube.set('s', 7) : cube.set('s', 0)
       continue
     }
 

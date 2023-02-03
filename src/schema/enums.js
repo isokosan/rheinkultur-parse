@@ -32,11 +32,8 @@ module.exports.CONTRACT_STATUSES = {
   5: 'Ausgelaufen'
 }
 module.exports.CUBE_STATUSES = {
-  0: 'Nicht gescouted',
-  2: 'Gescouted',
-  3: 'Verifiziert',
+  0: 'Verfügbar',
   5: 'Vermarktet',
-  6: 'Rahmenbelegung',
   7: 'Nicht vermarktungsfähig',
   8: 'Nicht gefunden'
 }
