@@ -96,7 +96,7 @@ const schemaDefinitions = {
 
       cubeIds: { type: 'Array', default: [] },
 
-      // disassembly: { type: 'Boolean' } // demontage von Rheinkultur
+      disassembly: { type: 'Boolean' }, // demontage von Rheinkultur
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
@@ -234,7 +234,7 @@ const schemaDefinitions = {
       commissions: { type: 'Object' },
       commission: { type: 'Number' },
 
-      // disassembly: { type: 'Boolean' } // demontage von Rheinkultur
+      disassembly: { type: 'Boolean' }, // demontage von Rheinkultur
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },

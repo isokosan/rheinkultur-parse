@@ -139,16 +139,11 @@ const seedOrders = async ({ purge, orderNo, orderNos, customerNo, setCubeStatuse
       externalOrderNo,
       campaignNo,
       invoiceDescription,
-      comments,
-      demontageRMV
+      comments
     } = order
     let no = order.no
     // distributor check
     let itemClass, itemId, production
-
-    if (demontageRMV) {
-      production = new (Parse.Object.extend('Production'))({ disassembly: true, disassemblyRMV: true })
-    }
 
     let type = 'contract'
     if (company.get('distributor')) {

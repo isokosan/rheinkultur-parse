@@ -1,13 +1,13 @@
-// Parse.Cloud.define('disassembly-update', async ({
-//   params: {
-//     className,
-//     id,
-//     disassemblyRMV
-//   }, user
-// }) => {
-//   const bc = await $query(className).get(id, { useMasterKey: true })
-//   const changes = $changes(bc, { disassemblyRMV })
-//   bc.set({ disassemblyRMV })
-//   const audit = { user, fn: 'disassembly-update', data: { changes } }
-//   return bc.save(null, { useMasterKey: true, context: { audit } })
-// }, { requireUser: true })
+Parse.Cloud.define('disassembly-update', async ({
+  params: {
+    className,
+    id,
+    disassembly
+  }, user
+}) => {
+  const bc = await $query(className).get(id, { useMasterKey: true })
+  const changes = $changes(bc, { disassembly })
+  bc.set({ disassembly })
+  const audit = { user, fn: className.toLowerCase() + '-update', data: { changes } }
+  return bc.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })

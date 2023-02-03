@@ -1157,13 +1157,11 @@ Parse.Cloud.define('contract-cancel', async ({
   params: {
     id: contractId,
     endsAt,
-    disassemblyStart,
     notes: cancelNotes
   }, user
 }) => {
   const contract = await $getOrFail(Contract, contractId, ['production'])
   endsAt = normalizeDateString(endsAt)
-  disassemblyStart = normalizeDateString(disassemblyStart)
   cancelNotes = normalizeString(cancelNotes)
 
   if (contract.get('status') < 3) {
@@ -1179,20 +1177,11 @@ Parse.Cloud.define('contract-cancel', async ({
   }
 
   contract.set({ endsAt, canceledAt: new Date(), cancelNotes })
-  if (contract.get('production') && contract.get('production').get('disassemblyStart') !== disassemblyStart) {
-    changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
-  }
   if (contract.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
     contract.set('status', 3)
     message += ' Vertrag status auf Aktiv gestellt.'
   }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-  if (contract.get('production') && disassemblyStart) {
-    await contract.get('production')
-      .set({ disassemblyStart })
-      .save(null, { useMasterKey: true })
-    message += ' Demontage ab datum geändert.'
-  }
   if (moment(endsAt).isBefore(await $today(), 'day') && contract.get('status') === 3) {
     await Parse.Cloud.run('contract-end', { id: contract.id }, { useMasterKey: true })
     message += ' Vertrag beendet.'
@@ -1221,10 +1210,6 @@ Parse.Cloud.define('contract-cancel-cancel', async ({
   const changes = $changes(contract, { endsAt })
   const audit = { user, fn: 'contract-cancel-cancel', data: { changes } }
   contract.set({ endsAt, canceledAt: null, cancelNotes: null })
-  const disassemblyStart = null
-  if (contract.get('production') && contract.get('production').get('disassemblyStart')) {
-    changes.disassemblyStart = [contract.get('production').get('disassemblyStart'), disassemblyStart]
-  }
   let message = 'Kündigung zurückgezogen.'
   if (contract.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
     contract.set('status', 3)
@@ -1232,12 +1217,6 @@ Parse.Cloud.define('contract-cancel-cancel', async ({
     message += ' Vertrag status auf Aktiv gestellt.'
   }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-  if (contract.get('production') && contract.get('production').get('disassemblyStart')) {
-    await contract.get('production')
-      .set({ disassemblyStart })
-      .save(null, { useMasterKey: true })
-    message += ' Demontage ab datum gelöscht.'
-  }
   const updatedInvoices = await Parse.Cloud.run(
     'contract-update-planned-invoices',
     { id: contract.id },
