@@ -1,3 +1,10 @@
+## [0.35.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.35.0...0.35.1) (2023-02-03)
+
+
+### Bug Fixes
+
+* status filter ([748ff45](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/748ff456bd12d421d5f27e9d6fce2558d3c3ebcb))
+
 # [0.35.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/0.34.2...0.35.0) (2023-02-03)
 
 
