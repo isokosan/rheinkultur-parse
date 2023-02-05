@@ -4,6 +4,7 @@ const { departureLists: { normalizeFields } } = require('@/schema/normalizers')
 const DepartureList = Parse.Object.extend('DepartureList')
 const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
+const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
 Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: { countCubes } }) => {
   if (departureList.isNew()) {
@@ -85,7 +86,7 @@ Parse.Cloud.afterSave(DepartureList, ({ object: departureList, context: { audit,
 })
 
 Parse.Cloud.beforeFind(DepartureList, async ({ query, user }) => {
-  query._include.includes('all') && query.include(['briefing', 'control', 'submissions'])
+  query._include.includes('all') && query.include(['briefing', 'control', 'disassembly', 'submissions'])
   if (user?.get('accType') === 'distributor' && user.get('distributorRoles').includes('manage-scouts')) {
     const company = user.get('company')
     if (!company) {
@@ -110,6 +111,9 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       }
       if (departureList.get('type') === 'control') {
         submissions = await $query(ControlSubmission).equalTo('departureList', departureList).find({ useMasterKey: true })
+      }
+      if (departureList.get('type') === 'disassembly') {
+        submissions = await $query(DisassemblySubmission).equalTo('departureList', departureList).find({ useMasterKey: true })
       }
       departureList.set('submissions', submissions)
     }

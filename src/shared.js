@@ -45,6 +45,11 @@ const getQuarterStartEnd = function (quarter) {
   const end = moment(start).add(1, 'quarter').subtract(1, 'day').format('YYYY-MM-DD')
   return { start, end }
 }
+const geMonthYearStartEnd = function (monthYear) {
+  const start = moment(monthYear, 'MM-YYYY').format('YYYY-MM-DD')
+  const end = moment(start).add(1, 'month').subtract(1, 'day').format('YYYY-MM-DD')
+  return { start, end }
+}
 
 const getCubeSummaries = function (cubeIds) {
   const query = new Parse.Query('Cube')
@@ -193,6 +198,7 @@ module.exports = {
   getCubeSummaries,
   getPeriodTotal,
   getQuarterStartEnd,
+  geMonthYearStartEnd,
   getNewNo,
   checkIfCubesAreAvailable,
   setCubeOrderStatus

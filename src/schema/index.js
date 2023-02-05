@@ -330,6 +330,15 @@ const schemaDefinitions = {
       postStatus: { type: 'Object' }
     }
   },
+  Disassembly: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true },
+
+      docs: { type: 'Array' },
+      responsibles: { type: 'Array' }
+    }
+  },
   FileObject: {
     CLP: { ...readAuthOnly, ...writeAuthOnly },
     fields: {
@@ -528,18 +537,19 @@ const schemaDefinitions = {
   DepartureList: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
-      type: { type: 'String', required: true }, // scout or control
+      type: { type: 'String', required: true }, // scout, control or disassembly
       briefing: { type: 'Pointer', targetClass: 'Briefing' },
+      disassembly: { type: 'Pointer', targetClass: 'Disassembly' },
       control: { type: 'Pointer', targetClass: 'Control' },
       name: { type: 'String' },
       scout: { type: 'Pointer', targetClass: '_User' },
       dueDate: { type: 'String' },
-      quota: { type: 'Number' },
-      placeKey: { type: 'String' },
-      state: { type: 'Pointer', targetClass: 'State' },
+      quota: { type: 'Number' }, // only for scout type
+      placeKey: { type: 'String' }, // (ort || '')_(stateId) // TODO: Remove duplicated computed?
       ort: { type: 'String' },
-      cubesQuery: { type: 'Object' },
-      status: { type: 'String' },
+      state: { type: 'Pointer', targetClass: 'State' },
+      cubesQuery: { type: 'Object' }, // TODO: Remove duplicated computed?
+      status: { type: 'String' }, // DEPARTURE_LIST_STATUSES
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },
       pendingCubeIds: { type: 'Array' }, // scout form submitted
@@ -558,7 +568,7 @@ const schemaDefinitions = {
       status: { type: 'String' },
       form: { type: 'Object' },
       photos: { type: 'Array' },
-      scoutedAt: { type: 'Date' }
+      scoutedAt: { type: 'Date' } // TODO: Maybe remove in favor of using createdAt
     }
   },
   ControlSubmission: {
@@ -570,9 +580,21 @@ const schemaDefinitions = {
       condition: { type: 'String' },
       beforePhoto: { type: 'Pointer', targetClass: 'FileObject' },
       afterPhoto: { type: 'Pointer', targetClass: 'FileObject' },
-      controlledAt: { type: 'Date' }
+      controlledAt: { type: 'Date' } // TODO: Maybe remove in favor of using createdAt
     }
   },
+  DisassemblySubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      departureList: { type: 'Pointer', targetClass: 'DepartureList' },
+      cube: { type: 'Pointer', targetClass: 'Cube', required: true },
+      scout: { type: 'Pointer', targetClass: '_User', required: true },
+      condition: { type: 'String' },
+      photo: { type: 'Pointer', targetClass: 'FileObject' },
+      disassembledAt: { type: 'Date' } // TODO: Maybe remove in favor of using createdAt
+    }
+  },
+  // TODO: Remove in favor of using enums
   State: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
