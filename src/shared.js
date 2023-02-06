@@ -108,7 +108,7 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
   }
 }
 
-async function setCubeOrderStatus (bookingOrContract) {
+async function setCubeOrderStatuses (bookingOrContract) {
   const {
     no,
     company,
@@ -195,5 +195,5 @@ module.exports = {
   getQuarterStartEnd,
   getNewNo,
   checkIfCubesAreAvailable,
-  setCubeOrderStatus
+  setCubeOrderStatuses
 }

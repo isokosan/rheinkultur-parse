@@ -1,7 +1,7 @@
 const { normalizeDateString, normalizeString, bookings: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 
 const { round2 } = require('@/utils')
-const { getNewNo, checkIfCubesAreAvailable, setCubeOrderStatus } = require('@/shared')
+const { getNewNo, checkIfCubesAreAvailable, setCubeOrderStatuses } = require('@/shared')
 
 const Booking = Parse.Object.extend('Booking')
 
@@ -25,7 +25,7 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
 })
 
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
-  setCubeStatuses && await setCubeOrderStatus(booking)
+  setCubeStatuses && await setCubeOrderStatuses(booking)
   audit && $audit(booking, audit)
 })
 
