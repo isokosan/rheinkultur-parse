@@ -580,7 +580,8 @@ const schemaDefinitions = {
       condition: { type: 'String' },
       beforePhoto: { type: 'Pointer', targetClass: 'FileObject' },
       afterPhoto: { type: 'Pointer', targetClass: 'FileObject' },
-      controlledAt: { type: 'Date' } // TODO: Maybe remove in favor of using createdAt
+      comment: { type: 'String' },
+      rejectionReason: { type: 'String' }
     }
   },
   DisassemblySubmission: {
@@ -590,8 +591,7 @@ const schemaDefinitions = {
       cube: { type: 'Pointer', targetClass: 'Cube', required: true },
       scout: { type: 'Pointer', targetClass: '_User', required: true },
       condition: { type: 'String' },
-      photo: { type: 'Pointer', targetClass: 'FileObject' },
-      disassembledAt: { type: 'Date' } // TODO: Maybe remove in favor of using createdAt
+      photo: { type: 'Pointer', targetClass: 'FileObject' }
     }
   },
   // TODO: Remove in favor of using enums
