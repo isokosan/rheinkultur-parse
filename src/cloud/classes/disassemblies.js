@@ -1,4 +1,4 @@
-Parse.Cloud.define('disassembly-update', async ({
+Parse.Cloud.define('disassembly-order-update', async ({
   params: {
     className,
     id,
