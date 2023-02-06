@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.0...1.1.1) (2023-02-06)
+
+
+### Bug Fixes
+
+* add manual update to set cube order statuses of orders ([40e8b14](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/40e8b149fc4c241b545bf7932065b2afdab2cd5e))
+
 # [1.1.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.0.2...1.1.0) (2023-02-06)
 
 
