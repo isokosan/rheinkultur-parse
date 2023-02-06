@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.1...1.1.2) (2023-02-06)
+
+
+### Bug Fixes
+
+* add fn to free early canceled cubes every night ([b14e878](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b14e8789f1ddd28f527ae5fd79236dc7edc8570c))
+
 ## [1.1.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.0...1.1.1) (2023-02-06)
 
 
