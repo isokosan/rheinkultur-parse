@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.3...1.1.4) (2023-02-06)
+
+
+### Bug Fixes
+
+* disassembly update fn name ([13fd7ad](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/13fd7ada98c6e23f8d6e8933e70368c4bcb209aa))
+
 ## [1.1.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.2...1.1.3) (2023-02-06)
 
 
