@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.0.2...1.1.0) (2023-02-06)
+
+
+### Features
+
+* add media to public cube fields ([7a41c77](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7a41c770b3c2e2fe3da3af4ce556572e66b4aaa1))
+
 ## [1.0.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.0.1...1.0.2) (2023-02-04)
 
 
