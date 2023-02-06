@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.2...1.1.3) (2023-02-06)
+
+
+### Bug Fixes
+
+* cube update ht audit bug ([30a0e34](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/30a0e340e4c4bc8a06fb26f0b685f377a809f102))
+
 ## [1.1.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.1...1.1.2) (2023-02-06)
 
 
