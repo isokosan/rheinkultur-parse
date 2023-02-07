@@ -1,3 +1,10 @@
+## [1.1.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.5...1.1.6) (2023-02-07)
+
+
+### Bug Fixes
+
+* use contract start and initial duration to recalculate invoice periods ([2f75fc0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2f75fc0a1b124e8db2a3930ad036c3ad89034b6d))
+
 ## [1.1.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.4...1.1.5) (2023-02-07)
 
 
