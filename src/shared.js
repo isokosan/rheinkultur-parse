@@ -1,4 +1,4 @@
-const { round2, parseAsDigitString } = require('@/utils')
+const { round2, round5, parseAsDigitString } = require('@/utils')
 
 const getNewNo = async function (prefix, className, field, digits) {
   const last = await $query(className)
@@ -35,8 +35,29 @@ function getDocumentTotals (allowTaxFreeInvoices, lineItems, date) {
   return { netTotal, taxTotal, total }
 }
 
+function getPeriodEnd ({ periodStart, billingCycle, contractEnd }) {
+  periodStart = moment(periodStart)
+  contractEnd = moment(contractEnd)
+  const addMonths = billingCycle - (periodStart.month() % billingCycle)
+  const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
+  return contractEnd.isBetween(periodStart, nextPeriodStart, 'day', '[)')
+    ? contractEnd
+    : nextPeriodStart.subtract(1, 'days')
+}
+
 const getPeriodTotal = function (periodStart, periodEnd, monthlyTotal) {
-  const months = moment(periodEnd).add(1, 'days').diff(periodStart, 'months', true)
+  const carry = moment(periodStart)
+  periodEnd = moment(periodEnd)
+  const eachMonth = {}
+  while (true) {
+    const endOfMonth = carry.clone().endOf('month')
+    const end = periodEnd.isBefore(endOfMonth) ? periodEnd : endOfMonth
+    const days = end.diff(carry, 'days') + 1
+    eachMonth[carry.format('MM-YYYY')] = round5(days / carry.daysInMonth())
+    if (end.isSame(periodEnd, 'month')) { break }
+    carry.add(1, 'month').set('date', 1)
+  }
+  const months = Object.values(eachMonth).reduce((acc, val) => round5(acc + val), 0)
   return { months, total: round2(months * monthlyTotal) }
 }
 
@@ -191,8 +212,9 @@ module.exports = {
   getDocumentTotals,
   getTaxRatePercentage,
   getCubeSummaries,
-  getPeriodTotal,
   getQuarterStartEnd,
+  getPeriodEnd,
+  getPeriodTotal,
   getNewNo,
   checkIfCubesAreAvailable,
   setCubeOrderStatuses

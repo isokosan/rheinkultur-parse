@@ -1,7 +1,7 @@
 const { sum } = require('lodash')
 const { normalizeDateString, normalizeString, contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const { round2, round5, priceString } = require('@/utils')
-const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatuses } = require('@/shared')
+const { getNewNo, getDocumentTotals, getPeriodEnd, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatuses } = require('@/shared')
 const { generateContract } = require('@/docs')
 const sendMail = require('@/services/email')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
@@ -153,12 +153,7 @@ async function getInvoicesPreview (contract) {
     if (periodStart.isAfter(contractEnd)) {
       break
     }
-    const addMonths = billingCycle - (periodStart.month() % billingCycle)
-    const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
-    // if the periodStart carry reached the contractEnd break
-    const periodEnd = contractEnd.isBetween(periodStart, nextPeriodStart, 'day', '[)')
-      ? contractEnd.clone()
-      : nextPeriodStart.clone().subtract(1, 'days')
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractEnd })
 
     let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
     if (periodStart.isAfter(invoiceDate, 'year')) {
@@ -758,15 +753,11 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   const earlyCancellations = contract.get('earlyCancellations') || {}
   let i = 0
   const contractEnd = contract.get('endsAt')
+  const billingCycle = contract.get('billingCycle')
   for (const invoice of invoices) {
     let updated = false
     const periodStart = invoice.get('periodStart')
-    // adjust periodEnd if after contract end
-    const shouldEnd = moment(periodStart).add(contract.get('billingCycle'), 'months').subtract(1, 'days').format('YYYY-MM-DD')
-    const periodEnd = periodStart <= contractEnd && contractEnd <= shouldEnd
-      ? contractEnd
-      : shouldEnd
-
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractEnd }).format('YYYY-MM-DD')
     if (contract.get('pricingModel') === 'gradual') {
       const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
       invoice.set('gradualCount', gradualCount)

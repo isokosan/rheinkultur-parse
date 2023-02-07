@@ -85,6 +85,10 @@ const updateJobs = {
     cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
+  recalculate_future_contract_invoices: {
+    name: 'Recalculate all future invoices from contracts.',
+    timeoutMinutes: 60
+  },
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',
     timeoutMinutes: 15,
