@@ -1,3 +1,10 @@
+## [1.1.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.4...1.1.5) (2023-02-07)
+
+
+### Bug Fixes
+
+* period end and period months calculations ([80406ad](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/80406ad7cf0093cc0ccc6f66d71270d085b5cf87))
+
 ## [1.1.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.3...1.1.4) (2023-02-06)
 
 
