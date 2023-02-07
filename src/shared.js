@@ -35,13 +35,16 @@ function getDocumentTotals (allowTaxFreeInvoices, lineItems, date) {
   return { netTotal, taxTotal, total }
 }
 
-function getPeriodEnd ({ periodStart, billingCycle, contractEnd }) {
+function getPeriodEnd ({ periodStart, billingCycle, contractStart, initialDuration }) {
   periodStart = moment(periodStart)
-  contractEnd = moment(contractEnd)
   const addMonths = billingCycle - (periodStart.month() % billingCycle)
   const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
-  return contractEnd.isBetween(periodStart, nextPeriodStart, 'day', '[)')
-    ? contractEnd
+  // check contract cut, if the invoice period starts after the initial contract duration
+  const contractCut = nextPeriodStart.isAfter(moment(contractStart).add(initialDuration, 'months'))
+    ? moment(contractStart).subtract(1, 'day').year(periodStart.year())
+    : null
+  return contractCut && contractCut.isBetween(periodStart, nextPeriodStart, 'day', '[)')
+    ? contractCut
     : nextPeriodStart.subtract(1, 'days')
 }
 

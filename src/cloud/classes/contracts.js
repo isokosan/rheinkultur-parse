@@ -153,7 +153,7 @@ async function getInvoicesPreview (contract) {
     if (periodStart.isAfter(contractEnd)) {
       break
     }
-    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractEnd })
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, initialDuration: contract.get('initialDuration') })
 
     let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
     if (periodStart.isAfter(invoiceDate, 'year')) {
@@ -752,12 +752,13 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     .find({ useMasterKey: true })
   const earlyCancellations = contract.get('earlyCancellations') || {}
   let i = 0
+  const contractStart = contract.get('startsAt')
   const contractEnd = contract.get('endsAt')
   const billingCycle = contract.get('billingCycle')
   for (const invoice of invoices) {
     let updated = false
     const periodStart = invoice.get('periodStart')
-    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractEnd }).format('YYYY-MM-DD')
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, initialDuration: contract.get('initialDuration') }).format('YYYY-MM-DD')
     if (contract.get('pricingModel') === 'gradual') {
       const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
       invoice.set('gradualCount', gradualCount)
