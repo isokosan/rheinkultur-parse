@@ -76,7 +76,7 @@ jobs:
           KUBECONFIG: ${{ secrets.KUBECONFIG_AC0 }}
 
       - name: Install kubectl
-        uses: azure/setup-kubectl@e1be5e75ed9741a7c467f4832ecb259a83174311 # v3
+        uses: azure/setup-kubectl@901a10e89ea615cf61f57ac05cecdf23e7de06d8 # v3
 
       - name: Use context
         run: kubectl config use-context ac0
@@ -115,7 +115,7 @@ jobs:
           KUBECONFIG: ${{ secrets.KUBECONFIG_AC0 }}
 
       - name: Install kubectl
-        uses: azure/setup-kubectl@e1be5e75ed9741a7c467f4832ecb259a83174311 # v3
+        uses: azure/setup-kubectl@901a10e89ea615cf61f57ac05cecdf23e7de06d8 # v3
 
       - name: Use context
         run: kubectl config use-context ac0
