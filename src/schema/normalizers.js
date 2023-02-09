@@ -223,16 +223,16 @@ module.exports = {
         normalized.differentInvoiceAddress = false
       }
       if (!normalized.differentInvoiceAddress) {
-        normalized.invoiceAddressId = null
+        normalized.invoiceAddressId = undefined
       }
       if (!normalized.agencyId) {
-        normalized.agencyPersonId = null
-        normalized.commission = null
-        normalized.commissions = null
+        normalized.agencyPersonId = undefined
+        normalized.commission = undefined
+        normalized.commissions = undefined
       }
       if (!normalized.autoExtendsBy) {
-        normalized.noticePeriod = null
-        normalized.autoExtendsAt = null
+        normalized.noticePeriod = undefined
+        normalized.autoExtendsAt = undefined
       }
       return normalized
     }

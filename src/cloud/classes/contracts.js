@@ -328,7 +328,7 @@ function validateProduction (production, cubeIds) {
 }
 
 async function validateContractFinalize (contract, skipCubeValidations) {
-  if (contract.get('status') > 2) {
+  if (contract.get('status') >= 3) {
     throw new Error('Vertrag schon finalisiert.')
   }
   // check if contract has cubeIds
@@ -714,13 +714,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
 
 Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
-  if (contract.get('status') <= 2) {
-    await validateContractFinalize(contract)
-  } else if (contract.get('status') === 2.1) {
-    // if its a finalized contract update only validate production
-    const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
-    production && validateProduction(production, contract.get('cubeIds'))
-  }
+  await validateContractFinalize(contract)
   // TODO: Report cubes in other bookings/contracts
   return {
     otherContracts: [],
@@ -1402,6 +1396,12 @@ Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user 
   const contract = await $getOrFail(Contract, contractId)
   if (contract.get('status') !== 0 && contract.get('status') !== 2) {
     throw new Error('Nur Verträge im Entwurfsstatus können gelöscht werden!')
+  }
+  const invoices = await $query('Invoice').equalTo('contract', contract).count({ useMasterKey: true })
+  const creditNotes = await $query('CreditNote').equalTo('contract', contract).count({ useMasterKey: true })
+  if (invoices || creditNotes) {
+    // TOTRANSLATE
+    throw new Error('Vertrag hat Belege. Please delete the invoices or credit notes first.')
   }
   return contract.destroy({ useMasterKey: true })
 }, { requireUser: true })

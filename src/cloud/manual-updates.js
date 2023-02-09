@@ -4,17 +4,6 @@ Parse.Cloud.define('manual-updates-set-cube-statuses', ({ params: { orderClass, 
   return $getOrFail(orderClass, orderId).then(setCubeOrderStatuses)
 }, { requireMaster: true })
 
-// FEBRUARY FIX
-Parse.Cloud.define('manual-updates-fix-februaries', async () => {
-  const contracts = await $query('Contract').equalTo('endsAt', '2024-02-28').find({ useMasterKey: true })
-  for (const contract of contracts) {
-    contract.set('endsAt', '2024-02-29')
-    await contract.save(null, { useMasterKey: true })
-  }
-  return contracts.length
-})
-// THEN RUN INVOICE UPDATES
-
 // IF OVERLAPPING PLANNED INVOICES, DELETE MANUALLY
 Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
   const allInvoices = await $query('Invoice')
@@ -86,3 +75,34 @@ Parse.Cloud.define('manual-updates-check-end-dates', async () => {
   }
   return response
 }, { requireMaster: true })
+
+Parse.Cloud.define('manual-updates-clean-audits', async () => {
+  let skip = 0
+  let i = 0
+  while (true) {
+    const audits = await $query('Audit').notEqualTo('data.changes', null).select('data').skip(skip).limit(1000).find({ useMasterKey: true })
+    if (!audits.length) { break }
+    for (const audit of audits) {
+      const data = audit.get('data')
+      let changed = false
+      for (const key of Object.keys(data.changes)) {
+        const [before, after] = data.changes[key]
+        if (before === after) {
+          delete data.changes[key]
+          changed = true
+        }
+      }
+      if (changed) {
+        if (!Object.keys(data.changes).length) {
+          delete data.changes
+        }
+        Object.keys(data).length
+          ? await audit.set({ data }).save(null, { useMasterKey: true })
+          : await audit.destroy({ useMasterKey: true })
+        i++
+      }
+    }
+    skip += audits.length
+  }
+  return i
+})
