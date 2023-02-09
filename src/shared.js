@@ -35,19 +35,6 @@ function getDocumentTotals (allowTaxFreeInvoices, lineItems, date) {
   return { netTotal, taxTotal, total }
 }
 
-function getPeriodEnd ({ periodStart, billingCycle, contractStart, initialDuration }) {
-  periodStart = moment(periodStart)
-  const addMonths = billingCycle - (periodStart.month() % billingCycle)
-  const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
-  // check contract cut, if the invoice period starts after the initial contract duration
-  const contractCut = nextPeriodStart.isAfter(moment(contractStart).add(initialDuration, 'months'))
-    ? moment(contractStart).subtract(1, 'day').year(periodStart.year())
-    : null
-  return contractCut && contractCut.isBetween(periodStart, nextPeriodStart, 'day', '[)')
-    ? contractCut
-    : nextPeriodStart.subtract(1, 'days')
-}
-
 const getPeriodTotal = function (periodStart, periodEnd, monthlyTotal) {
   const carry = moment(periodStart)
   periodEnd = moment(periodEnd)
@@ -216,7 +203,6 @@ module.exports = {
   getTaxRatePercentage,
   getCubeSummaries,
   getQuarterStartEnd,
-  getPeriodEnd,
   getPeriodTotal,
   getNewNo,
   checkIfCubesAreAvailable,

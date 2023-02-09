@@ -385,8 +385,8 @@ Parse.Cloud.define('invoice-update-extra-cols', async ({ params: { id: invoiceId
 
 Parse.Cloud.define('invoice-remove', async ({ params: { id: invoiceId } }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
-  if (invoice.get('status')) {
-    throw new Error('Geplante Rechnungen können nicht gelöscht werden.')
+  if ([1, 4].includes(invoice.get('status'))) {
+    throw new Error('Auto-generated invoices cannot be deleted')
   }
   return invoice.destroy({ useMasterKey: true })
 }, { requireUser: true })

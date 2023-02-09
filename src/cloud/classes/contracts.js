@@ -1,7 +1,7 @@
 const { sum } = require('lodash')
 const { normalizeDateString, normalizeString, contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const { round2, round5, priceString } = require('@/utils')
-const { getNewNo, getDocumentTotals, getPeriodEnd, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatuses } = require('@/shared')
+const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatuses } = require('@/shared')
 const { generateContract } = require('@/docs')
 const sendMail = require('@/services/email')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
@@ -123,6 +123,33 @@ function getInvoiceLineItems ({ production, media }) {
   ].filter(({ price }) => price)
 }
 
+function getPeriodEnd ({ periodStart, billingCycle, contractStart, contractEnd, invoices }) {
+  periodStart = moment(periodStart)
+  contractEnd = moment(contractEnd)
+  const addMonths = billingCycle - (periodStart.month() % billingCycle)
+  const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
+  // if invoices are not present (generating)
+  if (!invoices) {
+    return nextPeriodStart.isBefore(contractEnd) ? nextPeriodStart.subtract(1, 'day') : contractEnd
+  }
+  // if invoices are present, we want to check the next invoice
+  if (invoices.find(invoice => invoice.get('periodStart') === nextPeriodStart.format('YYYY-MM-DD'))) {
+    return nextPeriodStart.clone().subtract(1, 'day')
+  }
+  // if contract ends in this year use that as contract cut
+  if (periodStart.year() === contractEnd.year()) {
+    if (contractEnd.isBetween(periodStart, nextPeriodStart, 'day', '[)')) {
+      return contractEnd
+    }
+  } else {
+    const contractCut = moment(contractStart).year(periodStart.year()).subtract(1, 'day')
+    if (contractCut.isBetween(periodStart, nextPeriodStart, 'day', '[)')) {
+      return contractCut
+    }
+  }
+  return nextPeriodStart.clone().subtract(1, 'day')
+}
+
 // Note: we do not consider early cancellations here since this is only used before contract finalization
 async function getInvoicesPreview (contract) {
   await contract.fetchWithInclude(['address', 'invoiceAddress', 'production'], { useMasterKey: true })
@@ -153,7 +180,7 @@ async function getInvoicesPreview (contract) {
     if (periodStart.isAfter(contractEnd)) {
       break
     }
-    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, initialDuration: contract.get('initialDuration') })
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd })
 
     let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
     if (periodStart.isAfter(invoiceDate, 'year')) {
@@ -758,7 +785,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   for (const invoice of invoices) {
     let updated = false
     const periodStart = invoice.get('periodStart')
-    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, initialDuration: contract.get('initialDuration') }).format('YYYY-MM-DD')
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd, invoices }).format('YYYY-MM-DD')
     if (contract.get('pricingModel') === 'gradual') {
       const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
       invoice.set('gradualCount', gradualCount)
@@ -987,7 +1014,7 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
   const billingCycle = contract.get('billingCycle') || 12
 
   const endsAt = contract.get('endsAt')
-  const newEndsAt = moment(endsAt).add(autoExtendsBy, 'months')
+  const newEndsAt = moment(endsAt).add(1, 'day').add(autoExtendsBy, 'months').subtract(1, 'day')
 
   contract.set({
     endsAt: newEndsAt.format('YYYY-MM-DD'),

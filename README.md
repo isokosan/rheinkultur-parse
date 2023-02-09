@@ -10,3 +10,6 @@
 
 ### Other Limits
 - Briefings, Controls and Disassemblies have a maximum of 1000 departure lists
+
+# Restoring gzip backup
+`mongorestore --host localhost:27017 --gzip --archive=dump.gz --db rheinkultur-wawi`
