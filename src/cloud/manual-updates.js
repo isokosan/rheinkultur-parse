@@ -37,6 +37,7 @@ Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
     }
     const start = invoice.get('periodStart')
     const end = invoice.get('periodEnd')
+
     contracts[contractNo].periods.push([start, end])
   }
   const contractNos = Object.keys(contracts)
@@ -45,12 +46,17 @@ Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
     const { startsAt, endsAt, periods } = contracts[contractNo]
     let nextStart
     let finalEnd
+    const ends = []
     for (const [start, end] of periods) {
       if (nextStart && start !== nextStart) {
         errors.push({ periods })
       }
       nextStart = moment(end).add(1, 'day').format('YYYY-MM-DD')
       finalEnd = end
+      if (ends.includes(end)) {
+        errors.push({ duplicateEnd: end })
+      }
+      ends.push(end)
     }
     if (finalEnd !== endsAt) {
       errors.push({ finalEnd })
