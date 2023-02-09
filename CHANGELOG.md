@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.8...1.2.0) (2023-02-09)
+
+
+### Features
+
+* validate contract finalize when re-finalizing ([44d6044](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/44d60441ecb9dbcb708f5824dde6e18e003fa671))
+
 ## [1.1.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.7...1.1.8) (2023-02-09)
 
 
