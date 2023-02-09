@@ -1,3 +1,11 @@
+## [1.1.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.7...1.1.8) (2023-02-09)
+
+
+### Bug Fixes
+
+* manual updates fix planned invoice dates ([7d855a9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7d855a94a52c767c43d8bdc4bc67b3c0e93434fc))
+* track same end dates in planned invoices ([2acc7dd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2acc7dddbe8cdade0f84f5726789866e2bfe447f))
+
 ## [1.1.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.6...1.1.7) (2023-02-08)
 
 
