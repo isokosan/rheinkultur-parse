@@ -756,6 +756,11 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: setCubeStatuses !== false } })
 }, { requireUser: true })
 
+Parse.Cloud.define('contract-set-cube-statuses', async ({ params: { id: contractId } }) => {
+  const contract = await $getOrFail(Contract, contractId)
+  return contract.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
+}, { requireUser: true })
+
 Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
   if (contract.get('status') !== 3) {

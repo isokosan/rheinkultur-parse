@@ -354,6 +354,11 @@ Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user,
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: setCubeStatuses !== false } })
 }, { requireUser: true })
 
+Parse.Cloud.define('booking-set-cube-statuses', async ({ params: { id: bookingId } }) => {
+  const booking = await $getOrFail(Booking, bookingId)
+  return booking.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
+}, { requireUser: true })
+
 /**
  * Bookings are extended by auto extend duration
  * When a booking is extended
