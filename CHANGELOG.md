@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.2.0...1.2.1) (2023-02-10)
+
+
+### Bug Fixes
+
+* allow kinetic contracts to be reverted to status 2 ([17fc1d5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/17fc1d595ec855c10e04543162ff5926b877fd34))
+
 # [1.2.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.8...1.2.0) (2023-02-09)
 
 
