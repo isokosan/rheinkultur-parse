@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.3.0...1.4.0) (2023-02-10)
+
+
+### Features
+
+* add fn to update cube statuses manually ([2ec8542](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2ec8542b2d983b328fdf57107e8f9578bb32894d))
+
 # [1.3.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.2.1...1.3.0) (2023-02-10)
 
 
