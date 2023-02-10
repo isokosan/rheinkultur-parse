@@ -750,13 +750,19 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
-  const contract = await $getOrFail(Contract, contractId)
+  const contract = await $getOrFail(Contract, contractId, 'company')
   if (contract.get('status') !== 3) {
     throw new Error('You can only undo finalized active contracts')
   }
 
+  let status = 2.1
+  // set status to 2 if kinetic (to enable adding and removing cubes)
+  if (contract.get('company').get('name') === 'Kinetic Germany GmbH') {
+    status = 2
+  }
+
   // set contract status to active
-  contract.set({ status: 2.1 })
+  contract.set({ status })
   const audit = { user, fn: 'contract-undo-finalize' }
 
   return contract.save(null, { useMasterKey: true, context: { audit } })
