@@ -560,10 +560,17 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
     cubeChanges = $cubeChanges(contract, cubeIds)
     cubeChanges && contract.set({ cubeIds })
 
+    // if zero pricing make sure all cubes are 0€
+    if (pricingModel === 'zero') {
+      for (const cubeId of cubeIds) {
+        monthlyMedia[cubeId] = 0
+      }
+    }
     // clean monthly prices for missing cubes in form
     if (pricingModel === 'gradual') {
       monthlyMedia = null
-    } else {
+    }
+    if (Object.keys(monthlyMedia || {}).length) {
       for (const cubeId of Object.keys(monthlyMedia || {})) {
         if (!cubeIds.includes(cubeId)) {
           delete monthlyMedia[cubeId]
@@ -798,9 +805,9 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
 
     for (const cubeId of contract.get('cubeIds')) {
       const monthly = invoice.get('gradualPrice') || contract.get('monthlyMedia')?.[cubeId]
-      const cubeCanceledAt = earlyCancellations[cubeId]
-        ? moment(earlyCancellations[cubeId])
-        : null
+      // if cube completely canceled skip
+      if (earlyCancellations[cubeId] === true) { continue }
+      const cubeCanceledAt = earlyCancellations[cubeId] ? moment(earlyCancellations[cubeId]) : null
       // if cube is canceledEarly, and the early cancelation is before periodStart, skip
       if (cubeCanceledAt && cubeCanceledAt.isBefore(periodStart)) {
         continue
@@ -904,15 +911,14 @@ Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id
 Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params: { id: contractId, cancellations }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
   // check if there are issued invoices that fall under the cancellation dates
-  const issuedInvoices = await Parse.Query.or(...Object.values(cancellations)
-    .map(date => $query('Invoice').greaterThan('periodEnd', date))
-  ).equalTo('contract', contract).equalTo('status', 2).find({ useMasterKey: true })
-  if (!issuedInvoices.length) {
-    return
-  }
+  const issuedInvoices = await $query('Invoice')
+    .equalTo('contract', contract)
+    .notEqualTo('media', null)
+    .equalTo('status', 2)
+    .find({ useMasterKey: true })
+  if (!issuedInvoices.length) { return }
   const invoiceAddress = issuedInvoices[0].get('address')
   if (issuedInvoices.find(invoice => invoice.get('address')?.id !== invoiceAddress.id)) {
-    // TOTRANSLATE
     throw new Error('Es wurden verschiedene Rechnungsadressen verwendet. Schreiben Sie die Gutschrift manuell.')
   }
 
@@ -928,8 +934,8 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
       }
       const periodStart = invoice.get('periodStart')
       const periodEnd = mediaItem.periodEnd || invoice.get('periodEnd')
-      if (moment(cubeEnd).isBefore(periodStart)) {
-        // cube canceled within the invoice period
+      if (cubeEnd === true || moment(cubeEnd).isBefore(periodStart)) {
+        // cube canceled already before the invoice
         cubes.push({
           cubeId,
           invoiceNo: invoice.get('lexNo'),
@@ -961,12 +967,10 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     }
     invoices[cube.invoiceNo] += cube.diff
   }
-
+  const invoiceNos = Object.keys(invoices)
   const price = round2(sum(cubes.map((cube) => cube.diff)))
 
-  if (!price) {
-    return
-  }
+  if (!price || !invoiceNos.length) { return }
 
   const creditNote = $parsify('CreditNote')
   creditNote.set({
@@ -979,9 +983,9 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     lineItems: [{ name: 'CityCubes entfallen von Vertrag', price }],
     reason: [
       'Folgende CityCubes entfallen von Vertrag:',
-      Object.keys(cancellations).map(cubeId => `${cubeId}: ${moment(cancellations[cubeId]).format('DD.MM.YYYY')}`).join(', '),
-      'Folgende Rechnungen wurde gutgeschrieben:',
-      Object.keys(invoices).map((invoiceNo) => `${invoiceNo}: ${priceString(invoices[invoiceNo])}€`).join(', ')
+      Object.keys(cancellations).map(cubeId => `${cubeId}: ${cancellations[cubeId] === true ? 'Herausgenommen' : moment(cancellations[cubeId]).format('DD.MM.YYYY')}`).join(', '),
+      `Folgende ${invoiceNos.length > 1 ? 'Rechnungen' : 'Rechnung'} wurde gutgeschrieben:`,
+      invoiceNos.map((invoiceNo) => `${invoiceNo}: ${priceString(invoices[invoiceNo])}€`).join(', ')
     ].join('\n')
   })
   const audit = { user, fn: 'credit-note-generate' }
@@ -1085,6 +1089,8 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
       for (const cubeId of contract.get('cubeIds')) {
         const monthly = invoice.gradualPrice || contract.get('monthlyMedia')?.[cubeId]
         monthlyTotal += monthly
+        // if cube completely canceled skip
+        if (earlyCancellations[cubeId] === true) { continue }
         const cubeCanceledAt = earlyCancellations[cubeId]
           ? moment(earlyCancellations[cubeId])
           : null

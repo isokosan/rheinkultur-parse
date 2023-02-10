@@ -105,6 +105,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
     if (query._include.includes('orders')) {
       const contracts = await $query('Contract')
         .equalTo('cubeIds', cube.id)
+        .notEqualTo(`earlyCancellations.${cube.id}`, true)
         .find({ useMasterKey: true })
         .then(contracts => contracts.map(contract => ({
           className: 'Contract',
@@ -114,6 +115,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
         })))
       const bookings = await $query('Booking')
         .equalTo('cubeIds', cube.id)
+        .notEqualTo(`earlyCancellations.${cube.id}`, true)
         .find({ useMasterKey: true })
         .then(bookings => bookings.map(booking => ({
           className: 'Booking',

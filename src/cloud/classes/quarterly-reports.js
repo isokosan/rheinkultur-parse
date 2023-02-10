@@ -272,6 +272,7 @@ async function processMediaInvoices (start, end) {
           }
           // check early cancel
           const cubeCanceledAt = contract.get('earlyCancellations')?.[cubeId]
+          if (cubeCanceledAt === true) { continue }
           if (cubeCanceledAt && cubeCanceledAt < endsAt) {
             row.end = cubeCanceledAt
             row.duration = moment(cubeCanceledAt).diff(startsAt, 'months', true)
@@ -428,7 +429,7 @@ async function processBookings (start, end) {
       for (const cubeSummary of Object.values(cubeSummaries)) {
         const cubeCanceledAt = earlyCancellations[cubeSummary.objectId]
         // if cube is canceledEarly, and the early cancelation is before periodStart, skip
-        if (cubeCanceledAt && cubeCanceledAt < periodStart) {
+        if (cubeCanceledAt && (cubeCanceledAt === true || cubeCanceledAt < periodStart)) {
           continue
         }
 
@@ -516,7 +517,7 @@ async function processCustomContracts (start, end) {
       for (const cubeSummary of Object.values(cubeSummaries)) {
         const cubeCanceledAt = earlyCancellations[cubeSummary.objectId]
         // if cube is canceledEarly, and the early cancelation is before periodStart, skip
-        if (cubeCanceledAt && cubeCanceledAt < periodStart) {
+        if (cubeCanceledAt && (cubeCanceledAt === true || cubeCanceledAt < periodStart)) {
           continue
         }
 

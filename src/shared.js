@@ -96,7 +96,7 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
     for (const contract of contracts) {
       if (contract) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = contract.toJSON()
-        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
+        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
           throw new Error(`CityCube ${cubeId} ist bereits in Vertrag ${contract.get('no')} gebucht.`)
         }
@@ -110,7 +110,7 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
     for (const booking of bookings) {
       if (booking) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = booking.toJSON()
-        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
+        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
           throw new Error(`CityCube ${cubeId} ist bereits in Buchung ${booking.get('no')} gebucht.`)
         }
@@ -181,13 +181,13 @@ async function setCubeOrderStatuses (bookingOrContract) {
     for (const earlyCanceledCubeId of earlyCanceledCubeIds) {
       const date = earlyCancellations[earlyCanceledCubeId]
       const cube = await $getOrFail('Cube', earlyCanceledCubeId)
-      today.isSameOrBefore(date, 'day')
-        ? cube.set('order', {
+      date === true || today.isAfter(date, 'day')
+        ? cube.unset('order')
+        : cube.set('order', {
           ...order,
           earlyCanceledAt: date,
           endsAt: moment(endsAt).isBefore(date) ? endsAt : date
         })
-        : cube.unset('order')
       await cube.save(null, { useMasterKey: true })
     }
 
