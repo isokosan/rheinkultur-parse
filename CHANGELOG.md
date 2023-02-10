@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.2.1...1.3.0) (2023-02-10)
+
+
+### Features
+
+* add early cancel completely ([64d7b66](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/64d7b66d14e868fe91a42580e360a6b1b08d9872))
+
 ## [1.2.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.2.0...1.2.1) (2023-02-10)
 
 
