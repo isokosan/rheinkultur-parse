@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.0...1.4.1) (2023-02-12)
+
+
+### Bug Fixes
+
+* **deps:** update dependency bull to v4.10.4 ([2916300](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/291630091af4fdf76e5ced9c9ccffa0ea5f0b476))
+
 # [1.4.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.3.0...1.4.0) (2023-02-10)
 
 
