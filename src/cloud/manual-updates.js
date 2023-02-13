@@ -106,3 +106,22 @@ Parse.Cloud.define('manual-updates-clean-audits', async () => {
   }
   return i
 })
+
+Parse.Cloud.define('manual-updates-canceled', async () => {
+  const response = {}
+  const contracts = await $query('Contract').notEqualTo('canceledAt', null).limit(1000).find({ useMasterKey: true })
+  for (const contract of contracts) {
+    const endsAt = contract.get('endsAt')
+    const shouldEndAt = moment(contract.get('startsAt'))
+      .add(contract.get('initialDuration'), 'months')
+      .add(contract.get('extendedDuration') || 0, 'months')
+      .subtract(1, 'day')
+      .format('YYYY-MM-DD')
+    let newEndsAt
+    if (endsAt !== shouldEndAt) {
+      newEndsAt = endsAt
+    }
+    response[contract.get('no')] = newEndsAt || shouldEndAt
+  }
+  return response
+})
