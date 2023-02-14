@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.1...1.4.2) (2023-02-14)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([042c5f5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/042c5f525070227624b542dfdb5d432b3344312a))
+
 ## [1.4.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.0...1.4.1) (2023-02-12)
 
 
