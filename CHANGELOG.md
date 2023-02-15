@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.2...1.4.3) (2023-02-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ioredis to v5.3.1 ([56af4b1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/56af4b1f345570cf48ef7655a91c6360f6d03007))
+
 ## [1.4.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.1...1.4.2) (2023-02-14)
 
 
