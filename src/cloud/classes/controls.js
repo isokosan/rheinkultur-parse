@@ -96,20 +96,28 @@ function getCubesQuery (control) {
 Parse.Cloud.afterSave(Control, ({ object: control, context: { audit } }) => { $audit(control, audit) })
 
 Parse.Cloud.beforeFind(Control, ({ query }) => {
-  query._include.includes('all') && query.include(['company', 'companyPerson', 'departureLists', 'docs'])
+  query._include.includes('all') && query.include(['departureLists', 'criteria', 'docs'])
 })
 
 Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
   for (const control of controls) {
-    const criteria = control.get('criteria') || []
-    for (const item of criteria) {
-      if (['Tag', 'Company', 'Contract', 'Booking'].includes(item.type)) {
-        item.item = await $getOrFail(item.type, item.value)
-          .then(obj => ({ ...obj.toJSON(), className: item.type }))
+    !control.get('cubeIds') && control.set('cubeIds', [])
+    !control.get('addedCubeIds') && control.set('addedCubeIds', [])
+    !control.get('skippedCubeIds') && control.set('skippedCubeIds', [])
+  }
+
+  if (query._include.includes('criteria')) {
+    for (const control of controls) {
+      const criteria = control.get('criteria') || []
+      for (const item of criteria) {
+        if (['Tag', 'Company', 'Contract', 'Booking'].includes(item.type)) {
+          item.item = await $getOrFail(item.type, item.value)
+            .then(obj => ({ ...obj.toJSON(), className: item.type }))
+        }
       }
+      control.set('criteria', criteria)
+      control.set('cubesQuery', getCubesQuery(control).toJSON())
     }
-    control.set('criteria', criteria)
-    control.set('cubesQuery', getCubesQuery(control).toJSON())
   }
   if (query._include.includes('departureLists')) {
     const departureLists = await $query(DepartureList).containedIn('control', controls).limit(1000).find({ useMasterKey: true })
@@ -130,15 +138,14 @@ Parse.Cloud.define('control-create', async ({
   params: {
     name,
     date,
-    lastControlBefore,
-    criteria
+    lastControlBefore
   }, user
 }) => {
   const control = new Control({
     name,
     date,
     lastControlBefore,
-    criteria
+    status: 1
   })
 
   const audit = { user, fn: 'control-create' }
@@ -150,42 +157,82 @@ Parse.Cloud.define('control-update', async ({
     id: controlId,
     name,
     date,
-    lastControlBefore,
+    lastControlBefore
+  }, user
+}) => {
+  const control = await $getOrFail(Control, controlId)
+  const changes = $changes(control, { name, date, lastControlBefore })
+  control.set({ name, date, lastControlBefore, status: 1 })
+  const audit = { user, fn: 'control-update', data: { changes } }
+  return control.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
+Parse.Cloud.define('control-update-criteria', async ({
+  params: {
+    id: controlId,
     criteria
   }, user
 }) => {
   const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, lastControlBefore, criteria })
-  control.set({ name, date, lastControlBefore, criteria })
-  const audit = { user, fn: 'control-update', data: { changes } }
+  control.set({ criteria })
+  const audit = { user, fn: 'control-update-criteria' }
+  return control.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
+Parse.Cloud.define('control-freeze-criteria', async ({
+  params: {
+    id: controlId
+  }, user
+}) => {
+  const control = await $getOrFail(Control, controlId)
+  const cubesQuery = getCubesQuery(control)
+  const cubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
+  control.set({ cubeIds, status: 2 })
+  const audit = { user, fn: 'control-freeze-criteria' }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists }, user }) => {
   const control = await $getOrFail(Control, controlId)
-  for (const stateId of Object.keys(lists || {})) {
-    const placeKey = '_' + stateId
+  const cubeIds = control.get('cubeIds') || []
+  const addedCubeIds = control.get('addedCubeIds') || []
+  const skippedCubeIds = control.get('skippedCubeIds') || []
+
+  const finalCubeIds = [...cubeIds, addedCubeIds].filter(id => !skippedCubeIds.includes(id))
+
+  const cubes = await $query('Cube')
+    .containedIn('objectId', finalCubeIds)
+    .select(['objectId', 'state'])
+    .limit(finalCubeIds.length)
+    .find({ useMasterKey: true })
+  const states = {}
+  for (const cube of cubes) {
+    const stateId = cube.get('state')?.id
+    if (!states[stateId]) {
+      states[stateId] = []
+    }
+    states[stateId].push(cube.id)
+  }
+  for (const stateId of Object.keys(states)) {
+    const state = await $getOrFail('State', stateId)
     let departureList = await $query('DepartureList')
       .equalTo('control', control)
-      .equalTo('placeKey', placeKey)
+      .equalTo('state', state)
       .first({ useMasterKey: true })
     if (!departureList) {
-      const [, stateId] = placeKey.split('_')
-      const state = await $getOrFail('State', stateId)
       const name = `${control.get('name')} (${state.get('name')})`
-      consola.info({ name })
       departureList = new DepartureList({
         name,
         type: 'control',
         control,
-        placeKey,
-        cubeIds: lists[stateId]
+        state,
+        cubeIds: states[stateId]
       })
       const audit = { user, fn: 'departure-list-generate' }
       await departureList.save(null, { useMasterKey: true, context: { audit } })
       continue
     }
-    const cubeIds = [...new Set([...(departureList.get('cubeIds') || []), ...lists[stateId]])]
+    const cubeIds = [...new Set([...(departureList.get('cubeIds') || []), ...states[stateId]])]
     const cubeChanges = $cubeChanges(departureList, cubeIds)
     if (cubeChanges) {
       departureList.set({ cubeIds })
@@ -193,7 +240,7 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
       await departureList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
-  return true
+  return control.set('status', 3).save(null, { useMasterKey: true })
 }, { requireUser: true })
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
@@ -208,10 +255,10 @@ Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, c
     if (!departureLists.length) {
       break
     }
-    await Promise.all(departureLists.map((sl) => {
-      return sl.get('status')
-        ? sl.unset('control').save(null, { useMasterKey: true })
-        : sl.destroy({ useMasterKey: true })
+    await Promise.all(departureLists.map((departureList) => {
+      return departureList.get('status')
+        ? departureList.unset('control').save(null, { useMasterKey: true })
+        : departureList.destroy({ useMasterKey: true })
     }))
   }
   return control.destroy({ useMasterKey: true })

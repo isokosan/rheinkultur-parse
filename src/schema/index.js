@@ -128,6 +128,8 @@ const schemaDefinitions = {
       name: { type: 'String', required: true },
       date: { type: 'String', required: true },
       lastControlBefore: { type: 'Number' },
+      status: { type: 'Number' },
+
       criteria: { type: 'Array' },
 
       docs: { type: 'Array' },
