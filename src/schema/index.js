@@ -126,8 +126,18 @@ const schemaDefinitions = {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       name: { type: 'String', required: true },
-      sourceClass: { type: 'String', required: true },
-      sourceId: { type: 'String', required: true },
+      date: { type: 'String', required: true },
+      lastControlBefore: { type: 'Number' },
+      criteria: { type: 'Array' },
+
+      docs: { type: 'Array' },
+      responsibles: { type: 'Array' }
+    }
+  },
+  Disassembly: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true },
 
       docs: { type: 'Array' },
       responsibles: { type: 'Array' }
@@ -328,15 +338,6 @@ const schemaDefinitions = {
 
       mailStatus: { type: 'Object' },
       postStatus: { type: 'Object' }
-    }
-  },
-  Disassembly: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true },
-
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
     }
   },
   FileObject: {
