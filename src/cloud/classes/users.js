@@ -174,6 +174,17 @@ const fetchUsers = async function () {
   return response
 }
 
+// async function updateUserPasswords() {
+//   const users = await $query(Parse.User)
+//     .limit(1000)
+//     .find({ useMasterKey: true })
+//   for (const user of users) {
+//     await user.set('password', '123456').save(null, { useMasterKey: true })
+//   }
+//   consola.success('set user passwords')
+// }
+// updateUserPasswords()
+
 module.exports = {
   fetchUsers
 }

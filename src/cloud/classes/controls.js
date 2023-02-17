@@ -126,8 +126,14 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
     }
   }
   if (query._include.includes('departureListCount')) {
+    const pipeline = [
+      { $match: { _p_control: { $in: controls.map(c => 'Control$' + c.id) } } },
+      { $group: { _id: '$control', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+    ]
+    const counts = await $query(DepartureList).aggregate(pipeline)
+      .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
     for (const control of controls) {
-      control.set('departureListCount', await $query(DepartureList).equalTo('control', control).count({ useMasterKey: true }))
+      control.set(counts[control.id])
     }
   }
 })

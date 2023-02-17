@@ -276,55 +276,50 @@ Parse.Cloud.define('departure-list-assign', async ({ params: { id: departureList
 }, { requireUser: true })
 
 // Divides a departure list that has no ort
-function validateDivide (departureList) {
-  if (departureList.get('status')) {
-    throw new Error('Only draft departure lists can be divided')
+function validateDivide (departureList, user) {
+  if (departureList.get('status') !== 'appointed') {
+    throw new Error('Only departure lists that have been appointed, but not assigned can be divided')
   }
   if (departureList.get('ort')) {
     throw new Error('Only departure lists without ort can be divided')
   }
+  if (departureList.get('manager').id !== user.id) {
+    throw new Error('Only the departure lists manager can divide')
+  }
 }
-Parse.Cloud.define('departure-list-preview-divide', async ({ params: { id: departureListId }, user }) => {
-  const departureList = await $getOrFail(DepartureList, departureListId)
-  validateDivide(departureList)
-  const cubeIds = departureList.get('cubeIds') || []
+
+async function getLocationsFromCubeIds (cubeIds) {
   const cubes = await $query('Cube')
     .containedIn('objectId', cubeIds)
     .limit(cubeIds.length)
     .select(['objectId', 'ort'])
     .find({ useMasterKey: true })
-
-  const orts = {}
+  const locations = {}
   for (const cube of cubes) {
     const ort = cube.get('ort')
-    if (!orts[ort]) {
-      orts[ort] = []
+    if (!locations[ort]) {
+      locations[ort] = []
     }
-    orts[ort].push(cube.id)
+    locations[ort].push(cube.id)
   }
-  return orts
+  return locations
+}
+
+Parse.Cloud.define('departure-list-preview-divide', async ({ params: { id: departureListId }, user }) => {
+  const departureList = await $getOrFail(DepartureList, departureListId)
+  validateDivide(departureList, user)
+  const locations = await getLocationsFromCubeIds(departureList.get('cubeIds') || [])
+  return {
+    parentId: departureListId,
+    locations
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('departure-list-divide', async ({ params: { id: departureListId }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
-  validateDivide(departureList)
-  const cubeIds = departureList.get('cubeIds') || []
-  const cubes = await $query('Cube')
-    .containedIn('objectId', cubeIds)
-    .limit(cubeIds.length)
-    .select(['objectId', 'ort'])
-    .find({ useMasterKey: true })
-
-  const orts = {}
-  for (const cube of cubes) {
-    const ort = cube.get('ort')
-    if (!orts[ort]) {
-      orts[ort] = []
-    }
-    orts[ort].push(cube.id)
-  }
-
-  for (const ort of Object.keys(orts)) {
+  validateDivide(departureList, user)
+  const locations = await getLocationsFromCubeIds(departureList.get('cubeIds') || [])
+  for (const ort of Object.keys(locations)) {
     const newDepartureList = new DepartureList()
     newDepartureList.set({
       name: departureList.get('name') + ' ' + ort,
@@ -337,8 +332,9 @@ Parse.Cloud.define('departure-list-divide', async ({ params: { id: departureList
       scout: departureList.get('scout'),
       manager: departureList.get('manager'),
       state: departureList.get('state'),
+      status: 'appointed',
       ort,
-      cubeIds: orts[ort]
+      cubeIds: locations[ort]
     })
     await newDepartureList.save(null, { useMasterKey: true, context: { audit: { user, fn: 'departure-list-divide' } } })
   }

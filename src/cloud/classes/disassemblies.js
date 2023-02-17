@@ -44,8 +44,14 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
     }
   }
   if (query._include.includes('departureListCount')) {
+    const pipeline = [
+      { $match: { _p_disassembly: { $in: disassemblies.map(d => 'Disassembly$' + d.id) } } },
+      { $group: { _id: '$disassembly', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+    ]
+    const counts = await $query(DepartureList).aggregate(pipeline)
+      .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
     for (const disassembly of disassemblies) {
-      disassembly.set('departureListCount', await $query(DepartureList).equalTo('disassembly', disassembly).count({ useMasterKey: true }))
+      disassembly.set(counts[disassembly.id])
     }
   }
 })

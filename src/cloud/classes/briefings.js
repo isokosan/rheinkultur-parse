@@ -15,8 +15,14 @@ Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
     }
   }
   if (query._include.includes('departureListCount')) {
+    const pipeline = [
+      { $match: { _p_briefing: { $in: briefings.map(b => 'Briefing$' + b.id) } } },
+      { $group: { _id: '$briefing', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+    ]
+    const counts = await $query(DepartureList).aggregate(pipeline)
+      .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
     for (const briefing of briefings) {
-      briefing.set('departureListCount', await $query(DepartureList).equalTo('briefing', briefing).count({ useMasterKey: true }))
+      briefing.set(counts[briefing.id])
     }
   }
 })
