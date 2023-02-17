@@ -546,9 +546,9 @@ const schemaDefinitions = {
       control: { type: 'Pointer', targetClass: 'Control' },
       name: { type: 'String' },
       scout: { type: 'Pointer', targetClass: '_User' },
+      manager: { type: 'Pointer', targetClass: '_User' },
       dueDate: { type: 'String' },
       quota: { type: 'Number' }, // only for scout type
-      placeKey: { type: 'String' }, // (ort || '')_(stateId) // TODO: Remove duplicated computed?
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
       cubesQuery: { type: 'Object' }, // TODO: Remove duplicated computed?

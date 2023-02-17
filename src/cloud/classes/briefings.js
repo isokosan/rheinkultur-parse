@@ -88,7 +88,8 @@ Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, list
         name: `${briefing.get('name')} ${ort} (${state.get('name')})`,
         type: 'scout',
         briefing,
-        placeKey,
+        ort,
+        state,
         cubeIds: lists[placeKey]
       })
       const audit = { user, fn: 'departure-list-generate' }

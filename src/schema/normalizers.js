@@ -367,6 +367,7 @@ module.exports = {
         name: normalizeString,
         quota: normalizeInt,
         dueDate: normalizeDateString,
+        managerId: defined,
         scoutId: defined,
         cubeIds: normalizeCubeIds
       }
