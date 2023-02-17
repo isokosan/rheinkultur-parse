@@ -1,4 +1,4 @@
-const { ACC_TYPES, DISTRIBUTOR_ROLES } = require('./enums')
+const { ACC_TYPES, ACC_ROLES } = require('./enums')
 
 const boolean = value => value === true
 const defined = value => value || null
@@ -24,7 +24,7 @@ module.exports = {
       'mobile',
       'companyPerson',
       'accType',
-      'distributorRoles'
+      'accRoles'
     ],
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
@@ -39,19 +39,16 @@ module.exports = {
         accType (val) {
           return Object.keys(ACC_TYPES).includes(val) ? val : null
         },
-        distributorRoles (val) {
+        accRoles (val) {
           val = val || []
           if (!Array.isArray(val)) val = [val]
-          val = val.filter(role => Object.keys(DISTRIBUTOR_ROLES).includes(role))
+          val = val.filter(role => Object.keys(ACC_ROLES).includes(role))
           return val.length ? val : null
         }
       }
       const normalized = {}
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
-      }
-      if (normalized.accType === 'distributor' && !normalized.distributorRoles) {
-        normalized.distributorRoles = []
       }
       return normalized
     }

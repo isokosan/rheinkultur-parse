@@ -7,7 +7,7 @@ module.exports.ACC_TYPES = {
   scout: 'Scout',
   distributor: 'Vertriebspartner'
 }
-module.exports.DISTRIBUTOR_ROLES = {
+module.exports.ACC_ROLES = {
   'manage-bookings': 'Manage Bookings',
   'manage-scouts': 'Manage Scouts'
 }

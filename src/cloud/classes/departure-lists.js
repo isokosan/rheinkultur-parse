@@ -73,21 +73,18 @@ Parse.Cloud.afterSave(DepartureList, ({ object: departureList, context: { audit,
   })
 })
 
-Parse.Cloud.beforeFind(DepartureList, async ({ query, user }) => {
+Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
   query._include.includes('all') && query.include(['briefing', 'control', 'disassembly', 'submissions'])
-  if (user?.get('accType') === 'distributor' && user.get('distributorRoles').includes('manage-scouts')) {
-    const company = user.get('company')
-    if (!company) {
-      query.equalTo('scout', user)
-      return
-    }
-    const scouts = await $query(Parse.User).equalTo('company', company).find({ useMasterKey: true })
-    query.containedIn('scout', scouts)
-    return
+  if (master) { return }
+  if (user.get('accRoles')?.includes('manage-scouts')) {
+    user.get('company') && query
+      .equalTo('manager', user)
+      .containedIn('status', ['appointed', 'assigned', 'in_progress', 'completed'])
   }
-  if (user?.get('accType') === 'scout') {
-    query.equalTo('scout', user).notEqualTo('status', null)
+  if (user.get('accType') === 'scout') {
+    query.equalTo('scout', user).containedIn('status', ['assigned', 'in_progress', 'completed'])
   }
+  consola.info(query.toJSON())
 })
 
 Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) => {
