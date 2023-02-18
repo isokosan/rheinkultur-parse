@@ -84,7 +84,6 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
   if (user.get('accType') === 'scout') {
     query.equalTo('scout', user).containedIn('status', ['assigned', 'in_progress', 'completed'])
   }
-  consola.info(query.toJSON())
 })
 
 Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) => {
@@ -174,7 +173,6 @@ Parse.Cloud.define('departure-list-update', async ({ params: { id: departureList
 Parse.Cloud.define('departure-list-update-manager', async ({ params: { id: departureListId, ...params }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   const { managerId } = normalizeFields(params)
-  console.log(managerId)
   if (managerId === departureList.get('manager')?.id) {
     throw new Error('Keine Änderungen')
   }
@@ -258,21 +256,24 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
   departureList.set({ status: 'appointed' })
   const audit = { user, fn: 'departure-list-assign' }
   await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true } })
-  return 'Abfahrtslist beauftragt. Scout notified.'
+  return {
+    data: departureList.get('status'),
+    message: 'Abfahrtslist ernennt. Manager notified.'
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('departure-list-assign', async ({ params: { id: departureListId }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
-  if (departureList.get('status') !== 'appointed') {
+  if (!departureList.get('manager') || departureList.get('status') !== 'appointed') {
     throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
   }
-  if (!departureList.get('scout') || !departureList.get('scout')) {
+  if (!departureList.get('scout')) {
     throw new Error('Need a scout to assign to')
   }
   departureList.set({ status: 'assigned' })
   const audit = { user, fn: 'departure-list-assign' }
   await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true } })
-  return 'Abfahrtslist beauftragt. Scout notified.'
+  return { message: 'Abfahrtslist beauftragt. Scout notified.' }
 }, { requireUser: true })
 
 // Divides a departure list that has no ort
@@ -364,7 +365,8 @@ Parse.Cloud.define('departure-list-remove', async ({ params: { id: departureList
   if (!(!departureList.get('status') || departureList.get('status') === 'appointed')) {
     throw new Error('Only draft or appointed Abfahrtsliste can be removed.')
   }
-  return departureList.destroy({ useMasterKey: true })
+  await departureList.destroy({ useMasterKey: true })
+  return { message: 'Abfahrtsliste gelöscht.' }
 }, { requireUser: true })
 
 Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, form, photoIds, comments }, user }) => {
