@@ -30,7 +30,7 @@
     "moment": "2.29.4",
     "ndjson": "2.0.0",
     "onesignal-node": "3.4.0",
-    "parse-server": "5.4.1",
+    "parse-server": "5.4.2",
     "parse-smtp-template": "2.2.2",
     "pdf2pic": "2.1.4",
     "proj4": "2.8.1",
