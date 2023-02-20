@@ -82,7 +82,23 @@ Parse.Cloud.afterFind(Contract, async ({ objects: contracts, query }) => {
   return contracts
 })
 
-Parse.Cloud.afterDelete(Contract, $deleteAudits)
+Parse.Cloud.beforeDelete(Contract, async ({ object: contract }) => {
+  if (contract.get('status') !== 0 && contract.get('status') !== 2) {
+    throw new Error('Nur Verträge im Entwurfsstatus können gelöscht werden!')
+  }
+  if (await $query('Invoice').equalTo('contract', contract).exists({ useMasterKey: true })) {
+    throw new Error('Es existieren noch Rechnungen zu diesem Vertrag.')
+  }
+  if (await $query('CreditNote').equalTo('contract', contract).exists({ useMasterKey: true })) {
+    throw new Error('Es existieren noch Gutschriften zu diesem Vertrag.')
+  }
+})
+
+Parse.Cloud.afterDelete(Contract, async ({ object: contract }) => {
+  const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
+  production && await production.destroy({ useMasterKey: true })
+  $deleteAudits({ object: contract })
+})
 
 function getContractCommissionForYear (contract, year) {
   if (contract.get('commissions')) {
@@ -194,6 +210,7 @@ async function getInvoicesPreview (contract) {
       }
     }
 
+    // if invoice date is before wawi start skip generating invoice
     if (moment(invoiceDate).isBefore($wawiStart, 'day')) {
       periodStart = periodEnd.clone().add(1, 'days')
       continue
@@ -705,20 +722,6 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   return contract.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-// Parse.Cloud.define('offer-mark-as-sent', async ({ params: { id: contractId }, user }) => {
-//   const contract = await $getOrFail(Contract, contractId)
-//   contract.set({ status: 1 })
-//   const audit = { user, fn: 'offer-mark-as-sent' }
-//   return contract.save(null, { useMasterKey: true, context: { audit } })
-// }, { requireUser: true })
-
-// Parse.Cloud.define('offer-mark-as-unsent', async ({ params: { id: contractId }, user }) => {
-//   const contract = await $getOrFail(Contract, contractId)
-//   contract.set({ status: 0 })
-//   const audit = { user, fn: 'offer-mark-as-unsent' }
-//   return contract.save(null, { useMasterKey: true, context: { audit } })
-// }, { requireUser: true })
-
 Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
   await validateContractFinalize(contract)
@@ -729,7 +732,7 @@ Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractI
   }
 }, { requireUser: true })
 
-Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, user, context: { seedAsId, skipCubeValidations, setCubeStatuses, recalculateGradualInvoices } }) => {
+Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, user, context: { seedAsId, skipCubeValidations } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
   const contract = await $getOrFail(Contract, contractId)
@@ -753,7 +756,7 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   // set contract status to active
   contract.set({ status: 3 })
   const audit = { user, fn: 'contract-finalize' }
-  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: setCubeStatuses !== false } })
+  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-set-cube-statuses', async ({ params: { id: contractId } }) => {
@@ -1411,15 +1414,6 @@ Parse.Cloud.define('contract-generate-doc', async ({ params: { id: contractId },
 
 Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
-  if (contract.get('status') !== 0 && contract.get('status') !== 2) {
-    throw new Error('Nur Verträge im Entwurfsstatus können gelöscht werden!')
-  }
-  const invoices = await $query('Invoice').equalTo('contract', contract).count({ useMasterKey: true })
-  const creditNotes = await $query('CreditNote').equalTo('contract', contract).count({ useMasterKey: true })
-  if (invoices || creditNotes) {
-    // TOTRANSLATE
-    throw new Error('Vertrag hat Belege. Please delete the invoices or credit notes first.')
-  }
   return contract.destroy({ useMasterKey: true })
 }, { requireUser: true })
 
