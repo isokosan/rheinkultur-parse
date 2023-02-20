@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.3...1.4.4) (2023-02-20)
+
+
+### Bug Fixes
+
+* **deps:** update dependency parse-server to v5.4.2 ([b92ffbb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b92ffbbdc1e22f8e84a4943f0703a00cfc848a5b))
+
 ## [1.4.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.2...1.4.3) (2023-02-15)
 
 
