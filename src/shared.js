@@ -84,9 +84,7 @@ const getCubeSummaries = function (cubeIds) {
 }
 
 async function checkIfCubesAreAvailable (cubeIds, date) {
-  if (!date) {
-    date = await $today()
-  }
+  if (!date) { date = await $today() }
   for (const cubeId of cubeIds) {
     const contracts = await $query('Contract')
       .equalTo('cubeIds', cubeId)

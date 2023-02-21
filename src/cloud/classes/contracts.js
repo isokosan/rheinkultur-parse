@@ -725,11 +725,35 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
 Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
   await validateContractFinalize(contract)
-  // TODO: Report cubes in other bookings/contracts
-  return {
-    otherContracts: [],
-    otherBookings: []
+  const cubeIds = contract.get('cubeIds')
+  const otherOrders = {}
+  for (const cubeId of cubeIds) {
+    const contracts = await $query('Contract')
+      .notEqualTo('objectId', contractId)
+      .equalTo('cubeIds', cubeId)
+      .lessThan('status', 3)
+      .find({ useMasterKey: true })
+    for (const contract of contracts) {
+      const orderNo = contract.get('no')
+      if (!otherOrders[orderNo]) {
+        otherOrders[orderNo] = { contract, cubeIds: [] }
+      }
+      otherOrders[orderNo].cubeIds.push(cubeId)
+    }
+    const bookings = await $query('Booking')
+      .equalTo('cubeIds', cubeId)
+      .lessThan('status', 3)
+      .find({ useMasterKey: true })
+    for (const booking of bookings) {
+      const orderNo = booking.get('no')
+      if (!otherOrders[orderNo]) {
+        otherOrders[orderNo] = { booking, cubeIds: [] }
+      }
+      otherOrders[orderNo].cubeIds.push(cubeId)
+    }
   }
+
+  return { otherOrders: Object.values(otherOrders) }
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, user, context: { seedAsId, skipCubeValidations } }) => {
