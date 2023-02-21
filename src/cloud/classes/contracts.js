@@ -483,7 +483,7 @@ Parse.Cloud.define('contract-create', async ({ params, user, master, context: { 
 
 Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, ...params }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
-  if (contract.get('status') > 2) {
+  if (contract.get('status') >= 3) {
     throw new Error('CityCubes von finalisierte Verträge können nicht mehr geändert werden.')
   }
 
@@ -570,32 +570,28 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
     throw new Error('Finalisierte Verträge können nicht mehr geändert werden.')
   }
 
-  // skip cube changes if status is 2.1 (changing a finalized contract)
-  let cubeChanges
-  if (contract.get('status') <= 2) {
-    $cubeLimit(cubeIds.length)
-    cubeChanges = $cubeChanges(contract, cubeIds)
-    cubeChanges && contract.set({ cubeIds })
+  $cubeLimit(cubeIds.length)
+  const cubeChanges = $cubeChanges(contract, cubeIds)
+  cubeChanges && contract.set({ cubeIds })
 
-    // if zero pricing make sure all cubes are 0€
-    if (pricingModel === 'zero') {
-      for (const cubeId of cubeIds) {
-        monthlyMedia[cubeId] = 0
-      }
+  // if zero pricing make sure all cubes are 0€
+  if (pricingModel === 'zero') {
+    for (const cubeId of cubeIds) {
+      monthlyMedia[cubeId] = 0
     }
-    // clean monthly prices for missing cubes in form
-    if (pricingModel === 'gradual') {
-      monthlyMedia = null
-    }
-    if (Object.keys(monthlyMedia || {}).length) {
-      for (const cubeId of Object.keys(monthlyMedia || {})) {
-        if (!cubeIds.includes(cubeId)) {
-          delete monthlyMedia[cubeId]
-        }
-      }
-    }
-    monthlyMedia = monthlyMedia && Object.keys(monthlyMedia).length ? monthlyMedia : null
   }
+  // clean monthly prices for missing cubes in form
+  if (pricingModel === 'gradual') {
+    monthlyMedia = null
+  }
+  if (Object.keys(monthlyMedia || {}).length) {
+    for (const cubeId of Object.keys(monthlyMedia || {})) {
+      if (!cubeIds.includes(cubeId)) {
+        delete monthlyMedia[cubeId]
+      }
+    }
+  }
+  monthlyMedia = monthlyMedia && Object.keys(monthlyMedia).length ? monthlyMedia : null
 
   const changes = $changes(contract, {
     invoicingAt,
@@ -761,20 +757,14 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
 
   const contract = await $getOrFail(Contract, contractId)
 
-  if (contract.get('status') <= 2) {
-    await validateContractFinalize(contract, skipCubeValidations)
+  await validateContractFinalize(contract, skipCubeValidations)
 
-    // generate invoices (TODO: only if it was already not finalized)
-    const Invoice = Parse.Object.extend('Invoice')
-    await contract.get('company').fetchWithInclude('company', { useMasterKey: true })
-    for (const item of await getInvoicesPreview(contract)) {
-      const invoice = new Invoice(item)
-      await invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } })
-    }
-  } else if (contract.get('status') === 2.1) {
-    // if its a finalized contract update only validate production
-    const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
-    production && validateProduction(production, contract.get('cubeIds'))
+  // generate invoices (TODO: only if it was already not finalized)
+  const Invoice = Parse.Object.extend('Invoice')
+  await contract.get('company').fetchWithInclude('company', { useMasterKey: true })
+  for (const item of await getInvoicesPreview(contract)) {
+    const invoice = new Invoice(item)
+    await invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } })
   }
 
   // set contract status to active
@@ -788,23 +778,47 @@ Parse.Cloud.define('contract-set-cube-statuses', async ({ params: { id: contract
   return contract.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
 }, { requireUser: true })
 
-Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
-  const contract = await $getOrFail(Contract, contractId, 'company')
+async function verifyContractUndoFinalize (contract) {
   if (contract.get('status') !== 3) {
     throw new Error('You can only undo finalized active contracts')
   }
-
-  let status = 2.1
-  // set status to 2 if kinetic (to enable adding and removing cubes)
-  if (contract.get('company').get('name') === 'Kinetic Germany GmbH') {
-    status = 2
+  const issuedInvoices = await $query('Invoice')
+    .equalTo('contract', contract)
+    .notEqualTo('media', null)
+    .equalTo('status', 2)
+    .distinct('lexNo', { useMasterKey: true })
+  if (issuedInvoices.length) {
+    throw new Error('Once you have issued an auto-generated invoice of a contract you cannot revert finalization. Invoices: ' + issuedInvoices.join(', '))
   }
+  if (contract.get('extendedDuration')) {
+    throw new Error('Once a contract has been extended, the finalisation cannot be reverted.')
+  }
+}
 
-  // set contract status to active
-  contract.set({ status })
+// check if a finalized contract can be re-opened for editing
+Parse.Cloud.define('contract-preview-undo-finalize', async ({ params: { id: contractId }, user }) => {
+  const contract = await $getOrFail(Contract, contractId, 'company')
+  return verifyContractUndoFinalize(contract)
+    .then(() => ({
+      ok: 'You may undo the finalization of this contract'
+    }))
+    .catch((error) => ({
+      error: error.message
+    }))
+}, { requireUser: true })
+
+Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
+  const contract = await $getOrFail(Contract, contractId, 'company')
+  await verifyContractUndoFinalize(contract)
+  contract.set({ status: 2.1 })
   const audit = { user, fn: 'contract-undo-finalize' }
-
-  return contract.save(null, { useMasterKey: true, context: { audit } })
+  await contract.save(null, { useMasterKey: true, context: { audit } })
+  let i = 0
+  await $query('Invoice').equalTo('contract', contract).containedIn('status', [1, 4]).each((invoice) => {
+    i++
+    return invoice.destroy({ useMasterKey: true })
+  }, { useMasterKey: true })
+  return `Finalisierung zurückgezogen. ${i} geplante Rechnungen gelöscht.`
 }, { requireUser: true })
 
 // Updates all planned and discarded invoices of contract
