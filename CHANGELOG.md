@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.5.0...1.6.0) (2023-02-21)
+
+
+### Features
+
+* report cubes in draft contracts and bookings at contract finalize preview ([0a59b5d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0a59b5d49550650ee42e3986ec68c4c0cc1c08d2))
+
 # [1.5.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.5...1.5.0) (2023-02-21)
 
 
