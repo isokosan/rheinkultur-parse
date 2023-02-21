@@ -1292,14 +1292,15 @@ Parse.Cloud.define('contract-change-invoice-address', async ({
     throw new Error('Only active contracts can be changed')
   }
 
-  const invoiceAddressId = normalizeFields(params).invoiceAddressId || contract.get('address').id
+  const invoiceAddressId = normalizeFields(params).invoiceAddressId
 
   const changes = {}
-  if (invoiceAddressId === contract.get('invoiceAddress')?.id) {
+  const currentInvoiceAddress = contract.get('invoiceAddress') || contract.get('address')
+  if (invoiceAddressId === currentInvoiceAddress.id) {
     throw new Error('Keine Änderungen')
   }
   const invoiceAddress = invoiceAddressId ? await $getOrFail('Address', invoiceAddressId) : null
-  changes.invoiceAddress = [contract.get('invoiceAddress')?.get('name'), invoiceAddress?.get('name')]
+  changes.invoiceAddress = [currentInvoiceAddress.get('name'), invoiceAddress?.get('name')]
   contract.set({ invoiceAddress })
 
   const invoices = await $query('Invoice')
