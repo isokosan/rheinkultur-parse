@@ -1,3 +1,10 @@
+## [1.4.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.4...1.4.5) (2023-02-21)
+
+
+### Bug Fixes
+
+* bug with encode uri component ([efb34bb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/efb34bbf229c87b614730349312cd21f3cbddf95))
+
 ## [1.4.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.3...1.4.4) (2023-02-20)
 
 
