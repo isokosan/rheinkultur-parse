@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.6.0...1.7.0) (2023-02-21)
+
+
+### Features
+
+* check case for contract undo finalize and re-generate invoices ([3852eda](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3852eda5c119d6f260c0783b22525fda937d2574))
+
 # [1.6.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.5.0...1.6.0) (2023-02-21)
 
 
