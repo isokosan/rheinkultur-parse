@@ -345,18 +345,25 @@ Parse.Cloud.define('booking-update', async ({
   return booking.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user, context: { seedAsId, setCubeStatuses } }) => {
+Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
   const booking = await $getOrFail(Booking, bookingId)
   await validateBookingActivate(booking)
   booking.set({ status: 3 })
   const audit = { user, fn: 'booking-activate' }
-  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: setCubeStatuses !== false } })
+  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-set-cube-statuses', async ({ params: { id: bookingId } }) => {
   const booking = await $getOrFail(Booking, bookingId)
   return booking.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
+}, { requireUser: true })
+
+Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, user }) => {
+  const booking = await $getOrFail(Booking, bookingId)
+  booking.set({ status: 2.1 })
+  const audit = { user, fn: 'booking-deactivate' }
+  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 
 /**

@@ -16,6 +16,7 @@ module.exports.BOOKING_STATUSES = {
   0.1: 'Genehmigung ausstehend', // distributors
   0.2: 'Abgelehnt', // distributors
   2: 'Entwurf',
+  2.1: 'In Bearbeitung',
   3: 'Aktiv',
   4: 'Gekündigt',
   5: 'Ausgelaufen'

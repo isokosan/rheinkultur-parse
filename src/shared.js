@@ -145,19 +145,10 @@ async function setCubeOrderStatuses (bookingOrContract) {
     autoExtendsAt,
     canceledAt
   }
+
   if (status < 3) {
     // remove all cubes associated with order if draft
-    await $query('Cube')
-      .equalTo('order.className', order.className)
-      .equalTo('order.objectId', order.objectId)
-      .each(cube => {
-        cube.unset('order')
-        return $saveWithEncode(cube, null, { useMasterKey: true })
-      }, { useMasterKey: true })
-  } else {
-    // remove all cubes that reference the contract despite the contract having them removed
-    await $query('Cube')
-      .notContainedIn('objectId', cubeIds)
+    return $query('Cube')
       .equalTo('order.className', order.className)
       .equalTo('order.objectId', order.objectId)
       .each(cube => {
@@ -165,6 +156,15 @@ async function setCubeOrderStatuses (bookingOrContract) {
         return $saveWithEncode(cube, null, { useMasterKey: true })
       }, { useMasterKey: true })
   }
+  // remove all cubes that reference the contract despite the contract having them removed
+  await $query('Cube')
+    .notContainedIn('objectId', cubeIds)
+    .equalTo('order.className', order.className)
+    .equalTo('order.objectId', order.objectId)
+    .each(cube => {
+      cube.unset('order')
+      return $saveWithEncode(cube, null, { useMasterKey: true })
+    }, { useMasterKey: true })
 
   const query = Parse.Query.or(
     $query('Cube').equalTo('order.className', order.className).equalTo('order.objectId', order.objectId),
