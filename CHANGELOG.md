@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.5...1.5.0) (2023-02-21)
+
+
+### Bug Fixes
+
+* change invoice address bug ([acb0b2f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/acb0b2f6ad410e65478bb866845f43dea4d391bc))
+
+
+### Features
+
+* update contract infos, and rewrite future invoice descriptions ([7da5ef0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7da5ef0ea783ad2e0eb27026c5a52e4f92e06a5b))
+
 ## [1.4.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.4...1.4.5) (2023-02-21)
 
 
