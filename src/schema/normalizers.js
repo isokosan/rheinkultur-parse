@@ -155,6 +155,7 @@ module.exports = {
       'campaignNo',
       'companyPerson',
       'invoiceAddress',
+      'invoiceDescription',
       'invoicingAt',
       'autoExtendsAt',
       'autoExtendsBy',

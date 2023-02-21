@@ -1328,6 +1328,38 @@ Parse.Cloud.define('contract-change-invoice-address', async ({
 }, { requireUser: true })
 
 /**
+ * Change contract infos and update all planned invoices
+ */
+Parse.Cloud.define('contract-change-infos', async ({
+  params: {
+    id: contractId,
+    ...params
+  }, user
+}) => {
+  const contract = await $getOrFail(Contract, contractId, ['address', 'invoiceAddress'])
+  if (contract.get('status') < 3) {
+    throw new Error('Only active contracts can be changed')
+  }
+
+  const {
+    motive,
+    externalOrderNo,
+    campaignNo,
+    invoiceDescription
+  } = normalizeFields(params)
+
+  const changes = $changes(contract, { motive, externalOrderNo, campaignNo, invoiceDescription })
+  contract.set({ motive, externalOrderNo, campaignNo, invoiceDescription })
+  const audit = { user, fn: 'contract-update', data: { changes } }
+  await contract.save(null, { useMasterKey: true, context: { audit } })
+  await $query('Invoice')
+    .equalTo('contract', contract)
+    .containedIn('status', [1, 4])
+    .each(async invoice => invoice.save(null, { useMasterKey: true, context: { rewriteIntroduction: true } }), { useMasterKey: true })
+  return contract
+}, { requireUser: true })
+
+/**
  * When a contract commission is changed, the specified planned invoices are updated
  */
 Parse.Cloud.define('contract-change-commission', async ({
