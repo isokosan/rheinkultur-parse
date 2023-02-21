@@ -54,3 +54,11 @@ global.$cubeLimit = (count) => {
     throw new Error('Sie dürfen nicht mehr als ' + CUBE_LIMIT + ' CityCubes hinterlegen.')
   }
 }
+
+// PARSE SDK BUG with objectId encoding: When saving the parse js sdk is not encoding the ID so we have to do it ourselves before saving
+global.$saveWithEncode = function (object, ...args) {
+  if (object.id) {
+    object.id = encodeURIComponent(object.id)
+  }
+  return object.save(...args)
+}

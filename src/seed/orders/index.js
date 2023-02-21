@@ -17,13 +17,13 @@ const seedCubeHtMedia = async () => {
         ht: $pointer('HousingType', updates[id].htId),
         media: housingTypes[updates[id].htId].media
       })
-      await cube.save(null, { useMasterKey: true })
+      await $saveWithEncode(cube, null, { useMasterKey: true })
       u++
       continue
     }
     if (updates[id].media && updates[id].media !== cube.get('media')) {
       cube.set({ media: updates[id].media })
-      await cube.save(null, { useMasterKey: true })
+      await $saveWithEncode(cube, null, { useMasterKey: true })
       u++
       continue
     }
@@ -91,7 +91,7 @@ const purgeOrders = async () => {
     consola.info(`cleaning ${cubes.length} cubes of ${count} remaining`)
     for (const cube of cubes) {
       cube.unset('order')
-      await cube.save(null, { useMasterKey: true })
+      await $saveWithEncode(cube, null, { useMasterKey: true })
     }
     i += cubes.length
   }

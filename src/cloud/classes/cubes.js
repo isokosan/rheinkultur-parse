@@ -77,9 +77,6 @@ const PUBLIC_FIELDS = ['media', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1
 Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   const isPublic = !user && !master
   for (const cube of cubes) {
-    // TODO: Remove (open issue -> js sdk does not encodeURI so some chars in ID throw errors, whereas rest api works)
-    cube.id = encodeURI(cube.id)
-
     if (cube.get('lc') === 'TLK') {
       cube.set('klsId', cube.get('importData')?.klsId)
       // await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
@@ -198,7 +195,7 @@ Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) 
   const changes = $changes(cube, { media })
   cube.set({ media })
   const audit = { user, fn: 'cube-update', data: { changes } }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, user }) => {
@@ -209,7 +206,8 @@ Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, use
     ? cube.set({ ht, media: ht.get('media') })
     : cube.unset('ht')
   const audit = { user, fn: 'cube-update', data: { changes } }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  cube.id = encodeURI(cube.id)
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('cube-update-address', async ({ params: { id, address: { str, hsnr, plz, ort }, stateId }, user }) => {
@@ -227,7 +225,7 @@ Parse.Cloud.define('cube-update-address', async ({ params: { id, address: { str,
     state
   })
   const audit = { user, fn: 'cube-update', data: { changes } }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) => {
@@ -235,7 +233,7 @@ Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) 
   const changes = $changes(cube, { gp })
   cube.set({ gp })
   const audit = { user, fn: 'cube-update', data: { changes } }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
@@ -255,7 +253,7 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
     updates[field] ? cube.set({ [field]: updates[field] }) : cube.unset(field)
   }
   const audit = { user, fn: 'cube-update', data: { changes } }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 // TOTEST
@@ -275,7 +273,7 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
 //         updates[field] ? cube.set({ [field]: updates[field] }) : cube.unset(field)
 //       }
 //       const audit = { user, fn: 'cube-update', data: { changes } }
-//       await cube.save(null, { useMasterKey: true, context: { audit } })
+//       await $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 //       i++
 //     } catch (error) {
 //       consola.error(error)
@@ -301,7 +299,7 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   }
   cube.set({ vAt: new Date() })
   const audit = { user, fn: 'cube-verify' }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrMaster)
 
 Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
@@ -318,7 +316,7 @@ Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
   }
   cube.set('vAt', null)
   const audit = { user, fn: 'cube-undo-verify' }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrMaster)
 
 Parse.Cloud.define('cube-hide', async ({ params: { id }, user }) => {
@@ -328,7 +326,7 @@ Parse.Cloud.define('cube-hide', async ({ params: { id }, user }) => {
   }
   cube.set({ dAt: new Date() })
   const audit = { user, fn: 'cube-hide' }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('cube-restore', async ({ params: { id }, user }) => {
@@ -337,7 +335,7 @@ Parse.Cloud.define('cube-restore', async ({ params: { id }, user }) => {
     .first({ useMasterKey: true })
   cube.set('dAt', null)
   const audit = { user, fn: 'cube-restore' }
-  return cube.save(null, { useMasterKey: true, context: { audit } })
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId }, user }) => {
@@ -365,7 +363,7 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
       }
     }
   }
-  await cube.save(null, { useMasterKey: true })
+  await $saveWithEncode(cube, null, { useMasterKey: true })
   return { message, p1: cube.get('p1'), p2: cube.get('p2') }
 }, { requireUser: true })
 

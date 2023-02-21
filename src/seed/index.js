@@ -85,7 +85,7 @@ async function cleanCubes () {
       for (const field of fields) {
         cube.unset(field)
       }
-      await cube.save(null, { useMasterKey: true })
+      await $saveWithEncode(cube, null, { useMasterKey: true })
     }
     i += cubes.length
   }

@@ -32,6 +32,7 @@ module.exports = {
     $deleteAudits: true,
     $changes: true,
     $cubeChanges: true,
+    $saveWithEncode: true,
     $noMarketingRights: true
   },
   // add your custom rules here

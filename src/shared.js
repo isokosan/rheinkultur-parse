@@ -154,7 +154,7 @@ async function setCubeOrderStatuses (bookingOrContract) {
       .equalTo('order.objectId', order.objectId)
       .each(cube => {
         cube.unset('order')
-        return cube.save(null, { useMasterKey: true })
+        return $saveWithEncode(cube, null, { useMasterKey: true })
       }, { useMasterKey: true })
   } else {
     // remove all cubes that reference the contract despite the contract having them removed
@@ -164,7 +164,7 @@ async function setCubeOrderStatuses (bookingOrContract) {
       .equalTo('order.objectId', order.objectId)
       .each(cube => {
         cube.unset('order')
-        return cube.save(null, { useMasterKey: true })
+        return $saveWithEncode(cube, null, { useMasterKey: true })
       }, { useMasterKey: true })
   }
 
@@ -188,7 +188,7 @@ async function setCubeOrderStatuses (bookingOrContract) {
           earlyCanceledAt: date,
           endsAt: moment(endsAt).isBefore(date) ? endsAt : date
         })
-      await cube.save(null, { useMasterKey: true })
+      await $saveWithEncode(cube, null, { useMasterKey: true })
     }
 
     query.notContainedIn('objectId', earlyCanceledCubeIds)
