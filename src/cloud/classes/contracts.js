@@ -142,18 +142,18 @@ function getInvoiceLineItems ({ production, media }) {
   ].filter(({ price }) => price)
 }
 
-function getPeriodEnd ({ periodStart, billingCycle, contractStart, contractEnd, invoices }) {
+function getPeriodEnd ({ periodStart, billingCycle, contractStart, contractEnd, generating, nextInvoice }) {
   periodStart = moment(periodStart)
   contractEnd = moment(contractEnd)
   const addMonths = billingCycle - (periodStart.month() % billingCycle)
   const nextPeriodStart = periodStart.clone().add(addMonths, 'months').set('date', 1)
-  // if invoices are not present (generating)
-  if (!invoices) {
+  // if generating for the first time
+  if (generating) {
     return nextPeriodStart.isBefore(contractEnd) ? nextPeriodStart.subtract(1, 'day') : contractEnd
   }
-  // if invoices are present, we want to check the next invoice
-  if (invoices.find(invoice => invoice.get('periodStart') === nextPeriodStart.format('YYYY-MM-DD'))) {
-    return nextPeriodStart.clone().subtract(1, 'day')
+  // if next invoice start is defined, use one day before for end
+  if (nextInvoice) {
+    return moment(nextInvoice.get('periodStart')).subtract(1, 'day')
   }
   // if contract ends in this year use that as contract cut
   if (periodStart.year() === contractEnd.year()) {
@@ -199,7 +199,7 @@ async function getInvoicesPreview (contract) {
     if (periodStart.isAfter(contractEnd)) {
       break
     }
-    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd })
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd, generating: true })
 
     let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
     if (periodStart.isAfter(invoiceDate, 'year')) {
@@ -830,17 +830,19 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   const invoices = await $query('Invoice')
     .equalTo('contract', contract)
     .containedIn('status', [1, 4])
-    .ascending('date')
+    .ascending('periodStart')
     .find({ useMasterKey: true })
   const earlyCancellations = contract.get('earlyCancellations') || {}
   let i = 0
+  let u = 0
   const contractStart = contract.get('startsAt')
   const contractEnd = contract.get('endsAt')
   const billingCycle = contract.get('billingCycle')
   for (const invoice of invoices) {
     let updated = false
     const periodStart = invoice.get('periodStart')
-    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd, invoices }).format('YYYY-MM-DD')
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd, nextInvoice: invoices[i + 1] }).format('YYYY-MM-DD')
+
     if (contract.get('pricingModel') === 'gradual') {
       const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
       invoice.set('gradualCount', gradualCount)
@@ -916,9 +918,10 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
         updated = true
       }
     }
-    updated && (i++)
+    i++
+    updated && (u++)
   }
-  return i
+  return u
 }, { requireUser: true })
 
 // recreates canceled invoice
