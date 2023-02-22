@@ -30,6 +30,9 @@ Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCu
 })
 
 Parse.Cloud.beforeFind(Booking, ({ query }) => {
+  if (!('deletedAt' in query._where) && !query._include.includes('deleted')) {
+    query.equalTo('deletedAt', null)
+  }
   query._include.includes('all') && query.include([
     'company',
     'companyPerson',
@@ -54,7 +57,7 @@ Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
 Parse.Cloud.afterDelete(Booking, $deleteAudits)
 
 async function validateBookingActivate (booking) {
-  if (booking.get('status') > 2) {
+  if (booking.get('status') >= 3) {
     throw new Error('Buchung schon aktiv.')
   }
 
@@ -445,12 +448,19 @@ Parse.Cloud.define('booking-end', async ({ params: { id: bookingId }, user }) =>
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 
-Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId } }) => {
+Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
-  if (booking.get('status') !== 0 && booking.get('status') !== 2) {
-    throw new Error('Nur Buchungen im Entwurfsstatus können gelöscht werden!')
+
+  // completely delete booking if in draft state
+  if (booking.get('status') === 0 && booking.get('status') === 2) {
+    return booking.destroy({ useMasterKey: true })
   }
-  return booking.destroy({ useMasterKey: true })
+
+  // soft delete otherwise
+  booking.set('deletedAt', new Date())
+  booking.set('status', -1)
+  const audit = { user, fn: 'booking-remove' }
+  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingId } }) => {

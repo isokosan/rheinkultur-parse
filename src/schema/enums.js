@@ -12,6 +12,7 @@ module.exports.DISTRIBUTOR_ROLES = {
   'manage-scouts': 'Manage Scouts'
 }
 module.exports.BOOKING_STATUSES = {
+  '-1': 'Gelöscht',
   0.0: 'Entwurf', // distributors
   0.1: 'Genehmigung ausstehend', // distributors
   0.2: 'Abgelehnt', // distributors
@@ -22,6 +23,7 @@ module.exports.BOOKING_STATUSES = {
   5: 'Ausgelaufen'
 }
 module.exports.CONTRACT_STATUSES = {
+  '-1': 'Gelöscht',
   0.0: 'Entwurf', // offers
   0.1: 'Gesendet', // offers
   0.2: 'Abgelehnt', // offers ????

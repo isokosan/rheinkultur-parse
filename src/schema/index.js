@@ -75,6 +75,8 @@ const schemaDefinitions = {
       delete: {}
     },
     fields: {
+      deletedAt: { type: 'Date' }, // soft deletes
+
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company' },
@@ -189,6 +191,8 @@ const schemaDefinitions = {
       delete: {}
     },
     fields: {
+      deletedAt: { type: 'Date' }, // soft deletes
+
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },

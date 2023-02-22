@@ -50,6 +50,9 @@ Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, set
 })
 
 Parse.Cloud.beforeFind(Contract, ({ query }) => {
+  if (!('deletedAt' in query._where) && !query._include.includes('deleted')) {
+    query.equalTo('deletedAt', null)
+  }
   query._include.includes('all') && query.include([
     'company',
     'address',
@@ -778,7 +781,8 @@ Parse.Cloud.define('contract-set-cube-statuses', async ({ params: { id: contract
   return contract.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
 }, { requireUser: true })
 
-async function verifyContractUndoFinalize (contract) {
+// TOTRANSLATE
+async function checkIfContractRevertible (contract) {
   if (contract.get('status') !== 3) {
     throw new Error('You can only undo finalized active contracts')
   }
@@ -788,37 +792,35 @@ async function verifyContractUndoFinalize (contract) {
     .equalTo('status', 2)
     .distinct('lexNo', { useMasterKey: true })
   if (issuedInvoices.length) {
-    throw new Error('Once you have issued an auto-generated invoice of a contract you cannot revert finalization. Invoices: ' + issuedInvoices.join(', '))
+    throw new Error('You have issued auto-generated invoices from this contract. Please cancel these first. Invoices: ' + issuedInvoices.join(', '))
   }
   if (contract.get('extendedDuration')) {
     throw new Error('Once a contract has been extended, the finalisation cannot be reverted.')
   }
 }
 
+// TOTRANSLATE
 // check if a finalized contract can be re-opened for editing
-Parse.Cloud.define('contract-preview-undo-finalize', async ({ params: { id: contractId }, user }) => {
+Parse.Cloud.define('contract-check-revertable', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
-  return verifyContractUndoFinalize(contract)
-    .then(() => ({
-      ok: 'You may undo the finalization of this contract'
-    }))
-    .catch((error) => ({
-      error: error.message
-    }))
+  return checkIfContractRevertible(contract)
+    .catch((error) => ({ error: error.message }))
+    .then(() => true)
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
-  await verifyContractUndoFinalize(contract)
+  await checkIfContractRevertible(contract)
   contract.set({ status: 2.1 })
   const audit = { user, fn: 'contract-undo-finalize' }
   await contract.save(null, { useMasterKey: true, context: { audit } })
-  let i = 0
-  await $query('Invoice').equalTo('contract', contract).containedIn('status', [1, 4]).each((invoice) => {
-    i++
-    return invoice.destroy({ useMasterKey: true })
-  }, { useMasterKey: true })
-  return `Finalisierung zurückgezogen. ${i} geplante Rechnungen gelöscht.`
+  await $query('Invoice')
+    .equalTo('contract', contract)
+    .containedIn('status', [1, 4])
+    .each((invoice) => {
+      return invoice.destroy({ useMasterKey: true })
+    }, { useMasterKey: true })
+  return 'Finalisierung zurückgezogen.'
 }, { requireUser: true })
 
 // Updates all planned and discarded invoices of contract
@@ -1485,7 +1487,16 @@ Parse.Cloud.define('contract-generate-doc', async ({ params: { id: contractId },
 
 Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
-  return contract.destroy({ useMasterKey: true })
+  // completely delete contract if in draft state
+  if (contract.get('status') === 0 && contract.get('status') === 2) {
+    return contract.destroy({ useMasterKey: true })
+  }
+
+  // soft delete otherwise
+  contract.set('deletedAt', new Date())
+  contract.set('status', -1)
+  const audit = { user, fn: 'contract-remove' }
+  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-set-late-start', async ({ params: { id: contractId, date, diffInDays, periodTotal }, user }) => {
