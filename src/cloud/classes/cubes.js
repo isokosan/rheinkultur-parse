@@ -1,4 +1,3 @@
-const redis = require('@/services/redis')
 const { getNewNo } = require('@/shared')
 const { indexCube, unindexCube } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
@@ -30,19 +29,17 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
     cube.set('media', ht.get('media'))
   }
 
-  // cube.get('lc') === 'TLK' && await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
-  //   ? cube.set('bPLZ', true)
-  //   : cube.unset('bPLZ')
-
-  cube.get('lc') === 'TLK' && $noMarketingRights[cube.get('plz')]
-    ? cube.set('bPLZ', true)
-    : cube.unset('bPLZ')
+  if (cube.get('lc') === 'TLK') {
+    $bPLZ[cube.get('plz')] ? cube.set('bPLZ', true) : cube.unset('bPLZ')
+    const placeKey = [cube.get('state')?.id, cube.get('ort')].join(':')
+    $PDGA[placeKey] ? cube.set('PDGA', true) : cube.unset('PDGA')
+  }
 
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
 
   // make sure computed values are unset and not persisted in DB
-  cube.unset('s').unset('bPLZ').unset('klsId')
+  cube.unset('s').unset('bPLZ').unset('PDGA').unset('klsId')
 })
 
 Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit } }) => {
@@ -54,17 +51,6 @@ Parse.Cloud.beforeDelete(Cube, async ({ object: cube }) => {
 })
 
 Parse.Cloud.afterDelete(Cube, $deleteAudits)
-
-Parse.Cloud.define('redis-test', async () => {
-  let i = 0
-  for (let plz = 10000; plz < 20000; plz++) {
-    if (await redis.sismember('no-marketing-rights', `${plz}`) === 1) {
-      i++
-    }
-    plz++
-  }
-  return i
-})
 
 // if query is coming from public api, hide soft deleted cubes
 // TODO: Also hide for external users like distributors that do not scout
@@ -79,12 +65,9 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   for (const cube of cubes) {
     if (cube.get('lc') === 'TLK') {
       cube.set('klsId', cube.get('importData')?.klsId)
-      // await redis.sismember('no-marketing-rights', cube.get('plz')) === 1
-      //   ? cube.set('bPLZ', true)
-      //   : cube.unset('bPLZ')
-      await $noMarketingRights[cube.get('plz')]
-        ? cube.set('bPLZ', true)
-        : cube.unset('bPLZ')
+      $bPLZ[cube.get('plz')] ? cube.set('bPLZ', true) : cube.unset('bPLZ')
+      const placeKey = [cube.get('state')?.id, cube.get('ort')].join(':')
+      $PDGA[placeKey] ? cube.set('PDGA', true) : cube.unset('PDGA')
     }
 
     cube.set('s', cube.getStatus())

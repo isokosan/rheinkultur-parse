@@ -75,6 +75,7 @@ const INDEXES = {
 
         // warnings
         bPLZ: cube.get('bPLZ'),
+        PDGA: cube.get('PDGA'),
         nMR: cube.get('nMR'),
         MBfD: cube.get('MBfD'),
         PG: cube.get('PG'),
@@ -242,6 +243,7 @@ Parse.Cloud.define('search', async ({
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
   s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
   s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
+  s.includes('PDGA') && bool.must.push({ exists: { field: 'PDGA' } })
   s.includes('nMR') && bool.must.push({ exists: { field: 'nMR' } })
   s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
   s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })

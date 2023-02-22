@@ -33,7 +33,8 @@ module.exports = {
     $changes: true,
     $cubeChanges: true,
     $saveWithEncode: true,
-    $noMarketingRights: true
+    $bPLZ: true,
+    $PDGA: true
   },
   // add your custom rules here
   rules: {
