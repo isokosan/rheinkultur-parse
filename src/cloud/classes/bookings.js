@@ -375,26 +375,27 @@ Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, use
  *   the booking end date is updated
  *   extended years is incremented
  */
-Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
   const booking = await $getOrFail(Booking, bookingId)
   if (booking.get('status') !== 3) {
     throw new Error('Nur laufende Buchungen können verlängert werden.')
   }
-  const autoExtendsBy = booking.get('autoExtendsBy')
-  if (!autoExtendsBy) {
+  extendBy = extendBy || booking.get('autoExtendsBy')
+  if (!extendBy || ![3, 6, 12].includes(parseInt(extendBy))) {
     throw new Error('Verlängerungsanzahl nicht gesetzt.')
   }
+  extendBy = parseInt(extendBy)
 
   const endsAt = booking.get('endsAt')
-  const newEndsAt = moment(endsAt).add(autoExtendsBy, 'months')
+  const newEndsAt = moment(endsAt).add(extendBy, 'months')
   booking.set({
     endsAt: newEndsAt.format('YYYY-MM-DD'),
     autoExtendsAt: newEndsAt.clone().format('YYYY-MM-DD'),
-    extendedDuration: (booking.get('extendedDuration') || 0) + autoExtendsBy
+    extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
   })
-  const audit = { user, fn: 'booking-extend', data: { autoExtendsBy, endsAt: [endsAt, booking.get('endsAt')] } }
+  const audit = { user, fn: 'booking-extend', data: { extendBy, endsAt: [endsAt, booking.get('endsAt')] } }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, { requireUser: true })
 

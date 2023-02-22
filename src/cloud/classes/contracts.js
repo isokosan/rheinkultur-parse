@@ -1048,7 +1048,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
  *   new upcoming invoices are generated and current ones are updated if necessary
  */
 // email: true (the email defined in invoice address will be used) | string (the custom email will be used) | false (no email will be send)
-Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email, extendBy }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
   const contract = await $getOrFail(Contract, contractId, ['company', 'address', 'invoiceAddress'])
@@ -1058,20 +1058,21 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
   if (contract.get('canceledAt')) {
     throw new Error('Gekündigte Verträge können nicht verlängert werden.')
   }
-  const autoExtendsBy = contract.get('autoExtendsBy')
-  if (!autoExtendsBy) {
+  extendBy = extendBy || contract.get('autoExtendsBy')
+  if (!extendBy || ![3, 6, 12].includes(parseInt(extendBy))) {
     throw new Error('Verlängerungsanzahl nicht gesetzt.')
   }
+  extendBy = parseInt(extendBy)
 
   const billingCycle = contract.get('billingCycle') || 12
 
   const endsAt = contract.get('endsAt')
-  const newEndsAt = moment(endsAt).add(1, 'day').add(autoExtendsBy, 'months').subtract(1, 'day')
+  const newEndsAt = moment(endsAt).add(1, 'day').add(extendBy, 'months').subtract(1, 'day')
 
   contract.set({
     endsAt: newEndsAt.format('YYYY-MM-DD'),
     autoExtendsAt: newEndsAt.clone().subtract(contract.get('noticePeriod'), 'months').format('YYYY-MM-DD'),
-    extendedDuration: (contract.get('extendedDuration') || 0) + autoExtendsBy
+    extendedDuration: (contract.get('extendedDuration') || 0) + extendBy
   })
   let message = 'Vertrag wurde verlängert.'
 
@@ -1081,7 +1082,7 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email }
   email && await Parse.Cloud.run('contract-extend-send-mail', { id: contract.id, email }, { useMasterKey: true })
     .then(() => { message += ` Email an ${email} gesendet.` })
 
-  const audit = { user, fn: 'contract-extend', data: { autoExtendsBy, endsAt: [endsAt, contract.get('endsAt')] } }
+  const audit = { user, fn: 'contract-extend', data: { extendBy, endsAt: [endsAt, contract.get('endsAt')] } }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 
   if (contract.get('pricingModel') !== 'zero') {
