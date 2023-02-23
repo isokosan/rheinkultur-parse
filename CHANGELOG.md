@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.3...1.9.0) (2023-02-23)
+
+
+### Features
+
+* add export to departure lists parent ([b1618f1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b1618f1f563faff22dc3414581cc45fd6705c647))
+
 ## [1.8.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.2...1.8.3) (2023-02-23)
 
 
