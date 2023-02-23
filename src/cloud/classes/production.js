@@ -160,7 +160,7 @@ Parse.Cloud.define('production-update-assembly', async ({
     printFilesDue,
     assembler,
     assemblyStart,
-    printFiles: rawPrintFiles,
+    printFileIds,
     printNotes: rawPrintNotes
   }
 }) => {
@@ -176,9 +176,9 @@ Parse.Cloud.define('production-update-assembly', async ({
   const cubeIds = (production.get('booking') || production.get('contract')).get('cubeIds')
 
   const printFiles = {}
-  for (const key of Object.keys(rawPrintFiles)) {
-    const fileObject = rawPrintFiles[key]
-    if (!fileObject) {
+  for (const key of Object.keys(printFileIds)) {
+    const fileObjectId = printFileIds[key]
+    if (!fileObjectId) {
       continue
     }
     const [cubeId, face] = key.split('+')
@@ -188,7 +188,7 @@ Parse.Cloud.define('production-update-assembly', async ({
     if (!(cubeId in printFiles)) {
       printFiles[cubeId] = {}
     }
-    printFiles[cubeId][face] = $parsify('FileObject', fileObject.objectId)
+    printFiles[cubeId][face] = $parsify('FileObject', fileObjectId)
   }
 
   const printNotes = {}
