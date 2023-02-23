@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.9.0...1.9.1) (2023-02-23)
+
+
+### Bug Fixes
+
+* update colors of export ([fa85833](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fa85833d30c118ecfd1b4ebba97d0094b7ddabd3))
+
 # [1.9.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.3...1.9.0) (2023-02-23)
 
 
