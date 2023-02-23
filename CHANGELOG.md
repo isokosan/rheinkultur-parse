@@ -1,3 +1,10 @@
+## [1.8.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.1...1.8.2) (2023-02-23)
+
+
+### Bug Fixes
+
+* do not delete unused files after save ([3383734](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/33837343cb3e23d24715e17ae960b8f8a185750c))
+
 ## [1.8.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.0...1.8.1) (2023-02-23)
 
 
