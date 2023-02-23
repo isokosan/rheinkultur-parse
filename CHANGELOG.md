@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.0...1.8.1) (2023-02-23)
+
+
+### Bug Fixes
+
+* storage-delete production used file bug ([8348d0b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8348d0bac52b294637383c9c57b1854d9d1cde2e))
+
 # [1.8.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.7.0...1.8.0) (2023-02-23)
 
 
