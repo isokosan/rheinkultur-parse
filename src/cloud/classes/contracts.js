@@ -381,7 +381,7 @@ async function validateContractFinalize (contract, skipCubeValidations) {
 
 Parse.Cloud.define('contract-invoices-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
-  if (contract.get('status') > 2) {
+  if (contract.get('status') >= 3) {
     throw new Error('Can only preview unfinalized contract invoices.')
   }
   if (!contract.get('startsAt') || !contract.get('endsAt')) {
@@ -797,6 +797,7 @@ async function checkIfContractRevertible (contract) {
   if (contract.get('extendedDuration')) {
     throw new Error('Once a contract has been extended, the finalisation cannot be reverted.')
   }
+  return true
 }
 
 // TOTRANSLATE
@@ -805,7 +806,6 @@ Parse.Cloud.define('contract-check-revertable', async ({ params: { id: contractI
   const contract = await $getOrFail(Contract, contractId, 'company')
   return checkIfContractRevertible(contract)
     .catch((error) => ({ error: error.message }))
-    .then(() => true)
 }, { requireUser: true })
 
 Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
@@ -1031,11 +1031,11 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     contract,
     status: 0,
     date: await $today(),
-    lineItems: [{ name: 'CityCubes entfallen von Vertrag', price }],
+    lineItems: [{ name: 'Dauerwerbung Media', price }],
     reason: [
       'Folgende CityCubes entfallen von Vertrag:',
       Object.keys(cancellations).map(cubeId => `${cubeId}: ${cancellations[cubeId] === true ? 'Herausgenommen' : moment(cancellations[cubeId]).format('DD.MM.YYYY')}`).join(', '),
-      `Folgende ${invoiceNos.length > 1 ? 'Rechnungen' : 'Rechnung'} wurde gutgeschrieben:`,
+      `Folgende ${invoiceNos.length > 1 ? 'Rechnungen wurden' : 'Rechnung wurde'} gutgeschrieben:`,
       invoiceNos.map((invoiceNo) => `${invoiceNo}: ${priceString(invoices[invoiceNo])}€`).join(', ')
     ].join('\n')
   })

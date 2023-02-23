@@ -98,16 +98,6 @@ const getPrintFileIds = printFiles => [...new Set(Object.values(printFiles || {}
   .flat()
 )]
 
-// delete unused print files after save
-// Parse.Cloud.afterSave(Production, async ({ object: production }) => {
-//   const usedFileIds = getPrintFileIds(production.get('printFiles'))
-//   const unusedFiles = await $query('FileObject')
-//     .startsWith('assetType', `Production_${production.id}`)
-//     .notContainedIn('objectId', usedFileIds)
-//     .find({ useMasterKey: true })
-//   unusedFiles.map(file => file.destroy({ useMasterKey: true }))
-// })
-
 Parse.Cloud.beforeFind(Production, ({ query }) => {
   query.include(['booking', 'contract'])
 })
@@ -205,3 +195,13 @@ Parse.Cloud.define('production-update-assembly', async ({
 
   return production.save(null, { useMasterKey: true })
 }, { requireUser: true })
+
+// TODO: remove unused files every night?
+Parse.Cloud.define('production-delete-unused-files', async ({ params: { productionId } }) => {
+  const production = await $getOrFail(Production, productionId)
+  const usedFileIds = getPrintFileIds(production.get('printFiles'))
+  return $query('FileObject')
+    .startsWith('assetType', `Production_${production.id}`)
+    .notContainedIn('objectId', usedFileIds)
+    .each(file => file.destroy({ useMasterKey: true }), { useMasterKey: true })
+}, { requireMaster: true })
