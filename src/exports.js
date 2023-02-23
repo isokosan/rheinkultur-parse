@@ -320,12 +320,8 @@ router.get('/departure-lists', handleErrorAsync(async (req, res) => {
           ort: cube.get('ort'),
           stateName: cube.get('state').get('name')
         })
-        cube.get('ht') && (row.getCell(2).font = { name: 'Calibri', bold: true })
-        cube.get('s') !== 0 && row.eachCell(cell => (cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'ffd7d7' }
-        }))
+        !cube.get('ht') && (row.getCell(2).font = { name: 'Calibri', color: { argb: '808080' } })
+        cube.get('s') !== 0 && (row.getCell(3).font = { name: 'Calibri', color: { argb: 'ff2222' } })
       }
     }, { useMasterKey: true })
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
