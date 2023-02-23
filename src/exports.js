@@ -16,6 +16,7 @@ const { round2 } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
+const { CUBE_STATUSES } = require('@/schema/enums')
 
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
@@ -281,10 +282,61 @@ router.get('/control', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
+router.get('/departure-lists', handleErrorAsync(async (req, res) => {
+  const [className, objectId] = req.query.parent.split('-')
+  const parent = await $getOrFail(className, objectId)
+  const workbook = new excel.Workbook()
+  await $query('DepartureList')
+    .equalTo(className.toLowerCase(), parent)
+    .each(async departureList => {
+      const worksheet = workbook.addWorksheet(`${departureList.get('ort')} (${departureList.get('state').id})`)
+      const { columns, headerRowValues } = getColumnHeaders({
+        objectId: { header: 'CityCube ID', width: 20 },
+        htCode: { header: 'Gehäusetyp', width: 20 },
+        status: { header: 'Status', width: 15 },
+        address: { header: 'Anschrift', width: 30 },
+        plz: { header: 'PLZ', width: 15 },
+        ort: { header: 'Ort', width: 15 },
+        stateName: { header: 'Bundesland', width: 30 }
+      })
+      worksheet.columns = columns
+      const headerRow = worksheet.addRow(headerRowValues)
+      headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+      headerRow.height = 24
+
+      const cubeIds = departureList.get('cubeIds') || []
+      const cubes = await (new Parse.Query('Cube'))
+        .containedIn('objectId', cubeIds)
+        .include(['ht', 'state'])
+        .limit(cubeIds.length)
+        .find({ useMasterKey: true })
+      for (const cube of cubes) {
+        const row = worksheet.addRow({
+          objectId: cube.id,
+          htCode: cube.get('ht')?.get('code') || cube.get('hti'),
+          status: CUBE_STATUSES[cube.get('s') || 0],
+          address: cube.get('str') + ' ' + cube.get('hsnr'),
+          plz: cube.get('plz'),
+          ort: cube.get('ort'),
+          stateName: cube.get('state').get('name')
+        })
+        cube.get('ht') && (row.getCell(2).font = { name: 'Calibri', bold: true })
+        cube.get('s') !== 0 && row.eachCell(cell => (cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'ffd7d7' }
+        }))
+      }
+    }, { useMasterKey: true })
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=Alle Abfahrtsliste ${parent.get('name')}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
 router.get('/departure-list', handleErrorAsync(async (req, res) => {
   const departureList = await (new Parse.Query('DepartureList')).include('company').get(req.query.id, { useMasterKey: true })
   const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet(departureList.get('no'))
+  const worksheet = workbook.addWorksheet(departureList.get('name'))
 
   const infos = [
     { label: 'Auftraggeber', content: departureList.get('company')?.get('name') || '-' },
@@ -360,14 +412,14 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
   if (query) {
     query.s = 'available'
     query.pagination = 1000
-    const { hits } = await Parse.Cloud.run('search', query, { useMasterKey: true })
-    for (const { _source: doc } of hits) {
-      if (cubeIds.includes(doc.id)) {
+    const { results } = await Parse.Cloud.run('search', query, { useMasterKey: true })
+    for (const doc of results) {
+      if (cubeIds.includes(doc.objectId)) {
         continue
       }
       worksheet.addRow({
-        objectId: doc.id,
-        htCode: housingTypes[doc.htId]?.code || '',
+        objectId: doc.objectId,
+        htCode: housingTypes[doc.ht?.id]?.code || '',
         hti: doc.hti,
         address: doc.str + ' ' + doc.hsnr,
         plz: doc.plz,
