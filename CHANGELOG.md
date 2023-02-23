@@ -1,3 +1,10 @@
+## [1.8.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.2...1.8.3) (2023-02-23)
+
+
+### Bug Fixes
+
+* contract-revert-check ([95071dc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/95071dc2b23f0c75542c633eb44b0e42479771ce))
+
 ## [1.8.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.1...1.8.2) (2023-02-23)
 
 
