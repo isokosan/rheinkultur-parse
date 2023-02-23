@@ -13,6 +13,12 @@ const writeAuthOnly = {
   update: { requiresAuthentication: true },
   delete: { requiresAuthentication: true }
 }
+const readMasterOnly = {
+  get: {},
+  find: {},
+  count: {}
+}
+
 const writeMasterOnly = {
   create: {},
   update: {},
@@ -499,6 +505,12 @@ const schemaDefinitions = {
       realizedDate: { type: 'String' }, // belegungstart: realized date when montage is completed (generate gutschein )
       printFiles: { type: 'Object' }, // druckdaten
       printNotes: { type: 'Object' } // hinweise
+    }
+  },
+  QuarterlyReport: {
+    CLP: { ...readMasterOnly, ...writeMasterOnly },
+    fields: {
+      quarter: { type: 'String', required: true }
     }
   },
   PLZ: {

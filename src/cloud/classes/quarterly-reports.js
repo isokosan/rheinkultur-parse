@@ -180,6 +180,7 @@ async function processQuarter (quarter) {
     rows
   })
   await quarterlyReport.save(null, { useMasterKey: true })
+  consola.success('QUARTER COMPLETE', quarter)
 }
 
 async function checkIfQuarterIsClosed (quarter) {
@@ -606,6 +607,11 @@ async function getOrCacheRegionalCommissions () {
       .select('objectId')
       .first({ useMasterKey: true })
       .then(company => company.id)
+    const kineticId = await $query('Company')
+      .equalTo('name', 'Kinetic Germany GmbH')
+      .select('objectId')
+      .first({ useMasterKey: true })
+      .then(company => company.id)
     REGIONAL_COMMISSIONS = [
       {
         regionId: 'SKS',
@@ -630,16 +636,40 @@ async function getOrCacheRegionalCommissions () {
           excludeCustomerIds: [sksId, skkId],
           excludeAgencyIds: [sksId, skkId]
         }
+      },
+      {
+        regionId: 'AACHEN',
+        name: 'PDG Aachen',
+        rate: 25,
+        rules: {
+          lessorCode: 'TLK',
+          includeStateIds: ['NW'],
+          includeOrts: [
+            'Aachen',
+            'Alsdorf',
+            'Baesweiler',
+            'Eschweiler',
+            'Herzogenrath',
+            'Monschau',
+            'Roetgen',
+            'Simmerath',
+            'Stolberg',
+            'Würselen'
+          ],
+          excludeCustomerIds: [kineticId]
+        }
       }
     ]
   }
   return REGIONAL_COMMISSIONS
 }
+
 async function getRegionalCommissionRate ({ lc, stateId, ort, companyId, agencyId }) {
   await getOrCacheRegionalCommissions()
   for (const { regionId, rate, rules } of REGIONAL_COMMISSIONS) {
     if (rules.lc && lc !== rules.lc) { continue }
     if (rules.includeStateIds && !rules.includeStateIds.find(id => id === stateId)) { continue }
+    if (rules.includeOrts && !rules.includeOrts.find(o => o === ort)) { continue }
     if (rules.includeOrt && rules.includeOrt !== ort) { continue }
     if (rules.excludeOrt && rules.excludeOrt === ort) { continue }
     if (rules.excludeCustomerIds && rules.excludeCustomerIds.find(id => id === companyId)) { continue }
@@ -684,14 +714,16 @@ async function getOrCacheLessorCommissions () {
   }
   return LESSOR_COMMISIONS
 }
+
 async function getLessorCommissionRate ({ lc, stateId, ort, companyId }) {
   await getOrCacheLessorCommissions()
   const lessor = LESSOR_COMMISIONS[lc]
   if (!lessor) { throw new Error(`Verpächter mit code ${lc} nicht gefunden.`) }
-  if (lessor.cityRates?.[`${ort}:${stateId}`]) {
-    return lessor.cityRates[`${ort}:${stateId}`]
+  const placeKey = `${ort}:${stateId}`
+  if (placeKey in (lessor.cityRates || {})) {
+    return lessor.cityRates[placeKey]
   }
-  if (lessor.companyRates?.[companyId]) {
+  if (companyId in (lessor.companyRates || {})) {
     return lessor.companyRates[companyId]
   }
   return lessor.rate

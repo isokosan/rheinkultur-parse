@@ -125,3 +125,20 @@ Parse.Cloud.define('manual-updates-canceled', async () => {
   }
   return response
 })
+
+DEVELOPMENT && Parse.Cloud.define('update-lex-addresses-dev', async () => {
+  return $query('Address').notEqualTo('lex', null).each(async (address) => {
+    // check if address name exists on lexoffice
+    let [lex] = await Parse.Cloud.run('lex-contacts', { name: address.get('name') }, { useMasterKey: true })
+    if (!lex) {
+      lex = await Parse.Cloud.run('lex-contact-create', {
+        name: address.get('name'),
+        allowTaxFreeInvoices: address.get('countryCode') !== 'DE' || undefined
+      }, { useMasterKey: true })
+      consola.info('created new lex', address.get('name'))
+    } else {
+      consola.success('found lex', address.get('name'))
+    }
+    return address.set({ lex }).save(null, { useMasterKey: true })
+  }, { useMasterKey: true })
+})

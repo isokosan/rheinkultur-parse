@@ -99,6 +99,7 @@ async function syncNoMarketingRights () {
 }
 syncNoMarketingRights()
 
+// TODO: Fetch from single place
 global.$PDGA = {
   'NW:Aachen': true,
   'NW:Alsdorf': true,

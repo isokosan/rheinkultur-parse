@@ -1,20 +1,22 @@
 module.exports = async function (job) {
   const kinetic = await $query('Company').equalTo('name', 'Kinetic Germany GmbH').first({ useMasterKey: true })
   const extendContractsQuery = $query('Contract')
-    .notEqualTo('company', kinetic)
-    .matchesQuery('company', $query('Company').notEqualTo('email', null))
     .equalTo('status', 3)
     .equalTo('canceledAt', null)
     .lessThan('autoExtendsAt', await $today())
     .ascending('autoExtendsAt')
+  !DEVELOPMENT && extendContractsQuery
+    .notEqualTo('company', kinetic)
+    .matchesQuery('company', $query('Company').notEqualTo('email', null))
   const endContractsQuery = Parse.Query.or(
     $query('Contract').notEqualTo('canceledAt', null),
     $query('Contract').equalTo('autoExtendsAt', null)
   )
-    .notEqualTo('company', kinetic)
     .equalTo('status', 3)
     .lessThan('endsAt', await $today())
     .ascending('endsAt')
+  !DEVELOPMENT && endContractsQuery
+    .notEqualTo('company', kinetic)
   const extendBookingsQuery = $query('Booking')
     .equalTo('status', 3)
     .equalTo('canceledAt', null)
