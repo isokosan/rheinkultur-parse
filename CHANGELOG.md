@@ -1,3 +1,17 @@
+# [1.8.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.7.0...1.8.0) (2023-02-23)
+
+
+### Bug Fixes
+
+* get period end from next invoice start when updating ([74c527b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/74c527b4d4650f331a998b6a351ae9b87935a25a))
+
+
+### Features
+
+* add PDGA locations with placeKey ([f9f8cfd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f9f8cfd2b35af00b490383b9fa6d898d283aaeec))
+* extend booking and contracts anytime ([9e996c8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9e996c84fa4a68fde8a879a2dfd5b323f0c75aa1))
+* remove finalized bookings and contracts ([3474fbe](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3474fbe56b61028cb976b30600f4c7f5a8bb0b2e))
+
 # [1.7.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.6.0...1.7.0) (2023-02-21)
 
 
