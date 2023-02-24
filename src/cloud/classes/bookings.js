@@ -64,8 +64,7 @@ async function validateBookingActivate (booking) {
   // check if booking has cubeIds
   const cubeIds = booking.get('cubeIds') || []
   if (!cubeIds.length) {
-    // TOTRANSLATE
-    throw new Error('Booking needs werbemittel to be activated')
+    throw new Error('Sie müssen mindestens einen CityCube hinzugefügt haben, um die Buchung zu aktivieren.')
   }
 
   // check if all cubes are available
@@ -110,8 +109,7 @@ async function validateBookingActivate (booking) {
         .equalTo('media', null)
         .find({ useMasterKey: true })
       if (noMediaCubes.length > 0) {
-        // TOTRANSLATE
-        throw new Error(noMediaCubes.length > 1 ? `Cubes ${noMediaCubes.map(c => c.id).join(', ')} do not have their media set!` : `Cube ${noMediaCubes[0].id} does not have media type set!`)
+        throw new Error('Media kann nicht gesetzt werden, weil Gehäuse-Kategorie von einigen CityCubes unbekannt ist. Bitte wählen Sie eine Kategorie aus.')
       }
     }
     if (!pricingModel) {

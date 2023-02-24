@@ -1,7 +1,23 @@
+// TODO: make sure to put all lessors even if they have no cubes
+
 const { round2, round5 } = require('@/utils')
 const { getQuarterStartEnd, getCubeSummaries } = require('@/shared')
 
 const QuarterlyReport = Parse.Object.extend('QuarterlyReport')
+
+function getOrCreateReport (quarter) {
+  return $query(QuarterlyReport)
+    .equalTo('quarter', quarter)
+    .first({ useMasterKey: true })
+    .then((report) => {
+      if (report) {
+        return report
+      }
+      const newReport = new QuarterlyReport()
+      newReport.set('quarter', quarter)
+      return newReport.save(null, { useMasterKey: true })
+    })
+}
 
 // processBookings('2021-01-01', '2021-03-31').then(consola.info)
 // processBookings('2023-01-01', '2023-03-31')
@@ -23,20 +39,31 @@ Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter }, ma
   return report || checkIfQuarterIsClosed(quarter)
 }, $adminOrMaster)
 
-Parse.Cloud.define('quarterly-report-process', async ({ params: { quarter } }) => {
+Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) => {
   processQuarter(quarter)
   return 'processing quarter ' + quarter
 }, { requireMaster: true })
 
 async function processQuarter (quarter) {
   await checkIfQuarterIsClosed(quarter)
+  // starting generation
+  const quarterlyReport = await getOrCreateReport(quarter)
+  quarterlyReport.set('status', 'generating')
+  quarterlyReport.set('progress', 'Getting quarterly data...')
+
   const { start, end } = getQuarterStartEnd(quarter)
+  quarterlyReport.set('progress', 'Processing media invoices...')
   const mediaInvoices = await processMediaInvoices(start, end)
+  quarterlyReport.set('progress', 'Processing custom invoices...')
   const customInvoices = await processCustomInvoices(start, end)
+  quarterlyReport.set('progress', 'Processing distributor bookings...')
   const periodicDistributors = await processPeriodicDistributors(start, end)
   const bookings = await processBookings(start, end)
+  quarterlyReport.set('progress', 'Processing 0€ contracts...')
   const zeroContracts = await processCustomContracts(start, end)
+  quarterlyReport.set('progress', 'Processing occupied cubes...')
   const occupiedCubes = await processOccupiedCubes(start, end)
+  quarterlyReport.set('progress', 'Formatting data into rows...')
   const rows = await Promise.all([
     ...mediaInvoices,
     ...customInvoices,
@@ -155,6 +182,7 @@ async function processQuarter (quarter) {
     }
   }
 
+  quarterlyReport.set('progress', 'Almost done. Finalizing reports...')
   rheinkultur.orders = Object.keys(rheinkultur.orders).length
   for (const distributorId in distributors) {
     distributors[distributorId].orders = Object.keys(distributors[distributorId].orders).length
@@ -169,8 +197,9 @@ async function processQuarter (quarter) {
     lessors[lessorCode].orders = Object.keys(lessors[lessorCode].orders).length
   }
 
-  const quarterlyReport = new QuarterlyReport({
-    quarter,
+  quarterlyReport.unset('progress')
+  quarterlyReport.set({
+    status: 'draft',
     rheinkultur,
     customers,
     distributors,

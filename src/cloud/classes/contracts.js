@@ -784,7 +784,7 @@ Parse.Cloud.define('contract-set-cube-statuses', async ({ params: { id: contract
 // TOTRANSLATE
 async function checkIfContractRevertible (contract) {
   if (contract.get('status') !== 3) {
-    throw new Error('You can only undo finalized active contracts')
+    throw new Error('Vertrag ist in Entwurfsstatus')
   }
   const issuedInvoices = await $query('Invoice')
     .equalTo('contract', contract)
@@ -792,15 +792,24 @@ async function checkIfContractRevertible (contract) {
     .equalTo('status', 2)
     .distinct('lexNo', { useMasterKey: true })
   if (issuedInvoices.length) {
-    throw new Error('You have issued auto-generated invoices from this contract. Please cancel these first. Invoices: ' + issuedInvoices.join(', '))
+    let message = issuedInvoices.length === 1
+      ? 'Sie haben bereits eine Rechnung zu diesem Vertrag ausgestellt. Bitte stornieren Sie diese zuerst. Rechnung: ' + issuedInvoices.join(', ')
+      : 'Sie haben bereits Rechnungen zu diesem Vertrag ausgestellt. Bitte stornieren Sie diese zuerst. Rechnungen: ' + issuedInvoices.join(', ')
+    message += '\n\n'
+    message += 'Mediendienstleistungsverträgen sollten nicht gelöscht oder zurückgezogen werden, da Veränderungen sich auf die Pachtkalkulation auswirken können.'
+    message += '\n\n'
+    message += 'Bitte halten Sie hierzu Rücksprache, um eine andere Lösung zu finden.'
+    throw new Error(message)
   }
   if (contract.get('extendedDuration')) {
-    throw new Error('Once a contract has been extended, the finalisation cannot be reverted.')
+    let message = 'Sobald sich ein Vertag verlängert hat, kann der Vertrag nicht gelöscht oder zurückgezogen werden.'
+    message += '\n\n'
+    message += 'Bitte halten Sie hierzu Rücksprache, um eine andere Lösung zu finden.'
+    throw new Error(message)
   }
   return true
 }
 
-// TOTRANSLATE
 // check if a finalized contract can be re-opened for editing
 Parse.Cloud.define('contract-check-revertable', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
