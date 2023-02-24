@@ -1,4 +1,4 @@
-const { round2, round5, parseAsDigitString } = require('@/utils')
+const { round2, round5, parseAsDigitString } = require('./utils')
 
 const getNewNo = async function (prefix, className, field, digits) {
   const last = await $query(className)

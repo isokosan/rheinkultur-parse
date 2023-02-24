@@ -341,3 +341,5 @@ const checkScheduleHealth = async function () {
   }
   return Promise.resolve(lateJobs)
 }
+
+module.exports = { createQueue, getLast }
