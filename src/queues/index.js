@@ -687,10 +687,11 @@ module.exports = async function (job) {
   for (const lessorCode in lessors) {
     lessors[lessorCode].orders = Object.keys(lessors[lessorCode].orders).length
   }
-
+  job.progress('Done!')
   await quarterlyReport
     .set({
       status: 'draft',
+      jobId: null,
       rheinkultur,
       customers,
       distributors,

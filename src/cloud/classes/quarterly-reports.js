@@ -72,6 +72,5 @@ Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) 
   if (report.get('jobId')) {
     throw new Error('Job already added')
   }
-  reportQueue.add({ id: report.id })
-  return 'processing quarter ' + quarter
+  return reportQueue.add({ id: report.id }).then(job => job.id)
 }, $adminOrMaster)
