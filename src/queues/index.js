@@ -587,8 +587,12 @@ module.exports = async function (job) {
     }
 
     // subtract rheinkultur service rate (scouting etc 15%)
-    row.monthlyNet = round2(row.monthlyNet * 0.85) || 0
-    row.totalNet = round2(row.totalNet * 0.85) || 0
+    row.serviceRate = 15
+    const serviceRatio = round5(row.serviceRate / 100) || 0
+    const monthlyService = round2(row.monthlyNet * serviceRatio) || 0
+    row.serviceTotal = round2((row.months || 0) * monthlyService) || 0
+    row.monthlyNet = round2(row.monthlyNet - monthlyService) || 0
+    row.totalNet = round2(row.totalNet - row.serviceTotal) || 0
 
     const lessorRate = await getLessorCommissionRate(row)
     if (lessorRate) {

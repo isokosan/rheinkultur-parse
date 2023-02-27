@@ -619,7 +619,12 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
 router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   const { quarter } = req.params
   const { distributorId, agencyId, regionId, lessorCode } = req.query
-  const report = await $query('QuarterlyReport').equalTo('quarter', quarter).descending('createdAt').first({ useMasterKey: true })
+  const report = await $query('QuarterlyReport')
+    .equalTo('quarter', quarter)
+    .descending('createdAt')
+    .include('rows')
+    .first({ useMasterKey: true })
+
   let filename = `Auftragsliste ${quarter}`
   const workbook = new excel.Workbook()
   const worksheet = workbook.addWorksheet('Quartalsbericht')
@@ -629,7 +634,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
     campaignNo: { header: 'Kampagnennr.', width: 20 },
-    objectId: { header: 'CityCube Id', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
     hsnr: { header: 'Hsnr.', width: 10 },
@@ -648,6 +653,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     agencyTotal: { header: 'Agentursumme', width: 15, style: priceStyle },
     regionalRate: { header: 'Region %', width: 10, style: percentStyle },
     regionalTotal: { header: 'Regionsumme', width: 15, style: priceStyle },
+    serviceRate: { header: 'Service %', width: 10, style: percentStyle },
+    serviceTotal: { header: 'Servicepauschale', width: 15, style: priceStyle },
     totalNet: { header: 'Rheinkultur Netto', width: 15, style: priceStyle },
     lessorRate: { header: 'Pacht %', width: 10, style: percentStyle },
     lessorTotal: { header: 'Pachtsumme', width: 15, style: priceStyle },
@@ -657,10 +664,13 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   if (distributorId) {
     const distributorName = await $getOrFail('Company', distributorId).then((company) => company.get('name'))
     filename = `${distributorName} ${quarter}`
+    delete fields.companyName
     delete fields.agencyRate
     delete fields.agencyTotal
     delete fields.regionalRate
     delete fields.regionalTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
@@ -671,6 +681,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     filename = `${agencyName} ${quarter}`
     delete fields.regionalRate
     delete fields.regionalTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
@@ -681,6 +693,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     filename = `${regionName} ${quarter}`
     delete fields.agencyRate
     delete fields.agencyTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
@@ -693,6 +707,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.agencyTotal
     delete fields.regionalRate
     delete fields.regionalTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.invoiceNo
   }
 
@@ -717,11 +733,26 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     row.periodEnd = moment(row.periodEnd).format('DD.MM.YYYY')
     return row
   })
+
+  // remove externalOrderNo / campaignNo columns if empty
+  !rows.find(row => row.externalOrderNo) && (delete fields.externalOrderNo)
+  !rows.find(row => row.campaignNo) && (delete fields.campaignNo)
+
   const { columns, headerRowValues } = getColumnHeaders(fields)
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 10 }
   worksheet.addRows(rows)
+
+  // add total row
+  const keys = ['monthly', 'total', 'agencyTotal', 'regionalTotal', 'serviceTotal', 'totalNet', 'lessorTotal']
+  const totals = {}
+  for (const key of keys.filter(key => key in fields)) {
+    totals[key] = rows.reduce((sum, row) => round2(sum + (row[key] || 0)), 0)
+  }
+  const totalRow = worksheet.addRow(totals)
+  totalRow.font = { name: 'Calibri', bold: true }
+
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })

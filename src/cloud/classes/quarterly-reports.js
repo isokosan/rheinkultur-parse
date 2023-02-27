@@ -1,6 +1,6 @@
 const path = require('path')
 const { ensureUniqueField } = require('@/utils')
-const { createQueue, getLast } = require('@/cloud/jobs')
+const { createQueue } = require('@/cloud/jobs')
 const { getQuarterStartEnd } = require('@/shared')
 
 const QuarterlyReport = Parse.Object.extend('QuarterlyReport')
@@ -58,7 +58,7 @@ Parse.Cloud.define('job-start', () => reportQueue.add({ id: 'L6OJ4k2Uo3' }).then
 
 Parse.Cloud.define('job-status', async ({ params: { jobId } }) => {
   const job = await reportQueue.getJob(jobId)
-  return { last: await getLast(reportQueue), jobProgress: job.progress() }
+  return job?.progress()
 }, $adminOrMaster)
 
 Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) => {
