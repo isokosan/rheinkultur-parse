@@ -119,28 +119,6 @@ const schemaDefinitions = {
       monthlyMedia: { type: 'Object' } // Monthly prices are set only when the company has no pricing model
     }
   },
-  Briefing: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true },
-      company: { type: 'Pointer', targetClass: 'Company' },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
-
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
-    }
-  },
-  Control: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true },
-      sourceClass: { type: 'String', required: true },
-      sourceId: { type: 'String', required: true },
-
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
-    }
-  },
   Comment: {
     CLP: {
       get: { requiresAuthentication: true },
@@ -539,54 +517,6 @@ const schemaDefinitions = {
       uri: { type: 'String' },
       data: { type: 'Object' },
       readAt: { type: 'Date' }
-    }
-  },
-  DepartureList: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      type: { type: 'String', required: true }, // scout or control
-      briefing: { type: 'Pointer', targetClass: 'Briefing' },
-      control: { type: 'Pointer', targetClass: 'Control' },
-      name: { type: 'String' },
-      scout: { type: 'Pointer', targetClass: '_User' },
-      dueDate: { type: 'String' },
-      quota: { type: 'Number' },
-      placeKey: { type: 'String' },
-      state: { type: 'Pointer', targetClass: 'State' },
-      ort: { type: 'String' },
-      cubesQuery: { type: 'Object' },
-      status: { type: 'String' },
-      cubeIds: { type: 'Array', default: [] },
-      cubeCount: { type: 'Number', default: 0 },
-      pendingCubeIds: { type: 'Array' }, // scout form submitted
-      pendingCubeCount: { type: 'Number', default: 0 },
-      approvedCubeIds: { type: 'Array' }, // approved after scouting
-      adminApprovedCubeIds: { type: 'Array' }, // approved w/o scouting
-      approvedCubeCount: { type: 'Number', default: 0 }
-    }
-  },
-  ScoutSubmission: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      departureList: { type: 'Pointer', targetClass: 'DepartureList' },
-      cube: { type: 'Pointer', targetClass: 'Cube', required: true },
-      scout: { type: 'Pointer', targetClass: '_User', required: true },
-      status: { type: 'String' },
-      form: { type: 'Object' },
-      photos: { type: 'Array' },
-      scoutedAt: { type: 'Date' }
-    }
-  },
-  ControlSubmission: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      departureList: { type: 'Pointer', targetClass: 'DepartureList' },
-      cube: { type: 'Pointer', targetClass: 'Cube', required: true },
-      scout: { type: 'Pointer', targetClass: '_User', required: true },
-      condition: { type: 'String' },
-      beforePhoto: { type: 'Pointer', targetClass: 'FileObject' },
-      afterPhoto: { type: 'Pointer', targetClass: 'FileObject' },
-      controlledAt: { type: 'Date' }
     }
   },
   State: {
