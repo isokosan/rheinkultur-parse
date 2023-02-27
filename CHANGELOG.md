@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.9.1...1.10.0) (2023-02-27)
+
+
+### Features
+
+* remove scouting ([8134682](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8134682871f06c26e7eb8610b4cedd81ce0627dc))
+
 ## [1.9.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.9.0...1.9.1) (2023-02-23)
 
 
