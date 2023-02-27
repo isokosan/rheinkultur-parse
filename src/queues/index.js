@@ -412,7 +412,7 @@ async function getOrCacheRegionalCommissions () {
     REGIONAL_COMMISSIONS = [
       {
         regionId: 'SKS',
-        name: 'BW ohne Stadtgebiet Stuttgart',
+        name: 'BW ohne Stadtgebiet Stuttgart (SKS)',
         rate: 7.5,
         rules: {
           lessorCode: 'TLK',
@@ -424,7 +424,7 @@ async function getOrCacheRegionalCommissions () {
       },
       {
         regionId: 'SKK',
-        name: 'BW Stadtgebiet Stuttgart',
+        name: 'BW Stadtgebiet Stuttgart (SKK)',
         rate: 7.5,
         rules: {
           lessorCode: 'TLK',
