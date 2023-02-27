@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.0...1.10.1) (2023-02-27)
+
+
+### Bug Fixes
+
+* cleanup of quartlery report processing ([c7e8e4a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c7e8e4af1f0d1d4ea47800d4fbd0c0894463e9f9))
+
 # [1.10.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.9.1...1.10.0) (2023-02-27)
 
 
