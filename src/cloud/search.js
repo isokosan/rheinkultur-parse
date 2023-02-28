@@ -72,6 +72,7 @@ const INDEXES = {
         cAt: cube.get('cAt'),
         sAt: cube.get('sAt'),
         vAt: cube.get('vAt'),
+        pOk: (cube.get('p1') && cube.get('p2')) ? true : undefined,
 
         // warnings
         bPLZ: cube.get('bPLZ'),
@@ -83,6 +84,7 @@ const INDEXES = {
 
         klsId: cube.get('importData')?.klsId,
         order: cube.get('order'),
+        scouting: cube.get('scouting'),
 
         // status (calculated attribute)
         s: cube.get('s')
@@ -127,6 +129,7 @@ Parse.Cloud.define('search', async ({
     ml,
     cId,
     verifiable,
+    scoutId,
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
@@ -152,6 +155,8 @@ Parse.Cloud.define('search', async ({
   plz && bool.filter.push({ match_phrase_prefix: { plz } })
   ort && bool.filter.push({ term: { 'ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
+
+  scoutId && bool.filter.push({ term: { 'scouting.scoutId.keyword': scoutId } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -240,6 +245,8 @@ Parse.Cloud.define('search', async ({
   // single issues
   s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
+  s.includes('nV') && bool.must_not.push({ exists: { field: 'vAt' } })
+  s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
   s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
   s.includes('nMR') && bool.must.push({ exists: { field: 'nMR' } })
