@@ -1,3 +1,10 @@
+## [1.10.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.1...1.10.2) (2023-02-28)
+
+
+### Bug Fixes
+
+* revert disassembly-update fn removal ([21c1490](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/21c14900854c591af4ec1652a1b9de5e85add1b2))
+
 ## [1.10.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.0...1.10.1) (2023-02-27)
 
 
