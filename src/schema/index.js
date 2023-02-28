@@ -111,6 +111,12 @@ const schemaDefinitions = {
       monthlyMedia: { type: 'Object' } // Monthly prices are set only when the company has no pricing model
     }
   },
+  ScoutList: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true }
+    }
+  },
   Briefing: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
