@@ -12,9 +12,11 @@ let client
 
 const queueOptions = {
   prefix: `{${process.env.APP_ID}}`,
-  maxStalledCount: 0,
   metrics: {
     maxDataPoints: 60 * 24 * 7 // 1 week
+  },
+  settings: {
+    maxStalledCount: 0
   }
 }
 if (process.env.REDIS_MODE === 'cluster') {
@@ -204,12 +206,12 @@ Parse.Cloud.define('triggerScheduledJob', async function ({ params: { job } }) {
   // if job is already running return false
   const queue = updateQueues[job]
   const [activeJob] = await queue.getActive()
-  if (activeJob) {
-    return false
-  }
+  if (activeJob) { return false }
+  const [waitingJob] = await queue.getWaiting()
+  if (waitingJob) { return false }
   const { timeoutMinutes } = updateJobs[job]
   const timeout = 1000 * 60 * timeoutMinutes
-  queue.add({}, { timeout })
+  queue.add({}, { timeout, attempts: 1, stalledInterval: 1000 })
   return true
 }, {
   fields: {
@@ -247,6 +249,9 @@ Parse.Cloud.define('fetchQueues', async function () {
       last,
       lastCompletedOn
     }
+    if (job.last?.status === 'active') {
+      job.runningId = job.last.id
+    }
     // calculate passed notification date
     // job is late when the difference is greater than or equal to one hour
     job.lastCompletedOn = job.lastCompleted
@@ -264,7 +269,7 @@ Parse.Cloud.define('fetchQueues', async function () {
 }, $adminOrMaster)
 
 const getLast = async function (queue) {
-  let last
+  let last = null
   const lastJobs = await queue.getJobs(['active', 'failed', 'completed'], 0, 0)
   if (!lastJobs.length) {
     return { last }
@@ -272,9 +277,10 @@ const getLast = async function (queue) {
   lastJobs.sort((a, b) => b.timestamp - a.timestamp)
   const lastCompleted = lastJobs.filter(j => j.finishedOn && !j.failedReason)[0]
   const lastCompletedOn = lastCompleted ? lastCompleted.finishedOn : null
-  const { returnvalue, failedReason, stacktrace, finishedOn, processedOn, attemptsMade, _progress } = lastJobs[0]
+  const { id, returnvalue, failedReason, stacktrace, finishedOn, processedOn, attemptsMade, _progress } = lastJobs[0]
   if (failedReason) {
     last = {
+      id,
       status: 'failed',
       failedReason,
       stacktrace,
@@ -284,6 +290,7 @@ const getLast = async function (queue) {
     }
   } else if (finishedOn) {
     last = {
+      id,
       status: 'completed',
       returnvalue,
       finishedOn,
@@ -291,6 +298,7 @@ const getLast = async function (queue) {
     }
   } else {
     last = {
+      id,
       status: 'active',
       progress: _progress,
       processedOn
@@ -302,6 +310,18 @@ const getLast = async function (queue) {
 Parse.Cloud.define('clearQueue', function ({ params: { key, status } }) {
   const queue = updateQueues[key]
   return queue.clean(5000, status)
+}, $adminOrMaster)
+
+Parse.Cloud.define('obliterateQueue', function ({ params: { key } }) {
+  const queue = updateQueues[key]
+  return queue.obliterate({ force: true })
+}, $adminOrMaster)
+
+Parse.Cloud.define('cancelJob', async function ({ params: { key, jobId } }) {
+  const queue = updateQueues[key]
+  const job = await queue.getJob(jobId)
+  await job.moveToFailed(Error('Job wurde manuell abgebrochen.'), true)
+  return job.discard()
 }, $adminOrMaster)
 
 Parse.Cloud.define('saveSchedule', async function ({ params: { key, name, description, cron, timeoutMinutes, notificationDuration } }) {

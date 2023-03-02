@@ -6,7 +6,7 @@
   "main": "index.js",
   "scripts": {
     "start": "export TZ=\"Europe/Berlin\" && node src/index.js --trace-warnings",
-    "dev": "cross-env NODE_ENV=development TZ=\"Europe/Berlin\" nodemon --watch src src/index.js",
+    "dev": "cross-env NODE_ENV=development TZ=\"Europe/Berlin\" nodemon --inspect --watch src src/index.js",
     "upload": "node upload.js",
     "lint": "eslint './**/*.js'",
     "prepare": "husky install"

@@ -84,7 +84,6 @@ const INDEXES = {
 
         klsId: cube.get('importData')?.klsId,
         order: cube.get('order'),
-        scouting: cube.get('scouting'),
 
         // status (calculated attribute)
         s: cube.get('s')
@@ -130,6 +129,7 @@ Parse.Cloud.define('search', async ({
     cId,
     verifiable,
     scoutId,
+    isScoutList,
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
@@ -156,7 +156,8 @@ Parse.Cloud.define('search', async ({
   ort && bool.filter.push({ term: { 'ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
-  scoutId && bool.filter.push({ term: { 'scouting.scoutId.keyword': scoutId } })
+  isScoutList && bool.filter.push({ exists: { field: 'scoutTask' } })
+  scoutId && bool.filter.push({ term: { 'scoutTask.scoutId.keyword': scoutId } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -209,6 +210,15 @@ Parse.Cloud.define('search', async ({
         minimum_should_match: 1
       }
     })
+  }
+
+  if (s.includes('scoutable')) {
+    consola.warn('YES')
+    bool.must_not.push({ exists: { field: 'bPLZ' } })
+    bool.must_not.push({ exists: { field: 'nMR' } })
+    bool.must_not.push({ exists: { field: 'MBfD' } })
+    bool.must_not.push({ exists: { field: 'PG' } })
+    bool.must_not.push({ exists: { field: 'Agwb' } })
   }
 
   if (s.includes('ml') && ml) {
@@ -390,6 +400,30 @@ const unindexCube = async (cube) => {
   }
 }
 
+const indexScoutTask = async (scoutTask) => {
+  await unindexScoutTask(scoutTask)
+  await client.update({
+    index: 'rheinkultur-cubes',
+    id: scoutTask.get('cube').id,
+    doc: {
+      scoutTask: {
+        listId: scoutTask.get('list').id,
+        managerId: scoutTask.get('manager')?.id,
+        scoutId: scoutTask.get('scout')?.id
+      }
+    },
+    _source: false
+  })
+}
+
+const unindexScoutTask = async (scoutTask) => {
+  await client.update({
+    index: 'rheinkultur-cubes',
+    id: scoutTask.get('cube').id,
+    script: 'ctx._source.remove(\'scoutTask\')'
+  })
+}
+
 const purgeIndexes = async function () {
   for (const index of Object.keys(INDEXES)) {
     await client.indices.exists({ index }) && await client.indices.delete({ index })
@@ -405,5 +439,7 @@ module.exports = {
   INDEXES,
   purgeIndexes,
   indexCube,
-  unindexCube
+  unindexCube,
+  indexScoutTask,
+  unindexScoutTask
 }
