@@ -1,3 +1,10 @@
+## [1.10.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.2...1.10.3) (2023-03-04)
+
+
+### Bug Fixes
+
+* change deployment ([34b6cea](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/34b6cea6892785a2e94ea8e297daaae4dc56a7fe))
+
 ## [1.10.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.1...1.10.2) (2023-02-28)
 
 
