@@ -1,4 +1,5 @@
-FROM node:16 AS base
+ARG  NODE_VERSION
+FROM node:${NODE_VERSION} AS base
 RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y ghostscript graphicsmagick imagemagick

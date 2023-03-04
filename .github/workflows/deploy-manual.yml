@@ -1,4 +1,4 @@
-name: Deploy to production (manual)
+name: Deploy to production
 
 on:
   workflow_dispatch:
@@ -15,8 +15,11 @@ jobs:
         run: |
           TAG=$(echo $GITHUB_SHA | head -c7)
           IMAGE="mammuthosting/rheinkultur-wawi"
-          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
-          echo ::set-output name=tag::${TAG}
+          NODE_VERSION=$(cat .nvmrc | tr -cd [:digit:].)
+          echo "tagged_image=${IMAGE}:${TAG}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "node_version=${NODE_VERSION}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v2
@@ -36,12 +39,14 @@ jobs:
             ${{ runner.os }}-single-buildx
 
       - name: Build production image
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v4
         with:
           context: .
           builder: ${{ steps.buildx.outputs.name }}
           file: Dockerfile
           push: true
+          build-args: |
+            NODE_VERSION=${{ steps.prep.outputs.node_version }}
           tags: ${{ steps.prep.outputs.tagged_image }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new
@@ -104,8 +109,8 @@ jobs:
         run: |
           TAG=$(echo $GITHUB_SHA | head -c7)
           IMAGE="mammuthosting/rheinkultur-wawi"
-          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
-          echo ::set-output name=tag::${TAG}
+          echo "tagged_image=${IMAGE}:${TAG}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Generate kubeconfig
         run: |
@@ -127,5 +132,6 @@ jobs:
         run: |
           helm repo add mammut-helm https://mammutmedia.github.io/helm-charts/
           helm repo update
+
       - name: Deploy rheinkultur-wawi
         run: helm upgrade -f ./.github/values.yaml rheinkultur-wawi mammut-helm/rheinkultur-wawi -n rheinkultur-wawi --set image.tag="${{ steps.prep.outputs.tag }}" --set image.pullPolicy=Always --create-namespace --install --atomic --wait --timeout=5m0s
