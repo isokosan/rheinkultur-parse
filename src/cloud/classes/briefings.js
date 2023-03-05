@@ -1,6 +1,10 @@
 const Briefing = Parse.Object.extend('Briefing')
 const DepartureList = Parse.Object.extend('DepartureList')
 
+// Parse.Cloud.beforeSave(Briefing, async ({ object: briefing }) => {
+//   briefing.isNew() && !briefing.get('no') && briefing.set({ no: await getNewNo('S' + moment(await $today()).format('YY') + '-', Briefing, 'no') })
+// })
+
 Parse.Cloud.afterSave(Briefing, ({ object: briefing, context: { audit } }) => { $audit(briefing, audit) })
 
 Parse.Cloud.beforeFind(Briefing, ({ query }) => {
@@ -83,15 +87,15 @@ Parse.Cloud.define('briefing-update', async ({
 Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, lists }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   for (const placeKey of Object.keys(lists || {})) {
+    const [ort, stateId] = placeKey.split('_')
+    const state = $pointer('State', stateId)
     let departureList = await $query('DepartureList')
       .equalTo('briefing', briefing)
-      .equalTo('placeKey', placeKey)
+      .equalTo('ort', ort)
+      .equalTo('state', state)
       .first({ useMasterKey: true })
     if (!departureList) {
-      const [ort, stateId] = placeKey.split('_')
-      const state = await $getOrFail('State', stateId)
       departureList = new DepartureList({
-        name: `${briefing.get('name')} ${ort} (${state.get('name')})`,
         type: 'scout',
         briefing,
         ort,

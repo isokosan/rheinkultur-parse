@@ -9,20 +9,7 @@ const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: { countCubes } }) => {
   if (departureList.isNew()) {
     if (!departureList.get('name')) {
-      let name = ''
-      const briefing = departureList.get('briefing')
-      if (briefing) {
-        await briefing.fetch({ useMasterKey: true })
-        name += briefing.get('name')
-        name += ' '
-      }
-      const control = departureList.get('control')
-      if (control) {
-        await control.fetch({ useMasterKey: true })
-        name += control.get('name')
-        name += ' '
-      }
-      departureList.set('name', name)
+      departureList.set('name', `${departureList.get('ort')} (${departureList.get('state').id})`)
     }
   }
 

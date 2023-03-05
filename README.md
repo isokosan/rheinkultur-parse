@@ -25,8 +25,6 @@
 ### control: ControlStatus
 ### disassembly: DisassemblyStatus
 
-
-
 # Verantwortlich / Zuständig
 - Ernennung von Scout-Managern / pro Cube
 - Beauftragung von Scouts / pro Cube

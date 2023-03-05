@@ -32,7 +32,7 @@ const {
   recurse: true
 })
 
-process.env.SEED && require('@/seed')
+process.env.SEED && require('@/seed/scouting')
 
 Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
   if (!user) { keys = ['states'] }

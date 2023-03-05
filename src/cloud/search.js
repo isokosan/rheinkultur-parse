@@ -128,6 +128,8 @@ Parse.Cloud.define('search', async ({
     ml,
     cId,
     verifiable,
+    taskType,
+    managerId,
     scoutId,
     isScoutList,
     isMap, // used to determine if query is coming from map and should only include limited fields
@@ -156,8 +158,40 @@ Parse.Cloud.define('search', async ({
   ort && bool.filter.push({ term: { 'ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
-  isScoutList && bool.filter.push({ exists: { field: 'scoutTask' } })
-  scoutId && bool.filter.push({ term: { 'scoutTask.scoutId.keyword': scoutId } })
+  if (isScoutList) {
+    taskType
+      ? bool.must.push({ exists: { field: taskType } })
+      : bool.must.push({
+        bool: {
+          should: [
+            { exists: { field: 'scoutTask' } },
+            { exists: { field: 'controlTask' } },
+            { exists: { field: 'disassemblyTask' } }
+          ],
+          minimum_should_match: 1
+        }
+      })
+  }
+  managerId && bool.must.push({
+    bool: {
+      should: [
+        { match: { 'scoutTask.managerId': managerId } },
+        { match: { 'controlTask.managerId': managerId } },
+        { match: { 'disassemblyTask.managerId': managerId } }
+      ],
+      minimum_should_match: 1
+    }
+  })
+  scoutId && bool.must.push({
+    bool: {
+      should: [
+        { match: { 'scoutTask.scoutId': scoutId } },
+        { match: { 'controlTask.scoutId': scoutId } },
+        { match: { 'disassemblyTask.scoutId': scoutId } }
+      ],
+      minimum_should_match: 1
+    }
+  })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -213,7 +247,6 @@ Parse.Cloud.define('search', async ({
   }
 
   if (s.includes('scoutable')) {
-    consola.warn('YES')
     bool.must_not.push({ exists: { field: 'bPLZ' } })
     bool.must_not.push({ exists: { field: 'nMR' } })
     bool.must_not.push({ exists: { field: 'MBfD' } })
@@ -297,6 +330,11 @@ Parse.Cloud.define('search', async ({
       'gp',
       's'
     ]
+    if (isScoutList) {
+      includes.push('disassemblyTask')
+      includes.push('controlTask')
+      includes.push('scoutTask')
+    }
   }
 
   const searchResponse = await client.search({
@@ -317,6 +355,12 @@ Parse.Cloud.define('search', async ({
       if (result.s >= 5) {
         result.s = 9
       }
+      return result
+    })
+  }
+  if (isScoutList) {
+    results = results.map(result => {
+      result.taskType = result.disassemblyTask ? 'disassembly' : (result.controlTask ? 'control' : 'scout')
       return result
     })
   }
@@ -407,20 +451,68 @@ const indexScoutTask = async (scoutTask) => {
     id: scoutTask.get('cube').id,
     doc: {
       scoutTask: {
-        listId: scoutTask.get('list').id,
+        objectId: scoutTask.id,
         managerId: scoutTask.get('manager')?.id,
-        scoutId: scoutTask.get('scout')?.id
+        scoutId: scoutTask.get('scout')?.id,
+        until: scoutTask.get('until')
       }
     },
     _source: false
   })
 }
-
 const unindexScoutTask = async (scoutTask) => {
   await client.update({
     index: 'rheinkultur-cubes',
     id: scoutTask.get('cube').id,
     script: 'ctx._source.remove(\'scoutTask\')'
+  })
+}
+const indexDisassemblyTask = async (disassemblyTask) => {
+  await unindexDisassemblyTask(disassemblyTask)
+  await client.update({
+    index: 'rheinkultur-cubes',
+    id: disassemblyTask.get('cube').id,
+    doc: {
+      disassemblyTask: {
+        objectId: disassemblyTask.id,
+        // contractId: disassemblyTask.get('contract')?.id,
+        // bookingId: disassemblyTask.get('booking')?.id,
+        managerId: disassemblyTask.get('manager')?.id,
+        scoutId: disassemblyTask.get('scout')?.id,
+        from: disassemblyTask.get('from'),
+        until: disassemblyTask.get('until')
+      }
+    },
+    _source: false
+  })
+}
+const unindexDisassemblyTask = async (disassemblyTask) => {
+  await client.update({
+    index: 'rheinkultur-cubes',
+    id: disassemblyTask.get('cube').id,
+    script: 'ctx._source.remove(\'disassemblyTask\')'
+  })
+}
+const indexControlTask = async (controlTask) => {
+  await unindexControlTask(controlTask)
+  await client.update({
+    index: 'rheinkultur-cubes',
+    id: controlTask.get('cube').id,
+    doc: {
+      controlTask: {
+        objectId: controlTask.id,
+        managerId: controlTask.get('manager')?.id,
+        scoutId: controlTask.get('scout')?.id
+      }
+    },
+    _source: false
+  })
+}
+const unindexControlTask = async (controlTask) => {
+  await client.update({
+    index: 'rheinkultur-cubes',
+    id: controlTask.get('cube').id,
+    script: 'ctx._source.remove(\'controlTask\')'
   })
 }
 
@@ -441,5 +533,9 @@ module.exports = {
   indexCube,
   unindexCube,
   indexScoutTask,
-  unindexScoutTask
+  unindexScoutTask,
+  indexDisassemblyTask,
+  unindexDisassemblyTask,
+  indexControlTask,
+  unindexControlTask
 }

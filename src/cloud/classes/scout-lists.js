@@ -1,5 +1,5 @@
 const elastic = require('@/services/elastic')
-const { indexScoutTask, unindexScoutTask, indexDisassemblyTask, unindexDisassemblyTask } = require('@/cloud/search')
+const { indexScoutTask, unindexScoutTask, indexControlTask, unindexControlTask, indexDisassemblyTask, unindexDisassemblyTask } = require('@/cloud/search')
 
 const ScoutList = Parse.Object.extend('ScoutList')
 
@@ -149,7 +149,7 @@ async function cleanScoutListInfoInCubes () {
 
 const ScoutTask = Parse.Object.extend('ScoutTask')
 Parse.Cloud.beforeFind(ScoutTask, async ({ query }) => {
-  query.include('cube')
+  query.include(['cube', 'briefing'])
 })
 
 Parse.Cloud.beforeSave(ScoutTask, async ({ object: scoutTask }) => {
@@ -158,6 +158,19 @@ Parse.Cloud.beforeSave(ScoutTask, async ({ object: scoutTask }) => {
 
 Parse.Cloud.beforeDelete(ScoutTask, async ({ object: scoutTask }) => {
   await unindexScoutTask(scoutTask)
+})
+
+const ControlTask = Parse.Object.extend('ControlTask')
+Parse.Cloud.beforeFind(ControlTask, async ({ query }) => {
+  query.include('cube')
+})
+
+Parse.Cloud.beforeSave(ControlTask, async ({ object: controlTask }) => {
+  await indexControlTask(controlTask)
+})
+
+Parse.Cloud.beforeDelete(ControlTask, async ({ object: controlTask }) => {
+  await unindexControlTask(controlTask)
 })
 
 const DisassemblyTask = Parse.Object.extend('DisassemblyTask')
@@ -229,7 +242,7 @@ Parse.Cloud.define('scout-tasks-update-manager', ({ params: { query, managerId }
   })
 }, { requireUser: true })
 
-async function generateDisassemblyTasks (periodStart, periodEnd) {
+async function generateDisassemblyTasks (periodStart, periodEnd, returnCount) {
   const endingQuery = Parse.Query.or(
     $query('Cube').notEqualTo('order.canceledAt', null),
     $query('Cube').notEqualTo('order.earlyCanceledAt', null),
@@ -247,6 +260,9 @@ async function generateDisassemblyTasks (periodStart, periodEnd) {
     .lessThanOrEqualTo('order.endsAt', moment(periodEnd).subtract(1, 'day').format('YYYY-MM-DD'))
 
   const count = await query.count({ useMasterKey: true })
+  if (returnCount) {
+    return count
+  }
   let i = 0
   return query.eachBatch(async (cubes) => {
     for (const cube of cubes) {
@@ -254,9 +270,16 @@ async function generateDisassemblyTasks (periodStart, periodEnd) {
       const from = moment(cube.get('order').endsAt).add(1, 'day').format('YYYY-MM-DD')
       const exists = await $query(DisassemblyTask).equalTo('objectId', objectId).first({ useMasterKey: true })
       if (exists && exists.get('from') !== from) {
-        await exists.set({ from }).save(null, { useMasterKey: true })
+        exists && await exists.set({ from }).save(null, { useMasterKey: true })
       }
       if (!exists) {
+        const body = {
+          objectId,
+          cube: cube.toPointer(),
+          contract: cube.get('order').contract?.toPointer(),
+          booking: cube.get('order').booking?.toPointer(),
+          from
+        }
         await Parse.Cloud.httpRequest({
           method: 'POST',
           url: `${process.env.PUBLIC_SERVER_URL}/classes/DisassemblyTask`,
@@ -265,12 +288,7 @@ async function generateDisassemblyTasks (periodStart, periodEnd) {
             'X-Parse-Application-Id': process.env.APP_ID,
             'X-Parse-Master-Key': process.env.MASTER_KEY
           },
-          body: {
-            objectId,
-            contract: cube.get('order').contract ? $pointer('Contract', cube.get('order').contract.objectId) : undefined,
-            booking: cube.get('order').booking ? $pointer('Booking', cube.get('order').booking.objectId) : undefined,
-            from
-          }
+          body
         })
       }
       i++
@@ -279,7 +297,6 @@ async function generateDisassemblyTasks (periodStart, periodEnd) {
   }, { useMasterKey: true })
 }
 
-// generateDisassemblyTasks('2023-05-01', '2023-05-31').then(consola.info)
 module.exports = {
   saveCubeIdsToScoutList,
   addScoutListInfoToCubes,
