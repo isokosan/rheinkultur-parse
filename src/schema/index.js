@@ -123,6 +123,7 @@ const schemaDefinitions = {
       name: { type: 'String', required: true },
       company: { type: 'Pointer', targetClass: 'Company' },
       companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      dueDate: { type: 'String' },
 
       docs: { type: 'Array' },
       responsibles: { type: 'Array' }
@@ -557,7 +558,6 @@ const schemaDefinitions = {
       quota: { type: 'Number' }, // only for scout type
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
-      cubesQuery: { type: 'Object' }, // TODO: Remove duplicated computed?
       status: { type: 'String' }, // DEPARTURE_LIST_STATUSES
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },

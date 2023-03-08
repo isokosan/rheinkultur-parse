@@ -50,7 +50,61 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   }
 })
 
-Parse.Cloud.afterSave(DepartureList, ({ object: departureList, context: { audit, notifyScout } }) => {
+$query(DepartureList).equalTo('status', 'assigned')
+  .each(dp => dp.save(null, { useMasterKey: true, context: { setCubeStatuses: true } }), { useMasterKey: true })
+async function setCubeTaskStatus (departureList) {
+  const {
+    id: listId,
+    attributes: {
+      cubeIds,
+      type,
+      briefing,
+      disassembly,
+      control,
+      dueDate,
+      // quota,
+      status,
+      manager,
+      scout
+    }
+  } = departureList
+  const task = {
+    listId,
+    type,
+    briefing: briefing?.toPointer(),
+    disassembly: disassembly?.toPointer(),
+    control: control?.toPointer(),
+    status,
+    dueDate,
+    managerId: manager?.id,
+    scoutId: scout?.id
+  }
+  // TODO: change this to numbered like orders later
+  if (status !== 'assigned') {
+    // remove all cubes associated with list if not assigned to scout
+    await $query('Cube')
+      .equalTo('task.type', task.type)
+      .equalTo('task.listId', task.listId)
+      .each(cube => {
+        cube.unset('task')
+        return cube.save(null, { useMasterKey: true })
+      }, { useMasterKey: true })
+  } else {
+    // remove all cubes that reference the list despite the list having them removed
+    await $query('Cube')
+      .notContainedIn('objectId', cubeIds)
+      .equalTo('task.type', task.type)
+      .equalTo('task.listId', task.listId)
+      .each(cube => {
+        cube.unset('task')
+        return cube.save(null, { useMasterKey: true })
+      }, { useMasterKey: true })
+  }
+  return $query('Cube').containedIn('objectId', cubeIds || []).each(cube => cube.set('task', task).save(null, { useMasterKey: true }), { useMasterKey: true })
+}
+
+Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { audit, setCubeStatuses, notifyScout } }) => {
+  setCubeStatuses && await setCubeTaskStatus(departureList)
   $audit(departureList, audit)
   notifyScout && $notify({
     user: departureList.get('scout'),
@@ -61,7 +115,8 @@ Parse.Cloud.afterSave(DepartureList, ({ object: departureList, context: { audit,
 })
 
 Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
-  query._include.includes('all') && query.include(['briefing', 'control', 'disassembly', 'submissions'])
+  query.include(['briefing', 'control', 'disassembly'])
+  query._include.includes('all') && query.include('submissions')
   if (master) { return }
   if (user.get('accRoles')?.includes('manage-scouts')) {
     user.get('company') && query
@@ -75,6 +130,9 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
 
 Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) => {
   for (const departureList of departureLists) {
+    if (departureList.get('type') === 'scout') {
+      departureList.set('dueDate', departureList.get('briefing').get('dueDate'))
+    }
     if (query._include.includes('submissions')) {
       let submissions
       if (departureList.get('type') === 'scout') {
@@ -242,7 +300,7 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
   }
   departureList.set({ status: 'appointed' })
   const audit = { user, fn: 'departure-list-assign' }
-  await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true } })
+  await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
   return {
     data: departureList.get('status'),
     message: 'Abfahrtslist ernennt. Manager notified.'
@@ -259,75 +317,11 @@ Parse.Cloud.define('departure-list-assign', async ({ params: { id: departureList
   }
   departureList.set({ status: 'assigned' })
   const audit = { user, fn: 'departure-list-assign' }
-  await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true } })
-  return { message: 'Abfahrtslist beauftragt. Scout notified.' }
-}, { requireUser: true })
-
-// Divides a departure list that has no ort
-function validateDivide (departureList, user) {
-  if (departureList.get('status') !== 'appointed') {
-    throw new Error('Only departure lists that have been appointed, but not assigned can be divided')
-  }
-  if (departureList.get('ort')) {
-    throw new Error('Only departure lists without ort can be divided')
-  }
-  if (departureList.get('manager').id !== user.id) {
-    throw new Error('Only the departure lists manager can divide')
-  }
-}
-
-async function getLocationsFromCubeIds (cubeIds) {
-  const cubes = await $query('Cube')
-    .containedIn('objectId', cubeIds)
-    .limit(cubeIds.length)
-    .select(['objectId', 'ort'])
-    .find({ useMasterKey: true })
-  const locations = {}
-  for (const cube of cubes) {
-    const ort = cube.get('ort')
-    if (!locations[ort]) {
-      locations[ort] = []
-    }
-    locations[ort].push(cube.id)
-  }
-  return locations
-}
-
-Parse.Cloud.define('departure-list-preview-divide', async ({ params: { id: departureListId }, user }) => {
-  const departureList = await $getOrFail(DepartureList, departureListId)
-  validateDivide(departureList, user)
-  const locations = await getLocationsFromCubeIds(departureList.get('cubeIds') || [])
+  await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
   return {
-    parentId: departureListId,
-    locations
+    data: departureList.get('status'),
+    message: 'Abfahrtslist beauftragt. Scout notified.'
   }
-}, { requireUser: true })
-
-Parse.Cloud.define('departure-list-divide', async ({ params: { id: departureListId }, user }) => {
-  const departureList = await $getOrFail(DepartureList, departureListId)
-  validateDivide(departureList, user)
-  const locations = await getLocationsFromCubeIds(departureList.get('cubeIds') || [])
-  for (const ort of Object.keys(locations)) {
-    const newDepartureList = new DepartureList()
-    newDepartureList.set({
-      name: departureList.get('name') + ' ' + ort,
-      type: departureList.get('type'),
-      briefing: departureList.get('briefing'),
-      disassembly: departureList.get('disassembly'),
-      control: departureList.get('control'),
-      quota: departureList.get('quota'),
-      dueDate: departureList.get('dueDate'),
-      scout: departureList.get('scout'),
-      manager: departureList.get('manager'),
-      state: departureList.get('state'),
-      status: 'appointed',
-      ort,
-      cubeIds: locations[ort]
-    })
-    await newDepartureList.save(null, { useMasterKey: true, context: { audit: { user, fn: 'departure-list-divide' } } })
-  }
-  await departureList.destroy({ useMasterKey: true })
-  return 'Abfahrtsliste unterteilt.'
 }, { requireUser: true })
 
 Parse.Cloud.define('departure-list-approve-verified-cube', async ({ params: { id: departureListId, cubeId, approved }, user }) => {

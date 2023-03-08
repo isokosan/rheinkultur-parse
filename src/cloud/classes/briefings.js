@@ -37,13 +37,15 @@ Parse.Cloud.define('briefing-create', async ({
   params: {
     name,
     companyId,
-    companyPersonId
+    companyPersonId,
+    dueDate
   }, user
 }) => {
   const briefing = new Briefing({
     name,
     company: companyId ? await $getOrFail('Company', companyId) : undefined,
-    companyPerson: companyPersonId ? await $getOrFail('Person', companyPersonId) : undefined
+    companyPerson: companyPersonId ? await $getOrFail('Person', companyPersonId) : undefined,
+    dueDate
   })
 
   const audit = { user, fn: 'briefing-create' }
@@ -63,12 +65,13 @@ Parse.Cloud.define('briefing-update', async ({
     id: briefingId,
     name,
     companyId,
-    companyPersonId
+    companyPersonId,
+    dueDate
   }, user
 }) => {
   const briefing = await $getOrFail(Briefing, briefingId, ['companyPerson'])
-  const changes = $changes(briefing, { name })
-  briefing.set({ name })
+  const changes = $changes(briefing, { name, dueDate })
+  briefing.set({ name, dueDate })
   if (companyId !== briefing.get('company')?.id) {
     changes.companyId = [briefing.get('company')?.id, companyId]
     const company = companyId ? await $getOrFail('Company', companyId) : null

@@ -84,6 +84,7 @@ const INDEXES = {
 
         klsId: cube.get('importData')?.klsId,
         order: cube.get('order'),
+        task: cube.get('task'),
 
         // status (calculated attribute)
         s: cube.get('s')
@@ -132,6 +133,8 @@ Parse.Cloud.define('search', async ({
     managerId,
     scoutId,
     isScoutList,
+    isTask,
+    fetchExtraScoutable,
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
@@ -159,39 +162,97 @@ Parse.Cloud.define('search', async ({
   stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
   if (isScoutList) {
-    taskType
-      ? bool.must.push({ exists: { field: taskType } })
-      : bool.must.push({
+    if (taskType === 'scoutTask' && fetchExtraScoutable) {
+      bool.must.push({
         bool: {
           should: [
             { exists: { field: 'scoutTask' } },
-            { exists: { field: 'controlTask' } },
-            { exists: { field: 'disassemblyTask' } }
+            {
+              bool: {
+                must_not: [
+                  { exists: { field: 'scoutTask' } },
+                  { exists: { field: 'order' } },
+                  { exists: { field: 'bPLZ' } },
+                  { exists: { field: 'nMR' } },
+                  { exists: { field: 'MBfD' } },
+                  { exists: { field: 'PG' } },
+                  { exists: { field: 'Agwb' } }
+                ]
+              }
+            }
           ],
           minimum_should_match: 1
         }
       })
+    } else {
+      taskType
+        ? bool.must.push({ exists: { field: taskType } })
+        : bool.must.push({
+          bool: {
+            should: [
+              { exists: { field: 'scoutTask' } },
+              { exists: { field: 'controlTask' } },
+              { exists: { field: 'disassemblyTask' } }
+            ],
+            minimum_should_match: 1
+          }
+        })
+    }
+    managerId && bool.must.push({
+      bool: {
+        should: [
+          { match: { 'scoutTask.managerId': managerId } },
+          { match: { 'controlTask.managerId': managerId } },
+          { match: { 'disassemblyTask.managerId': managerId } }
+        ],
+        minimum_should_match: 1
+      }
+    })
+    scoutId && bool.must.push({
+      bool: {
+        should: [
+          { match: { 'scoutTask.scoutId': scoutId } },
+          { match: { 'controlTask.scoutId': scoutId } },
+          { match: { 'disassemblyTask.scoutId': scoutId } }
+        ],
+        minimum_should_match: 1
+      }
+    })
   }
-  managerId && bool.must.push({
-    bool: {
-      should: [
-        { match: { 'scoutTask.managerId': managerId } },
-        { match: { 'controlTask.managerId': managerId } },
-        { match: { 'disassemblyTask.managerId': managerId } }
-      ],
-      minimum_should_match: 1
+
+  if (isTask) {
+    (user.get('accRoles') || []).includes('manage-scouts') && (managerId = user.id)
+    user.get('accType') === 'scout' && (scoutId = user.id)
+    if (taskType === 'scout' && fetchExtraScoutable) {
+      bool.must.push({
+        bool: {
+          should: [
+            { match: { 'task.type': 'scout' } },
+            {
+              bool: {
+                must_not: [
+                  { exists: { field: 'order' } },
+                  { exists: { field: 'task' } },
+                  { exists: { field: 'bPLZ' } },
+                  { exists: { field: 'nMR' } },
+                  { exists: { field: 'MBfD' } },
+                  { exists: { field: 'PG' } },
+                  { exists: { field: 'Agwb' } }
+                ]
+              }
+            }
+          ],
+          minimum_should_match: 1
+        }
+      })
+    } else {
+      taskType
+        ? bool.must.push({ match: { 'task.type': taskType } })
+        : bool.must.push({ exists: { field: 'task' } })
     }
-  })
-  scoutId && bool.must.push({
-    bool: {
-      should: [
-        { match: { 'scoutTask.scoutId': scoutId } },
-        { match: { 'controlTask.scoutId': scoutId } },
-        { match: { 'disassemblyTask.scoutId': scoutId } }
-      ],
-      minimum_should_match: 1
-    }
-  })
+    managerId && bool.must.push({ match: { 'task.managerId': managerId } })
+    scoutId && bool.must.push({ match: { 'task.scoutId': scoutId } })
+  }
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -335,6 +396,9 @@ Parse.Cloud.define('search', async ({
       includes.push('controlTask')
       includes.push('scoutTask')
     }
+    if (isTask) {
+      includes.push('task')
+    }
   }
 
   const searchResponse = await client.search({
@@ -360,7 +424,21 @@ Parse.Cloud.define('search', async ({
   }
   if (isScoutList) {
     results = results.map(result => {
-      result.taskType = result.disassemblyTask ? 'disassembly' : (result.controlTask ? 'control' : 'scout')
+      if (result.controlTask) {
+        result.taskType = 'control'
+      }
+      if (result.disassemblyTask) {
+        result.taskType = 'disassembly'
+      }
+      if (result.scoutTask) {
+        result.taskType = 'scout'
+      }
+      return result
+    })
+  }
+  if (isTask) {
+    results = results.map(result => {
+      result.taskType = result.task?.type
       return result
     })
   }
