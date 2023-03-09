@@ -1,3 +1,10 @@
+## [1.10.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.3...1.10.4) (2023-03-09)
+
+
+### Bug Fixes
+
+* kinetic invoice description contract check ([29c8afa](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/29c8afa87fb4e80bac59cbed8399e9c64f90ff6d))
+
 ## [1.10.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.2...1.10.3) (2023-03-04)
 
 
