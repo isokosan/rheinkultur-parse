@@ -105,7 +105,7 @@ Parse.Cloud.define('manual-updates-clean-audits', async () => {
     skip += audits.length
   }
   return i
-})
+}, { requireMaster: true })
 
 Parse.Cloud.define('manual-updates-canceled', async () => {
   const response = {}
@@ -141,7 +141,7 @@ DEVELOPMENT && Parse.Cloud.define('update-lex-addresses-dev', async () => {
     }
     return address.set({ lex }).save(null, { useMasterKey: true })
   }, { useMasterKey: true })
-})
+}, { requireMaster: true })
 
 Parse.Cloud.define('mass-remove-auto-extend-bookings', async ({ params: { companyId } }) => {
   const company = await $getOrFail('Company', companyId)
@@ -157,4 +157,4 @@ Parse.Cloud.define('mass-remove-auto-extend-bookings', async ({ params: { compan
     return booking.save(null, { useMasterKey: true, context: { audit } })
   }, { useMasterKey: true })
   return i
-}, { useMasterKey: true })
+}, { requireMaster: true })
