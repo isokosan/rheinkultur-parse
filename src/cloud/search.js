@@ -443,78 +443,6 @@ const unindexCube = async (cube) => {
   }
 }
 
-const indexScoutTask = async (scoutTask) => {
-  await unindexScoutTask(scoutTask)
-  await client.update({
-    index: 'rheinkultur-cubes',
-    id: scoutTask.get('cube').id,
-    doc: {
-      scoutTask: {
-        objectId: scoutTask.id,
-        managerId: scoutTask.get('manager')?.id,
-        scoutId: scoutTask.get('scout')?.id,
-        until: scoutTask.get('until')
-      }
-    },
-    _source: false
-  })
-}
-const unindexScoutTask = async (scoutTask) => {
-  await client.update({
-    index: 'rheinkultur-cubes',
-    id: scoutTask.get('cube').id,
-    script: 'ctx._source.remove(\'scoutTask\')'
-  })
-}
-const indexDisassemblyTask = async (disassemblyTask) => {
-  await unindexDisassemblyTask(disassemblyTask)
-  await client.update({
-    index: 'rheinkultur-cubes',
-    id: disassemblyTask.get('cube').id,
-    doc: {
-      disassemblyTask: {
-        objectId: disassemblyTask.id,
-        // contractId: disassemblyTask.get('contract')?.id,
-        // bookingId: disassemblyTask.get('booking')?.id,
-        managerId: disassemblyTask.get('manager')?.id,
-        scoutId: disassemblyTask.get('scout')?.id,
-        from: disassemblyTask.get('from'),
-        until: disassemblyTask.get('until')
-      }
-    },
-    _source: false
-  })
-}
-const unindexDisassemblyTask = async (disassemblyTask) => {
-  await client.update({
-    index: 'rheinkultur-cubes',
-    id: disassemblyTask.get('cube').id,
-    script: 'ctx._source.remove(\'disassemblyTask\')'
-  })
-}
-const indexControlTask = async (controlTask) => {
-  await unindexControlTask(controlTask)
-  await client.update({
-    index: 'rheinkultur-cubes',
-    id: controlTask.get('cube').id,
-    doc: {
-      controlTask: {
-        objectId: controlTask.id,
-        managerId: controlTask.get('manager')?.id,
-        scoutId: controlTask.get('scout')?.id
-      }
-    },
-    _source: false
-  })
-}
-const unindexControlTask = async (controlTask) => {
-  await client.update({
-    index: 'rheinkultur-cubes',
-    id: controlTask.get('cube').id,
-    script: 'ctx._source.remove(\'controlTask\')'
-  })
-}
-
 const purgeIndexes = async function () {
   for (const index of Object.keys(INDEXES)) {
     await client.indices.exists({ index }) && await client.indices.delete({ index })
@@ -530,11 +458,5 @@ module.exports = {
   INDEXES,
   purgeIndexes,
   indexCube,
-  unindexCube,
-  indexScoutTask,
-  unindexScoutTask,
-  indexDisassemblyTask,
-  unindexDisassemblyTask,
-  indexControlTask,
-  unindexControlTask
+  unindexCube
 }
