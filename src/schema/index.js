@@ -111,47 +111,6 @@ const schemaDefinitions = {
       monthlyMedia: { type: 'Object' } // Monthly prices are set only when the company has no pricing model
     }
   },
-  ScoutList: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true }
-    }
-  },
-  Briefing: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true },
-      company: { type: 'Pointer', targetClass: 'Company' },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
-      dueDate: { type: 'String' },
-
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
-    }
-  },
-  Control: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true },
-      date: { type: 'String', required: true },
-      lastControlBefore: { type: 'Number' },
-      status: { type: 'Number' },
-
-      criteria: { type: 'Array' },
-
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
-    }
-  },
-  Disassembly: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true },
-
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
-    }
-  },
   Comment: {
     CLP: {
       get: { requiresAuthentication: true },
@@ -542,6 +501,42 @@ const schemaDefinitions = {
       uri: { type: 'String' },
       data: { type: 'Object' },
       readAt: { type: 'Date' }
+    }
+  },
+  // SCOUTING
+  Briefing: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true },
+      company: { type: 'Pointer', targetClass: 'Company' },
+      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      dueDate: { type: 'String' },
+
+      docs: { type: 'Array' },
+      responsibles: { type: 'Array' }
+    }
+  },
+  Control: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true },
+      date: { type: 'String', required: true },
+      lastControlBefore: { type: 'Number' },
+      status: { type: 'Number' },
+
+      criteria: { type: 'Array' },
+
+      docs: { type: 'Array' },
+      responsibles: { type: 'Array' }
+    }
+  },
+  Disassembly: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true },
+
+      docs: { type: 'Array' },
+      responsibles: { type: 'Array' }
     }
   },
   DepartureList: {
