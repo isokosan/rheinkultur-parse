@@ -142,3 +142,19 @@ DEVELOPMENT && Parse.Cloud.define('update-lex-addresses-dev', async () => {
     return address.set({ lex }).save(null, { useMasterKey: true })
   }, { useMasterKey: true })
 })
+
+Parse.Cloud.define('mass-remove-auto-extend-bookings', async ({ params: { companyId } }) => {
+  const company = await $getOrFail('Company', companyId)
+  let i = 0
+  await $query('Booking').equalTo('company', company).notEqualTo('autoExtendsAt', null).each((booking) => {
+    const autoExtendsAt = null
+    const autoExtendsBy = null
+    const noticePeriod = null
+    const changes = $changes(booking, { autoExtendsBy, noticePeriod })
+    const audit = { fn: 'booking-update', data: { changes } }
+    i++
+    booking.set({ autoExtendsAt, autoExtendsBy, noticePeriod })
+    return booking.save(null, { useMasterKey: true, context: { audit } })
+  }, { useMasterKey: true })
+  return i
+}, { useMasterKey: true })
