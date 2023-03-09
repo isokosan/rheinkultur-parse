@@ -57,8 +57,7 @@ const CreditNote = Parse.Object.extend('CreditNote', {
     const company = this.get('company')
     !company.get('name') && await company.fetch({ useMasterKey: true })
     if (company.get('name') === 'Kinetic Germany GmbH') {
-      const start = moment(contract.get('startsAt')).format('DD.MM.YYYY')
-      contract && (orderDurationText = 'Rüsttermin: ' + start)
+      contract?.get('startsAt') && (orderDurationText = 'Rüsttermin: ' + moment(contract.get('startsAt')).format('DD.MM.YYYY'))
       lines.push(...[
         'Kunde: Telekom Deutschland GmbH',
         'Auftraggeber: Kinetic Germany GmbH',
