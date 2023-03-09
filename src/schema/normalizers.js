@@ -232,8 +232,9 @@ module.exports = {
         normalized.commissions = undefined
       }
       if (!normalized.autoExtendsBy) {
-        normalized.noticePeriod = undefined
-        normalized.autoExtendsAt = undefined
+        normalized.autoExtendsBy = null
+        normalized.noticePeriod = null
+        normalized.autoExtendsAt = null
       }
       return normalized
     }
@@ -270,8 +271,9 @@ module.exports = {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
       }
       if (!normalized.autoExtendsBy) {
-        normalized.noticePeriod = undefined
-        normalized.autoExtendsAt = undefined
+        normalized.autoExtendsBy = null
+        normalized.noticePeriod = null
+        normalized.autoExtendsAt = null
       }
       return normalized
     }

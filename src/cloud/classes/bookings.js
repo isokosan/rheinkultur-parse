@@ -266,7 +266,6 @@ Parse.Cloud.define('booking-update', async ({
     startsAt,
     initialDuration,
     endsAt,
-    autoExtendsAt,
     autoExtendsBy,
     monthlyMedia,
     endPrices
