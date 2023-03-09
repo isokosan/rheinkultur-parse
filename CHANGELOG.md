@@ -1,3 +1,10 @@
+## [1.10.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.4...1.10.5) (2023-03-09)
+
+
+### Bug Fixes
+
+* contract and booking auto-extend change does not propagate due to undefined fields. ([a57712d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a57712dcc6062088b0b6ceda36c4518bbf5e2721))
+
 ## [1.10.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.3...1.10.4) (2023-03-09)
 
 
