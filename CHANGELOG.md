@@ -1,3 +1,10 @@
+## [1.10.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.5...1.10.6) (2023-03-09)
+
+
+### Bug Fixes
+
+* add manual update booking auto-extend ([b49d1ab](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b49d1abcee007e093638fff0f16862659f973069))
+
 ## [1.10.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.4...1.10.5) (2023-03-09)
 
 
