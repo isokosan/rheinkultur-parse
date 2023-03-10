@@ -5,9 +5,7 @@ const INDEXES = {
     config: {
       mappings: {
         properties: {
-          street: {
-            type: 'search_as_you_type'
-          }
+          street: { type: 'search_as_you_type' }
         }
       }
     },
@@ -21,32 +19,19 @@ const INDEXES = {
     config: {
       mappings: {
         properties: {
-          city: {
-            type: 'search_as_you_type'
-          }
+          ort: { type: 'search_as_you_type' }
         }
       }
     },
-    parseQuery: $query('Cube').distinct('ort'),
+    parseQuery: $query('City'),
     datasetMap: cities => cities.map(city => ({
-      _id: city,
-      doc: { city }
-    }))
-  },
-  'rheinkultur-locations-autocomplete': {
-    config: {
-      mappings: {
-        properties: {
-          city: {
-            type: 'search_as_you_type'
-          }
-        }
+      _id: city.id,
+      doc: {
+        objectId: city.id,
+        ort: city.get('ort'),
+        stateId: city.get('state').id,
+        gp: city.get('gp')?.toJSON()
       }
-    },
-    parseQuery: $query('Cube').select(['ort', 'state']),
-    datasetMap: cubes => cubes.map(cube => ({
-      _id: cube.get('ort') + ':' + cube.get('state').id,
-      doc: { city: cube.get('ort'), state: cube.get('state').id }
     }))
   },
   'rheinkultur-cubes': {
@@ -121,12 +106,21 @@ const autocompleteSearch = async function (index, key, query) {
       }
     }
   })
-  return hits.map(hit => hit._id)
+  return hits
 }
 
-Parse.Cloud.define('streets-autocomplete', ({ params: { query } }) => autocompleteSearch('rheinkultur-streets-autocomplete', 'street', query), { validateMasterKey: true })
-Parse.Cloud.define('cities-autocomplete', ({ params: { query } }) => autocompleteSearch('rheinkultur-cities-autocomplete', 'city', query), { validateMasterKey: true })
-
+Parse.Cloud.define(
+  'streets-autocomplete',
+  ({ params: { query } }) => autocompleteSearch('rheinkultur-streets-autocomplete', 'street', query)
+    .then(hits => hits.map(hit => hit._id)),
+  { validateMasterKey: true }
+)
+Parse.Cloud.define(
+  'cities-autocomplete',
+  ({ params: { query } }) => autocompleteSearch('rheinkultur-cities-autocomplete', 'ort', query)
+    .then(hits => hits.map(hit => hit._source)),
+  { validateMasterKey: true }
+)
 Parse.Cloud.define('search', async ({
   params: {
     id,
@@ -429,14 +423,14 @@ const indexCube = async (cube, before) => {
   }
 
   // If updated and different, and none other exists check and remove before city
-  const beforeCity = before?.ort
-  const city = cube.get('ort')
-  if (beforeCity !== city) {
-    if (beforeCity && !await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', beforeCity).first({ useMasterKey: true })) {
-      await client.delete({ index: 'rheinkultur-cities-autocomplete', id: beforeCity }).then(consola.success).catch(consola.error)
-    }
-    await client.index({ index: 'rheinkultur-cities-autocomplete', id: city, body: { city } }).then(consola.success)
-  }
+  // const beforeCity = before?.ort
+  // const city = cube.get('ort')
+  // if (beforeCity !== city) {
+  //   if (beforeCity && !await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', beforeCity).first({ useMasterKey: true })) {
+  //     await client.delete({ index: 'rheinkultur-cities-autocomplete', id: beforeCity }).then(consola.success).catch(consola.error)
+  //   }
+  //   await client.index({ index: 'rheinkultur-cities-autocomplete', id: city, body: { city } }).then(consola.success)
+  // }
   const beforeStreet = before?.str
   const street = cube.get('str')
   if (beforeStreet !== street) {
@@ -449,10 +443,10 @@ const indexCube = async (cube, before) => {
 
 const unindexCube = async (cube) => {
   await client.delete({ index: 'rheinkultur-cubes', id: cube.id }).then(consola.success).catch(consola.error)
-  const city = cube.get('ort')
-  if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', city).first({ useMasterKey: true })) {
-    await client.delete({ index: 'rheinkultur-cities-autocomplete', id: city }).then(consola.success).catch(consola.error)
-  }
+  // const city = cube.get('ort')
+  // if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', city).first({ useMasterKey: true })) {
+  //   await client.delete({ index: 'rheinkultur-cities-autocomplete', id: city }).then(consola.success).catch(consola.error)
+  // }
   const street = cube.get('str')
   if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('str', street).first({ useMasterKey: true })) {
     await client.delete({ index: 'rheinkultur-streets-autocomplete', id: street }).then(consola.success).catch(consola.error)
