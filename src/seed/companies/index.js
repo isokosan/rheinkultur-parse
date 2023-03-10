@@ -385,7 +385,6 @@ const seed = async function () {
       firstName: 'Marc',
       lastName: 'Asriel',
       accType: 'distributor',
-      distributorRoles: ['manage-bookings', 'manage-scouts'],
       companyId: marcAsriel.id
     },
     {

@@ -7,10 +7,6 @@ module.exports.ACC_TYPES = {
   scout: 'Scout',
   distributor: 'Vertriebspartner'
 }
-module.exports.DISTRIBUTOR_ROLES = {
-  'manage-bookings': 'Manage Bookings',
-  'manage-scouts': 'Manage Scouts'
-}
 module.exports.BOOKING_STATUSES = {
   '-1': 'Gelöscht',
   0.0: 'Entwurf', // distributors

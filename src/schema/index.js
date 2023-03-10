@@ -42,8 +42,7 @@ const schemaDefinitions = {
       email: { type: 'String', required: true },
       pbx: { type: 'String' },
       mobile: { type: 'String' },
-      accType: { type: 'String', required: true },
-      distributorRoles: { type: 'Array' }
+      accType: { type: 'String', required: true }
     }
   },
   Address: {
