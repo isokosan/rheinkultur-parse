@@ -6,6 +6,27 @@ const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
+async function getCenterOfCubes (cubeIds) {
+  if (!cubeIds.length) {
+    return null
+  }
+  const [{ longitude, latitude }] = await $query('Cube').aggregate([
+    {
+      $match: {
+        _id: { $in: cubeIds }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        longitude: { $avg: { $arrayElemAt: ['$gp', 0] } },
+        latitude: { $avg: { $arrayElemAt: ['$gp', 1] } }
+      }
+    }
+  ])
+  return $geopoint(latitude, longitude)
+}
+
 Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: { countCubes } }) => {
   if (departureList.isNew()) {
     if (!departureList.get('name')) {
@@ -17,6 +38,7 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   cubeIds.sort()
   departureList.set('cubeIds', cubeIds)
   departureList.set('cubeCount', cubeIds.length)
+  departureList.set('gp', await getCenterOfCubes(cubeIds))
 
   if (countCubes) {
     const submissionClass = capitalize(departureList.get('type')) + 'Submission'
@@ -50,8 +72,6 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   }
 })
 
-$query(DepartureList).equalTo('status', 'assigned')
-  .each(dp => dp.save(null, { useMasterKey: true, context: { setCubeStatuses: true } }), { useMasterKey: true })
 async function setCubeTaskStatus (departureList) {
   const {
     id: listId,
@@ -145,6 +165,15 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
         submissions = await $query(DisassemblySubmission).equalTo('departureList', departureList).find({ useMasterKey: true })
       }
       departureList.set('submissions', submissions)
+    }
+    if (query._include.includes('cubeLocations')) {
+      const cubeIds = departureList.get('cubeIds') || []
+      const cubeLocations = await $query('Cube')
+        .containedIn('objectId', cubeIds)
+        .select('gp')
+        .limit(cubeIds.length)
+        .find({ useMasterKey: true })
+      departureList.set({ cubeLocations })
     }
   }
   return departureLists

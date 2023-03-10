@@ -33,6 +33,22 @@ const INDEXES = {
       doc: { city }
     }))
   },
+  'rheinkultur-locations-autocomplete': {
+    config: {
+      mappings: {
+        properties: {
+          city: {
+            type: 'search_as_you_type'
+          }
+        }
+      }
+    },
+    parseQuery: $query('Cube').select(['ort', 'state']),
+    datasetMap: cubes => cubes.map(cube => ({
+      _id: cube.get('ort') + ':' + cube.get('state').id,
+      doc: { city: cube.get('ort'), state: cube.get('state').id }
+    }))
+  },
   'rheinkultur-cubes': {
     config: {
       mappings: {
