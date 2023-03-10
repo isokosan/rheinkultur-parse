@@ -1,3 +1,10 @@
+## [1.10.9](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.8...1.10.9) (2023-03-10)
+
+
+### Bug Fixes
+
+* distributor roles cleanup ([750534f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/750534ff4b830b439c85bd3d494e42dfa35c99b6))
+
 ## [1.10.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.7...1.10.8) (2023-03-10)
 
 
