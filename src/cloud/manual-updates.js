@@ -143,18 +143,83 @@ DEVELOPMENT && Parse.Cloud.define('update-lex-addresses-dev', async () => {
   }, { useMasterKey: true })
 }, { requireMaster: true })
 
-Parse.Cloud.define('mass-remove-auto-extend-bookings', async ({ params: { companyId } }) => {
-  const company = await $getOrFail('Company', companyId)
+// async function prepareDisassemblyControls() {
+//   const all = require('@/seed/data/disassembly_control.json')
+//   const bookingCompanies = await $query('Booking').select('company').distinct('company', { useMasterKey: true })
+//     .then(companies => Promise.all(companies.map(c => $getOrFail('Company', c.objectId))))
+//     .then(companies => companies.map(c => c.get('importNo')))
+//   function normalizeNo(row) {
+//     const no = row.no
+//     const importNo = parseInt(row['KD-Nr.'])
+//     if (no[0] === 'B' || no[0] === 'V') {
+//       return no
+//     }
+//     if (bookingCompanies.includes(importNo)) {
+//       return 'B' + no
+//     }
+//     return 'V' + no
+//   }
+//   function normalizeDisassembly(disassembly) {
+//     disassembly = disassembly.toLowerCase()
+//     return disassembly = disassembly === 'ja'
+//   }
+//   const disassemblies = {}
+//   for (const row of all) {
+//     const no = normalizeNo(row)
+//     const disassembly = normalizeDisassembly(row.dis)
+//     if (no in disassemblies) {
+//       if (disassemblies[no] !== disassembly) {
+//         throw new Error('Mismatch: ' + no)
+//       }
+//     }
+//     disassemblies[no] = disassembly
+//   }
+//   const fs = require('fs')
+//   return fs.writeFileSync('./prepared_disassemblies.json', JSON.stringify(disassemblies, null, 2))
+// }
+// prepareDisassemblyControls()
+
+async function fixDisassemblies () {
+  const disassemblies = require('@/seed/data/prepared_disassemblies.json')
+  const bookings = await $query('Booking').select(['no', 'disassembly']).limit(10000).find({ useMasterKey: true })
+  const contracts = await $query('Contract').select(['no', 'disassembly']).limit(10000).find({ useMasterKey: true })
+  for (const no of Object.keys(disassemblies)) {
+    if (no.startsWith('B')) {
+      const booking = bookings.find(booking => booking.get('no') === no)
+      if (!booking || Boolean(booking.get('disassembly')) === disassemblies[no]) {
+        delete disassemblies[no]
+        continue
+      }
+      disassemblies[no] = {
+        className: 'Booking',
+        id: booking.id,
+        current: Boolean(booking.get('disassembly')),
+        expected: disassemblies[no]
+      }
+      continue
+    }
+    if (no.startsWith('V')) {
+      const contract = contracts.find(contract => contract.get('no') === no)
+      if (!contract || Boolean(contract.get('disassembly')) === disassemblies[no]) {
+        delete disassemblies[no]
+        continue
+      }
+      disassemblies[no] = {
+        className: 'Contract',
+        id: contract.id,
+        current: Boolean(contract.get('disassembly')),
+        expected: disassemblies[no]
+      }
+      continue
+    }
+    delete disassemblies[no]
+  }
   let i = 0
-  await $query('Booking').equalTo('company', company).notEqualTo('autoExtendsAt', null).each((booking) => {
-    const autoExtendsAt = null
-    const autoExtendsBy = null
-    const noticePeriod = null
-    const changes = $changes(booking, { autoExtendsBy, noticePeriod })
-    const audit = { fn: 'booking-update', data: { changes } }
+  for (const { className, id, expected } of Object.values(disassemblies)) {
+    await Parse.Cloud.run('disassembly-order-update', { className, id, disassembly: expected }, { useMasterKey: true })
     i++
-    booking.set({ autoExtendsAt, autoExtendsBy, noticePeriod })
-    return booking.save(null, { useMasterKey: true, context: { audit } })
-  }, { useMasterKey: true })
+  }
   return i
-}, { requireMaster: true })
+}
+
+Parse.Cloud.define('fix-disassemblies', fixDisassemblies, { requireMaster: true })
