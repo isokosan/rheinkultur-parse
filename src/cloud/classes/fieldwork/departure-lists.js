@@ -78,9 +78,6 @@ async function setCubeTaskStatus (departureList) {
     attributes: {
       cubeIds,
       type,
-      briefing,
-      disassembly,
-      control,
       dueDate,
       // quota,
       status,
@@ -91,9 +88,6 @@ async function setCubeTaskStatus (departureList) {
   const task = {
     listId,
     type,
-    briefing: briefing?.toPointer(),
-    disassembly: disassembly?.toPointer(),
-    control: control?.toPointer(),
     status,
     dueDate,
     managerId: manager?.id,
@@ -135,7 +129,7 @@ Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { 
 })
 
 Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
-  query.include(['briefing', 'control', 'disassembly'])
+  query.include(['briefing', 'control', 'contract', 'booking'])
   query._include.includes('all') && query.include('submissions')
   if (master) { return }
   if (user.get('accRoles')?.includes('manage-scouts')) {
@@ -173,6 +167,10 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
         .select('gp')
         .limit(cubeIds.length)
         .find({ useMasterKey: true })
+        .then((cubes) => cubes.reduce((acc, cube) => {
+          acc[cube.id] = cube.get('gp')
+          return acc
+        }, {}))
       departureList.set({ cubeLocations })
     }
   }

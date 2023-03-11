@@ -1,4 +1,4 @@
-const { getPlacesPredictions, getPlaceById } = require('@/services/google-maps')
+// const { getPlacesPredictions, getPlaceById } = require('@/services/google-maps')
 
 // async function cubeLocations() {
 //   const locations = {}
@@ -14,33 +14,23 @@ const { getPlacesPredictions, getPlaceById } = require('@/services/google-maps')
 //   return locations
 // }
 
-async function getGeopointFromPlace (input) {
-  const predictions = await getPlacesPredictions(input)
-  if (!predictions.length) {
-    return
-  }
-  let place
-  try {
-    place = await getPlaceById(predictions[0].place_id)
-  } catch (error) {
-    consola.error(error)
-    return
-  }
-  const { lat: latitude, lng: longitude } = place.geometry.location
-  return new Parse.GeoPoint({ latitude, longitude })
-}
+// async function getGeopointFromPlace (input) {
+//   const predictions = await getPlacesPredictions(input)
+//   if (!predictions.length) {
+//     return
+//   }
+//   let place
+//   try {
+//     place = await getPlaceById(predictions[0].place_id)
+//   } catch (error) {
+//     consola.error(error)
+//     return
+//   }
+//   const { lat: latitude, lng: longitude } = place.geometry.location
+//   return new Parse.GeoPoint({ latitude, longitude })
+// }
 
-const City = Parse.Object.extend('City')
-Parse.Cloud.beforeSave(City, async ({ object: city }) => {
-  // TODO: This never gets fired because we use custom objectId
-  if (city.isNew()) {
-    const gp = await getGeopointFromPlace(`${city.get('ort')} ${$states[city.get('state').id]}`)
-    gp && city.set('gp', gp)
-    if (!city.get('gp')) { throw new Error('No geopoint for city ' + city.get('ort')) }
-  }
-})
-
-Parse.Cloud.afterFind(City, ({ objects: cities }) => {
+Parse.Cloud.afterFind('City', ({ objects: cities }) => {
   for (const city of cities) {
     // TODO: Remove (open issue -> js sdk does not encodeURI so some chars in ID throw errors, whereas rest api works)
     city.id = encodeURI(city.id)

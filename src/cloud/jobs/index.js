@@ -52,6 +52,12 @@ const updateJobs = {
     timeoutMinutes: 120
     // cron: '0 0 * * *' // nightly
   },
+  generate_disassembly_tasks: {
+    name: 'Abbauliste generieren.',
+    timeoutMinutes: 60,
+    cron: '0 0 * * *', // nightly
+    notificationDuration: 48
+  },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
     timeoutMinutes: 120
