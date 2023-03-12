@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.9...1.11.0) (2023-03-12)
+
+
+### Features
+
+* add contract exports for companies and contracts ([de76d12](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/de76d128f5ef1b02f2bb4bd433c939cd66e0264f))
+
 ## [1.10.9](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.8...1.10.9) (2023-03-10)
 
 
