@@ -12,7 +12,7 @@ const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
 const { getLexFile, getLexInvoiceDocument, getLexCreditNoteDocument } = require('@/services/lex')
 const { getCubeSummaries } = require('@/shared')
-const { round2 } = require('@/utils')
+const { round2, durationString } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
@@ -113,6 +113,137 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', 'attachment; filename=Cubes.xlsx')
   res.set('Content-Length', buffer.length)
   return res.send(buffer)
+}))
+
+function getCubeOrderDates (cube, order) {
+  const { startsAt, endsAt, earlyCancellations, initialDuration, extendedDuration } = order.attributes
+  const earlyCanceledAt = earlyCancellations?.[cube.id]
+  if (earlyCanceledAt === true) {
+    return { duration: '0' }
+  }
+  return {
+    start: moment(startsAt).format('DD.MM.YYYY'),
+    end: moment(earlyCanceledAt || endsAt).format('DD.MM.YYYY'),
+    duration: earlyCanceledAt
+      ? durationString(earlyCanceledAt, startsAt)
+      : [initialDuration, extendedDuration].filter(x => x).join('+')
+  }
+}
+
+function getCubeMonthlyMedia (cube, order) {
+  const { pricingModel, monthlyMedia } = order.attributes
+  if (pricingModel === 'gradual') {
+    return 'Staffel'
+  }
+  if (pricingModel === 'zero') {
+    return 0
+  }
+  return monthlyMedia[cube.id]
+}
+
+async function getContractRows (contract, { housingTypes, states }) {
+  const rows = []
+  const { motive, externalOrderNo, campaignNo, cubeIds } = contract.attributes
+  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
+  for (const cube of cubes) {
+    const { start, end, duration } = getCubeOrderDates(cube, contract)
+    const monthly = getCubeMonthlyMedia(cube, contract)
+    rows.push({
+      objectId: cube.id,
+      motive,
+      externalOrderNo,
+      campaignNo,
+      htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
+      str: cube.get('str'),
+      hsnr: cube.get('hsnr'),
+      plz: cube.get('plz'),
+      ort: cube.get('ort'),
+      stateName: states[cube.get('state')?.id]?.name || '',
+      start,
+      end,
+      duration,
+      monthly
+    })
+  }
+  return rows
+}
+
+// http://localhost:1337/exports/contract/AsaJNA61xX
+router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
+  const housingTypes = await fetchHousingTypes()
+  const states = await fetchStates()
+  const workbook = new excel.Workbook()
+
+  const { columns, headerRowValues } = getColumnHeaders({
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle }
+  })
+
+  const contract = await $getOrFail('Contract', req.params.contractId)
+  const worksheet = workbook.addWorksheet(contract.get('no'))
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 24
+  worksheet.addRows(await getContractRows(contract, { housingTypes, states }))
+  const filename = `Vertrag ${contract.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
+// http://localhost:1337/exports/company/FNFCxMgEEr
+router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
+  const housingTypes = await fetchHousingTypes()
+  const states = await fetchStates()
+  const workbook = new excel.Workbook()
+
+  const company = await $getOrFail('Company', req.params.companyId)
+  const { columns, headerRowValues } = getColumnHeaders({
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle }
+  })
+
+  await $query('Contract').equalTo('company', company).equalTo('status', 3).each(async (contract) => {
+    const worksheet = workbook.addWorksheet(contract.get('no'))
+    worksheet.columns = columns
+    const headerRow = worksheet.addRow(headerRowValues)
+    headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+    headerRow.height = 24
+    const rows = await getContractRows(contract, { housingTypes, states })
+    worksheet.addRows(rows)
+  }, { useMasterKey: true })
+
+  const nameOrder = workbook.worksheets.map(sheet => sheet.name).sort((a, b) => b.localeCompare(a))
+  workbook.eachSheet((sheet) => { sheet.orderNo = nameOrder.indexOf(sheet.name) })
+  const filename = `Laufende Verträge ${company.get('name')} (Stand ${moment().format('DD.MM.YYYY')})`
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
 router.get('/assembly-list', handleErrorAsync(async (req, res) => {
