@@ -144,6 +144,8 @@ function getCubeMonthlyMedia (cube, order) {
 async function getContractRows (contract, { housingTypes, states }) {
   const rows = []
   const { motive, externalOrderNo, campaignNo, cubeIds } = contract.attributes
+  const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
+  const printPackages = production?.get('printPackages') || {}
   const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
   for (const cube of cubes) {
     const { start, end, duration } = getCubeOrderDates(cube, contract)
@@ -162,7 +164,8 @@ async function getContractRows (contract, { housingTypes, states }) {
       start,
       end,
       duration,
-      monthly
+      monthly,
+      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(x => x).join(': ')
     })
   }
   return rows
@@ -188,7 +191,8 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
     start: { header: 'Startdatum', width: 12, style: dateStyle },
     end: { header: 'Enddatum', width: 12, style: dateStyle },
     duration: { header: 'Laufzeit', width: 10, style: alignRight },
-    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle }
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    pp: { header: 'Belegungspaket', width: 20 }
   })
 
   const contract = await $getOrFail('Contract', req.params.contractId)
@@ -225,7 +229,8 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     start: { header: 'Startdatum', width: 12, style: dateStyle },
     end: { header: 'Enddatum', width: 12, style: dateStyle },
     duration: { header: 'Laufzeit', width: 10, style: alignRight },
-    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle }
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    pp: { header: 'Belegungspaket', width: 20 }
   })
 
   await $query('Contract').equalTo('company', company).equalTo('status', 3).each(async (contract) => {
