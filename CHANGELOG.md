@@ -1,3 +1,10 @@
+## [1.11.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.0...1.11.1) (2023-03-12)
+
+
+### Bug Fixes
+
+* add belegungspaket to contract exports ([485330e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/485330e8e16514144aa2c2ce954470235743b2c2))
+
 # [1.11.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.9...1.11.0) (2023-03-12)
 
 
