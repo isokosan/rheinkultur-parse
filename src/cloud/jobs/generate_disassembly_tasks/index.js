@@ -1,3 +1,44 @@
+// We should see all disassembly lists under contracts and bookings
+// When canceling cubes, or canceling an order - we should have an easy way of generating the lists right away
+// This nightly function should also run and generate the lists as they should be.
+// This should also remember cases where user wants to remove an abbau, or mark an abbau as abgebaut - this info should persist.
+
+async function upsertDepartureList (attrs) {
+  // first check if a departure list with the same
+  // uniqueTogether = { type, booking, contract, ort, state, from }
+  const exists = await $query('DepartureList')
+    .equalTo('type', 'disassembly')
+    .equalTo('booking', attrs.booking)
+    .equalTo('contract', attrs.contract)
+    .equalTo('ort', attrs.ort)
+    .equalTo('state', attrs.state)
+    .equalTo('from', attrs.from)
+    .first({ useMasterKey: true })
+
+  // remove cubeIds from other disassembly lists if it now appears here
+  const otherLists = await $query('DepartureList')
+    .equalTo('type', 'disassembly')
+    .equalTo('booking', attrs.booking)
+    .equalTo('contract', attrs.contract)
+    .containedIn('cubeIds', attrs.cubeIds)
+  exists && otherLists.notEqualTo('objectId', exists.id)
+
+  // TODO: abbau check
+  // await otherLists.each(async list => removeCubesFromList(list, cubeIds), { useMasterKey: true })
+
+  if (exists) {
+    const cubeChanges = $cubeChanges(exists, attrs.cubeIds)
+    if (!cubeChanges) { return exists }
+    const audit = { fn: 'departure-list-update', data: { cubeChanges } }
+    exists.set('cubeIds', attrs.cubeIds)
+    return exists.save(null, { useMasterKey: true, context: { audit } })
+  }
+  const DepartureList = Parse.Object.extend('DepartureList')
+  const departureList = new DepartureList(attrs)
+  const audit = { fn: 'departure-list-create' }
+  return departureList.save(null, { useMasterKey: true, context: { audit } })
+}
+
 module.exports = async function (job) {
   const periodStart = moment().startOf('month').subtract(1, 'month').format('YYYY-MM-DD')
   const periodEnd = moment().endOf('month').add(1, 'month').format('YYYY-MM-DD')
@@ -31,14 +72,13 @@ module.exports = async function (job) {
       keys[uniqueKey].cubeIds.push(cube.id)
     }
   }, { useMasterKey: true })
-  const DepartureList = Parse.Object.extend('DepartureList')
   let i = 0
-  for (const key in keys) {
-    const [ort, stateId, from] = key.split('_')
-    const { cubeIds, booking, contract } = keys[key]
+  for (const uniqueKey in keys) {
+    const [ort, stateId, from] = uniqueKey.split('_')
+    const { cubeIds, booking, contract } = keys[uniqueKey]
     const state = $pointer('State', stateId)
     // TODO: check if exists remove or syncronize
-    const departureList = new DepartureList({
+    await upsertDepartureList({
       type: 'disassembly',
       booking,
       contract,
@@ -48,7 +88,6 @@ module.exports = async function (job) {
       from,
       dueDate: moment(from).add(2, 'weeks').format('YYYY-MM-DD')
     })
-    await departureList.save(null, { useMasterKey: true })
     i++
   }
   return Promise.resolve({ disassemblyTasks: i })
