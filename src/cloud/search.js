@@ -38,6 +38,18 @@ const INDEXES = {
       mappings: {
         properties: {
           geo: { type: 'geo_point' }
+          // hsnr: {
+          //   type: 'text',
+          //   fields: {
+          //     // https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-icu.html
+          //     sort: {
+          //       type: 'icu_collation_keyword',
+          //       index: false,
+          //       numeric: true,
+          //       case_level: false
+          //     }
+          //   }
+          // }
         }
       }
     },
@@ -178,6 +190,7 @@ Parse.Cloud.define('search', async ({
   } else {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     sort.unshift({ 'objectId.keyword': 'asc' })
+    // !id && sort.unshift({ 'hsnr.sort': 'asc' })
     !id && sort.unshift({ 'str.keyword': 'asc' })
   }
 
