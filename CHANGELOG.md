@@ -1,3 +1,10 @@
+## [1.11.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.1...1.11.2) (2023-03-14)
+
+
+### Bug Fixes
+
+* remove excel company export sheet separated ([02ac37d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/02ac37d463db55c24eacd6eb83899868744b7d97))
+
 ## [1.11.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.0...1.11.1) (2023-03-12)
 
 
