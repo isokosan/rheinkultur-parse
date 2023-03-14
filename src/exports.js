@@ -151,10 +151,11 @@ async function getContractRows (contract, { housingTypes, states }) {
     const { start, end, duration } = getCubeOrderDates(cube, contract)
     const monthly = getCubeMonthlyMedia(cube, contract)
     rows.push({
-      objectId: cube.id,
+      orderNo: contract.get('no'),
       motive,
       externalOrderNo,
       campaignNo,
+      objectId: cube.id,
       htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
       str: cube.get('str'),
       hsnr: cube.get('hsnr'),
@@ -216,6 +217,7 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
 
   const company = await $getOrFail('Company', req.params.companyId)
   const { columns, headerRowValues } = getColumnHeaders({
+    orderNo: { header: 'Auftragsnr.', width: 20 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
     campaignNo: { header: 'Kampagnennr.', width: 20 },
@@ -233,18 +235,26 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     pp: { header: 'Belegungspaket', width: 20 }
   })
 
-  await $query('Contract').equalTo('company', company).equalTo('status', 3).each(async (contract) => {
-    const worksheet = workbook.addWorksheet(contract.get('no'))
-    worksheet.columns = columns
-    const headerRow = worksheet.addRow(headerRowValues)
-    headerRow.font = { name: 'Calibri', bold: true, size: 12 }
-    headerRow.height = 24
-    const rows = await getContractRows(contract, { housingTypes, states })
-    worksheet.addRows(rows)
-  }, { useMasterKey: true })
+  const worksheet = workbook.addWorksheet(company.get('name'))
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 24
 
-  const nameOrder = workbook.worksheets.map(sheet => sheet.name).sort((a, b) => b.localeCompare(a))
-  workbook.eachSheet((sheet) => { sheet.orderNo = nameOrder.indexOf(sheet.name) })
+  const rows = []
+  await $query('Contract')
+    .equalTo('company', company)
+    .equalTo('status', 3)
+    .each(async (contract) => {
+      rows.push(...await getContractRows(contract, { housingTypes, states }))
+    }, { useMasterKey: true })
+
+  rows.sort((a, b) => {
+    return a.orderNo === b.orderNo
+      ? a.str.localeCompare(b.str, 'de') || a.hsnr.localeCompare(b.hsnr, 'de', { numeric: true })
+      : b.orderNo.localeCompare(a.orderNo)
+  })
+  worksheet.addRows(rows)
   const filename = `Laufende Verträge ${company.get('name')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
