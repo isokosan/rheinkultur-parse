@@ -1,3 +1,10 @@
+## [1.11.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.2...1.11.3) (2023-03-14)
+
+
+### Bug Fixes
+
+* add red color to early canceled cubes in contract exports ([e63b709](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e63b70927cc6a42f839ef03bec780351427e783e))
+
 ## [1.11.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.1...1.11.2) (2023-03-14)
 
 
