@@ -39,6 +39,18 @@ const INDEXES = {
       mappings: {
         properties: {
           geo: { type: 'geo_point' }
+          // hsnr: {
+          //   type: 'text',
+          //   fields: {
+          //     // https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-icu.html
+          //     sort: {
+          //       type: 'icu_collation_keyword',
+          //       index: false,
+          //       numeric: true,
+          //       case_level: false
+          //     }
+          //   }
+          // }
         }
       }
     },
@@ -77,6 +89,7 @@ const INDEXES = {
 
         // warnings
         bPLZ: cube.get('bPLZ'),
+        PDGA: cube.get('PDGA'),
         nMR: cube.get('nMR'),
         MBfD: cube.get('MBfD'),
         PG: cube.get('PG'),
@@ -228,6 +241,7 @@ Parse.Cloud.define('search', async ({
   } else {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     sort.unshift({ 'objectId.keyword': 'asc' })
+    // !id && sort.unshift({ 'hsnr.sort': 'asc' })
     !id && sort.unshift({ 'str.keyword': 'asc' })
   }
 
@@ -303,6 +317,7 @@ Parse.Cloud.define('search', async ({
   s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
   s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
+  s.includes('PDGA') && bool.must.push({ exists: { field: 'PDGA' } })
   s.includes('nMR') && bool.must.push({ exists: { field: 'nMR' } })
   s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
   s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })

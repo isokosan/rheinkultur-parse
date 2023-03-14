@@ -89,12 +89,26 @@ Parse.Cloud.define('enums', () => ({
 }), { requireUser: true })
 
 // temporary solution to PLZ's without redis
-global.$noMarketingRights = {}
+global.$bPLZ = {}
 async function syncNoMarketingRights () {
   const plzs = await $query('PLZ').equalTo('nMR', true).distinct('objectId', { useMasterKey: true })
   for (const plz of plzs) {
-    $noMarketingRights[plz] = true
+    $bPLZ[plz] = true
   }
   consola.success('stored no marketing rights in memory')
 }
 syncNoMarketingRights()
+
+// TODO: Fetch from single place
+global.$PDGA = {
+  'NW:Aachen': true,
+  'NW:Alsdorf': true,
+  'NW:Baesweiler': true,
+  'NW:Eschweiler': true,
+  'NW:Herzogenrath': true,
+  'NW:Monschau': true,
+  'NW:Roetgen': true,
+  'NW:Simmerath': true,
+  'NW:Stolberg': true,
+  'NW:Würselen': true
+}

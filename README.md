@@ -52,3 +52,6 @@ Out-of-office work: This term is similar to "on-site work" and refers to any wor
 Site visits: This term specifically refers to visits made to a specific location for the purpose of conducting some kind of assessment or inspection. It could be a good fit if your scouts are primarily going out to check ad spaces or control them.
 
 Ultimately, the choice of terminology will depend on the specific context and the tone or style that you want to convey.
+=======
+# Restoring gzip backup
+`mongorestore --host localhost:27017 --gzip --archive=dump.gz --db rheinkultur-wawi`

@@ -12,7 +12,7 @@ const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
 const { getLexFile, getLexInvoiceDocument, getLexCreditNoteDocument } = require('@/services/lex')
 const { getCubeSummaries } = require('@/shared')
-const { round2 } = require('@/utils')
+const { round2, durationString } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
@@ -113,6 +113,169 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', 'attachment; filename=Cubes.xlsx')
   res.set('Content-Length', buffer.length)
   return res.send(buffer)
+}))
+
+function getCubeOrderDates (cube, order) {
+  const { startsAt, endsAt, earlyCancellations, initialDuration, extendedDuration } = order.attributes
+  const earlyCanceledAt = earlyCancellations?.[cube.id]
+  const canceledEarly = Boolean(earlyCanceledAt)
+  if (earlyCanceledAt === true) {
+    return { duration: '0', canceledEarly }
+  }
+  return {
+    start: moment(startsAt).format('DD.MM.YYYY'),
+    end: moment(earlyCanceledAt || endsAt).format('DD.MM.YYYY'),
+    duration: canceledEarly
+      ? durationString(earlyCanceledAt, startsAt)
+      : [initialDuration, extendedDuration].filter(x => x).join('+'),
+    canceledEarly
+  }
+}
+
+function getCubeMonthlyMedia (cube, order) {
+  const { pricingModel, monthlyMedia } = order.attributes
+  if (pricingModel === 'gradual') {
+    return 'Staffel'
+  }
+  if (pricingModel === 'zero') {
+    return 0
+  }
+  return monthlyMedia[cube.id]
+}
+
+async function getContractRows (contract, { housingTypes, states }) {
+  const rows = []
+  const { motive, externalOrderNo, campaignNo, cubeIds } = contract.attributes
+  const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
+  const printPackages = production?.get('printPackages') || {}
+  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
+  for (const cube of cubes) {
+    const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract)
+    const monthly = getCubeMonthlyMedia(cube, contract)
+    rows.push({
+      orderNo: contract.get('no'),
+      motive,
+      externalOrderNo,
+      campaignNo,
+      objectId: cube.id,
+      htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
+      str: cube.get('str'),
+      hsnr: cube.get('hsnr'),
+      plz: cube.get('plz'),
+      ort: cube.get('ort'),
+      stateName: states[cube.get('state')?.id]?.name || '',
+      start,
+      end,
+      duration,
+      monthly,
+      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(x => x).join(': '),
+      canceledEarly
+    })
+  }
+  return rows
+}
+
+// http://localhost:1337/exports/contract/AsaJNA61xX
+router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
+  const housingTypes = await fetchHousingTypes()
+  const states = await fetchStates()
+  const workbook = new excel.Workbook()
+
+  const { columns, headerRowValues } = getColumnHeaders({
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    pp: { header: 'Belegungspaket', width: 20 }
+  })
+
+  const contract = await $getOrFail('Contract', req.params.contractId)
+  const worksheet = workbook.addWorksheet(contract.get('no'))
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 24
+
+  const rows = await getContractRows(contract, { housingTypes, states })
+  for (const item of rows) {
+    const row = worksheet.addRow(item)
+    item.canceledEarly && (row.getCell(12).font = { name: 'Calibri', color: { argb: 'ff2222' } })
+    item.canceledEarly && (row.getCell(13).font = { name: 'Calibri', color: { argb: 'ff2222' } })
+  }
+
+  const filename = `Vertrag ${contract.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
+// http://localhost:1337/exports/company/FNFCxMgEEr
+router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
+  const housingTypes = await fetchHousingTypes()
+  const states = await fetchStates()
+  const workbook = new excel.Workbook()
+
+  const company = await $getOrFail('Company', req.params.companyId)
+  const { columns, headerRowValues } = getColumnHeaders({
+    orderNo: { header: 'Auftragsnr.', width: 20 },
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    pp: { header: 'Belegungspaket', width: 20 }
+  })
+
+  const worksheet = workbook.addWorksheet(company.get('name'))
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 24
+
+  const rows = []
+  await $query('Contract')
+    .equalTo('company', company)
+    .equalTo('status', 3)
+    .each(async (contract) => {
+      rows.push(...await getContractRows(contract, { housingTypes, states }))
+    }, { useMasterKey: true })
+
+  rows.sort((a, b) => {
+    return a.orderNo === b.orderNo
+      ? a.str.localeCompare(b.str, 'de') || a.hsnr.localeCompare(b.hsnr, 'de', { numeric: true })
+      : b.orderNo.localeCompare(a.orderNo)
+  })
+
+  for (const item of rows) {
+    const row = worksheet.addRow(item)
+    item.canceledEarly && console.log()
+    item.canceledEarly && (row.getCell(13).font = { name: 'Calibri', bold: true, color: { argb: 'ff2222' } })
+    item.canceledEarly && (row.getCell(14).font = { name: 'Calibri', bold: true, color: { argb: 'ff2222' } })
+  }
+
+  const filename = `Laufende Verträge ${company.get('name')} (Stand ${moment().format('DD.MM.YYYY')})`
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
 router.get('/assembly-list', handleErrorAsync(async (req, res) => {
@@ -619,7 +782,12 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
 router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   const { quarter } = req.params
   const { distributorId, agencyId, regionId, lessorCode } = req.query
-  const report = await $query('QuarterlyReport').equalTo('quarter', quarter).descending('createdAt').first({ useMasterKey: true })
+  const report = await $query('QuarterlyReport')
+    .equalTo('quarter', quarter)
+    .descending('createdAt')
+    .include('rows')
+    .first({ useMasterKey: true })
+
   let filename = `Auftragsliste ${quarter}`
   const workbook = new excel.Workbook()
   const worksheet = workbook.addWorksheet('Quartalsbericht')
@@ -629,7 +797,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
     campaignNo: { header: 'Kampagnennr.', width: 20 },
-    objectId: { header: 'CityCube Id', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
     hsnr: { header: 'Hsnr.', width: 10 },
@@ -648,6 +816,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     agencyTotal: { header: 'Agentursumme', width: 15, style: priceStyle },
     regionalRate: { header: 'Region %', width: 10, style: percentStyle },
     regionalTotal: { header: 'Regionsumme', width: 15, style: priceStyle },
+    serviceRate: { header: 'Service %', width: 10, style: percentStyle },
+    serviceTotal: { header: 'Servicepauschale', width: 15, style: priceStyle },
     totalNet: { header: 'Rheinkultur Netto', width: 15, style: priceStyle },
     lessorRate: { header: 'Pacht %', width: 10, style: percentStyle },
     lessorTotal: { header: 'Pachtsumme', width: 15, style: priceStyle },
@@ -657,10 +827,13 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   if (distributorId) {
     const distributorName = await $getOrFail('Company', distributorId).then((company) => company.get('name'))
     filename = `${distributorName} ${quarter}`
+    delete fields.companyName
     delete fields.agencyRate
     delete fields.agencyTotal
     delete fields.regionalRate
     delete fields.regionalTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
@@ -671,6 +844,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     filename = `${agencyName} ${quarter}`
     delete fields.regionalRate
     delete fields.regionalTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
@@ -681,6 +856,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     filename = `${regionName} ${quarter}`
     delete fields.agencyRate
     delete fields.agencyTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
@@ -693,6 +870,8 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.agencyTotal
     delete fields.regionalRate
     delete fields.regionalTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
     delete fields.invoiceNo
   }
 
@@ -717,11 +896,26 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     row.periodEnd = moment(row.periodEnd).format('DD.MM.YYYY')
     return row
   })
+
+  // remove externalOrderNo / campaignNo columns if empty
+  !rows.find(row => row.externalOrderNo) && (delete fields.externalOrderNo)
+  !rows.find(row => row.campaignNo) && (delete fields.campaignNo)
+
   const { columns, headerRowValues } = getColumnHeaders(fields)
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 10 }
   worksheet.addRows(rows)
+
+  // add total row
+  const keys = ['monthly', 'total', 'agencyTotal', 'regionalTotal', 'serviceTotal', 'totalNet', 'lessorTotal']
+  const totals = {}
+  for (const key of keys.filter(key => key in fields)) {
+    totals[key] = rows.reduce((sum, row) => round2(sum + (row[key] || 0)), 0)
+  }
+  const totalRow = worksheet.addRow(totals)
+  totalRow.font = { name: 'Calibri', bold: true }
+
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })

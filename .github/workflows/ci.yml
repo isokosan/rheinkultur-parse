@@ -3,26 +3,47 @@ name: Node CI
 on:
   pull_request:
     branches:
-      - '**'
+      - "**"
     paths:
-      - 'src/**'
+      - "src/**"
+      - "package.json"
+      - "yarn.lock"
+      - ".nvmrc"
+      - ".nycrc"
+      - ".eslintignore"
+      - ".eslintrc.js"
 
   workflow_dispatch:
 
 jobs:
-  lint:
+  check-ci:
+    name: Node Engine Check
+    timeout-minutes: 15
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: ['18']
-    name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js
         uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'yarn'
+          node-version-file: ".nvmrc"
+          cache: "yarn"
+
+      - name: Install Dependencies
+        run: yarn install --frozen-lockfile --non-interactive --no-progress --prefer-offline
+
+      - name: CI Node Engine Check
+        run: yarn ci:checkNodeEngine
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
+      - name: Use Node.js
+        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
+        with:
+          node-version-file: ".nvmrc"
+          cache: "yarn"
 
       - name: Install Dependencies
         run: yarn install --frozen-lockfile --non-interactive --no-progress --prefer-offline

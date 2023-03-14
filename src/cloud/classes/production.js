@@ -98,16 +98,6 @@ const getPrintFileIds = printFiles => [...new Set(Object.values(printFiles || {}
   .flat()
 )]
 
-// delete unused print files after save
-Parse.Cloud.afterSave(Production, async ({ object: production }) => {
-  const usedFileIds = getPrintFileIds(production.get('printFiles'))
-  const unusedFiles = await $query('FileObject')
-    .startsWith('assetType', `Production_${production.id}`)
-    .notContainedIn('objectId', usedFileIds)
-    .find({ useMasterKey: true })
-  unusedFiles.map(file => file.destroy({ useMasterKey: true }))
-})
-
 Parse.Cloud.beforeFind(Production, ({ query }) => {
   query.include(['booking', 'contract'])
 })
@@ -118,7 +108,10 @@ Parse.Cloud.afterFind(Production, async ({ query, objects }) => {
   }
   if (query._include.includes('printFiles')) {
     const fileIds = [...new Set(objects.map(production => getPrintFileIds(production.get('printFiles'))).flat())]
-    const fileObjects = await $query('FileObject').containedIn('objectId', fileIds).limit(1000).find({ useMasterKey: true })
+    const fileObjects = await $query('FileObject')
+      .containedIn('objectId', fileIds)
+      .limit(fileIds.length)
+      .find({ useMasterKey: true })
     for (const production of objects) {
       const printFiles = production.get('printFiles')
       for (const cubeId of Object.keys(printFiles)) {
@@ -160,7 +153,7 @@ Parse.Cloud.define('production-update-assembly', async ({
     printFilesDue,
     assembler,
     assemblyStart,
-    printFiles: rawPrintFiles,
+    printFileIds,
     printNotes: rawPrintNotes
   }
 }) => {
@@ -176,9 +169,9 @@ Parse.Cloud.define('production-update-assembly', async ({
   const cubeIds = (production.get('booking') || production.get('contract')).get('cubeIds')
 
   const printFiles = {}
-  for (const key of Object.keys(rawPrintFiles)) {
-    const fileObject = rawPrintFiles[key]
-    if (!fileObject) {
+  for (const key of Object.keys(printFileIds)) {
+    const fileObjectId = printFileIds[key]
+    if (!fileObjectId) {
       continue
     }
     const [cubeId, face] = key.split('+')
@@ -188,7 +181,7 @@ Parse.Cloud.define('production-update-assembly', async ({
     if (!(cubeId in printFiles)) {
       printFiles[cubeId] = {}
     }
-    printFiles[cubeId][face] = $parsify('FileObject', fileObject.objectId)
+    printFiles[cubeId][face] = $parsify('FileObject', fileObjectId)
   }
 
   const printNotes = {}
@@ -202,3 +195,13 @@ Parse.Cloud.define('production-update-assembly', async ({
 
   return production.save(null, { useMasterKey: true })
 }, { requireUser: true })
+
+// TODO: remove unused files every night?
+Parse.Cloud.define('production-delete-unused-files', async ({ params: { productionId } }) => {
+  const production = await $getOrFail(Production, productionId)
+  const usedFileIds = getPrintFileIds(production.get('printFiles'))
+  return $query('FileObject')
+    .startsWith('assetType', `Production_${production.id}`)
+    .notContainedIn('objectId', usedFileIds)
+    .each(file => file.destroy({ useMasterKey: true }), { useMasterKey: true })
+}, { requireMaster: true })

@@ -64,6 +64,7 @@ const Invoice = Parse.Object.extend('Invoice', {
     const company = this.get('company')
     !company.get('name') && await company.fetch({ useMasterKey: true })
     if (company.get('name') === 'Kinetic Germany GmbH') {
+      contract?.get('startsAt') && (orderDurationText = 'Rüsttermin: ' + moment(contract.get('startsAt')).format('DD.MM.YYYY'))
       lines.push(...[
         'Kunde: Telekom Deutschland GmbH',
         'Auftraggeber: Kinetic Germany GmbH',
@@ -383,8 +384,8 @@ Parse.Cloud.define('invoice-update-extra-cols', async ({ params: { id: invoiceId
 
 Parse.Cloud.define('invoice-remove', async ({ params: { id: invoiceId } }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
-  if (invoice.get('status')) {
-    throw new Error('Geplante Rechnungen können nicht gelöscht werden.')
+  if ([1, 4].includes(invoice.get('status'))) {
+    throw new Error('Auto-generated invoices cannot be deleted')
   }
   return invoice.destroy({ useMasterKey: true })
 }, { requireUser: true })
@@ -409,7 +410,8 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
   }
   // recalculate if pricingModel is cubeCount
   if (invoice.get('media') && invoice.get('contract')?.get('pricingModel') === 'gradual') {
-    invoice = await Parse.Cloud.run('invoice-recalculate-gradual-prices', { id: invoiceId }, { useMasterKey: true })
+    await Parse.Cloud.run('invoice-recalculate-gradual-prices', { id: invoiceId }, { useMasterKey: true })
+    invoice = await $getOrFail(Invoice, invoiceId, ['company', 'address', 'companyPerson'])
   }
   const { id: lexId, resourceUri: lexUri } = await lexApi('/invoices?finalize=true', 'POST', {
     archived: false,

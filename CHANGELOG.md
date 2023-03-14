@@ -1,3 +1,303 @@
+## [1.11.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.2...1.11.3) (2023-03-14)
+
+
+### Bug Fixes
+
+* add red color to early canceled cubes in contract exports ([e63b709](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e63b70927cc6a42f839ef03bec780351427e783e))
+
+## [1.11.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.1...1.11.2) (2023-03-14)
+
+
+### Bug Fixes
+
+* remove excel company export sheet separated ([02ac37d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/02ac37d463db55c24eacd6eb83899868744b7d97))
+
+## [1.11.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.0...1.11.1) (2023-03-12)
+
+
+### Bug Fixes
+
+* add belegungspaket to contract exports ([485330e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/485330e8e16514144aa2c2ce954470235743b2c2))
+
+# [1.11.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.9...1.11.0) (2023-03-12)
+
+
+### Features
+
+* add contract exports for companies and contracts ([de76d12](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/de76d128f5ef1b02f2bb4bd433c939cd66e0264f))
+
+## [1.10.9](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.8...1.10.9) (2023-03-10)
+
+
+### Bug Fixes
+
+* distributor roles cleanup ([750534f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/750534ff4b830b439c85bd3d494e42dfa35c99b6))
+
+## [1.10.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.7...1.10.8) (2023-03-10)
+
+
+### Bug Fixes
+
+* disassemblies ([129ecde](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/129ecdef248e71b5eed1e94aa16909c5facdf53e))
+
+## [1.10.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.6...1.10.7) (2023-03-09)
+
+
+### Bug Fixes
+
+* require master bug ([61e3875](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/61e3875a5fb6bc4c0284c79c161ddc5a138f5c9e))
+
+## [1.10.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.5...1.10.6) (2023-03-09)
+
+
+### Bug Fixes
+
+* add manual update booking auto-extend ([b49d1ab](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b49d1abcee007e093638fff0f16862659f973069))
+
+## [1.10.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.4...1.10.5) (2023-03-09)
+
+
+### Bug Fixes
+
+* contract and booking auto-extend change does not propagate due to undefined fields. ([a57712d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a57712dcc6062088b0b6ceda36c4518bbf5e2721))
+
+## [1.10.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.3...1.10.4) (2023-03-09)
+
+
+### Bug Fixes
+
+* kinetic invoice description contract check ([29c8afa](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/29c8afa87fb4e80bac59cbed8399e9c64f90ff6d))
+
+## [1.10.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.2...1.10.3) (2023-03-04)
+
+
+### Bug Fixes
+
+* change deployment ([34b6cea](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/34b6cea6892785a2e94ea8e297daaae4dc56a7fe))
+
+## [1.10.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.1...1.10.2) (2023-02-28)
+
+
+### Bug Fixes
+
+* revert disassembly-update fn removal ([21c1490](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/21c14900854c591af4ec1652a1b9de5e85add1b2))
+
+## [1.10.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.10.0...1.10.1) (2023-02-27)
+
+
+### Bug Fixes
+
+* cleanup of quartlery report processing ([c7e8e4a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c7e8e4af1f0d1d4ea47800d4fbd0c0894463e9f9))
+
+# [1.10.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.9.1...1.10.0) (2023-02-27)
+
+
+### Features
+
+* remove scouting ([8134682](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8134682871f06c26e7eb8610b4cedd81ce0627dc))
+
+## [1.9.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.9.0...1.9.1) (2023-02-23)
+
+
+### Bug Fixes
+
+* update colors of export ([fa85833](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fa85833d30c118ecfd1b4ebba97d0094b7ddabd3))
+
+# [1.9.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.3...1.9.0) (2023-02-23)
+
+
+### Features
+
+* add export to departure lists parent ([b1618f1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b1618f1f563faff22dc3414581cc45fd6705c647))
+
+## [1.8.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.2...1.8.3) (2023-02-23)
+
+
+### Bug Fixes
+
+* contract-revert-check ([95071dc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/95071dc2b23f0c75542c633eb44b0e42479771ce))
+
+## [1.8.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.1...1.8.2) (2023-02-23)
+
+
+### Bug Fixes
+
+* do not delete unused files after save ([3383734](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/33837343cb3e23d24715e17ae960b8f8a185750c))
+
+## [1.8.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.8.0...1.8.1) (2023-02-23)
+
+
+### Bug Fixes
+
+* storage-delete production used file bug ([8348d0b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8348d0bac52b294637383c9c57b1854d9d1cde2e))
+
+# [1.8.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.7.0...1.8.0) (2023-02-23)
+
+
+### Bug Fixes
+
+* get period end from next invoice start when updating ([74c527b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/74c527b4d4650f331a998b6a351ae9b87935a25a))
+
+
+### Features
+
+* add PDGA locations with placeKey ([f9f8cfd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f9f8cfd2b35af00b490383b9fa6d898d283aaeec))
+* extend booking and contracts anytime ([9e996c8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9e996c84fa4a68fde8a879a2dfd5b323f0c75aa1))
+* remove finalized bookings and contracts ([3474fbe](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3474fbe56b61028cb976b30600f4c7f5a8bb0b2e))
+
+# [1.7.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.6.0...1.7.0) (2023-02-21)
+
+
+### Features
+
+* check case for contract undo finalize and re-generate invoices ([3852eda](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3852eda5c119d6f260c0783b22525fda937d2574))
+
+# [1.6.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.5.0...1.6.0) (2023-02-21)
+
+
+### Features
+
+* report cubes in draft contracts and bookings at contract finalize preview ([0a59b5d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0a59b5d49550650ee42e3986ec68c4c0cc1c08d2))
+
+# [1.5.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.5...1.5.0) (2023-02-21)
+
+
+### Bug Fixes
+
+* change invoice address bug ([acb0b2f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/acb0b2f6ad410e65478bb866845f43dea4d391bc))
+
+
+### Features
+
+* update contract infos, and rewrite future invoice descriptions ([7da5ef0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7da5ef0ea783ad2e0eb27026c5a52e4f92e06a5b))
+
+## [1.4.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.4...1.4.5) (2023-02-21)
+
+
+### Bug Fixes
+
+* bug with encode uri component ([efb34bb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/efb34bbf229c87b614730349312cd21f3cbddf95))
+
+## [1.4.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.3...1.4.4) (2023-02-20)
+
+
+### Bug Fixes
+
+* **deps:** update dependency parse-server to v5.4.2 ([b92ffbb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b92ffbbdc1e22f8e84a4943f0703a00cfc848a5b))
+
+## [1.4.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.2...1.4.3) (2023-02-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ioredis to v5.3.1 ([56af4b1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/56af4b1f345570cf48ef7655a91c6360f6d03007))
+
+## [1.4.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.1...1.4.2) (2023-02-14)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major dependencies ([042c5f5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/042c5f525070227624b542dfdb5d432b3344312a))
+
+## [1.4.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.4.0...1.4.1) (2023-02-12)
+
+
+### Bug Fixes
+
+* **deps:** update dependency bull to v4.10.4 ([2916300](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/291630091af4fdf76e5ced9c9ccffa0ea5f0b476))
+
+# [1.4.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.3.0...1.4.0) (2023-02-10)
+
+
+### Features
+
+* add fn to update cube statuses manually ([2ec8542](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2ec8542b2d983b328fdf57107e8f9578bb32894d))
+
+# [1.3.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.2.1...1.3.0) (2023-02-10)
+
+
+### Features
+
+* add early cancel completely ([64d7b66](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/64d7b66d14e868fe91a42580e360a6b1b08d9872))
+
+## [1.2.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.2.0...1.2.1) (2023-02-10)
+
+
+### Bug Fixes
+
+* allow kinetic contracts to be reverted to status 2 ([17fc1d5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/17fc1d595ec855c10e04543162ff5926b877fd34))
+
+# [1.2.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.8...1.2.0) (2023-02-09)
+
+
+### Features
+
+* validate contract finalize when re-finalizing ([44d6044](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/44d60441ecb9dbcb708f5824dde6e18e003fa671))
+
+## [1.1.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.7...1.1.8) (2023-02-09)
+
+
+### Bug Fixes
+
+* manual updates fix planned invoice dates ([7d855a9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7d855a94a52c767c43d8bdc4bc67b3c0e93434fc))
+* track same end dates in planned invoices ([2acc7dd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2acc7dddbe8cdade0f84f5726789866e2bfe447f))
+
+## [1.1.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.6...1.1.7) (2023-02-08)
+
+
+### Bug Fixes
+
+* **deps:** update dependency bull to v4.10.3 ([bbe96da](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bbe96da601b830e5651ad93701295f68bab5e276))
+
+## [1.1.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.5...1.1.6) (2023-02-07)
+
+
+### Bug Fixes
+
+* use contract start and initial duration to recalculate invoice periods ([2f75fc0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2f75fc0a1b124e8db2a3930ad036c3ad89034b6d))
+
+## [1.1.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.4...1.1.5) (2023-02-07)
+
+
+### Bug Fixes
+
+* period end and period months calculations ([80406ad](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/80406ad7cf0093cc0ccc6f66d71270d085b5cf87))
+
+## [1.1.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.3...1.1.4) (2023-02-06)
+
+
+### Bug Fixes
+
+* disassembly update fn name ([13fd7ad](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/13fd7ada98c6e23f8d6e8933e70368c4bcb209aa))
+
+## [1.1.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.2...1.1.3) (2023-02-06)
+
+
+### Bug Fixes
+
+* cube update ht audit bug ([30a0e34](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/30a0e340e4c4bc8a06fb26f0b685f377a809f102))
+
+## [1.1.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.1...1.1.2) (2023-02-06)
+
+
+### Bug Fixes
+
+* add fn to free early canceled cubes every night ([b14e878](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b14e8789f1ddd28f527ae5fd79236dc7edc8570c))
+
+## [1.1.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.1.0...1.1.1) (2023-02-06)
+
+
+### Bug Fixes
+
+* add manual update to set cube order statuses of orders ([40e8b14](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/40e8b149fc4c241b545bf7932065b2afdab2cd5e))
+
+# [1.1.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.0.2...1.1.0) (2023-02-06)
+
+
+### Features
+
+* add media to public cube fields ([7a41c77](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7a41c770b3c2e2fe3da3af4ce556572e66b4aaa1))
+
 ## [1.0.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.0.1...1.0.2) (2023-02-04)
 
 

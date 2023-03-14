@@ -77,7 +77,7 @@ const getGradualCubeCount = async function (gradualPriceMap, date) {
     if (!contracts.length) { break }
     for (const contract of contracts) {
       const endedAtDateCount = Object.values(contract.get('earlyCancellations') || {})
-        .filter(date => moment(date).isBefore(dateString, 'day'))
+        .filter(date => date === true || moment(date).isBefore(dateString, 'day'))
         .length
       const contractCount = (contract.get('cubeCount') || 0) - endedAtDateCount
       total += contractCount

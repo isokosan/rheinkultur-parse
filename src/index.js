@@ -63,11 +63,13 @@ const initApp = async () => {
       passwordResetSuccess: `${process.env.WEBAPP_URL}/password-reset-success`
     },
     enableAnonymousUsers: false,
-    accountLockout: {
-      duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
-      threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
-      unlockOnPasswordReset: true
-    },
+    accountLockout: DEVELOPMENT
+      ? undefined
+      : {
+        duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
+        threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
+        unlockOnPasswordReset: true
+      },
     passwordPolicy: {
       doNotAllowUsername: true, // optional setting to disallow username in passwords,
       resetTokenValidityDuration: 24 * 60 * 60 // expire after 24 hours

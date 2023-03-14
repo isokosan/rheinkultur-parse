@@ -152,6 +152,7 @@ module.exports = {
       'campaignNo',
       'companyPerson',
       'invoiceAddress',
+      'invoiceDescription',
       'invoicingAt',
       'autoExtendsAt',
       'autoExtendsBy',
@@ -220,14 +221,15 @@ module.exports = {
         normalized.differentInvoiceAddress = false
       }
       if (!normalized.differentInvoiceAddress) {
-        normalized.invoiceAddressId = null
+        normalized.invoiceAddressId = undefined
       }
       if (!normalized.agencyId) {
-        normalized.agencyPersonId = null
-        normalized.commission = null
-        normalized.commissions = null
+        normalized.agencyPersonId = undefined
+        normalized.commission = undefined
+        normalized.commissions = undefined
       }
       if (!normalized.autoExtendsBy) {
+        normalized.autoExtendsBy = null
         normalized.noticePeriod = null
         normalized.autoExtendsAt = null
       }
@@ -266,8 +268,9 @@ module.exports = {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
       }
       if (!normalized.autoExtendsBy) {
-        normalized.noticePeriod = undefined
-        normalized.autoExtendsAt = undefined
+        normalized.autoExtendsBy = null
+        normalized.noticePeriod = null
+        normalized.autoExtendsAt = null
       }
       return normalized
     }

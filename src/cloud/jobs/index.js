@@ -46,6 +46,12 @@ const createQueue = key => new Queue(key, queueOptions)
 
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
+  free_early_canceled_cubes: {
+    name: 'Frühzeitig stornierte CityCubes sync.',
+    description: 'Frees city cubes that have been early canceled and the date is now past',
+    timeoutMinutes: 30,
+    cron: '30 0 * * *' // nightly at 00:30
+  },
   end_extend: {
     name: 'Verträge/Buchungen beenden/verlängern (außer Kinetic).',
     description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
@@ -86,6 +92,10 @@ const updateJobs = {
     timeoutMinutes: 15,
     cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
+  },
+  recalculate_future_contract_invoices: {
+    name: 'Recalculate all future invoices from contracts.',
+    timeoutMinutes: 60
   },
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',
@@ -357,3 +367,5 @@ const checkScheduleHealth = async function () {
   }
   return Promise.resolve(lateJobs)
 }
+
+module.exports = { createQueue, getLast }

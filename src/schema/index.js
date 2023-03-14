@@ -13,6 +13,12 @@ const writeAuthOnly = {
   update: { requiresAuthentication: true },
   delete: { requiresAuthentication: true }
 }
+const readMasterOnly = {
+  get: {},
+  find: {},
+  count: {}
+}
+
 const writeMasterOnly = {
   create: {},
   update: {},
@@ -75,6 +81,8 @@ const schemaDefinitions = {
       delete: {}
     },
     fields: {
+      deletedAt: { type: 'Date' }, // soft deletes
+
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company' },
@@ -167,6 +175,8 @@ const schemaDefinitions = {
       delete: {}
     },
     fields: {
+      deletedAt: { type: 'Date' }, // soft deletes
+
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },
@@ -473,6 +483,12 @@ const schemaDefinitions = {
       realizedDate: { type: 'String' }, // belegungstart: realized date when montage is completed (generate gutschein )
       printFiles: { type: 'Object' }, // druckdaten
       printNotes: { type: 'Object' } // hinweise
+    }
+  },
+  QuarterlyReport: {
+    CLP: { ...readMasterOnly, ...writeMasterOnly },
+    fields: {
+      quarter: { type: 'String', required: true }
     }
   },
   PLZ: {

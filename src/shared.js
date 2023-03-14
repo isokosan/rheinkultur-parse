@@ -1,4 +1,4 @@
-const { round2, parseAsDigitString } = require('@/utils')
+const { round2, round5, parseAsDigitString } = require('./utils')
 
 const getNewNo = async function (prefix, className, field, digits) {
   const last = await $query(className)
@@ -36,18 +36,24 @@ function getDocumentTotals (allowTaxFreeInvoices, lineItems, date) {
 }
 
 const getPeriodTotal = function (periodStart, periodEnd, monthlyTotal) {
-  const months = moment(periodEnd).add(1, 'days').diff(periodStart, 'months', true)
+  const carry = moment(periodStart)
+  periodEnd = moment(periodEnd)
+  const eachMonth = {}
+  while (true) {
+    const endOfMonth = carry.clone().endOf('month')
+    const end = periodEnd.isBefore(endOfMonth) ? periodEnd : endOfMonth
+    const days = end.diff(carry, 'days') + 1
+    eachMonth[carry.format('MM-YYYY')] = round5(days / carry.daysInMonth())
+    if (end.isSame(periodEnd, 'month')) { break }
+    carry.add(1, 'month').set('date', 1)
+  }
+  const months = Object.values(eachMonth).reduce((acc, val) => round5(acc + val), 0)
   return { months, total: round2(months * monthlyTotal) }
 }
 
 const getQuarterStartEnd = function (quarter) {
   const start = moment(quarter, 'Q-YYYY').format('YYYY-MM-DD')
   const end = moment(start).add(1, 'quarter').subtract(1, 'day').format('YYYY-MM-DD')
-  return { start, end }
-}
-const geMonthYearStartEnd = function (monthYear) {
-  const start = moment(monthYear, 'MM-YYYY').format('YYYY-MM-DD')
-  const end = moment(start).add(1, 'month').subtract(1, 'day').format('YYYY-MM-DD')
   return { start, end }
 }
 
@@ -78,9 +84,7 @@ const getCubeSummaries = function (cubeIds) {
 }
 
 async function checkIfCubesAreAvailable (cubeIds, date) {
-  if (!date) {
-    date = await $today()
-  }
+  if (!date) { date = await $today() }
   for (const cubeId of cubeIds) {
     const contracts = await $query('Contract')
       .equalTo('cubeIds', cubeId)
@@ -90,7 +94,7 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
     for (const contract of contracts) {
       if (contract) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = contract.toJSON()
-        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
+        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
           throw new Error(`CityCube ${cubeId} ist bereits in Vertrag ${contract.get('no')} gebucht.`)
         }
@@ -104,7 +108,7 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
     for (const booking of bookings) {
       if (booking) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = booking.toJSON()
-        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
+        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
           throw new Error(`CityCube ${cubeId} ist bereits in Buchung ${booking.get('no')} gebucht.`)
         }
@@ -113,7 +117,7 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
   }
 }
 
-async function setCubeOrderStatus (bookingOrContract) {
+async function setCubeOrderStatuses (bookingOrContract) {
   const {
     no,
     company,
@@ -141,26 +145,26 @@ async function setCubeOrderStatus (bookingOrContract) {
     autoExtendsAt,
     canceledAt
   }
+
   if (status < 3) {
     // remove all cubes associated with order if draft
-    await $query('Cube')
+    return $query('Cube')
       .equalTo('order.className', order.className)
       .equalTo('order.objectId', order.objectId)
       .each(cube => {
         cube.unset('order')
-        return cube.save(null, { useMasterKey: true })
-      }, { useMasterKey: true })
-  } else {
-    // remove all cubes that reference the contract despite the contract having them removed
-    await $query('Cube')
-      .notContainedIn('objectId', cubeIds)
-      .equalTo('order.className', order.className)
-      .equalTo('order.objectId', order.objectId)
-      .each(cube => {
-        cube.unset('order')
-        return cube.save(null, { useMasterKey: true })
+        return $saveWithEncode(cube, null, { useMasterKey: true })
       }, { useMasterKey: true })
   }
+  // remove all cubes that reference the contract despite the contract having them removed
+  await $query('Cube')
+    .notContainedIn('objectId', cubeIds)
+    .equalTo('order.className', order.className)
+    .equalTo('order.objectId', order.objectId)
+    .each(cube => {
+      cube.unset('order')
+      return $saveWithEncode(cube, null, { useMasterKey: true })
+    }, { useMasterKey: true })
 
   const query = Parse.Query.or(
     $query('Cube').equalTo('order.className', order.className).equalTo('order.objectId', order.objectId),
@@ -175,14 +179,14 @@ async function setCubeOrderStatus (bookingOrContract) {
     for (const earlyCanceledCubeId of earlyCanceledCubeIds) {
       const date = earlyCancellations[earlyCanceledCubeId]
       const cube = await $getOrFail('Cube', earlyCanceledCubeId)
-      today.isSameOrBefore(date, 'day')
-        ? cube.set('order', {
+      date === true || today.isAfter(date, 'day')
+        ? cube.unset('order')
+        : cube.set('order', {
           ...order,
           earlyCanceledAt: date,
           endsAt: moment(endsAt).isBefore(date) ? endsAt : date
         })
-        : cube.unset('order')
-      await cube.save(null, { useMasterKey: true })
+      await $saveWithEncode(cube, null, { useMasterKey: true })
     }
 
     query.notContainedIn('objectId', earlyCanceledCubeIds)
@@ -196,10 +200,9 @@ module.exports = {
   getDocumentTotals,
   getTaxRatePercentage,
   getCubeSummaries,
-  getPeriodTotal,
   getQuarterStartEnd,
-  geMonthYearStartEnd,
+  getPeriodTotal,
   getNewNo,
   checkIfCubesAreAvailable,
-  setCubeOrderStatus
+  setCubeOrderStatuses
 }

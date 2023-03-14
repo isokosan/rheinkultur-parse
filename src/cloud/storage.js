@@ -126,10 +126,10 @@ Parse.Cloud.beforeDelete(FileObject, async ({ object }) => {
   // if the file is a print file for production, then check the assembly printFiles for references
   if (object.get('assetType')?.startsWith('Production_')) {
     const productionId = object.get('assetType').split('_')[1]
-    const production = await $query('Production').equalTo('objectId', productionId).first({ useMasterKey: true })
+    const production = await $query('Production').get(productionId, { useMasterKey: true })
     if (production && production.get('printFiles')) {
       const usedFileIds = [...new Set(Object.values(production.get('printFiles'))
-        .map(files => Object.values(files || {}).map(file => file.objectId))
+        .map(files => Object.values(files || {}).map(file => file.id))
         .flat()
       )]
       if (usedFileIds.includes(object.id)) {

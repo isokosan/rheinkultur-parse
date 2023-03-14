@@ -38,6 +38,9 @@ const Company = Parse.Object.extend('Company')
 */
 
 Parse.Cloud.beforeFind(Company, ({ query }) => {
+  if (!('deletedAt' in query._where) && !query._include.includes('deleted')) {
+    query.equalTo('deletedAt', null)
+  }
   query._include.includes('all') && query.include(['deleted', 'docs', 'persons', 'addresses'])
   if (!('deletedAt' in query._where) && !query._include.includes('deleted')) {
     query.equalTo('deletedAt', null)

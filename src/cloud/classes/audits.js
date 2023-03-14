@@ -30,6 +30,7 @@ Parse.Cloud.afterFind(Audit, async ({ objects: audits }) => {
   const fetchedItems = await Promise.all(Object.keys(items).map(async (itemClass) => {
     return $query(itemClass)
       .containedIn('objectId', items[itemClass])
+      .include('deleted')
       .find({ useMasterKey: true })
   })).then(itemArrays => itemArrays.flat())
 
