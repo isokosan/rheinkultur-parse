@@ -7,13 +7,10 @@ module.exports.ACC_TYPES = {
   partner: 'Vertriebspartner' // confusing because extern / intern is unclear nad manage-bookings permission is anyways handling the logic
 }
 
-module.exports.ACC_ROLES = {
+module.exports.PERMISSIONS = {
   'manage-bookings': 'Manage Bookings',
   'manage-scouts': 'Manage Scouts'
-}
-
-/*
-module.exports.PERMISSIONS = {
+  /*
   cubes: 'CityCubes Public View', // verfügbar / nicht verfügbar
   'cubes-detail': 'CityCubes Detail View', // details like booked, not marketable etc
   'view-orders': 'Verträge und Buchungen einsehen', // View order details, when clicking on a cube, see which order
@@ -31,8 +28,8 @@ module.exports.PERMISSIONS = {
   'control': 'Kontrol',
   'assembly': 'Montage',
   'disassembly': 'Abbau'
+  */
 }
-*/
 
 module.exports.BOOKING_STATUSES = {
   '-1': 'Gelöscht',

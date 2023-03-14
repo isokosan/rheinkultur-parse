@@ -43,7 +43,7 @@ const schemaDefinitions = {
       pbx: { type: 'String' },
       mobile: { type: 'String' },
       accType: { type: 'String', required: true },
-      accRoles: { type: 'Array' }
+      permissions: { type: 'Array' }
     }
   },
   Address: {

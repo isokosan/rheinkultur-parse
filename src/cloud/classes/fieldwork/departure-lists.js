@@ -132,7 +132,7 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
   query.include(['briefing', 'control', 'contract', 'booking'])
   query._include.includes('all') && query.include('submissions')
   if (master) { return }
-  if (user.get('accRoles')?.includes('manage-scouts')) {
+  if (user.get('permissions')?.includes('manage-scouts')) {
     user.get('company') && query
       .equalTo('manager', user)
       .containedIn('status', ['appointed', 'assigned', 'in_progress', 'completed'])

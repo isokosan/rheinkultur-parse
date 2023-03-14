@@ -53,7 +53,7 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
     firstName,
     lastName,
     accType,
-    accRoles,
+    permissions,
     companyId
   } = normalizeFields(params)
   const user = new Parse.User({
@@ -63,7 +63,7 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
     firstName,
     lastName,
     accType,
-    accRoles,
+    permissions,
     company: companyId
       ? await $getOrFail('Company', companyId)
       : undefined,

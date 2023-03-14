@@ -184,7 +184,7 @@ Parse.Cloud.define('search', async ({
   stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
   if (isTask) {
-    (user.get('accRoles') || []).includes('manage-scouts') && (managerId = user.id)
+    (user.get('permissions') || []).includes('manage-scouts') && (managerId = user.id)
     user.get('accType') === 'scout' && (scoutId = user.id)
     if (taskType === 'scout' && fetchExtraScoutable) {
       bool.must.push({

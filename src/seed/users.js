@@ -1,5 +1,5 @@
 const { faker, createFakeObj } = require('./utils')
-const fakeUser = async function ({ email, accType, accRoles, firstName, lastName, mobile, pbx, companyId }) {
+const fakeUser = async function ({ email, accType, permissions, firstName, lastName, mobile, pbx, companyId }) {
   email = email || faker.internet.email()
   return {
     username: email,
@@ -8,7 +8,7 @@ const fakeUser = async function ({ email, accType, accRoles, firstName, lastName
     firstName,
     lastName,
     accType,
-    accRoles,
+    permissions,
     mobile,
     pbx,
     company: companyId

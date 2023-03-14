@@ -384,8 +384,8 @@ const seed = async function () {
       email: 'marc@asriel.de',
       firstName: 'Marc',
       lastName: 'Asriel',
-      accType: 'distributor',
-      accRoles: ['manage-bookings', 'manage-scouts'],
+      accType: 'partner',
+      permissions: ['manage-bookings', 'manage-scouts'],
       companyId: marcAsriel.id
     },
     {
