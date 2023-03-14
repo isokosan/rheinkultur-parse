@@ -118,15 +118,17 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
 function getCubeOrderDates (cube, order) {
   const { startsAt, endsAt, earlyCancellations, initialDuration, extendedDuration } = order.attributes
   const earlyCanceledAt = earlyCancellations?.[cube.id]
+  const canceledEarly = Boolean(earlyCanceledAt)
   if (earlyCanceledAt === true) {
-    return { duration: '0' }
+    return { duration: '0', canceledEarly }
   }
   return {
     start: moment(startsAt).format('DD.MM.YYYY'),
     end: moment(earlyCanceledAt || endsAt).format('DD.MM.YYYY'),
-    duration: earlyCanceledAt
+    duration: canceledEarly
       ? durationString(earlyCanceledAt, startsAt)
-      : [initialDuration, extendedDuration].filter(x => x).join('+')
+      : [initialDuration, extendedDuration].filter(x => x).join('+'),
+    canceledEarly
   }
 }
 
@@ -148,7 +150,7 @@ async function getContractRows (contract, { housingTypes, states }) {
   const printPackages = production?.get('printPackages') || {}
   const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
   for (const cube of cubes) {
-    const { start, end, duration } = getCubeOrderDates(cube, contract)
+    const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract)
     const monthly = getCubeMonthlyMedia(cube, contract)
     rows.push({
       orderNo: contract.get('no'),
@@ -166,7 +168,8 @@ async function getContractRows (contract, { housingTypes, states }) {
       end,
       duration,
       monthly,
-      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(x => x).join(': ')
+      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(x => x).join(': '),
+      canceledEarly
     })
   }
   return rows
@@ -202,7 +205,14 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
   headerRow.height = 24
-  worksheet.addRows(await getContractRows(contract, { housingTypes, states }))
+
+  const rows = await getContractRows(contract, { housingTypes, states })
+  for (const item of rows) {
+    const row = worksheet.addRow(item)
+    item.canceledEarly && (row.getCell(12).font = { name: 'Calibri', color: { argb: 'ff2222' } })
+    item.canceledEarly && (row.getCell(13).font = { name: 'Calibri', color: { argb: 'ff2222' } })
+  }
+
   const filename = `Vertrag ${contract.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
@@ -254,7 +264,14 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
       ? a.str.localeCompare(b.str, 'de') || a.hsnr.localeCompare(b.hsnr, 'de', { numeric: true })
       : b.orderNo.localeCompare(a.orderNo)
   })
-  worksheet.addRows(rows)
+
+  for (const item of rows) {
+    const row = worksheet.addRow(item)
+    item.canceledEarly && console.log()
+    item.canceledEarly && (row.getCell(13).font = { name: 'Calibri', bold: true, color: { argb: 'ff2222' } })
+    item.canceledEarly && (row.getCell(14).font = { name: 'Calibri', bold: true, color: { argb: 'ff2222' } })
+  }
+
   const filename = `Laufende Verträge ${company.get('name')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
