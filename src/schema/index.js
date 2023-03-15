@@ -86,7 +86,7 @@ const schemaDefinitions = {
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company' },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
 
       motive: { type: 'String' },
       externalOrderNo: { type: 'String' },
@@ -180,7 +180,7 @@ const schemaDefinitions = {
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
 
       motive: { type: 'String' },
       externalOrderNo: { type: 'String' },
@@ -296,7 +296,7 @@ const schemaDefinitions = {
       date: { type: 'String', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },
       address: { type: 'Pointer', targetClass: 'Address', required: true },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' },
       invoice: { type: 'Pointer', targetClass: 'Invoice' },
       reason: { type: 'String' }, // reason that will be added to introduction text
@@ -359,7 +359,7 @@ const schemaDefinitions = {
       createdBy: { type: 'Pointer', targetClass: '_User' }, // to keep track of auto-generated invoices
       company: { type: 'Pointer', targetClass: 'Company' },
       address: { type: 'Pointer', targetClass: 'Address', required: true },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' }, // filled only when a contract is invoiced
       booking: { type: 'Pointer', targetClass: 'Booking' }, // filled only when a single booking is invoiced for production
       bookings: { type: 'Array' }, // filled only when a collection of bookings are invoiced in distributor quarterly bookings
@@ -374,7 +374,6 @@ const schemaDefinitions = {
       // Payment
       paymentType: { type: 'Number' }, // PAYMENT_TYPES
       dueDays: { type: 'Number', required: true, default: 14 },
-      // dueDate: { type: 'String', required: true },
 
       media: { type: 'Object' },
       /*
@@ -525,8 +524,9 @@ const schemaDefinitions = {
     fields: {
       name: { type: 'String', required: true },
       company: { type: 'Pointer', targetClass: 'Company' },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
-      dueDate: { type: 'String' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      date: { type: 'String', required: true },
+      dueDate: { type: 'String', required: true },
 
       docs: { type: 'Array' },
       responsibles: { type: 'Array' }
@@ -537,6 +537,7 @@ const schemaDefinitions = {
     fields: {
       name: { type: 'String', required: true },
       date: { type: 'String', required: true },
+      dueDate: { type: 'String', required: true },
       lastControlBefore: { type: 'Number' },
       status: { type: 'Number' },
 
@@ -546,37 +547,27 @@ const schemaDefinitions = {
       responsibles: { type: 'Array' }
     }
   },
-  Disassembly: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
-    fields: {
-      name: { type: 'String', required: true },
-
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
-    }
-  },
   DepartureList: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       type: { type: 'String', required: true }, // scout, control or disassembly
-      briefing: { type: 'Pointer', targetClass: 'Briefing' },
-      disassembly: { type: 'Pointer', targetClass: 'Disassembly' },
-      control: { type: 'Pointer', targetClass: 'Control' },
-      name: { type: 'String' },
-      scout: { type: 'Pointer', targetClass: '_User' },
-      manager: { type: 'Pointer', targetClass: '_User' },
-      dueDate: { type: 'String' },
-      quota: { type: 'Number' }, // only for scout type
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
-      status: { type: 'String' }, // DEPARTURE_LIST_STATUSES
+      date: { type: 'String', required: true }, // start date
+      dueDate: { type: 'String', required: true },
+      manager: { type: 'Pointer', targetClass: '_User' },
+      scout: { type: 'Pointer', targetClass: '_User' },
+      status: { type: 'Number' },
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },
       pendingCubeIds: { type: 'Array' }, // scout form submitted
       pendingCubeCount: { type: 'Number', default: 0 },
       approvedCubeIds: { type: 'Array' }, // approved after scouting
+      // TODO: Remove adminApprovedCubeIds while looking at other types than 'scout' ?
       adminApprovedCubeIds: { type: 'Array' }, // approved w/o scouting
-      approvedCubeCount: { type: 'Number', default: 0 }
+      approvedCubeCount: { type: 'Number', default: 0 },
+
+      quota: { type: 'Number' } // only for type scout
     }
   },
   ScoutSubmission: {

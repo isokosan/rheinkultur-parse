@@ -93,8 +93,7 @@ async function setCubeTaskStatus (departureList) {
     managerId: manager?.id,
     scoutId: scout?.id
   }
-  // TODO: change this to numbered like orders later
-  if (status !== 'assigned') {
+  if (status < 2) {
     // remove all cubes associated with list if not assigned to scout
     await $query('Cube')
       .equalTo('task.type', task.type)
@@ -135,10 +134,10 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
   if (user.get('permissions')?.includes('manage-scouts')) {
     user.get('company') && query
       .equalTo('manager', user)
-      .containedIn('status', ['appointed', 'assigned', 'in_progress', 'completed'])
+      .greaterThanOrEqualTo('status', 1)
   }
   if (user.get('accType') === 'scout') {
-    query.equalTo('scout', user).containedIn('status', ['assigned', 'in_progress', 'completed'])
+    query.equalTo('scout', user).greaterThanOrEqualTo('status', 2)
   }
 })
 
@@ -325,7 +324,7 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
   if (!departureList.get('manager')) {
     throw new Error('Need a manager to appoint to')
   }
-  departureList.set({ status: 'appointed' })
+  departureList.set({ status: 1 })
   const audit = { user, fn: 'departure-list-assign' }
   await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
   return {
@@ -342,7 +341,7 @@ Parse.Cloud.define('departure-list-assign', async ({ params: { id: departureList
   if (!departureList.get('scout')) {
     throw new Error('Need a scout to assign to')
   }
-  departureList.set({ status: 'assigned' })
+  departureList.set({ status: 2 })
   const audit = { user, fn: 'departure-list-assign' }
   await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
   return {
@@ -415,7 +414,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
       text: comments
     }, { sessionToken: user.get('sessionToken') })
   }
-  departureList.set({ status: 'in_progress' })
+  departureList.set({ status: 3 })
   const audit = { user, fn: 'scout-submission-submit', data: { cubeId, changes } }
   await departureList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
   if (user.get('accType') === 'admin') {
@@ -486,7 +485,7 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: departure
   submission.set('beforePhoto', beforePhotoId ? await $getOrFail('FileObject', beforePhotoId) : null)
   submission.set('afterPhoto', afterPhotoId ? await $getOrFail('FileObject', afterPhotoId) : null)
   await submission.save(null, { useMasterKey: true })
-  departureList.set({ status: 'in_progress' })
+  departureList.set({ status: 3 })
   const audit = { user, fn: 'control-submission-submit', data: { cubeId, changes } }
   await departureList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
   return submission
@@ -536,7 +535,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: depar
   })
   const audit = { user, fn: 'disassembly-submission-submit', data: { cubeId, changes } }
   await submission.save(null, { useMasterKey: true })
-  departureList.set({ status: 'in_progress' })
+  departureList.set({ status: 3 })
   await departureList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
   return submission
 }, { requireUser: true })
@@ -563,10 +562,12 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
 
 Parse.Cloud.define('departure-list-complete', async ({ params: { id: departureListId }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
-  if (departureList.get('status') !== 'in_progress') {
+  if (departureList.get('status') !== 3) {
     throw new Error('Only in_progress Abfahrtsliste can be completed.')
   }
-  departureList.set({ status: 'completed' })
+  departureList.set({ status: 4 })
   const audit = { user, fn: 'departure-list-complete' }
   return departureList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
+
+$query('DepartureList').notEqualTo('status', null).each(dl => dl.unset('status').save(null, { useMasterKey: true }), { useMasterKey: true })
