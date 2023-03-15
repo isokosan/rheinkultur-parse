@@ -502,9 +502,10 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
     { label: 'Abfahrtsliste', content: departureList.get('name') },
     { label: 'Fälligkeitsdatum', content: departureList.get('dueDate') ? moment(departureList.get('dueDate')).format('DD.MM.YYYY') : '' }
   ]
-  if (departureList.get('type') === 'scout') {
-    infos.push({ label: 'Anzahl', content: departureList.get('quota') || 'Alle' })
-  }
+  // TODO: anzahl export
+  // if (departureList.get('type') === 'scout') {
+  //   infos.push({ label: 'Anzahl', content: departureList.get('quotas') || 'Alle' })
+  // }
 
   let i = 1
   for (const info of infos) {

@@ -527,8 +527,8 @@ const schemaDefinitions = {
       // companyPerson: { type: 'Pointer', targetClass: 'Person' },
       date: { type: 'String', required: true },
       dueDate: { type: 'String', required: true },
+      status: { type: 'Number', required: true },
 
-      docs: { type: 'Array' },
       responsibles: { type: 'Array' }
     }
   },
@@ -538,12 +538,11 @@ const schemaDefinitions = {
       name: { type: 'String', required: true },
       date: { type: 'String', required: true },
       dueDate: { type: 'String', required: true },
-      lastControlBefore: { type: 'Number' },
-      status: { type: 'Number' },
+      status: { type: 'Number', required: true },
 
+      lastControlBefore: { type: 'Number' },
       criteria: { type: 'Array' },
 
-      docs: { type: 'Array' },
       responsibles: { type: 'Array' }
     }
   },
@@ -557,7 +556,7 @@ const schemaDefinitions = {
       dueDate: { type: 'String', required: true },
       manager: { type: 'Pointer', targetClass: '_User' },
       scouts: { type: 'Array' },
-      status: { type: 'Number' },
+      status: { type: 'Number', required: true },
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },
       pendingCubeIds: { type: 'Array' }, // scout form submitted
@@ -567,7 +566,7 @@ const schemaDefinitions = {
       adminApprovedCubeIds: { type: 'Array' }, // approved w/o scouting
       approvedCubeCount: { type: 'Number', default: 0 },
 
-      quota: { type: 'Number' } // only for type scout
+      quotas: { type: 'Object' } // only for parent briefing
     }
   },
   ScoutSubmission: {

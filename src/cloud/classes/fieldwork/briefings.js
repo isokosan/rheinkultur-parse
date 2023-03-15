@@ -5,7 +5,16 @@ const DepartureList = Parse.Object.extend('DepartureList')
 //   briefing.isNew() && !briefing.get('no') && briefing.set({ no: await getNewNo('S' + moment(await $today()).format('YY') + '-', Briefing, 'no') })
 // })
 
-Parse.Cloud.afterSave(Briefing, ({ object: briefing, context: { audit } }) => { $audit(briefing, audit) })
+Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } }) => {
+  const { date, dueDate } = briefing.attributes
+  await Parse.Query.or(
+    $query('DepartureList').notEqualTo('date', date),
+    $query('DepartureList').notEqualTo('dueDate', dueDate)
+  )
+    .equalTo('briefing', briefing)
+    .each(dl => dl.set({ date, dueDate }).save(null, { useMasterKey: true }), { useMasterKey: true })
+  $audit(briefing, audit)
+})
 
 Parse.Cloud.beforeFind(Briefing, ({ query }) => {
   query._include.includes('all') && query.include(['company', 'companyPerson', 'departureLists', 'docs'])

@@ -28,6 +28,7 @@ async function getCenterOfCubes (cubeIds) {
 }
 
 Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: { countCubes } }) => {
+  !departureList.get('status') && departureList.set('status', 0)
   // if (departureList.isNew()) {
   //   if (!departureList.get('name')) {
   //     departureList.set('name', `${departureList.get('ort')} (${departureList.get('state').id})`)
@@ -79,7 +80,6 @@ async function setCubeTaskStatus (departureList) {
       cubeIds,
       type,
       dueDate,
-      // quota,
       status,
       manager,
       scouts
@@ -218,22 +218,22 @@ Parse.Cloud.define('departure-list-update-scouts', async ({ params: { id: depart
   }
 }, { requireUser: true })
 
-Parse.Cloud.define('departure-list-update-quota', async ({ params: { id: departureListId, ...params }, user }) => {
+Parse.Cloud.define('departure-list-update-quotas', async ({ params: { id: departureListId, ...params }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   if (departureList.get('type') !== 'scout') {
     throw new Error('Nur für Scout-Listen')
   }
-  const { quota } = normalizeFields({ ...params, type: departureList.get('type') })
+  const { quotas } = normalizeFields({ ...params, type: departureList.get('type') })
 
-  const changes = $changes(departureList, { quota })
-  if (!changes.quota) {
+  const changes = $changes(departureList, { quotas })
+  if (!changes.quotas) {
     throw new Error('Keine Änderungen')
   }
-  departureList.set({ quota })
+  departureList.set({ quotas })
   const audit = { user, fn: 'departure-list-update', data: { changes } }
   await departureList.save(null, { useMasterKey: true, context: { audit } })
   return {
-    data: departureList.get('quota'),
+    data: departureList.get('quotas'),
     message: 'Anzahl gespeichert.'
   }
 }, { requireUser: true })
@@ -281,7 +281,7 @@ Parse.Cloud.define('departure-list-assign', async ({ params: { id: departureList
     consola.info(departureList.attributes)
     throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
   }
-  if (!departureList.get('scout')) {
+  if (!(departureList.get('scouts') || []).length) {
     throw new Error('Need a scout to assign to')
   }
   if (!departureList.get('date') || !departureList.get('dueDate')) {

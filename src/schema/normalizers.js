@@ -363,9 +363,9 @@ module.exports = {
   departureLists: {
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
-        type: value => ['scout', 'control'].includes(value) ? value : null,
+        type: value => ['scout', 'control', 'assembly', 'disassembly'].includes(value) ? value : null,
         name: normalizeString,
-        quota: normalizeInt,
+        quotas: value => ({ MFG: value?.MFG || undefined, KVZ: value?.KVZ || undefined }),
         dueDate: normalizeDateString,
         managerId: defined,
         scoutIds: values => values ? values.filter(value => value) : null,
@@ -376,7 +376,7 @@ module.exports = {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
       }
       if (normalized.type !== 'scout') {
-        delete normalized.quota
+        delete normalized.quotas
       }
       return normalized
     }

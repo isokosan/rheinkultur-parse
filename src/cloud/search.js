@@ -98,7 +98,7 @@ const INDEXES = {
 
         klsId: cube.get('importData')?.klsId,
         order: cube.get('order'),
-        task: cube.get('task'),
+        // task: cube.get('task'),
 
         // status (calculated attribute)
         s: cube.get('s')
@@ -152,11 +152,11 @@ Parse.Cloud.define('search', async ({
     ml,
     cId,
     verifiable,
-    taskType,
-    managerId,
-    scoutId,
-    isTask,
-    fetchExtraScoutable,
+    // taskType,
+    // managerId,
+    // scoutId,
+    // isTask,
+    // fetchExtraScoutable,
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
@@ -183,39 +183,39 @@ Parse.Cloud.define('search', async ({
   ort && bool.filter.push({ term: { 'ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
-  if (isTask) {
-    (user.get('permissions') || []).includes('manage-scouts') && (managerId = user.id)
-    user.get('accType') === 'scout' && (scoutId = user.id)
-    if (taskType === 'scout' && fetchExtraScoutable) {
-      bool.must.push({
-        bool: {
-          should: [
-            { match: { 'task.type': 'scout' } },
-            {
-              bool: {
-                must_not: [
-                  { exists: { field: 'order' } },
-                  { exists: { field: 'task' } },
-                  { exists: { field: 'bPLZ' } },
-                  { exists: { field: 'nMR' } },
-                  { exists: { field: 'MBfD' } },
-                  { exists: { field: 'PG' } },
-                  { exists: { field: 'Agwb' } }
-                ]
-              }
-            }
-          ],
-          minimum_should_match: 1
-        }
-      })
-    } else {
-      taskType
-        ? bool.must.push({ match: { 'task.type': taskType } })
-        : bool.must.push({ exists: { field: 'task' } })
-    }
-    managerId && bool.must.push({ match: { 'task.managerId': managerId } })
-    scoutId && bool.must.push({ match: { 'task.scoutId': scoutId } })
-  }
+  // if (isTask) {
+  //   (user.get('permissions') || []).includes('manage-scouts') && (managerId = user.id)
+  //   user.get('accType') === 'scout' && (scoutId = user.id)
+  //   if (taskType === 'scout' && fetchExtraScoutable) {
+  //     bool.must.push({
+  //       bool: {
+  //         should: [
+  //           { match: { 'task.type': 'scout' } },
+  //           {
+  //             bool: {
+  //               must_not: [
+  //                 { exists: { field: 'order' } },
+  //                 { exists: { field: 'task' } },
+  //                 { exists: { field: 'bPLZ' } },
+  //                 { exists: { field: 'nMR' } },
+  //                 { exists: { field: 'MBfD' } },
+  //                 { exists: { field: 'PG' } },
+  //                 { exists: { field: 'Agwb' } }
+  //               ]
+  //             }
+  //           }
+  //         ],
+  //         minimum_should_match: 1
+  //       }
+  //     })
+  //   } else {
+  //     taskType
+  //       ? bool.must.push({ match: { 'task.type': taskType } })
+  //       : bool.must.push({ exists: { field: 'task' } })
+  //   }
+  //   managerId && bool.must.push({ match: { 'task.managerId': managerId } })
+  //   scoutId && bool.must.push({ match: { 'task.scoutId': scoutId } })
+  // }
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -356,9 +356,9 @@ Parse.Cloud.define('search', async ({
       'gp',
       's'
     ]
-    if (isTask) {
-      includes.push('task')
-    }
+    // if (isTask) {
+    //   includes.push('task')
+    // }
   }
 
   const searchResponse = await client.search({
@@ -382,12 +382,12 @@ Parse.Cloud.define('search', async ({
       return result
     })
   }
-  if (isTask) {
-    results = results.map(result => {
-      result.taskType = result.task?.type
-      return result
-    })
-  }
+  // if (isTask) {
+  //   results = results.map(result => {
+  //     result.taskType = result.task?.type
+  //     return result
+  //   })
+  // }
   return { results, count }
 }, { validateMasterKey: true })
 
