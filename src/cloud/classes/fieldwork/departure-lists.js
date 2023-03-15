@@ -144,7 +144,7 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
 
 Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) => {
   for (const departureList of departureLists) {
-    if (departureList.get('type') === 'scout') {
+    if (departureList.get('type') === 'scout' && !departureList.get('dueDate')) {
       departureList.set('dueDate', departureList.get('briefing').get('dueDate'))
     }
     if (query._include.includes('submissions')) {

@@ -114,8 +114,8 @@ module.exports.INTEREST_RATES = {
 // TODO: numbers?
 module.exports.DEPARTURE_LIST_STATUSES = {
   0: 'Entwurf',
-  appointed: 'Ernannt',
-  assigned: 'Beauftragt',
-  in_progress: 'In Bearbeitung',
-  completed: 'Beendet'
+  1: 'Ernannt',
+  2: 'Beauftragt',
+  3: 'In Bearbeitung',
+  4: 'Fertiggestellt'
 }

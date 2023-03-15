@@ -90,7 +90,7 @@ Parse.Cloud.define('briefing-update', async ({
 Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, lists }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   for (const placeKey of Object.keys(lists || {})) {
-    const [ort, stateId] = placeKey.split('_')
+    const [stateId, ort] = placeKey.split(':')
     const state = $pointer('State', stateId)
     let departureList = await $query('DepartureList')
       .equalTo('briefing', briefing)
