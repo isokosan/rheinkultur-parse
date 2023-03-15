@@ -35,7 +35,7 @@ async function upsertDepartureList (attrs) {
   }
   const DepartureList = Parse.Object.extend('DepartureList')
   const departureList = new DepartureList(attrs)
-  const audit = { fn: 'departure-list-create' }
+  const audit = { fn: 'departure-list-generate' }
   return departureList.save(null, { useMasterKey: true, context: { audit } })
 }
 

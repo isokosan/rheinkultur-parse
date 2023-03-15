@@ -556,7 +556,7 @@ const schemaDefinitions = {
       date: { type: 'String', required: true }, // start date
       dueDate: { type: 'String', required: true },
       manager: { type: 'Pointer', targetClass: '_User' },
-      scout: { type: 'Pointer', targetClass: '_User' },
+      scouts: { type: 'Array' },
       status: { type: 'Number' },
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },

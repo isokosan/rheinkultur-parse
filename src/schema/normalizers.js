@@ -368,7 +368,7 @@ module.exports = {
         quota: normalizeInt,
         dueDate: normalizeDateString,
         managerId: defined,
-        scoutId: defined,
+        scoutIds: values => values ? values.filter(value => value) : null,
         cubeIds: normalizeCubeIds
       }
       const normalized = {}

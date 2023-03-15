@@ -28,11 +28,11 @@ async function getCenterOfCubes (cubeIds) {
 }
 
 Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: { countCubes } }) => {
-  if (departureList.isNew()) {
-    if (!departureList.get('name')) {
-      departureList.set('name', `${departureList.get('ort')} (${departureList.get('state').id})`)
-    }
-  }
+  // if (departureList.isNew()) {
+  //   if (!departureList.get('name')) {
+  //     departureList.set('name', `${departureList.get('ort')} (${departureList.get('state').id})`)
+  //   }
+  // }
 
   const cubeIds = [...new Set(departureList.get('cubeIds') || [])]
   cubeIds.sort()
@@ -82,7 +82,7 @@ async function setCubeTaskStatus (departureList) {
       // quota,
       status,
       manager,
-      scout
+      scouts
     }
   } = departureList
   const task = {
@@ -91,7 +91,7 @@ async function setCubeTaskStatus (departureList) {
     status,
     dueDate,
     managerId: manager?.id,
-    scoutId: scout?.id
+    scoutIds: scouts.map(s => s.id)
   }
   if (status < 2) {
     // remove all cubes associated with list if not assigned to scout
@@ -116,15 +116,16 @@ async function setCubeTaskStatus (departureList) {
   return $query('Cube').containedIn('objectId', cubeIds || []).each(cube => cube.set('task', task).save(null, { useMasterKey: true }), { useMasterKey: true })
 }
 
-Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { audit, setCubeStatuses, notifyScout } }) => {
+Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { audit, setCubeStatuses, notifyScouts } }) => {
   setCubeStatuses && await setCubeTaskStatus(departureList)
   $audit(departureList, audit)
-  notifyScout && $notify({
-    user: departureList.get('scout'),
-    message: `You have been assigned to scout ${departureList.get('name')}`,
-    uri: `/departure-lists/${departureList.id}`,
-    data: { departureListId: departureList.id }
-  })
+  notifyScouts && consola.warn('Todo: Notify together')
+  // notifyScouts && $notify({
+  //   user: departureList.get('scouts'),
+  //   message: `You have been assigned to scout ${departureList.get('ort')}`,
+  //   uri: `/departure-lists/${departureList.id}`,
+  //   data: { departureListId: departureList.id }
+  // })
 })
 
 Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
@@ -137,7 +138,7 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
       .greaterThanOrEqualTo('status', 1)
   }
   if (user.get('accType') === 'scout') {
-    query.equalTo('scout', user).greaterThanOrEqualTo('status', 2)
+    query.equalTo('scouts', user).greaterThanOrEqualTo('status', 2)
   }
 })
 
@@ -178,69 +179,6 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
 
 Parse.Cloud.afterDelete(DepartureList, $deleteAudits)
 
-Parse.Cloud.define('departure-list-create', async ({ params, user }) => {
-  const {
-    type,
-    name,
-    quota,
-    dueDate,
-    scoutId
-  } = normalizeFields(params)
-
-  const departureList = new DepartureList({
-    type,
-    name,
-    quota,
-    dueDate,
-    scout: scoutId ? await $getOrFail('_User', scoutId) : undefined
-  })
-  const audit = { user, fn: 'departure-list-create' }
-  return departureList.save(null, { useMasterKey: true, context: { audit } })
-}, {
-  requireUser: true,
-  fields: {
-    type: {
-      type: String,
-      required: true
-    },
-    name: {
-      type: String,
-      required: true
-    }
-  }
-})
-
-Parse.Cloud.define('departure-list-update', async ({ params: { id: departureListId, ...params }, user }) => {
-  const departureList = await $getOrFail(DepartureList, departureListId)
-  const {
-    cubeIds,
-    quota,
-    dueDate,
-    scoutId,
-    managerId
-  } = normalizeFields({ ...params, type: departureList.get('type') })
-
-  const cubeChanges = $cubeChanges(departureList, cubeIds)
-  cubeChanges && departureList.set({ cubeIds })
-
-  const changes = $changes(departureList, { quota, dueDate })
-  departureList.set({ quota, dueDate })
-
-  if (scoutId !== departureList.get('scout')?.id) {
-    changes.scoutId = [departureList.get('scout')?.id, scoutId]
-    departureList.set('scout', scoutId ? await $getOrFail(Parse.User, scoutId) : null)
-  }
-  if (managerId !== departureList.get('manager')?.id) {
-    changes.managerId = [departureList.get('manager')?.id, managerId]
-    departureList.set('manager', managerId ? await $getOrFail(Parse.User, managerId) : null)
-  }
-
-  const audit = { user, fn: 'departure-list-update', data: { changes, cubeChanges } }
-  const notifyScout = Boolean(departureList.get('status') && scoutId && changes.scoutId)
-  await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout } })
-  return `Scout gespeichert${notifyScout ? ' und notified.' : '.'}`
-}, { requireUser: true })
-
 Parse.Cloud.define('departure-list-update-manager', async ({ params: { id: departureListId, ...params }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   const { managerId } = normalizeFields(params)
@@ -260,22 +198,23 @@ Parse.Cloud.define('departure-list-update-manager', async ({ params: { id: depar
   }
 }, { requireUser: true })
 
-Parse.Cloud.define('departure-list-update-scout', async ({ params: { id: departureListId, ...params }, user }) => {
+Parse.Cloud.define('departure-list-update-scouts', async ({ params: { id: departureListId, ...params }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
-  const { scoutId } = normalizeFields(params)
-  if (scoutId === departureList.get('scout')?.id) {
+  const { scoutIds } = normalizeFields(params)
+  const currentScoutIds = (departureList.get('scouts') || []).map(s => s.id)
+  if (scoutIds === currentScoutIds) {
     throw new Error('Keine Änderungen')
   }
-  const changes = { scoutId: [departureList.get('scout')?.id, scoutId] }
-  departureList.set('scout', scoutId ? await $getOrFail(Parse.User, scoutId) : null)
-  const scout = scoutId ? $parsify(Parse.User, scoutId) : null
-  departureList.set({ scout })
+  const changes = { scoutIds: [currentScoutIds, scoutIds] }
+  departureList.set('scouts', scoutIds ? scoutIds.map(id => $parsify(Parse.User, id)) : null)
   const audit = { user, fn: 'departure-list-update', data: { changes } }
-  const notifyScout = !!departureList.get('status')
-  await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout } })
+  // TODO: Notify when changing scout
+  let notifyScouts
+  // const notifyScouts = !!departureList.get('status')
+  await departureList.save(null, { useMasterKey: true, context: { audit, notifyScouts } })
   return {
-    data: departureList.get('scout'),
-    message: `Abfahrtsliste gespeichert. ${notifyScout ? 'Scout notified.' : ''}`
+    data: departureList.get('scouts'),
+    message: `Abfahrtsliste gespeichert. ${notifyScouts ? 'Scouts notified.' : ''}`
   }
 }, { requireUser: true })
 
@@ -324,8 +263,11 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
   if (!departureList.get('manager')) {
     throw new Error('Need a manager to appoint to')
   }
+  if (!departureList.get('date') || !departureList.get('dueDate')) {
+    throw new Error('Please set date and due date first.')
+  }
   departureList.set({ status: 1 })
-  const audit = { user, fn: 'departure-list-assign' }
+  const audit = { user, fn: 'departure-list-appoint' }
   await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
   return {
     data: departureList.get('status'),
@@ -335,11 +277,18 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
 
 Parse.Cloud.define('departure-list-assign', async ({ params: { id: departureListId }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
-  if (!departureList.get('manager') || departureList.get('status') !== 'appointed') {
+  if (!departureList.get('manager') || departureList.get('status') !== 1) {
+    consola.info(departureList.attributes)
     throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
   }
   if (!departureList.get('scout')) {
     throw new Error('Need a scout to assign to')
+  }
+  if (!departureList.get('date') || !departureList.get('dueDate')) {
+    throw new Error('Please set date and due date first.')
+  }
+  if (moment(departureList.get('date')).isAfter(await $today(), 'day')) {
+    throw new Error(`You can assign this task only from ${moment(departureList.get('date')).format('DD.MM.YYYY')}`)
   }
   departureList.set({ status: 2 })
   const audit = { user, fn: 'departure-list-assign' }
@@ -367,14 +316,15 @@ Parse.Cloud.define('departure-list-approve-verified-cube', async ({ params: { id
   return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
 }, { requireUser: true })
 
-Parse.Cloud.define('departure-list-remove', async ({ params: { id: departureListId } }) => {
-  const departureList = await $getOrFail(DepartureList, departureListId)
-  if (!(!departureList.get('status') || departureList.get('status') === 'appointed')) {
-    throw new Error('Only draft or appointed Abfahrtsliste can be removed.')
-  }
-  await departureList.destroy({ useMasterKey: true })
-  return { message: 'Abfahrtsliste gelöscht.' }
-}, { requireUser: true })
+// TODO: Removals
+// Parse.Cloud.define('departure-list-remove', async ({ params: { id: departureListId } }) => {
+//   const departureList = await $getOrFail(DepartureList, departureListId)
+//   if (!(!departureList.get('status') || departureList.get('status') === 'appointed')) {
+//     throw new Error('Only draft or appointed Abfahrtsliste can be removed.')
+//   }
+//   await departureList.destroy({ useMasterKey: true })
+//   return { message: 'Abfahrtsliste gelöscht.' }
+// }, { requireUser: true })
 
 Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, form, photoIds, comments }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
@@ -569,5 +519,3 @@ Parse.Cloud.define('departure-list-complete', async ({ params: { id: departureLi
   const audit = { user, fn: 'departure-list-complete' }
   return departureList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
-
-$query('DepartureList').notEqualTo('status', null).each(dl => dl.unset('status').save(null, { useMasterKey: true }), { useMasterKey: true })

@@ -11,43 +11,29 @@ const createCity = async (body) => Parse.Cloud.httpRequest({
   body
 })
 
-// TOLATER: Cities that are not found in the cubes list are not removed
+// TOLATER: Cities that are not found in the cubes list should be removed
 // If you run into resource_exists issues, delete the docker containers etc with "docker system prune"
 module.exports = async function (job) {
   // get unique list of locations from cubes
-  const locations = {}
-  const cubesCount = await $query('Cube').count({ useMasterKey: true })
-  let c = 0
-  await $query('Cube')
-    .select(['ort', 'state', 'gp'])
-    .eachBatch((cubes) => {
-      for (const cube of cubes) {
-        const { ort, state, gp } = cube.attributes
-        const placeKey = [ort, state.id].join(':')
-        locations[placeKey] = gp
-      }
-      c += cubes.length
-      job.progress(parseInt(35 * c / cubesCount))
-    }, { useMasterKey: true, batchSize: 50000 })
-
+  const locations = await $query('Cube')
+    .aggregate([{ $group: { _id: { ort: '$ort', stateP: '$state' } } }])
+    .then(response => response.map(({ objectId }) => objectId))
   const locationsCount = Object.keys(locations).length
   let l = 0
-  for (const placeKey of Object.keys(locations)) {
-    const [ort, stateId] = placeKey.split(':')
-    if (ort.trim() !== ort) {
-      throw new Error(`Found ort with trim bug: ${ort} ${stateId}`)
-    }
+  for (const { ort, stateP } of locations) {
+    const [, stateId] = stateP.split('$')
     const state = $pointer('State', stateId)
-    const gp = locations[placeKey]
-    const exists = await $query('City').equalTo('objectId', placeKey).exists({ useMasterKey: true })
-    !exists && await createCity({
-      objectId: placeKey,
-      ort,
-      state,
-      gp
-    }).catch(() => {})
+    const placeKey = [stateId, ort].join(':')
+    const exists = await $query('City').equalTo('objectId', placeKey).count()
+    if (!exists) {
+      await createCity({
+        objectId: placeKey,
+        ort,
+        state
+      })
+    }
     l++
-    job.progress(parseInt(35 + (35 * l / locationsCount)))
+    job.progress(parseInt(90 * l / locationsCount))
   }
 
   const index = 'rheinkultur-cities-autocomplete'
@@ -65,12 +51,7 @@ module.exports = async function (job) {
     if (!body.length) { break }
     const { items } = await client.bulk({ refresh: true, body })
     i += items.length
-    const progress = parseInt(75 + (25 * i / citiesCount))
-    job.progress(progress)
+    job.progress(parseInt(90 + (10 * i / citiesCount)))
   }
-  return Promise.resolve({
-    // checkedCubes: c,
-    // found: l,
-    indexed: i
-  })
+  return Promise.resolve({ indexed: i })
 }

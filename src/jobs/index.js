@@ -50,7 +50,8 @@ const updateJobs = {
     name: 'Frühzeitig stornierte CityCubes sync.',
     description: 'Frees city cubes that have been early canceled and the date is now past',
     timeoutMinutes: 30,
-    cron: '30 0 * * *' // nightly at 00:30
+    cron: '0 1 * * *', // nightly at 01:00
+    notificationDuration: 48
   },
   end_extend: {
     name: 'Verträge/Buchungen beenden/verlängern (außer Kinetic).',
@@ -78,25 +79,25 @@ const updateJobs = {
   reindex_cubes: {
     name: 'Suchindex von CityCubes aktualisieren',
     timeoutMinutes: 60,
-    cron: '0 0 * * *', // nightly
+    cron: '0 0 * * *', // nightly at midnight
     notificationDuration: 48
   },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 0 * * *', // nightly
+    timeoutMinutes: 60,
+    cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
     timeoutMinutes: 15,
-    cron: '0 0 * * *', // nightly
+    cron: '0 2 * * *', // nightly at '2 am'
     notificationDuration: 48
   },
   recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
     timeoutMinutes: 15,
-    cron: '0 1 * * *', // nightly at 1 am
+    cron: '15 2 * * *', // nightly at 2:15 am
     notificationDuration: 48
   },
   recalculate_future_contract_invoices: {
@@ -106,7 +107,7 @@ const updateJobs = {
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',
     timeoutMinutes: 15,
-    cron: '*/10 * * * *',
+    cron: '*/10 * * * *', // every 10 minutes
     notificationDuration: 2
   }
 }

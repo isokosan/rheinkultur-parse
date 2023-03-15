@@ -3,7 +3,7 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
   const locations = {}
   for (const departureList of departureLists) {
     const { ort, state, type, cubeCount, approvedCubeCount } = departureList.attributes
-    const location = [ort, state.id].join(':')
+    const location = [state.id, ort].join(':')
     if (!locations[location]) {
       locations[location] = {
         ort,
@@ -17,8 +17,8 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
         approvedCubeCount: 0
       }
     }
-    locations[location].tasks[type].cubeCount += cubeCount
-    locations[location].tasks[type].approvedCubeCount += approvedCubeCount
+    locations[location].tasks[type].cubeCount += (cubeCount || 0)
+    locations[location].tasks[type].approvedCubeCount += (approvedCubeCount || 0)
   }
   return locations
 })
@@ -39,8 +39,8 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
         approvedCubeCount: 0
       }
     }
-    location.tasks[type].cubeCount += cubeCount
-    location.tasks[type].approvedCubeCount += approvedCubeCount
+    location.tasks[type].cubeCount += (cubeCount || 0)
+    location.tasks[type].approvedCubeCount += (approvedCubeCount || 0)
   }
   return location
 })

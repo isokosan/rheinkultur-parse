@@ -37,58 +37,57 @@ Parse.Cloud.define('briefing-create', async ({
   params: {
     name,
     companyId,
-    companyPersonId,
+    // companyPersonId,
+    date,
     dueDate
   }, user
 }) => {
   const briefing = new Briefing({
     name,
     company: companyId ? await $getOrFail('Company', companyId) : undefined,
-    companyPerson: companyPersonId ? await $getOrFail('Person', companyPersonId) : undefined,
+    // companyPerson: companyPersonId ? await $getOrFail('Person', companyPersonId) : undefined,
+    date,
     dueDate
   })
 
   const audit = { user, fn: 'briefing-create' }
   return briefing.save(null, { useMasterKey: true, context: { audit } })
-}, {
-  requireUser: true,
-  fields: {
-    name: {
-      type: String,
-      required: true
-    }
-  }
-})
+}, { requireUser: true })
 
 Parse.Cloud.define('briefing-update', async ({
   params: {
     id: briefingId,
     name,
     companyId,
-    companyPersonId,
+    // companyPersonId,
+    date,
     dueDate
   }, user
 }) => {
   const briefing = await $getOrFail(Briefing, briefingId, ['companyPerson'])
-  const changes = $changes(briefing, { name, dueDate })
-  briefing.set({ name, dueDate })
+  const changes = $changes(briefing, { name, date, dueDate })
+  briefing.set({ name, date, dueDate })
   if (companyId !== briefing.get('company')?.id) {
     changes.companyId = [briefing.get('company')?.id, companyId]
     const company = companyId ? await $getOrFail('Company', companyId) : null
     company ? briefing.set('company', company) : briefing.unset('company')
   }
-  if (companyPersonId !== briefing.get('company')?.id) {
-    const companyPerson = companyPersonId ? await $getOrFail('Person', companyPersonId) : null
-    changes.companyPerson = [briefing.get('companyPerson')?.get('fullName'), companyPerson?.get('fullName')]
-    companyPerson ? briefing.set('companyPerson', companyPerson) : briefing.unset('companyPerson')
-  }
-
+  // if (companyPersonId !== briefing.get('company')?.id) {
+  //   const companyPerson = companyPersonId ? await $getOrFail('Person', companyPersonId) : null
+  //   changes.companyPerson = [briefing.get('companyPerson')?.get('fullName'), companyPerson?.get('fullName')]
+  //   companyPerson ? briefing.set('companyPerson', companyPerson) : briefing.unset('companyPerson')
+  // }
   const audit = { user, fn: 'briefing-update', data: { changes } }
   return briefing.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, lists }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
+  const date = briefing.get('date')
+  const dueDate = briefing.get('dueDate')
+  if (!date || !dueDate) {
+    throw new Error('Briefing has no date or due date!')
+  }
   for (const placeKey of Object.keys(lists || {})) {
     const [stateId, ort] = placeKey.split(':')
     const state = $pointer('State', stateId)
@@ -103,6 +102,8 @@ Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, list
         briefing,
         ort,
         state,
+        date,
+        dueDate,
         cubeIds: lists[placeKey]
       })
       const audit = { user, fn: 'departure-list-generate' }

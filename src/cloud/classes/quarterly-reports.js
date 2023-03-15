@@ -1,6 +1,6 @@
 const path = require('path')
 const { ensureUniqueField } = require('@/utils')
-const { createQueue } = require('@/cloud/jobs')
+const { createQueue } = require('@/jobs')
 const { getQuarterStartEnd } = require('@/shared')
 
 const QuarterlyReport = Parse.Object.extend('QuarterlyReport')

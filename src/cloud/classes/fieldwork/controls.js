@@ -144,13 +144,13 @@ Parse.Cloud.define('control-create', async ({
   params: {
     name,
     date,
-    lastControlBefore
+    dueDate
   }, user
 }) => {
   const control = new Control({
     name,
     date,
-    lastControlBefore,
+    dueDate,
     status: 1
   })
 
@@ -163,12 +163,12 @@ Parse.Cloud.define('control-update', async ({
     id: controlId,
     name,
     date,
-    lastControlBefore
+    dueDate
   }, user
 }) => {
   const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, lastControlBefore })
-  control.set({ name, date, lastControlBefore, status: 1 })
+  const changes = $changes(control, { name, date, dueDate })
+  control.set({ name, date, dueDate, status: 1 })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
@@ -211,34 +211,37 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
     .select(['objectId', 'state'])
     .limit(finalCubeIds.length)
     .find({ useMasterKey: true })
-  const states = {}
+  const locations = {}
   for (const cube of cubes) {
     const stateId = cube.get('state')?.id
-    if (!states[stateId]) {
-      states[stateId] = []
+    const ort = cube.get('ort')
+    const placeKey = [stateId, ort].join(':')
+    if (!locations[placeKey]) {
+      locations[placeKey] = []
     }
-    states[stateId].push(cube.id)
+    locations[placeKey].push(cube.id)
   }
-  for (const stateId of Object.keys(states)) {
+  for (const placeKey of Object.keys(locations)) {
+    const [stateId, ort] = placeKey.split(':')
     const state = await $getOrFail('State', stateId)
     let departureList = await $query('DepartureList')
       .equalTo('control', control)
       .equalTo('state', state)
+      .equalTo('ort', ort)
       .first({ useMasterKey: true })
     if (!departureList) {
-      const name = `${control.get('name')} (${state.get('name')})`
       departureList = new DepartureList({
-        name,
         type: 'control',
         control,
         state,
-        cubeIds: states[stateId]
+        ort,
+        cubeIds: locations[stateId]
       })
       const audit = { user, fn: 'departure-list-generate' }
       await departureList.save(null, { useMasterKey: true, context: { audit } })
       continue
     }
-    const cubeIds = [...new Set([...(departureList.get('cubeIds') || []), ...states[stateId]])]
+    const cubeIds = [...new Set([...(departureList.get('cubeIds') || []), ...locations[stateId]])]
     const cubeChanges = $cubeChanges(departureList, cubeIds)
     if (cubeChanges) {
       departureList.set({ cubeIds })
