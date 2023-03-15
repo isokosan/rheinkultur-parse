@@ -23,8 +23,8 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
   return locations
 })
 
-Parse.Cloud.define('tasks-location', async ({ params: { locationKey }, user }) => {
-  const [ort, stateId] = locationKey.split(':')
+Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
+  const [stateId, ort] = placeKey.split(':')
   const state = $pointer('State', stateId)
   const departureLists = await $query('DepartureList')
     .equalTo('ort', ort)

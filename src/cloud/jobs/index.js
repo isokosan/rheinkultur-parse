@@ -75,15 +75,21 @@ const updateJobs = {
     timeoutMinutes: 120
     // cron: '0 * * * *' // hourly
   },
-  reindex_autocompletes: {
-    name: 'Aktualisierung von Suchindexen (Straßen und Orte).',
-    timeoutMinutes: 15,
+  reindex_cubes: {
+    name: 'Suchindex von CityCubes aktualisieren',
+    timeoutMinutes: 60,
     cron: '0 0 * * *', // nightly
     notificationDuration: 48
   },
-  reindex_search: {
-    name: 'Aktualisierung von Suchindexen (CityCubes).',
-    timeoutMinutes: 60,
+  reindex_cities: {
+    name: 'Suchindex von Orte aktualisieren',
+    timeoutMinutes: 30,
+    cron: '0 0 * * *', // nightly
+    notificationDuration: 48
+  },
+  reindex_streets: {
+    name: 'Suchindex von Straßen aktualisieren',
+    timeoutMinutes: 15,
     cron: '0 0 * * *', // nightly
     notificationDuration: 48
   },

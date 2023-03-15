@@ -64,8 +64,8 @@ module.exports = async function (job) {
   const keys = {}
   await query.eachBatch(async (cubes) => {
     for (const cube of cubes) {
-      const from = moment(cube.get('order').endsAt).add(1, 'day').format('YYYY-MM-DD')
-      const uniqueKey = [cube.get('ort'), cube.get('state').id, from].join('_')
+      const date = moment(cube.get('order').endsAt).add(1, 'day').format('YYYY-MM-DD')
+      const uniqueKey = [cube.get('ort'), cube.get('state').id, date].join('_')
       if (!(uniqueKey in keys)) {
         keys[uniqueKey] = { cubeIds: [], booking: cube.get('order').booking, contract: cube.get('order').contract }
       }
@@ -74,19 +74,19 @@ module.exports = async function (job) {
   }, { useMasterKey: true })
   let i = 0
   for (const uniqueKey in keys) {
-    const [ort, stateId, from] = uniqueKey.split('_')
+    const [ort, stateId, date] = uniqueKey.split('_')
     const { cubeIds, booking, contract } = keys[uniqueKey]
     const state = $pointer('State', stateId)
     // TODO: check if exists remove or syncronize
     await upsertDepartureList({
       type: 'disassembly',
-      booking,
-      contract,
       ort,
       state,
+      booking,
+      contract,
       cubeIds,
-      from,
-      dueDate: moment(from).add(2, 'weeks').format('YYYY-MM-DD')
+      date,
+      dueDate: moment(date).add(2, 'weeks').format('YYYY-MM-DD')
     })
     i++
   }
