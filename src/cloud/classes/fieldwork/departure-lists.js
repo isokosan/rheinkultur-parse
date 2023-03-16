@@ -29,11 +29,6 @@ async function getCenterOfCubes (cubeIds) {
 
 Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: { countCubes } }) => {
   !departureList.get('status') && departureList.set('status', 0)
-  // if (departureList.isNew()) {
-  //   if (!departureList.get('name')) {
-  //     departureList.set('name', `${departureList.get('ort')} (${departureList.get('state').id})`)
-  //   }
-  // }
 
   const cubeIds = [...new Set(departureList.get('cubeIds') || [])]
   cubeIds.sort()
@@ -59,7 +54,6 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
       .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('pendingCubeIds', pendingCubeIds)
     departureList.set('pendingCubeCount', pendingCubeIds.length)
-
     departureList.set('approvedCubeIds', [...new Set(approvedCubeIds)])
     departureList.set('approvedCubeCount', approvedCubeIds.length)
 
@@ -70,6 +64,8 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
       .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('rejectedCubeIds', rejectedCubeIds)
     departureList.set('rejectedCubeCount', rejectedCubeIds.length)
+
+    departureList.set('completedCount', parseInt(pendingCubeIds.length + approvedCubeIds.length - rejectedCubeIds.length))
   }
 })
 
@@ -311,6 +307,8 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
     }
   } else {
     delete form.notFound
+    // make sure the cube is added to the list if found
+    departureList.set('cubeIds', departureList.get('cubeIds').push(cubeId))
     const photos = await $query('CubePhoto').containedIn('objectId', photoIds).find({ useMasterKey: true })
     if (submissionId) {
       changes = $changes(submission.get('form'), form, true)
@@ -333,7 +331,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
   if (user.get('accType') === 'admin') {
     return Parse.Cloud.run('scout-submission-approve', { id: submission.id }, { sessionToken: user.get('sessionToken') })
   }
-  return submission
+  return { message: 'Scouting erfolgreich.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submissionId }, user }) => {
@@ -363,7 +361,7 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
   const audit = { user, fn: 'scout-submission-approve', data: { cubeId: cube.id } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('departureList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
-  return submission
+  return { message: 'Scouting genehmigt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionId }, user }) => {
@@ -373,7 +371,7 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   const audit = { user, fn: 'scout-submission-reject', data: { cubeId } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('departureList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
-  return submission
+  return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('control-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comment }, user }) => {
@@ -401,7 +399,7 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: departure
   departureList.set({ status: 3 })
   const audit = { user, fn: 'control-submission-submit', data: { cubeId, changes } }
   await departureList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
-  return submission
+  return { message: 'Kontrolle erfolgreich.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissionId }, user }) => {
@@ -411,7 +409,7 @@ Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissi
   const audit = { user, fn: 'control-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('departureList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
-  return submission
+  return { message: 'Kontrolle genehmigt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
@@ -427,7 +425,7 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
     uri: `/departure-lists/${submission.get('departureList').id}/control/${submission.get('cube').id}`,
     data: { rejectionReason }
   })
-  return submission
+  return { message: 'Kontrolle abgelehnt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, condition, photoId }, user }) => {
@@ -450,7 +448,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: depar
   await submission.save(null, { useMasterKey: true })
   departureList.set({ status: 3 })
   await departureList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
-  return submission
+  return { message: 'Abbau erfolgreich.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: submissionId }, user }) => {
@@ -460,7 +458,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('departureList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
-  return submission
+  return { message: 'Abbau genehmigt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submissionId }, user }) => {
@@ -470,7 +468,7 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
   const audit = { user, fn: 'disassembly-submission-reject', data: { cubeId } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('departureList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
-  return submission
+  return { message: 'Abbau abgelehnt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('departure-list-complete', async ({ params: { id: departureListId }, user }) => {
@@ -482,3 +480,8 @@ Parse.Cloud.define('departure-list-complete', async ({ params: { id: departureLi
   const audit = { user, fn: 'departure-list-complete' }
   return departureList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
+
+$query('DepartureList')
+  .equalTo('completedCount', null)
+  .each(dl => dl.save(null, { useMasterKey: true, context: { countCubes: true } }), { useMasterKey: true })
+  .then(consola.success)
