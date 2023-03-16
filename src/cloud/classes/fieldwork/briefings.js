@@ -17,7 +17,7 @@ Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } })
 })
 
 Parse.Cloud.beforeFind(Briefing, ({ query }) => {
-  query._include.includes('all') && query.include(['company', 'docs'])
+  query._include.includes('all') && query.include(['departureLists', 'company', 'docs'])
 })
 
 Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
@@ -142,3 +142,5 @@ Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user,
   }
   return briefing.destroy({ useMasterKey: true })
 }, { requireUser: true })
+
+// $query('DepartureList').notEqualTo('briefing', null).equalTo('quotas', null).each(dl => dl.set('quotas', { KVZ: 2, MFG: 10 }).save(null, { useMasterKey: true }), { useMasterKey: true }).then(consola.success)

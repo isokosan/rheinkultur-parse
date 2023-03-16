@@ -1,4 +1,4 @@
-const { capitalize } = require('lodash')
+const { capitalize, sum } = require('lodash')
 const { departureLists: { normalizeFields } } = require('@/schema/normalizers')
 
 const DepartureList = Parse.Object.extend('DepartureList')
@@ -100,9 +100,13 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
 
 Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) => {
   for (const departureList of departureLists) {
-    if (departureList.get('type') === 'scout' && !departureList.get('dueDate')) {
-      departureList.set('dueDate', departureList.get('briefing')?.get('dueDate'))
+    if (departureList.get('type') === 'scout') {
+      if (!departureList.get('dueDate')) {
+        departureList.set('dueDate', departureList.get('briefing')?.get('dueDate'))
+      }
+      departureList.set('totalQuota', sum(Object.values(departureList.get('quotas') || {})))
     }
+
     if (query._include.includes('submissions')) {
       let submissions
       if (departureList.get('type') === 'scout') {
@@ -221,6 +225,9 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
   }
   if (!departureList.get('date') || !departureList.get('dueDate')) {
     throw new Error('Please set date and due date first.')
+  }
+  if (departureList.get('type') === 'scout' && !departureList.get('totalQuota')) {
+    throw new Error('Please set quotas.')
   }
   departureList.set({ status: 1 })
   const audit = { user, fn: 'departure-list-appoint' }
