@@ -24,23 +24,28 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
 })
 
 Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
+  const city = await $getOrFail('City', placeKey)
   const [stateId, ort] = placeKey.split(':')
   const state = $pointer('State', stateId)
   const departureLists = await $query('DepartureList')
     .equalTo('ort', ort)
     .equalTo('state', state)
+    .include('cubeLocations')
+    .select(['cubeIds', 'cubeLocations', 'type', 'cubeCount', 'approvedCubeCount'])
     .find({ sessionToken: user.get('sessionToken') })
-  const location = { ort, state, tasks: {} }
+  const location = { ort, state, center: city.get('gp'), tasks: {} }
   for (const departureList of departureLists) {
-    const { type, cubeCount, approvedCubeCount } = departureList.attributes
+    const { type, cubeCount, approvedCubeCount, cubeLocations } = departureList.attributes
     if (!location.tasks[type]) {
       location.tasks[type] = {
         cubeCount: 0,
-        approvedCubeCount: 0
+        approvedCubeCount: 0,
+        cubeLocations: {}
       }
     }
     location.tasks[type].cubeCount += (cubeCount || 0)
     location.tasks[type].approvedCubeCount += (approvedCubeCount || 0)
+    location.tasks[type].cubeLocations = { ...location.tasks[type].cubeLocations, ...cubeLocations }
   }
   return location
 })

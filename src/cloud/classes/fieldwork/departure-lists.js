@@ -73,51 +73,7 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   }
 })
 
-async function setCubeTaskStatus (departureList) {
-  const {
-    id: listId,
-    attributes: {
-      cubeIds,
-      type,
-      dueDate,
-      status,
-      manager,
-      scouts
-    }
-  } = departureList
-  const task = {
-    listId,
-    type,
-    status,
-    dueDate,
-    managerId: manager?.id,
-    scoutIds: scouts.map(s => s.id)
-  }
-  if (status < 2) {
-    // remove all cubes associated with list if not assigned to scout
-    await $query('Cube')
-      .equalTo('task.type', task.type)
-      .equalTo('task.listId', task.listId)
-      .each(cube => {
-        cube.unset('task')
-        return cube.save(null, { useMasterKey: true })
-      }, { useMasterKey: true })
-  } else {
-    // remove all cubes that reference the list despite the list having them removed
-    await $query('Cube')
-      .notContainedIn('objectId', cubeIds)
-      .equalTo('task.type', task.type)
-      .equalTo('task.listId', task.listId)
-      .each(cube => {
-        cube.unset('task')
-        return cube.save(null, { useMasterKey: true })
-      }, { useMasterKey: true })
-  }
-  return $query('Cube').containedIn('objectId', cubeIds || []).each(cube => cube.set('task', task).save(null, { useMasterKey: true }), { useMasterKey: true })
-}
-
-Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { audit, setCubeStatuses, notifyScouts } }) => {
-  setCubeStatuses && await setCubeTaskStatus(departureList)
+Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { audit, notifyScouts } }) => {
   $audit(departureList, audit)
   notifyScouts && consola.warn('Todo: Notify together')
   // notifyScouts && $notify({

@@ -96,7 +96,7 @@ function getCubesQuery (control) {
 Parse.Cloud.afterSave(Control, ({ object: control, context: { audit } }) => { $audit(control, audit) })
 
 Parse.Cloud.beforeFind(Control, ({ query }) => {
-  query._include.includes('all') && query.include(['departureLists', 'criteria', 'docs'])
+  query._include.includes('all') && query.include(['criteria', 'docs'])
 })
 
 Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
@@ -203,12 +203,13 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
   const cubeIds = control.get('cubeIds') || []
   const addedCubeIds = control.get('addedCubeIds') || []
   const skippedCubeIds = control.get('skippedCubeIds') || []
+  const { date, dueDate } = control.attributes
 
-  const finalCubeIds = [...cubeIds, addedCubeIds].filter(id => !skippedCubeIds.includes(id))
+  const finalCubeIds = [...cubeIds, ...addedCubeIds].filter(id => !skippedCubeIds.includes(id))
 
   const cubes = await $query('Cube')
     .containedIn('objectId', finalCubeIds)
-    .select(['objectId', 'state'])
+    .select(['objectId', 'ort', 'state'])
     .limit(finalCubeIds.length)
     .find({ useMasterKey: true })
   const locations = {}
@@ -235,7 +236,9 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
         control,
         state,
         ort,
-        cubeIds: locations[stateId]
+        date,
+        dueDate,
+        cubeIds: locations[placeKey]
       })
       const audit = { user, fn: 'departure-list-generate' }
       await departureList.save(null, { useMasterKey: true, context: { audit } })
@@ -272,3 +275,9 @@ Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, c
   }
   return control.destroy({ useMasterKey: true })
 }, { requireUser: true })
+
+// $query('DepartureList')
+//   .equalTo('type', 'control')
+//   .equalTo('cubeCount', 0)
+//   .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
+//   .then(consola.success)

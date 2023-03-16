@@ -17,7 +17,7 @@ Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } })
 })
 
 Parse.Cloud.beforeFind(Briefing, ({ query }) => {
-  query._include.includes('all') && query.include(['company', 'companyPerson', 'departureLists', 'docs'])
+  query._include.includes('all') && query.include(['company', 'docs'])
 })
 
 Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
@@ -46,7 +46,6 @@ Parse.Cloud.define('briefing-create', async ({
   params: {
     name,
     companyId,
-    // companyPersonId,
     date,
     dueDate
   }, user
@@ -54,7 +53,6 @@ Parse.Cloud.define('briefing-create', async ({
   const briefing = new Briefing({
     name,
     company: companyId ? await $getOrFail('Company', companyId) : undefined,
-    // companyPerson: companyPersonId ? await $getOrFail('Person', companyPersonId) : undefined,
     date,
     dueDate
   })
@@ -68,12 +66,11 @@ Parse.Cloud.define('briefing-update', async ({
     id: briefingId,
     name,
     companyId,
-    // companyPersonId,
     date,
     dueDate
   }, user
 }) => {
-  const briefing = await $getOrFail(Briefing, briefingId, ['companyPerson'])
+  const briefing = await $getOrFail(Briefing, briefingId)
   const changes = $changes(briefing, { name, date, dueDate })
   briefing.set({ name, date, dueDate })
   if (companyId !== briefing.get('company')?.id) {
@@ -81,11 +78,6 @@ Parse.Cloud.define('briefing-update', async ({
     const company = companyId ? await $getOrFail('Company', companyId) : null
     company ? briefing.set('company', company) : briefing.unset('company')
   }
-  // if (companyPersonId !== briefing.get('company')?.id) {
-  //   const companyPerson = companyPersonId ? await $getOrFail('Person', companyPersonId) : null
-  //   changes.companyPerson = [briefing.get('companyPerson')?.get('fullName'), companyPerson?.get('fullName')]
-  //   companyPerson ? briefing.set('companyPerson', companyPerson) : briefing.unset('companyPerson')
-  // }
   const audit = { user, fn: 'briefing-update', data: { changes } }
   return briefing.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
