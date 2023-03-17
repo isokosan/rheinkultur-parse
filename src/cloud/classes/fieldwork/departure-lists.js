@@ -121,9 +121,9 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       const { cubeIds, pendingCubeIds, approvedCubeIds, rejectedCubeIds } = departureList.attributes
       const cubeStatuses = cubeIds.reduce((acc, cubeId) => {
         acc[cubeId] = 0
-        if (pendingCubeIds.includes(cubeId)) { acc[cubeId] = 1 }
-        if (approvedCubeIds.includes(cubeId)) { acc[cubeId] = 1 }
-        if (rejectedCubeIds.includes(cubeId)) { acc[cubeId] = 2 }
+        if (pendingCubeIds?.includes(cubeId)) { acc[cubeId] = 1 }
+        if (approvedCubeIds?.includes(cubeId)) { acc[cubeId] = 1 }
+        if (rejectedCubeIds?.includes(cubeId)) { acc[cubeId] = 2 }
         return acc
       }, {})
       departureList.set({ cubeStatuses })
