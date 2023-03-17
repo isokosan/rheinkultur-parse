@@ -29,7 +29,6 @@ async function getCenterOfCubes (cubeIds) {
 
 Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: { countCubes } }) => {
   !departureList.get('status') && departureList.set('status', 0)
-
   const cubeIds = [...new Set(departureList.get('cubeIds') || [])]
   cubeIds.sort()
   departureList.set('cubeIds', cubeIds)
@@ -39,14 +38,6 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   if (countCubes) {
     const submissionClass = capitalize(departureList.get('type')) + 'Submission'
 
-    const approvedCubeIds = await $query(submissionClass)
-      .equalTo('departureList', departureList)
-      .equalTo('status', 'approved')
-      .notEqualTo('form.notFound', true)
-      .distinct('cube', { useMasterKey: true })
-      .then(cubes => cubes.map(cube => cube.objectId))
-    approvedCubeIds.push(...(departureList.get('adminApprovedCubeIds') || []))
-
     const pendingCubeIds = await $query(submissionClass)
       .equalTo('departureList', departureList)
       .equalTo('status', null)
@@ -54,8 +45,17 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
       .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('pendingCubeIds', pendingCubeIds)
     departureList.set('pendingCubeCount', pendingCubeIds.length)
+
+    const approvedCubeIds = await $query(submissionClass)
+      .equalTo('departureList', departureList)
+      .equalTo('status', 'approved')
+      .notEqualTo('form.notFound', true)
+      .distinct('cube', { useMasterKey: true })
+      .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('approvedCubeIds', [...new Set(approvedCubeIds)])
     departureList.set('approvedCubeCount', approvedCubeIds.length)
+    // TODO: fix how admin approved stuff works
+    approvedCubeIds.push(...(departureList.get('adminApprovedCubeIds') || []))
 
     const rejectedCubeIds = await $query(submissionClass)
       .equalTo('departureList', departureList)
@@ -116,6 +116,19 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       }
       departureList.set('submissions', submissions)
     }
+
+    if (query._include.includes('cubeStatuses')) {
+      const { cubeIds, pendingCubeIds, approvedCubeIds, rejectedCubeIds } = departureList.attributes
+      const cubeStatuses = cubeIds.reduce((acc, cubeId) => {
+        acc[cubeId] = 0
+        if (pendingCubeIds.includes(cubeId)) { acc[cubeId] = 1 }
+        if (approvedCubeIds.includes(cubeId)) { acc[cubeId] = 1 }
+        if (rejectedCubeIds.includes(cubeId)) { acc[cubeId] = 2 }
+        return acc
+      }, {})
+      departureList.set({ cubeStatuses })
+    }
+
     if (query._include.includes('cubeLocations')) {
       const cubeIds = departureList.get('cubeIds') || []
       const cubeLocations = await $query('Cube')
@@ -308,7 +321,9 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
   } else {
     delete form.notFound
     // make sure the cube is added to the list if found
-    departureList.set('cubeIds', departureList.get('cubeIds').push(cubeId))
+    const cubeIds = departureList.get('cubeIds') || []
+    cubeIds.push(cubeId)
+    departureList.set('cubeIds', cubeIds)
     const photos = await $query('CubePhoto').containedIn('objectId', photoIds).find({ useMasterKey: true })
     if (submissionId) {
       changes = $changes(submission.get('form'), form, true)

@@ -30,13 +30,16 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
   const departureLists = await $query('DepartureList')
     .equalTo('ort', ort)
     .equalTo('state', state)
-    .include('cubeLocations')
+    .include(['cubeLocations', 'cubeStatuses'])
     .find({ sessionToken: user.get('sessionToken') })
   const location = { ort, stateId, center: city.get('gp'), tasks: {} }
   for (const departureList of departureLists) {
-    const { type, completedCount, cubeLocations, pendingCubeIds } = departureList.attributes
+    const { type, completedCount, cubeIds, cubeLocations, cubeStatuses } = departureList.attributes
     const cubeCount = type === 'scout' ? departureList.get('totalQuota') : departureList.get('cubeCount')
-
+    const cubes = cubeIds.reduce((cubes, cubeId) => {
+      cubes[cubeId] = { s: cubeStatuses[cubeId], gp: cubeLocations[cubeId] }
+      return cubes
+    }, {})
     if (!location.tasks[type]) {
       location.tasks[type] = {
         cubeCount: 0,
@@ -44,7 +47,6 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
         lists: {}
       }
     }
-
     location.tasks[type].cubeCount += (cubeCount || 0)
     location.tasks[type].completedCount += (completedCount || 0)
     location.tasks[type].lists[departureList.id] = {
@@ -52,8 +54,8 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
       quotas: departureList.get('quotas'),
       cubeCount,
       completedCount,
-      cubeLocations,
-      pendingCubeIds
+      cubes,
+      type
     }
   }
   return location

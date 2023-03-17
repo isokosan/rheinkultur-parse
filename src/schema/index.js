@@ -577,8 +577,7 @@ const schemaDefinitions = {
       scout: { type: 'Pointer', targetClass: '_User', required: true },
       status: { type: 'String' },
       form: { type: 'Object' },
-      photos: { type: 'Array' },
-      scoutedAt: { type: 'Date' } // TODO: Maybe remove in favor of using createdAt
+      photos: { type: 'Array' }
     }
   },
   ControlSubmission: {
