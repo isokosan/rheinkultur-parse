@@ -148,6 +148,24 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
 
 Parse.Cloud.afterDelete(DepartureList, $deleteAudits)
 
+Parse.Cloud.define('departure-list-update-cubes', async ({ params: { id: departureListId, cubeIds }, user }) => {
+  const departureList = await $getOrFail(DepartureList, departureListId)
+  if (departureList.get('type') !== 'scout' || !departureList.get('briefing')) {
+    throw new Error('Cannot change cubes in this departure list')
+  }
+  if (departureList.get('status')) {
+    throw new Error('You cannot change cubes in an assigned departure list')
+  }
+  $cubeLimit(cubeIds.length)
+  const cubeChanges = $cubeChanges(departureList, cubeIds)
+  if (!cubeChanges) {
+    throw new Error('Keine Änderungen')
+  }
+  departureList.set({ cubeIds })
+  const audit = { user, fn: 'departure-list-update', data: { cubeChanges } }
+  return departureList.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
 Parse.Cloud.define('departure-list-update-manager', async ({ params: { id: departureListId, ...params }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   const { managerId } = normalizeFields(params)

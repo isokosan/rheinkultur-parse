@@ -122,6 +122,39 @@ Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, list
   return true
 }, { requireUser: true })
 
+Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, placeKey }, user }) => {
+  const briefing = await $getOrFail(Briefing, briefingId)
+  const date = briefing.get('date')
+  const dueDate = briefing.get('dueDate')
+  if (!date || !dueDate) {
+    throw new Error('Briefing has no date or due date!')
+  }
+
+  const [stateId, ort] = placeKey.split(':')
+  const state = $pointer('State', stateId)
+  if (await $query('DepartureList')
+    .equalTo('briefing', briefing)
+    .equalTo('ort', ort)
+    .equalTo('state', state)
+    .first({ useMasterKey: true })) {
+    throw new Error('Location already exists!')
+  }
+  const departureList = new DepartureList({
+    type: 'scout',
+    briefing,
+    ort,
+    state,
+    date,
+    dueDate,
+    cubeIds: []
+  })
+  const audit = { user, fn: 'departure-list-generate' }
+  return {
+    message: `${ort} added.`,
+    data: await departureList.save(null, { useMasterKey: true, context: { audit } })
+  }
+}, { requireUser: true })
+
 Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user, context: { seedAsId } }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   if (briefing.get('status')) {

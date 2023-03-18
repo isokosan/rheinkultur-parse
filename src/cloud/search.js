@@ -159,7 +159,7 @@ Parse.Cloud.define('search', async ({
   }, user, master
 }) => {
   const isPublic = !master && !user
-  if (isPublic && s !== 'available' && s !== '') {
+  if (isPublic && s !== '0' && s !== '') {
     s = ''
   }
   s = s?.split(',') || []
@@ -172,11 +172,6 @@ Parse.Cloud.define('search', async ({
   lc && bool.filter.push({ term: { 'lc.keyword': lc } })
   media && bool.filter.push({ term: { 'media.keyword': media } })
   htId && bool.filter.push({ term: { 'ht.objectId.keyword': htId } })
-  str && bool.filter.push({ term: { 'str.keyword': str } })
-  hsnr && bool.filter.push({ match_phrase_prefix: { hsnr } })
-  plz && bool.filter.push({ match_phrase_prefix: { plz } })
-  ort && bool.filter.push({ term: { 'ort.keyword': ort } })
-  stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -220,7 +215,7 @@ Parse.Cloud.define('search', async ({
   // TODO: add filter for distributors (external users who are not scouts)
   isPublic && bool.must_not.push({ exists: { field: 'dAt' } })
 
-  if (s.includes('available') || s.includes('0')) {
+  if (s.includes('0')) {
     bool.must.push({
       bool: {
         should: [
@@ -232,17 +227,9 @@ Parse.Cloud.define('search', async ({
     })
   }
 
-  if (s.includes('scoutable')) {
-    bool.must_not.push({ exists: { field: 'bPLZ' } })
-    bool.must_not.push({ exists: { field: 'nMR' } })
-    bool.must_not.push({ exists: { field: 'MBfD' } })
-    bool.must_not.push({ exists: { field: 'PG' } })
-    bool.must_not.push({ exists: { field: 'Agwb' } })
-  }
-
-  if (s.includes('ml') && ml) {
+  if (ml) {
     const [className, objectId] = ml.split('-')
-    bool.filter.push({
+    s.includes('ml') && bool.filter.push({
       terms: {
         'objectId.keyword': await $query(className)
           .select('cubeIds')
@@ -250,6 +237,11 @@ Parse.Cloud.define('search', async ({
           .then(marklist => marklist.get('cubeIds'))
       }
     })
+    if (className === 'DepartureList') {
+      const list = await $getOrFail(className, objectId)
+      ort = list.get('ort')
+      stateId = list.get('state').id
+    }
   }
 
   // Booked
@@ -286,6 +278,13 @@ Parse.Cloud.define('search', async ({
 
   // Nicht gefunden
   s.includes('8') && bool.must.push({ exists: { field: 'dAt' } })
+
+  // address constraints
+  str && bool.filter.push({ term: { 'str.keyword': str } })
+  hsnr && bool.filter.push({ match_phrase_prefix: { hsnr } })
+  plz && bool.filter.push({ match_phrase_prefix: { plz } })
+  ort && bool.filter.push({ term: { 'ort.keyword': ort } })
+  stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
   if (returnQuery) {
     return {
