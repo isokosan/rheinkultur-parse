@@ -117,8 +117,20 @@ const autocompleteSearch = async function (index, key, query) {
           [key]: query
         }
       }
+      // TODO: implement script based sorting on elasticsearch level
+      // sort: {
+      //   _script: {
+      //     type: 'number',
+      //     script: {
+      //       lang: "painless",
+      //       source: `doc['${key}.keyword'].value.length()`
+      //     },
+      //     order: 'asc'
+      //   }
+      // }
     }
   })
+  hits.sort((a, b) => a._id.length - b._id.length)
   return hits
 }
 

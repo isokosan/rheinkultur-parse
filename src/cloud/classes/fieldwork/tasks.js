@@ -2,7 +2,7 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
   const departureLists = await $query('DepartureList').find({ sessionToken: user.get('sessionToken') })
   const locations = {}
   for (const departureList of departureLists) {
-    const { ort, state, gp, type, completedCount } = departureList.attributes
+    const { ort, state, gp, type, completedCubeCount } = departureList.attributes
     const cubeCount = type === 'scout' ? departureList.get('totalQuota') : departureList.get('cubeCount')
     const placeKey = [state.id, ort].join(':')
     if (!locations[placeKey]) {
@@ -17,11 +17,11 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
     if (!locations[placeKey].tasks[type]) {
       locations[placeKey].tasks[type] = {
         cubeCount: 0,
-        completedCount: 0
+        completedCubeCount: 0
       }
     }
     locations[placeKey].tasks[type].cubeCount += (cubeCount || 0)
-    locations[placeKey].tasks[type].completedCount += (completedCount || 0)
+    locations[placeKey].tasks[type].completedCubeCount += (completedCubeCount || 0)
   }
   return Object.values(locations)
 })
@@ -37,8 +37,7 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
     .find({ sessionToken: user.get('sessionToken') })
   const location = { ort, stateId, center: city.get('gp'), tasks: {} }
   for (const departureList of departureLists) {
-    const { type, completedCount, cubeIds, cubeLocations, cubeStatuses } = departureList.attributes
-    const cubeCount = type === 'scout' ? departureList.get('totalQuota') : departureList.get('cubeCount')
+    const { type, cubeCount, completedCubeCount, cubeIds, cubeLocations, cubeStatuses } = departureList.attributes
     const cubes = cubeIds.reduce((cubes, cubeId) => {
       cubes[cubeId] = { s: cubeStatuses[cubeId], gp: cubeLocations[cubeId] }
       return cubes
@@ -46,17 +45,17 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
     if (!location.tasks[type]) {
       location.tasks[type] = {
         cubeCount: 0,
-        completedCount: 0,
+        completedCubeCount: 0,
         lists: {}
       }
     }
     location.tasks[type].cubeCount += (cubeCount || 0)
-    location.tasks[type].completedCount += (completedCount || 0)
+    location.tasks[type].completedCubeCount += (completedCubeCount || 0)
     location.tasks[type].lists[departureList.id] = {
       objectId: departureList.id,
       quotas: departureList.get('quotas'),
       cubeCount,
-      completedCount,
+      completedCubeCount,
       cubes,
       type
     }

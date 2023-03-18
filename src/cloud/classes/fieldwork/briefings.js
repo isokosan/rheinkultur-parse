@@ -40,6 +40,17 @@ Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
   }
 })
 
+Parse.Cloud.beforeDelete(Briefing, async ({ object: briefing }) => {
+  const wipListExists = await $query(DepartureList)
+    .equalTo('briefing', briefing)
+    .greaterThanOrEqualTo('status', 3)
+    .find({ useMasterKey: true })
+  if (wipListExists.length) {
+    throw new Error('There are work in progress lists inside this briefing')
+  }
+  throw new Error('Not working yet')
+})
+
 Parse.Cloud.afterDelete(Briefing, $deleteAudits)
 
 Parse.Cloud.define('briefing-create', async ({
@@ -157,23 +168,5 @@ Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, p
 
 Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user, context: { seedAsId } }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
-  if (briefing.get('status')) {
-    throw new Error('Only draft briefings can be deleted!')
-  }
-  while (true) {
-    const departureLists = await $query('DepartureList')
-      .equalTo('briefing', briefing)
-      .find({ useMasterKey: true })
-    if (!departureLists.length) {
-      break
-    }
-    await Promise.all(departureLists.map((sl) => {
-      return sl.get('status')
-        ? sl.unset('briefing').save(null, { useMasterKey: true })
-        : sl.destroy({ useMasterKey: true })
-    }))
-  }
   return briefing.destroy({ useMasterKey: true })
-}, { requireUser: true })
-
-// $query('DepartureList').notEqualTo('briefing', null).equalTo('quotas', null).each(dl => dl.set('quotas', { KVZ: 2, MFG: 10 }).save(null, { useMasterKey: true }), { useMasterKey: true }).then(consola.success)
+}, $adminOrMaster)

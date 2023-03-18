@@ -562,9 +562,9 @@ const schemaDefinitions = {
       pendingCubeIds: { type: 'Array' }, // scout form submitted
       pendingCubeCount: { type: 'Number', default: 0 },
       approvedCubeIds: { type: 'Array' }, // approved after scouting
-      // TODO: Remove adminApprovedCubeIds while looking at other types than 'scout' ?
-      adminApprovedCubeIds: { type: 'Array' }, // approved w/o scouting
+      adminApprovedCubeIds: { type: 'Array' }, // completed w/o task
       approvedCubeCount: { type: 'Number', default: 0 },
+      completedCubeCount: { type: 'Number', default: 0 },
 
       quotas: { type: 'Object' } // only for parent briefing
     }
@@ -575,7 +575,7 @@ const schemaDefinitions = {
       departureList: { type: 'Pointer', targetClass: 'DepartureList' },
       cube: { type: 'Pointer', targetClass: 'Cube', required: true },
       scout: { type: 'Pointer', targetClass: '_User', required: true },
-      status: { type: 'String' },
+      status: { type: 'String', required: true },
       form: { type: 'Object' },
       photos: { type: 'Array' }
     }
@@ -586,6 +586,7 @@ const schemaDefinitions = {
       departureList: { type: 'Pointer', targetClass: 'DepartureList' },
       cube: { type: 'Pointer', targetClass: 'Cube', required: true },
       scout: { type: 'Pointer', targetClass: '_User', required: true },
+      status: { type: 'String', required: true },
       condition: { type: 'String' },
       beforePhoto: { type: 'Pointer', targetClass: 'FileObject' },
       afterPhoto: { type: 'Pointer', targetClass: 'FileObject' },
@@ -599,6 +600,7 @@ const schemaDefinitions = {
       departureList: { type: 'Pointer', targetClass: 'DepartureList' },
       cube: { type: 'Pointer', targetClass: 'Cube', required: true },
       scout: { type: 'Pointer', targetClass: '_User', required: true },
+      status: { type: 'String', required: true },
       condition: { type: 'String' },
       photo: { type: 'Pointer', targetClass: 'FileObject' }
     }

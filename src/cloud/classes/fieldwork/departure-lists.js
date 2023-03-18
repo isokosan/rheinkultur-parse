@@ -32,31 +32,31 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   const cubeIds = [...new Set(departureList.get('cubeIds') || [])]
   cubeIds.sort()
   departureList.set('cubeIds', cubeIds)
-  departureList.set('cubeCount', cubeIds.length)
+  if (departureList.get('scout') === 'scout' && departureList.get('quotas')) {
+    departureList.set('cubeCount', sum(Object.values(departureList.get('quotas') || {})))
+  } else {
+    departureList.set('cubeCount', cubeIds.length)
+  }
   departureList.set('gp', await getCenterOfCubes(cubeIds))
 
   if (countCubes) {
     const submissionClass = capitalize(departureList.get('type')) + 'Submission'
-
     const pendingCubeIds = await $query(submissionClass)
       .equalTo('departureList', departureList)
-      .equalTo('status', null)
+      .equalTo('status', 'pending')
       .distinct('cube', { useMasterKey: true })
       .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('pendingCubeIds', pendingCubeIds)
     departureList.set('pendingCubeCount', pendingCubeIds.length)
-
     const approvedCubeIds = await $query(submissionClass)
       .equalTo('departureList', departureList)
       .equalTo('status', 'approved')
       .notEqualTo('form.notFound', true)
       .distinct('cube', { useMasterKey: true })
       .then(cubes => cubes.map(cube => cube.objectId))
+    approvedCubeIds.push(...(departureList.get('adminApprovedCubeIds') || []))
     departureList.set('approvedCubeIds', [...new Set(approvedCubeIds)])
     departureList.set('approvedCubeCount', approvedCubeIds.length)
-    // TODO: fix how admin approved stuff works
-    approvedCubeIds.push(...(departureList.get('adminApprovedCubeIds') || []))
-
     const rejectedCubeIds = await $query(submissionClass)
       .equalTo('departureList', departureList)
       .equalTo('status', 'rejected')
@@ -65,7 +65,7 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
     departureList.set('rejectedCubeIds', rejectedCubeIds)
     departureList.set('rejectedCubeCount', rejectedCubeIds.length)
 
-    departureList.set('completedCount', parseInt(pendingCubeIds.length + approvedCubeIds.length - rejectedCubeIds.length))
+    departureList.set('completedCubeCount', parseInt(pendingCubeIds.length + approvedCubeIds.length - rejectedCubeIds.length))
   }
 })
 
@@ -100,7 +100,6 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       if (!departureList.get('dueDate')) {
         departureList.set('dueDate', departureList.get('briefing')?.get('dueDate'))
       }
-      departureList.set('totalQuota', sum(Object.values(departureList.get('quotas') || {})))
     }
 
     if (query._include.includes('submissions')) {
@@ -253,7 +252,7 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
   if (!departureList.get('date') || !departureList.get('dueDate')) {
     throw new Error('Please set date and due date first.')
   }
-  if (departureList.get('type') === 'scout' && !departureList.get('totalQuota')) {
+  if (departureList.get('type') === 'scout' && !departureList.get('quotas')) {
     throw new Error('Please set quotas.')
   }
   departureList.set({ status: 1 })
@@ -316,6 +315,17 @@ Parse.Cloud.define('departure-list-approve-verified-cube', async ({ params: { id
 //   return { message: 'Abfahrtsliste gelöscht.' }
 // }, { requireUser: true })
 
+// TODO: Completion
+// Parse.Cloud.define('departure-list-complete', async ({ params: { id: departureListId }, user }) => {
+//   const departureList = await $getOrFail(DepartureList, departureListId)
+//   if (departureList.get('status') !== 3) {
+//     throw new Error('Only in_progress Abfahrtsliste can be completed.')
+//   }
+//   departureList.set({ status: 4 })
+//   const audit = { user, fn: 'departure-list-complete' }
+//   return departureList.save(null, { useMasterKey: true, context: { audit } })
+// }, { requireUser: true })
+
 Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, form, photoIds, comments }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   const cube = await $getOrFail('Cube', cubeId)
@@ -324,7 +334,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
     : new ScoutSubmission({ departureList, cube })
   submission.set({
     scout: user,
-    status: null
+    status: 'pending'
   })
 
   let changes
@@ -422,7 +432,7 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: departure
   }
   submission.set({
     scout: user,
-    status: null,
+    status: 'pending',
     condition,
     comment
   })
@@ -474,7 +484,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: depar
   submission.set({
     scout: user,
     condition,
-    status: null,
+    status: 'pending',
     photo: photoId ? await $getOrFail('FileObject', photoId) : null
   })
   const audit = { user, fn: 'disassembly-submission-submit', data: { cubeId, changes } }
@@ -504,17 +514,5 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
   return { message: 'Abbau abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('departure-list-complete', async ({ params: { id: departureListId }, user }) => {
-  const departureList = await $getOrFail(DepartureList, departureListId)
-  if (departureList.get('status') !== 3) {
-    throw new Error('Only in_progress Abfahrtsliste can be completed.')
-  }
-  departureList.set({ status: 4 })
-  const audit = { user, fn: 'departure-list-complete' }
-  return departureList.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
-
-$query('DepartureList')
-  .equalTo('completedCount', null)
-  .each(dl => dl.save(null, { useMasterKey: true, context: { countCubes: true } }), { useMasterKey: true })
-  .then(consola.success)
+// $query(DepartureList).equalTo('completedCubeCount', null)
+//   .each(dl => dl.save(null, { useMasterKey: true, context: { countCubes: true } }), { useMasterKey: true }).then(consola.info)
