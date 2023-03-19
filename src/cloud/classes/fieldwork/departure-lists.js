@@ -95,27 +95,18 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
 })
 
 Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) => {
+  const today = await $today()
   for (const departureList of departureLists) {
     if (departureList.get('type') === 'scout') {
       if (!departureList.get('dueDate')) {
         departureList.set('dueDate', departureList.get('briefing')?.get('dueDate'))
       }
     }
-
+    departureList.set('dueDays', moment(departureList.get('dueDate')).diff(today, 'days'))
     if (query._include.includes('submissions')) {
-      let submissions
-      if (departureList.get('type') === 'scout') {
-        submissions = await $query(ScoutSubmission).equalTo('departureList', departureList).find({ useMasterKey: true })
-      }
-      if (departureList.get('type') === 'control') {
-        submissions = await $query(ControlSubmission).equalTo('departureList', departureList).find({ useMasterKey: true })
-      }
-      if (departureList.get('type') === 'disassembly') {
-        submissions = await $query(DisassemblySubmission).equalTo('departureList', departureList).find({ useMasterKey: true })
-      }
-      departureList.set('submissions', submissions)
+      const submissionClass = capitalize(departureList.get('type')) + 'Submission'
+      departureList.set('submissions', await $query(submissionClass).equalTo('departureList', departureList).find({ useMasterKey: true }))
     }
-
     if (query._include.includes('cubeStatuses')) {
       const { cubeIds, pendingCubeIds, approvedCubeIds, rejectedCubeIds } = departureList.attributes
       const cubeStatuses = cubeIds.reduce((acc, cubeId) => {
@@ -127,7 +118,6 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       }, {})
       departureList.set({ cubeStatuses })
     }
-
     if (query._include.includes('cubeLocations')) {
       const cubeIds = departureList.get('cubeIds') || []
       const cubeLocations = await $query('Cube')

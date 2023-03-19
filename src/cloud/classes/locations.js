@@ -37,6 +37,6 @@ Parse.Cloud.beforeSave('City', async ({ object: city }) => {
 Parse.Cloud.afterFind('City', ({ objects: cities }) => {
   for (const city of cities) {
     // TODO: Remove (open issue -> js sdk does not encodeURI so some chars in ID throw errors, whereas rest api works)
-    city.id = encodeURI(city.id)
+    city.id = decodeURIComponent(city.id)
   }
 })
