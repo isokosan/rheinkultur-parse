@@ -34,9 +34,9 @@ async function checkIfQuarterIsClosed (quarter) {
 const reportQueue = createQueue('process_quarterly_report')
 reportQueue.process(path.join(BASE_DIR, 'queues/index.js'))
 reportQueue.obliterate({ force: true })
-  .then(response => consola.success('obliterated', response))
-  .then(() => reportQueue.getJobs())
-  .then(response => consola.info('jobs', response))
+// .then(response => consola.success('obliterated', response))
+// .then(() => reportQueue.getJobs())
+// .then(response => consola.info('jobs', response))
 
 Parse.Cloud.beforeSave(QuarterlyReport, async ({ object: quarterlyReport }) => {
   await ensureUniqueField(quarterlyReport, 'quarter')
