@@ -158,6 +158,7 @@ Parse.Cloud.define('search', async ({
     plz,
     ort,
     state: stateId,
+    pk, // placeKey (stateId:ort)
     c,
     r,
     s,
@@ -292,6 +293,11 @@ Parse.Cloud.define('search', async ({
   s.includes('8') && bool.must.push({ exists: { field: 'dAt' } })
 
   // address constraints
+
+  if (pk) {
+    [stateId, ort] = pk.split(':')
+  }
+
   str && bool.filter.push({ term: { 'str.keyword': str } })
   hsnr && bool.filter.push({ match_phrase_prefix: { hsnr } })
   plz && bool.filter.push({ match_phrase_prefix: { plz } })

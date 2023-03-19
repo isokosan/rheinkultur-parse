@@ -1,10 +1,6 @@
 const Briefing = Parse.Object.extend('Briefing')
 const DepartureList = Parse.Object.extend('DepartureList')
 
-// Parse.Cloud.beforeSave(Briefing, async ({ object: briefing }) => {
-//   briefing.isNew() && !briefing.get('no') && briefing.set({ no: await getNewNo('S' + moment(await $today()).format('YY') + '-', Briefing, 'no') })
-// })
-
 Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } }) => {
   const { date, dueDate } = briefing.attributes
   await Parse.Query.or(
@@ -17,26 +13,18 @@ Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } })
 })
 
 Parse.Cloud.beforeFind(Briefing, ({ query }) => {
-  query._include.includes('all') && query.include(['departureLists', 'company', 'docs'])
+  query._include.includes('all') && query.include(['company', 'docs'])
 })
 
 Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
-  if (query._include.includes('departureLists')) {
-    const departureLists = await $query(DepartureList).containedIn('briefing', briefings).limit(1000).find({ useMasterKey: true })
-    for (const briefing of briefings) {
-      briefing.set('departureLists', departureLists.filter(s => s.get('briefing').id === briefing.id))
-    }
-  }
-  if (query._include.includes('departureListCount')) {
-    const pipeline = [
-      { $match: { _p_briefing: { $in: briefings.map(b => 'Briefing$' + b.id) } } },
-      { $group: { _id: '$briefing', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
-    ]
-    const counts = await $query(DepartureList).aggregate(pipeline)
-      .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
-    for (const briefing of briefings) {
-      briefing.set(counts[briefing.id])
-    }
+  const pipeline = [
+    { $match: { _p_briefing: { $in: briefings.map(b => 'Briefing$' + b.id) } } },
+    { $group: { _id: '$briefing', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+  ]
+  const counts = await $query(DepartureList).aggregate(pipeline)
+    .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
+  for (const briefing of briefings) {
+    briefing.set(counts[briefing.id])
   }
 })
 

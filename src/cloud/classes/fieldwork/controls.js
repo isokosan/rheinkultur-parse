@@ -119,22 +119,14 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
       control.set('cubesQuery', getCubesQuery(control).toJSON())
     }
   }
-  if (query._include.includes('departureLists')) {
-    const departureLists = await $query(DepartureList).containedIn('control', controls).limit(1000).find({ useMasterKey: true })
-    for (const control of controls) {
-      control.set('departureLists', departureLists.filter(s => s.get('control').id === control.id))
-    }
-  }
-  if (query._include.includes('departureListCount')) {
-    const pipeline = [
-      { $match: { _p_control: { $in: controls.map(c => 'Control$' + c.id) } } },
-      { $group: { _id: '$control', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
-    ]
-    const counts = await $query(DepartureList).aggregate(pipeline)
-      .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
-    for (const control of controls) {
-      control.set(counts[control.id])
-    }
+  const pipeline = [
+    { $match: { _p_control: { $in: controls.map(c => 'Control$' + c.id) } } },
+    { $group: { _id: '$control', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+  ]
+  const counts = await $query(DepartureList).aggregate(pipeline)
+    .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
+  for (const control of controls) {
+    control.set(counts[control.id])
   }
 })
 
