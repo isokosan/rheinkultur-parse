@@ -94,8 +94,6 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   }
 })
 
-// $query('DepartureList').each(dl => dl.save(null, { useMasterKey: true, context: { countCubes: true } }), { useMasterKey: true }).then(consola.error)
-
 Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { audit, notifyScouts } }) => {
   $audit(departureList, audit)
   notifyScouts && consola.warn('Todo: Notify together')
@@ -124,6 +122,7 @@ Parse.Cloud.beforeFind(DepartureList, async ({ query, user, master }) => {
 Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) => {
   const today = await $today()
   for (const departureList of departureLists) {
+    !departureList.get('completedCubeCount') && departureList.set('completedCubeCount', 0)
     if (departureList.get('type') === 'scout') {
       if (!departureList.get('dueDate')) {
         departureList.set('dueDate', departureList.get('briefing')?.get('dueDate'))
@@ -131,9 +130,9 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       if (departureList.get('quotas')) {
         const quotaStatus = []
         const quotas = departureList.get('quotas')
-        const quotasCompleted = departureList.get('quotasCompleted')
+        const quotasCompleted = departureList.get('quotasCompleted') || {}
         for (const media of Object.keys(quotas)) {
-          quotaStatus.push(`${media}: ${quotasCompleted[media]}/${quotas[media]}`)
+          quotaStatus.push(`${media}: ${quotasCompleted[media] || 0}/${quotas[media]}`)
         }
         departureList.set('quotaStatus', quotaStatus.join(' | '))
       }

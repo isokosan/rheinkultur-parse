@@ -1,6 +1,10 @@
 const Briefing = Parse.Object.extend('Briefing')
 const DepartureList = Parse.Object.extend('DepartureList')
 
+Parse.Cloud.beforeSave(Briefing, ({ object: briefing }) => {
+  !briefing.get('status') && briefing.set('status', 0)
+})
+
 Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } }) => {
   const { date, dueDate } = briefing.attributes
   await Parse.Query.or(

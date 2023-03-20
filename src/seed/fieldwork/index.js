@@ -1,4 +1,11 @@
 const { faker, createFakeObj } = require('./../utils')
+
+async function purgeFieldwork () {
+  await (new Parse.Schema('Notification')).purge()
+  const fieldwordClasses = ['Briefing', 'Control', 'DepartureList', 'ScoutSubmission', 'ControlSubmission', 'DisassemblySubmission']
+  return Promise.all(fieldwordClasses.map(className => (new Parse.Schema(className)).purge())).then(consola.success)
+}
+
 const TEST_BRIEFINGS = [
   {
     name: 'Abfahrtsliste_Gesamt_Koop T03',
@@ -118,6 +125,8 @@ async function seedBriefings () {
   consola.success('done seeding breifings')
 }
 
+// purgeFieldwork().then(seedBriefings).then(consola.success)
+
 const fakeScout = async function ({ company }) {
   const email = faker.internet.email()
   return {
@@ -137,5 +146,6 @@ async function seedScouts () {
   await createFakeObj(Parse.User, 10, fakeScout, { company: await $getOrFail('Company', '4EBkZmBra0') })
 }
 
+Parse.Cloud.define('purge-fieldwork', purgeFieldwork, { requireMaster: true })
 Parse.Cloud.define('seed-briefings', seedBriefings, { requireMaster: true })
 Parse.Cloud.define('seed-scouts', seedScouts, { requireMaster: true })

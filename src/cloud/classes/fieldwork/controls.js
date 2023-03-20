@@ -93,6 +93,10 @@ function getCubesQuery (control) {
   return cubesQuery
 }
 
+Parse.Cloud.beforeSave(Control, ({ object: control }) => {
+  !control.get('status') && control.set('status', 0)
+})
+
 Parse.Cloud.afterSave(Control, ({ object: control, context: { audit } }) => { $audit(control, audit) })
 
 Parse.Cloud.beforeFind(Control, ({ query }) => {
