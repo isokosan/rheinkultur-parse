@@ -430,8 +430,9 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
     const form = submission.get('form')
     const { str, hsnr, ort, plz } = form.address
     cube.set({ str, hsnr, ort, plz })
-    const { stateId, htId } = form
+    const { stateId, htId, media } = form
     cube.set('state', $parsify('State', stateId))
+    cube.set('media', media)
     cube.set('ht', $parsify('HousingType', htId))
     const { sides } = form
     cube.set({ sides, vAt: new Date() })
