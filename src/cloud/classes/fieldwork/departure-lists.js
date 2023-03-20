@@ -32,11 +32,9 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
   const cubeIds = [...new Set(departureList.get('cubeIds') || [])]
   cubeIds.sort()
   departureList.set('cubeIds', cubeIds)
-  if (departureList.get('scout') === 'scout' && departureList.get('quotas')) {
-    departureList.set('cubeCount', sum(Object.values(departureList.get('quotas') || {})))
-  } else {
-    departureList.set('cubeCount', cubeIds.length)
-  }
+  departureList.set('cubeCount', departureList.get('type') === 'scout' && departureList.get('quotas')
+    ? sum(Object.values(departureList.get('quotas') || {}))
+    : cubeIds.length)
   departureList.set('gp', await getCenterOfCubes(cubeIds))
 
   if (countCubes) {
@@ -44,6 +42,7 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
     const pendingCubeIds = await $query(submissionClass)
       .equalTo('departureList', departureList)
       .equalTo('status', 'pending')
+      .notEqualTo('form.notFound', true)
       .distinct('cube', { useMasterKey: true })
       .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('pendingCubeIds', pendingCubeIds)
@@ -64,10 +63,32 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
       .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('rejectedCubeIds', rejectedCubeIds)
     departureList.set('rejectedCubeCount', rejectedCubeIds.length)
+    const pendingNotFoundCubeIds = await $query(submissionClass)
+      .equalTo('departureList', departureList)
+      .equalTo('status', 'pending')
+      .equalTo('form.notFound', true)
+      .distinct('cube', { useMasterKey: true })
+      .then(cubes => cubes.map(cube => cube.objectId))
+    departureList.set('pendingNotFoundCubeIds', pendingNotFoundCubeIds)
 
+    const quotas = departureList.get('quotas')
+    if (quotas) {
+      const quotasCompleted = {}
+      for (const media of Object.keys(quotas)) {
+        quotasCompleted[media] = await $query(submissionClass)
+          .equalTo('departureList', departureList)
+          .containedIn('status', ['pending', 'approved'])
+          .notEqualTo('form.notFound', true)
+          .equalTo('form.media', media)
+          .count({ useMasterKey: true })
+      }
+      departureList.set({ quotasCompleted })
+    }
     departureList.set('completedCubeCount', parseInt(pendingCubeIds.length + approvedCubeIds.length - rejectedCubeIds.length))
   }
 })
+
+// $query('DepartureList').each(dl => dl.save(null, { useMasterKey: true, context: { countCubes: true } }), { useMasterKey: true }).then(consola.error)
 
 Parse.Cloud.afterSave(DepartureList, async ({ object: departureList, context: { audit, notifyScouts } }) => {
   $audit(departureList, audit)
@@ -101,6 +122,15 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       if (!departureList.get('dueDate')) {
         departureList.set('dueDate', departureList.get('briefing')?.get('dueDate'))
       }
+      if (departureList.get('quotas')) {
+        const quotaStatus = []
+        const quotas = departureList.get('quotas')
+        const quotasCompleted = departureList.get('quotasCompleted')
+        for (const media of Object.keys(quotas)) {
+          quotaStatus.push(`${media}: ${quotasCompleted[media]}/${quotas[media]}`)
+        }
+        departureList.set('quotaStatus', quotaStatus.join(' | '))
+      }
     }
     departureList.set('dueDays', moment(departureList.get('dueDate')).diff(today, 'days'))
     if (query._include.includes('submissions')) {
@@ -108,10 +138,11 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       departureList.set('submissions', await $query(submissionClass).equalTo('departureList', departureList).find({ useMasterKey: true }))
     }
     if (query._include.includes('cubeStatuses')) {
-      const { cubeIds, pendingCubeIds, approvedCubeIds, rejectedCubeIds } = departureList.attributes
+      const { cubeIds, pendingCubeIds, pendingNotFoundCubeIds, approvedCubeIds, rejectedCubeIds } = departureList.attributes
       const cubeStatuses = cubeIds.reduce((acc, cubeId) => {
         acc[cubeId] = 0
         if (pendingCubeIds?.includes(cubeId)) { acc[cubeId] = 1 }
+        if (pendingNotFoundCubeIds?.includes(cubeId)) { acc[cubeId] = 3 }
         if (approvedCubeIds?.includes(cubeId)) { acc[cubeId] = 1 }
         if (rejectedCubeIds?.includes(cubeId)) { acc[cubeId] = 2 }
         return acc
@@ -123,6 +154,7 @@ Parse.Cloud.afterFind(DepartureList, async ({ objects: departureLists, query }) 
       const cubeLocations = await $query('Cube')
         .containedIn('objectId', cubeIds)
         .select('gp')
+        .equalTo('dAt', null)
         .limit(cubeIds.length)
         .find({ useMasterKey: true })
         .then((cubes) => cubes.reduce((acc, cube) => {
@@ -231,6 +263,32 @@ Parse.Cloud.define('departure-list-update-due-date', async ({ params: { id: depa
   }
 }, { requireUser: true })
 
+async function validateFinalize (departureList) {
+  if (!departureList.get('date') || !departureList.get('dueDate')) {
+    throw new Error('Please set date and due date first.')
+  }
+  if (departureList.get('type') === 'scout') {
+    if (!departureList.get('quotas')) {
+      throw new Error('Please set quotas.')
+    }
+  }
+  const { ort, state: { id: stateId } } = departureList.attributes
+  // validate cubes
+  const cubeIds = departureList.get('cubeIds') || []
+  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
+  if (!cubes.length) { throw new Error('No cubes found') }
+  if (cubes.some(cube => cube.get('ort') !== ort || cube.get('state').id !== stateId)) {
+    throw new Error('There are cubes outside of the location of this list')
+  }
+
+  // reject booked cubes
+  if (departureList.get('type') === 'scout') {
+    for (const cube of cubes) {
+      if (cube.get('order')) { throw new Error('Cannot finalize a scout list with booked cubes!') }
+    }
+  }
+}
+
 Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureListId }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   if (departureList.get('status')) {
@@ -239,12 +297,7 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
   if (!departureList.get('manager')) {
     throw new Error('Need a manager to appoint to')
   }
-  if (!departureList.get('date') || !departureList.get('dueDate')) {
-    throw new Error('Please set date and due date first.')
-  }
-  if (departureList.get('type') === 'scout' && !departureList.get('quotas')) {
-    throw new Error('Please set quotas.')
-  }
+  await validateFinalize(departureList)
   departureList.set({ status: 1 })
   const audit = { user, fn: 'departure-list-appoint' }
   await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
@@ -257,18 +310,15 @@ Parse.Cloud.define('departure-list-appoint', async ({ params: { id: departureLis
 Parse.Cloud.define('departure-list-assign', async ({ params: { id: departureListId }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   if (!departureList.get('manager') || departureList.get('status') !== 1) {
-    consola.info(departureList.attributes)
     throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
   }
   if (!(departureList.get('scouts') || []).length) {
     throw new Error('Need a scout to assign to')
   }
-  if (!departureList.get('date') || !departureList.get('dueDate')) {
-    throw new Error('Please set date and due date first.')
-  }
   if (moment(departureList.get('date')).isAfter(await $today(), 'day')) {
     throw new Error(`You can assign this task only from ${moment(departureList.get('date')).format('DD.MM.YYYY')}`)
   }
+  await validateFinalize(departureList)
   departureList.set({ status: 2 })
   const audit = { user, fn: 'departure-list-assign' }
   await departureList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
@@ -327,21 +377,19 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
     status: 'pending'
   })
 
+  // make sure the cube is added to the list if found
+  const cubeIds = departureList.get('cubeIds') || []
+  cubeIds.push(cubeId)
+  departureList.set('cubeIds', cubeIds)
+
   let changes
+  if (submissionId) {
+    changes = $changes(submission.get('form'), form, true)
+  }
   if (form.notFound) {
-    for (const photo of submission.get('photos') || []) {
-      await photo.destroy({ useMasterKey: true })
-    }
-    submission.set({ form }).unset('photos')
-    if (submissionId) {
-      changes.notFound = true
-    }
+    submission.set({ form })
   } else {
     delete form.notFound
-    // make sure the cube is added to the list if found
-    const cubeIds = departureList.get('cubeIds') || []
-    cubeIds.push(cubeId)
-    departureList.set('cubeIds', cubeIds)
     const photos = await $query('CubePhoto').containedIn('objectId', photoIds).find({ useMasterKey: true })
     if (submissionId) {
       changes = $changes(submission.get('form'), form, true)
@@ -368,7 +416,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
 }, { requireUser: true })
 
 Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submissionId }, user }) => {
-  const submission = await $query(ScoutSubmission).include(['departureList', 'cube', 'photos']).get(submissionId, { useMasterKey: true })
+  const submission = await $getOrFail(ScoutSubmission, submissionId, ['departureList', 'cube', 'photos'])
   const cube = submission.get('cube')
 
   // if not found, soft delete the cube
@@ -398,10 +446,14 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
 }, { requireUser: true })
 
 Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionId }, user }) => {
-  const submission = await $getOrFail(ScoutSubmission, submissionId)
+  const submission = await $getOrFail(ScoutSubmission, submissionId, ['departureList', 'cube'])
   submission.set({ status: 'rejected' })
-  const cubeId = submission.get('cube').id
-  const audit = { user, fn: 'scout-submission-reject', data: { cubeId } }
+  const cube = submission.get('cube')
+  if (submission.get('form').notFound) {
+    cube.unset('dAt')
+    await cube.save(null, { useMasterKey: true })
+  }
+  const audit = { user, fn: 'scout-submission-reject', data: { cubeId: cube.id } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('departureList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
   return { message: 'Scouting abgelehnt.', data: submission }
