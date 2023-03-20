@@ -71,6 +71,7 @@ Parse.Cloud.beforeSave(DepartureList, async ({ object: departureList, context: {
       .distinct('cube', { useMasterKey: true })
       .then(cubes => cubes.map(cube => cube.objectId))
     departureList.set('pendingNotFoundCubeIds', pendingNotFoundCubeIds)
+    departureList.get('scoutAddedCubeIds') && departureList.set('scoutAddedCubeIds', [...new Set(departureList.get('scoutAddedCubeIds'))])
 
     const quotas = departureList.get('quotas')
     if (quotas) {
@@ -384,8 +385,12 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
 
   // make sure the cube is added to the list if found
   const cubeIds = departureList.get('cubeIds') || []
-  cubeIds.push(cubeId)
-  departureList.set('cubeIds', cubeIds)
+  if (!cubeIds.includes(cubeId)) {
+    cubeIds.push(cubeId)
+    const scoutAddedCubeIds = departureList.get('scoutAddedCubeIds') || []
+    scoutAddedCubeIds.push(cubeId)
+    departureList.set({ cubeIds, scoutAddedCubeIds })
+  }
 
   form.notFound = Boolean(form.notFound)
   let changes

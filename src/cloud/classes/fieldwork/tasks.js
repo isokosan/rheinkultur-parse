@@ -36,10 +36,13 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
     .find({ sessionToken: user.get('sessionToken') })
   const location = { ort, stateId, center: city.get('gp'), tasks: {} }
   for (const departureList of departureLists) {
-    const { type, cubeCount, completedCubeCount, cubeIds, cubeLocations, cubeStatuses } = departureList.attributes
+    const { type, cubeCount, completedCubeCount, cubeIds, cubeLocations, cubeStatuses, scoutAddedCubeIds } = departureList.attributes
     const cubes = cubeIds.reduce((cubes, cubeId) => {
       if (cubeId in cubeStatuses && cubeId in cubeLocations) {
         cubes[cubeId] = { s: cubeStatuses[cubeId], gp: cubeLocations[cubeId] }
+        if (scoutAddedCubeIds?.includes(cubeId)) {
+          cubes[cubeId].scoutAdded = true // this will show the cube as gray on the map
+        }
       }
       return cubes
     }, {})
