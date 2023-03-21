@@ -35,16 +35,16 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
     .equalTo('state', state)
     .find({ sessionToken: user.get('sessionToken') })
 
+  const STATUS_MAP = {
+    undefined: 0,
+    pending: 1,
+    approved: 1,
+    rejected: 2,
+    not_found: 3
+  }
+
   for (const taskList of taskLists) {
-    const { type, cubeIds, pendingCubeIds, pendingNotFoundCubeIds, approvedCubeIds, rejectedCubeIds, scoutAddedCubeIds, counts } = taskList.attributes
-    const cubeStatuses = cubeIds.reduce((acc, cubeId) => {
-      acc[cubeId] = 0
-      if (pendingCubeIds?.includes(cubeId)) { acc[cubeId] = 1 }
-      if (pendingNotFoundCubeIds?.includes(cubeId)) { acc[cubeId] = 3 }
-      if (approvedCubeIds?.includes(cubeId)) { acc[cubeId] = 1 }
-      if (rejectedCubeIds?.includes(cubeId)) { acc[cubeId] = 2 }
-      return acc
-    }, {})
+    const { type, cubeIds, scoutAddedCubeIds, counts, statuses } = taskList.attributes
     const cubeLocations = await $query('Cube')
       .containedIn('objectId', cubeIds)
       .select('gp')
@@ -56,8 +56,8 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
         return acc
       }, {}))
     const cubes = cubeIds.reduce((cubes, cubeId) => {
-      if (cubeId in cubeStatuses && cubeId in cubeLocations) {
-        cubes[cubeId] = { s: cubeStatuses[cubeId], gp: cubeLocations[cubeId] }
+      if (cubeId in cubeLocations) {
+        cubes[cubeId] = { s: STATUS_MAP[statuses[cubeId || 'undefined']], gp: cubeLocations[cubeId] }
         if (scoutAddedCubeIds?.includes(cubeId)) {
           cubes[cubeId].scoutAdded = true // this will show the cube as gray on the map
         }

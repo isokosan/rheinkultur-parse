@@ -2,6 +2,8 @@ const { capitalize, sum } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const TaskList = Parse.Object.extend('TaskList')
 
+// $query('TaskList').each(tl => tl.save(null, { useMasterKey: true }), { useMasterKey: true }).then(consola.success)
+
 async function getCenterOfCubes (cubeIds) {
   if (!cubeIds.length) {
     return null
@@ -32,6 +34,9 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.set('cubeCount', cubeIds.length)
   taskList.set('gp', await getCenterOfCubes(cubeIds))
 
+  taskList.get('adminApprovedCubeIds') && taskList.set('adminApprovedCubeIds', [...new Set(taskList.get('adminApprovedCubeIds'))])
+  taskList.get('scoutAddedCubeIds') && taskList.set('scoutAddedCubeIds', [...new Set(taskList.get('scoutAddedCubeIds'))])
+
   const taskType = taskList.get('type')
   const quotas = taskList.get('quotas')
 
@@ -40,45 +45,41 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     ? []
     : await $query(submissionClass).equalTo('taskList', taskList).limit(cubeIds.length).find({ useMasterKey: true })
 
-  const pendingCubeIds = []
-  const pendingNotFoundCubeIds = []
-  const approvedCubeIds = []
-  const rejectedCubeIds = []
-  const completedCubeIds = []
+  const statuses = {}
   for (const submission of submissions) {
+    const cubeId = submission.get('cube').id
     if (submission.get('status') === 'rejected') {
-      rejectedCubeIds.push(submission.get('cube').id)
+      statuses[cubeId] = 'rejected'
       continue
     }
-    if (!submission.get('form')?.notFound) {
-      completedCubeIds.push(submission.get('cube').id)
+    if (submission.get('form')?.notFound) {
+      statuses[cubeId] = 'not_found'
+      continue
     }
     if (submission.get('status') === 'pending') {
-      submission.get('form')?.notFound
-        ? pendingNotFoundCubeIds.push(submission.get('cube').id)
-        : pendingCubeIds.push(submission.get('cube').id)
+      statuses[cubeId] = 'pending'
       continue
     }
     if (submission.get('status') === 'approved') {
-      approvedCubeIds.push(submission.get('cube').id)
+      statuses[cubeId] = 'approved'
       continue
     }
   }
 
   const adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
-  approvedCubeIds.push(...adminApprovedCubeIds)
-  taskList.set('approvedCubeIds', [...new Set(approvedCubeIds)])
-  taskList.set('rejectedCubeIds', rejectedCubeIds)
-  taskList.set('pendingNotFoundCubeIds', pendingNotFoundCubeIds)
-  taskList.get('scoutAddedCubeIds') && taskList.set('scoutAddedCubeIds', [...new Set(taskList.get('scoutAddedCubeIds'))])
+  for (const cubeId of adminApprovedCubeIds) {
+    statuses[cubeId] = 'approved'
+  }
+
+  const statusVals = Object.values(statuses)
 
   const counts = {
     total: cubeIds.length,
-    pending: pendingCubeIds.length,
-    approved: approvedCubeIds.length,
-    rejected: rejectedCubeIds.length,
-    completed: completedCubeIds.length
+    pending: statusVals.filter(x => x === 'pending').length,
+    approved: statusVals.filter(x => x === 'approved').length,
+    rejected: statusVals.filter(x => x === 'rejected').length
   }
+  counts.completed = parseInt(counts.pending + counts.approved - counts.rejected)
 
   if (taskType === 'scout' && quotas) {
     counts.total = sum(Object.values(quotas || {}))
@@ -98,7 +99,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     }
     taskList.set({ quotasCompleted })
   }
-  taskList.set({ counts })
+  taskList.set({ statuses, counts })
 })
 
 Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts } }) => {

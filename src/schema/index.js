@@ -560,17 +560,17 @@ const schemaDefinitions = {
       status: { type: 'Number', required: true },
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },
-      pendingCubeIds: { type: 'Array' }, // task submitted
-      approvedCubeIds: { type: 'Array' }, // task approved
-      rejectedCubeIds: { type: 'Array' }, // task rejected
-      pendingNotFoundCubeIds: { type: 'Array' },
-      counts: { type: 'Object' },
 
       // only for scout and parent briefing
       scoutAddedCubeIds: { type: 'Array' }, // // case when scout adds extra cube (briefings)
       adminApprovedCubeIds: { type: 'Array' }, // case when admin pre-approves the cube (briefings)
       quotas: { type: 'Object' },
+
+      // calculated
+      counts: { type: 'Object' },
+      statuses: { type: 'Object' },
       quotasCompleted: { type: 'Object' } // only for parent briefing
+
     }
   },
   TaskSubmission: {
