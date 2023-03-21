@@ -123,14 +123,13 @@ Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
       .greaterThanOrEqualTo('status', 1)
   }
   if (user.get('accType') === 'scout') {
-    query.equalTo('scouts', user).greaterThanOrEqualTo('status', 2)
+    query.equalTo('scouts', user).containedIn('status', [2, 3])
   }
 })
 
 Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
   const today = await $today()
   for (const taskList of taskLists) {
-    !taskList.get('completedCubeCount') && taskList.set('completedCubeCount', 0)
     if (taskList.get('type') === 'scout') {
       if (!taskList.get('dueDate')) {
         taskList.set('dueDate', taskList.get('briefing')?.get('dueDate'))

@@ -51,7 +51,7 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
   // if not found, soft delete the cube
   if (submission.get('form').notFound) {
     cube.set('dAt', new Date())
-    await cube.save(null, { useMasterKey: true })
+    await $saveWithEncode(cube, null, { useMasterKey: true })
   } else {
     // save details to cube and approve photos
     const photos = submission.get('photos')
@@ -65,7 +65,7 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
     cube.set('ht', $parsify('HousingType', htId))
     const { sides } = form
     cube.set({ sides, vAt: new Date() })
-    await cube.save(null, { useMasterKey: true })
+    await $saveWithEncode(cube, null, { useMasterKey: true })
   }
 
   submission.set({ status: 'approved' })
@@ -81,7 +81,7 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   const cube = submission.get('cube')
   if (submission.get('form').notFound) {
     cube.unset('dAt')
-    await cube.save(null, { useMasterKey: true })
+    await $saveWithEncode(cube, null, { useMasterKey: true })
   }
   const audit = { user, fn: 'scout-submission-reject', data: { cubeId: cube.id, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
