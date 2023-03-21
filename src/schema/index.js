@@ -563,11 +563,13 @@ const schemaDefinitions = {
       approvedCubeIds: { type: 'Array' }, // task approved
       rejectedCubeIds: { type: 'Array' }, // task rejected
       pendingNotFoundCubeIds: { type: 'Array' },
-      scoutAddedCubeIds: { type: 'Array' }, // // case when scout adds extra cube (briefings)
-      adminApprovedCubeIds: { type: 'Array' }, // case when admin pre-approves the cube (briefings)
       counts: { type: 'Object' },
 
-      quotas: { type: 'Object' } // only for parent briefing
+      // only for scout and parent briefing
+      scoutAddedCubeIds: { type: 'Array' }, // // case when scout adds extra cube (briefings)
+      adminApprovedCubeIds: { type: 'Array' }, // case when admin pre-approves the cube (briefings)
+      quotas: { type: 'Object' },
+      quotasCompleted: { type: 'Object' } // only for parent briefing
     }
   },
   TaskSubmission: {

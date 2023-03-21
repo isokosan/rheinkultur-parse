@@ -1,5 +1,7 @@
 const { faker, createFakeObj } = require('./../utils')
 
+// purgeFieldwork().then(seedBriefings).then(consola.success)
+
 async function purgeFieldwork () {
   await (new Parse.Schema('Notification')).purge()
   const fieldwordClasses = ['Briefing', 'Control', 'DepartureList', 'TaskList', 'TaskSubmission', 'ScoutSubmission', 'ControlSubmission', 'DisassemblySubmission']
@@ -124,8 +126,6 @@ async function seedBriefings () {
   }
   consola.success('done seeding breifings')
 }
-
-purgeFieldwork().then(seedBriefings).then(consola.success)
 
 const fakeScout = async function ({ company }) {
   const email = faker.internet.email()

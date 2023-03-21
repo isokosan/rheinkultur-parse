@@ -2,12 +2,22 @@ const Control = Parse.Object.extend('Control')
 const TaskList = Parse.Object.extend('TaskList')
 
 function getCubesQuery (control) {
-  const { date, lastControlBefore, criteria } = control.attributes
-  // order status is active, canceled or ended
-  let cubesQuery = $query('Cube')
-    .greaterThan('order.status', 2)
-    // .lessThan('order.startsAt', date) // TODO: add later
+  const { date, dueDate, lastControlBefore, criteria } = control.attributes
+
+  const extendsDuringControlPeriod = $query('Cube')
+    .equalTo('order.earlyCanceledAt', null) // not early canceled
+    .equalTo('order.canceledAt', null) // not canceled
+    .notEqualTo('order.autoExtendsBy', null)
     .greaterThan('order.endsAt', date)
+    .lessThanOrEqualTo('order.endsAt', dueDate)
+  const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', dueDate)
+
+  // order status is active, canceled or ended
+  let cubesQuery = Parse.Query.or(extendsDuringControlPeriod, endDateAfterControlPeriod)
+    .greaterThan('order.status', 2)
+    .lessThan('order.startsAt', date)
+
+  // filter out cubes that were controlled in the last x months
   if (lastControlBefore) {
     const lastControlAt = moment(date).subtract(lastControlBefore, 'months').toDate()
     const lastControlQuery = Parse.Query.or(
