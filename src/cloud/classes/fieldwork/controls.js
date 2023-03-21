@@ -34,7 +34,8 @@ function getCubesQuery (control) {
     Contract: { include: [], exclude: [] },
     Booking: { include: [], exclude: [] }
   }
-  for (const criterion of criteria) {
+
+  for (const criterion of criteria || []) {
     filters[criterion.type][criterion.op].push(criterion.value)
   }
 

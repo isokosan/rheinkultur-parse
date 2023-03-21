@@ -529,6 +529,7 @@ const schemaDefinitions = {
       dueDate: { type: 'String', required: true },
       status: { type: 'Number', required: true },
 
+      docs: { type: 'Array' },
       responsibles: { type: 'Array' }
     }
   },
