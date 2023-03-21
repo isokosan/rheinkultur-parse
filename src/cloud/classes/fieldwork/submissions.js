@@ -79,11 +79,12 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   const submission = await $getOrFail(ScoutSubmission, submissionId, ['taskList', 'cube'])
   submission.set({ status: 'rejected', rejectionReason })
   const cube = submission.get('cube')
+  const cubeId = cube.id
   if (submission.get('form').notFound) {
     cube.unset('dAt')
     await $saveWithEncode(cube, null, { useMasterKey: true })
   }
-  const audit = { user, fn: 'scout-submission-reject', data: { cubeId: cube.id, rejectionReason } }
+  const audit = { user, fn: 'scout-submission-reject', data: { cubeId, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   await $notify({
