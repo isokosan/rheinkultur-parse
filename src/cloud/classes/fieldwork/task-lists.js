@@ -335,7 +335,7 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
 // TODO: briefing lists should be removeable by intern users?
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (!(!taskList.get('status') || taskList.get('status') === 'appointed')) {
+  if (taskList.get('status')) {
     throw new Error('Only draft lists can be removed.')
   }
   await taskList.destroy({ useMasterKey: true })
