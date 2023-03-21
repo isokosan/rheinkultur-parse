@@ -19,7 +19,7 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
         total: 0
       }
     }
-    locations[placeKey].tasks[type].total += (counts.completed || 0)
+    locations[placeKey].tasks[type].total += (counts.total || 0)
     locations[placeKey].tasks[type].completed += (counts.completed || 0)
   }
   return Object.values(locations)

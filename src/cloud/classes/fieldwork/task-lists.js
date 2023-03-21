@@ -23,7 +23,7 @@ async function getCenterOfCubes (cubeIds) {
   return $geopoint(latitude, longitude)
 }
 
-Parse.Cloud.beforeSave(TaskList, async ({ object: taskList, context: { countCubes } }) => {
+Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   !taskList.get('status') && taskList.set('status', 0)
 
   const cubeIds = [...new Set(taskList.get('cubeIds') || [])]
@@ -328,7 +328,7 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
 
   taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
   const audit = { user, fn: 'scout-submission-preapprove', data: { cubeId, approved } }
-  await taskList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
   return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
 }, { requireUser: true })
 

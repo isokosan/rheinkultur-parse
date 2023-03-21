@@ -37,7 +37,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
   await submission.save(null, { useMasterKey: true })
   taskList.set({ status: 3 })
   const audit = { user, fn: 'scout-submission-submit', data: { cubeId, changes } }
-  await taskList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
   if (user.get('accType') === 'admin') {
     return Parse.Cloud.run('scout-submission-approve', { id: submission.id }, { sessionToken: user.get('sessionToken') })
   }
@@ -71,7 +71,7 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
   submission.set({ status: 'approved' })
   const audit = { user, fn: 'scout-submission-approve', data: { cubeId: cube.id } }
   await submission.save(null, { useMasterKey: true })
-  await submission.get('taskList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   return { message: 'Scouting genehmigt.', data: submission }
 }, { requireUser: true })
 
@@ -85,7 +85,7 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   }
   const audit = { user, fn: 'scout-submission-reject', data: { cubeId: cube.id, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
-  await submission.get('taskList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   await $notify({
     user: submission.get('scout'),
     message: `Your submission for ${submission.get('cube').id} was rejected. ${rejectionReason}`,
@@ -122,7 +122,7 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
   await submission.save(null, { useMasterKey: true })
   taskList.set({ status: 3 })
   const audit = { user, fn: 'control-submission-submit', data: { cubeId, changes } }
-  await taskList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
   return { message: 'Kontrolle erfolgreich.', data: submission }
 }, { requireUser: true })
 
@@ -132,7 +132,7 @@ Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissi
   const cubeId = submission.get('cube').id
   const audit = { user, fn: 'control-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
-  await submission.get('taskList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   return { message: 'Kontrolle genehmigt.', data: submission }
 }, { requireUser: true })
 
@@ -142,7 +142,7 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
   const cubeId = submission.get('cube').id
   const audit = { user, fn: 'control-submission-reject', data: { cubeId, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
-  await submission.get('taskList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   await $notify({
     user: submission.get('scout'),
     message: `Your submission for ${submission.get('cube').id} was rejected. ${rejectionReason}`,
@@ -180,7 +180,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
   await submission.save(null, { useMasterKey: true })
 
   taskList.set({ status: 3 })
-  await taskList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
   // control-disassembled
   const controlList = await $query('TaskList')
     .equalTo('type', 'control')
@@ -201,7 +201,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   const cubeId = submission.get('cube').id
   const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
-  await submission.get('taskList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   // control-disassembled
   const controlSubmission = await $query(ControlSubmission)
     .equalTo('comment', ['forward', 'disassembly', submission.get('taskList').id, submission.id].join(':'))
@@ -218,7 +218,7 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
   const cubeId = submission.get('cube').id
   const audit = { user, fn: 'disassembly-submission-reject', data: { cubeId } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
-  await submission.get('taskList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   await $notify({
     user: submission.get('scout'),
     message: `Your submission for ${submission.get('cube').id} was rejected. ${rejectionReason}`,
