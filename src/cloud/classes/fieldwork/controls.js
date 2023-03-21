@@ -18,7 +18,7 @@ function getCubesQuery (control) {
   }
 
   const filters = {
-    ort: { include: [], exclude: [] },
+    placeKey: { include: [], exclude: [] },
     Tag: { include: [], exclude: [] },
     Company: { include: [], exclude: [] },
     Contract: { include: [], exclude: [] },
@@ -28,8 +28,20 @@ function getCubesQuery (control) {
     filters[criterion.type][criterion.op].push(criterion.value)
   }
 
-  filters.ort.include.length && cubesQuery.containedIn('ort', filters.ort.include)
-  filters.ort.exclude.length && cubesQuery.notContainedIn('ort', filters.ort.exclude)
+  if (filters.placeKey.include.length) {
+    const placesQuery = filters.placeKey.include.map((placeKey) => {
+      const [stateId, ort] = placeKey.split(':')
+      return $query('Cube').equalTo('ort', ort).equalTo('state', $parsify('State', stateId))
+    })
+    cubesQuery = Parse.Query.and(cubesQuery, Parse.Query.or(...placesQuery))
+  }
+  if (filters.placeKey.exclude.length) {
+    const placesQuery = filters.placeKey.exclude.map((placeKey) => {
+      const [stateId, ort] = placeKey.split(':')
+      return $query('Cube').equalTo('ort', ort).equalTo('state', $parsify('State', stateId))
+    })
+    cubesQuery = Parse.Query.and(cubesQuery, Parse.Query.nor(...placesQuery))
+  }
   if (filters.Tag.include.length) {
     const tagsQuery = $query('Tag')
     filters.Tag.include.length && tagsQuery.containedIn('objectId', filters.Tag.include)
@@ -253,22 +265,12 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
   const control = await $getOrFail(Control, controlId)
-  if (control.get('status')) {
-    throw new Error('Only draft controls can be deleted!')
+  if (await $query('DepartureList').equalTo('control', control).greaterThan('status', 2).first({ useMasterKey: true })) {
+    throw new Error('Controls with appointed task lists cannot be deleted!')
   }
-  while (true) {
-    const departureLists = await $query('DepartureList')
-      .equalTo('control', control)
-      .find({ useMasterKey: true })
-    if (!departureLists.length) {
-      break
-    }
-    await Promise.all(departureLists.map((departureList) => {
-      return departureList.get('status')
-        ? departureList.unset('control').save(null, { useMasterKey: true })
-        : departureList.destroy({ useMasterKey: true })
-    }))
-  }
+  await $query('DepartureList')
+    .equalTo('control', control)
+    .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
   return control.destroy({ useMasterKey: true })
 }, { requireUser: true })
 
