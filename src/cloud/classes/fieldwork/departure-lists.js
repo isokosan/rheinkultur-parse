@@ -464,7 +464,7 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('control-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comment }, user }) => {
+Parse.Cloud.define('control-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comments }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   const cube = await $getOrFail('Cube', cubeId)
   const submission = submissionId
@@ -474,17 +474,17 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: departure
       .equalTo('cube', cube)
       .first({ useMasterKey: true }) || new ControlSubmission({ departureList, cube })
   if (condition !== 'no_ad' && condition !== 'disassembled') {
-    comment = null
+    comments = null
   }
   let changes
   if (submission.id) {
-    changes = $changes(submission, { condition, comment })
+    changes = $changes(submission, { condition, comments })
   }
   submission.set({
     scout: user,
     status: 'pending',
     condition,
-    comment
+    comments
   })
   submission.set('beforePhoto', beforePhotoId ? await $getOrFail('FileObject', beforePhotoId) : null)
   submission.set('afterPhoto', afterPhotoId ? await $getOrFail('FileObject', afterPhotoId) : null)
@@ -532,6 +532,9 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: depar
       .equalTo('cube', cube)
       .first({ useMasterKey: true }) || new DisassemblySubmission({ departureList, cube })
   let changes
+  if (condition === 'true') {
+    comments = null
+  }
   if (submission.id) {
     changes = $changes(submission, { condition, comments })
   }
