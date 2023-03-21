@@ -250,7 +250,7 @@ Parse.Cloud.define('search', async ({
           .then(marklist => marklist.get('cubeIds'))
       }
     })
-    if (className === 'DepartureList') {
+    if (className === 'TaskList') {
       const list = await $getOrFail(className, objectId)
       ort = list.get('ort')
       stateId = list.get('state').id

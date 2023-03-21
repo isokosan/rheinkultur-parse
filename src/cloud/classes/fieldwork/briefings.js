@@ -1,5 +1,5 @@
 const Briefing = Parse.Object.extend('Briefing')
-const DepartureList = Parse.Object.extend('DepartureList')
+const TaskList = Parse.Object.extend('TaskList')
 
 Parse.Cloud.beforeSave(Briefing, ({ object: briefing }) => {
   !briefing.get('status') && briefing.set('status', 0)
@@ -8,8 +8,8 @@ Parse.Cloud.beforeSave(Briefing, ({ object: briefing }) => {
 Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } }) => {
   const { date, dueDate } = briefing.attributes
   await Parse.Query.or(
-    $query('DepartureList').notEqualTo('date', date),
-    $query('DepartureList').notEqualTo('dueDate', dueDate)
+    $query('TaskList').notEqualTo('date', date),
+    $query('TaskList').notEqualTo('dueDate', dueDate)
   )
     .equalTo('briefing', briefing)
     .each(dl => dl.set({ date, dueDate }).save(null, { useMasterKey: true }), { useMasterKey: true })
@@ -23,17 +23,17 @@ Parse.Cloud.beforeFind(Briefing, ({ query }) => {
 Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
   const pipeline = [
     { $match: { _p_briefing: { $in: briefings.map(b => 'Briefing$' + b.id) } } },
-    { $group: { _id: '$briefing', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+    { $group: { _id: '$briefing', taskListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
   ]
-  const counts = await $query(DepartureList).aggregate(pipeline)
-    .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
+  const counts = await $query(TaskList).aggregate(pipeline)
+    .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
   for (const briefing of briefings) {
     briefing.set(counts[briefing.id])
   }
 })
 
 Parse.Cloud.beforeDelete(Briefing, async ({ object: briefing }) => {
-  const wipListExists = await $query(DepartureList)
+  const wipListExists = await $query(TaskList)
     .equalTo('briefing', briefing)
     .greaterThanOrEqualTo('status', 3)
     .find({ useMasterKey: true })
@@ -95,13 +95,13 @@ Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, list
   for (const placeKey of Object.keys(lists || {})) {
     const [stateId, ort] = placeKey.split(':')
     const state = $pointer('State', stateId)
-    let departureList = await $query('DepartureList')
+    let taskList = await $query('TaskList')
       .equalTo('briefing', briefing)
       .equalTo('ort', ort)
       .equalTo('state', state)
       .first({ useMasterKey: true })
-    if (!departureList) {
-      departureList = new DepartureList({
+    if (!taskList) {
+      taskList = new TaskList({
         type: 'scout',
         briefing,
         ort,
@@ -110,16 +110,16 @@ Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, list
         dueDate,
         cubeIds: lists[placeKey]
       })
-      const audit = { user, fn: 'departure-list-generate' }
-      await departureList.save(null, { useMasterKey: true, context: { audit } })
+      const audit = { user, fn: 'task-list-generate' }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
       continue
     }
-    const cubeIds = [...new Set([...(departureList.get('cubeIds') || []), ...lists[placeKey]])]
-    const cubeChanges = $cubeChanges(departureList, cubeIds)
+    const cubeIds = [...new Set([...(taskList.get('cubeIds') || []), ...lists[placeKey]])]
+    const cubeChanges = $cubeChanges(taskList, cubeIds)
     if (cubeChanges) {
-      departureList.set({ cubeIds })
-      const audit = { user, fn: 'departure-list-update', data: { cubeChanges } }
-      await departureList.save(null, { useMasterKey: true, context: { audit } })
+      taskList.set({ cubeIds })
+      const audit = { user, fn: 'task-list-update', data: { cubeChanges } }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
   return true
@@ -135,14 +135,14 @@ Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, p
 
   const [stateId, ort] = placeKey.split(':')
   const state = $pointer('State', stateId)
-  if (await $query('DepartureList')
+  if (await $query('TaskList')
     .equalTo('briefing', briefing)
     .equalTo('ort', ort)
     .equalTo('state', state)
     .first({ useMasterKey: true })) {
     throw new Error('Location already exists!')
   }
-  const departureList = new DepartureList({
+  const taskList = new TaskList({
     type: 'scout',
     briefing,
     ort,
@@ -151,10 +151,10 @@ Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, p
     dueDate,
     cubeIds: []
   })
-  const audit = { user, fn: 'departure-list-generate' }
+  const audit = { user, fn: 'task-list-generate' }
   return {
     message: `${ort} added.`,
-    data: await departureList.save(null, { useMasterKey: true, context: { audit } })
+    data: await taskList.save(null, { useMasterKey: true, context: { audit } })
   }
 }, { requireUser: true })
 

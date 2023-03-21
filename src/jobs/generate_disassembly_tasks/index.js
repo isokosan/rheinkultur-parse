@@ -3,10 +3,10 @@
 // This nightly function should also run and generate the lists as they should be.
 // This should also remember cases where user wants to remove an abbau, or mark an abbau as abgebaut - this info should persist.
 
-async function upsertDepartureList (attrs) {
+async function upsertTaskList (attrs) {
   // first check if a departure list with the same
   // uniqueTogether = { type, booking, contract, ort, state, from }
-  const exists = await $query('DepartureList')
+  const exists = await $query('TaskList')
     .equalTo('type', 'disassembly')
     .equalTo('booking', attrs.booking)
     .equalTo('contract', attrs.contract)
@@ -16,7 +16,7 @@ async function upsertDepartureList (attrs) {
     .first({ useMasterKey: true })
 
   // remove cubeIds from other disassembly lists if it now appears here
-  const otherLists = await $query('DepartureList')
+  const otherLists = await $query('TaskList')
     .equalTo('type', 'disassembly')
     .equalTo('booking', attrs.booking)
     .equalTo('contract', attrs.contract)
@@ -29,14 +29,14 @@ async function upsertDepartureList (attrs) {
   if (exists) {
     const cubeChanges = $cubeChanges(exists, attrs.cubeIds)
     if (!cubeChanges) { return exists }
-    const audit = { fn: 'departure-list-update', data: { cubeChanges } }
+    const audit = { fn: 'task-list-update', data: { cubeChanges } }
     exists.set('cubeIds', attrs.cubeIds)
     return exists.save(null, { useMasterKey: true, context: { audit } })
   }
-  const DepartureList = Parse.Object.extend('DepartureList')
-  const departureList = new DepartureList(attrs)
-  const audit = { fn: 'departure-list-generate' }
-  return departureList.save(null, { useMasterKey: true, context: { audit } })
+  const TaskList = Parse.Object.extend('TaskList')
+  const taskList = new TaskList(attrs)
+  const audit = { fn: 'task-list-generate' }
+  return taskList.save(null, { useMasterKey: true, context: { audit } })
 }
 
 module.exports = async function (job) {
@@ -78,7 +78,7 @@ module.exports = async function (job) {
     const { cubeIds, booking, contract } = keys[uniqueKey]
     const state = $pointer('State', stateId)
     // TODO: check if exists remove or syncronize
-    await upsertDepartureList({
+    await upsertTaskList({
       type: 'disassembly',
       ort,
       state,

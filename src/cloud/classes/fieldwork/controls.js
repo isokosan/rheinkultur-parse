@@ -1,5 +1,5 @@
 const Control = Parse.Object.extend('Control')
-const DepartureList = Parse.Object.extend('DepartureList')
+const TaskList = Parse.Object.extend('TaskList')
 
 function getCubesQuery (control) {
   const { date, lastControlBefore, criteria } = control.attributes
@@ -137,10 +137,10 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
   }
   const pipeline = [
     { $match: { _p_control: { $in: controls.map(c => 'Control$' + c.id) } } },
-    { $group: { _id: '$control', departureListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+    { $group: { _id: '$control', taskListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
   ]
-  const counts = await $query(DepartureList).aggregate(pipeline)
-    .then(response => response.reduce((acc, { objectId, departureListCount, cubeCount }) => ({ ...acc, [objectId]: { departureListCount, cubeCount } }), {}))
+  const counts = await $query(TaskList).aggregate(pipeline)
+    .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
   for (const control of controls) {
     control.set(counts[control.id])
   }
@@ -233,13 +233,13 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
   for (const placeKey of Object.keys(locations)) {
     const [stateId, ort] = placeKey.split(':')
     const state = await $getOrFail('State', stateId)
-    let departureList = await $query('DepartureList')
+    let taskList = await $query('TaskList')
       .equalTo('control', control)
       .equalTo('state', state)
       .equalTo('ort', ort)
       .first({ useMasterKey: true })
-    if (!departureList) {
-      departureList = new DepartureList({
+    if (!taskList) {
+      taskList = new TaskList({
         type: 'control',
         control,
         state,
@@ -248,16 +248,16 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
         dueDate,
         cubeIds: locations[placeKey]
       })
-      const audit = { user, fn: 'departure-list-generate' }
-      await departureList.save(null, { useMasterKey: true, context: { audit } })
+      const audit = { user, fn: 'task-list-generate' }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
       continue
     }
-    const cubeIds = [...new Set([...(departureList.get('cubeIds') || []), ...locations[stateId]])]
-    const cubeChanges = $cubeChanges(departureList, cubeIds)
+    const cubeIds = [...new Set([...(taskList.get('cubeIds') || []), ...locations[stateId]])]
+    const cubeChanges = $cubeChanges(taskList, cubeIds)
     if (cubeChanges) {
-      departureList.set({ cubeIds })
-      const audit = { user, fn: 'departure-list-update', data: { cubeChanges } }
-      await departureList.save(null, { useMasterKey: true, context: { audit } })
+      taskList.set({ cubeIds })
+      const audit = { user, fn: 'task-list-update', data: { cubeChanges } }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
   return control.set('status', 3).save(null, { useMasterKey: true })
@@ -265,16 +265,16 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
   const control = await $getOrFail(Control, controlId)
-  if (await $query('DepartureList').equalTo('control', control).greaterThan('status', 2).first({ useMasterKey: true })) {
+  if (await $query('TaskList').equalTo('control', control).greaterThan('status', 2).first({ useMasterKey: true })) {
     throw new Error('Controls with appointed task lists cannot be deleted!')
   }
-  await $query('DepartureList')
+  await $query('TaskList')
     .equalTo('control', control)
     .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
   return control.destroy({ useMasterKey: true })
 }, { requireUser: true })
 
-// $query('DepartureList')
+// $query('TaskList')
 //   .equalTo('type', 'control')
 //   .equalTo('cubeCount', 0)
 //   .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })

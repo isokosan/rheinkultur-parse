@@ -360,7 +360,7 @@ module.exports = {
       return normalized
     }
   },
-  departureLists: {
+  taskLists: {
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
         type: value => ['scout', 'control', 'assembly', 'disassembly'].includes(value) ? value : null,

@@ -112,7 +112,7 @@ module.exports.INTEREST_RATES = {
 }
 
 // TODO: numbers?
-module.exports.DEPARTURE_LIST_STATUSES = {
+module.exports.TASK_LIST_STATUSES = {
   0: 'Entwurf (Nicht ernannt)',
   1: 'Ernannt (Nicht beauftragt)',
   2: 'Beauftragt',

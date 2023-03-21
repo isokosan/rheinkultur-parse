@@ -546,7 +546,7 @@ const schemaDefinitions = {
       responsibles: { type: 'Array' }
     }
   },
-  DepartureList: {
+  TaskList: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       type: { type: 'String', required: true }, // scout, control or disassembly
@@ -559,20 +559,36 @@ const schemaDefinitions = {
       status: { type: 'Number', required: true },
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },
-      pendingCubeIds: { type: 'Array' }, // scout form submitted
-      pendingCubeCount: { type: 'Number', default: 0 },
-      approvedCubeIds: { type: 'Array' }, // approved after scouting
-      adminApprovedCubeIds: { type: 'Array' }, // completed w/o task
-      approvedCubeCount: { type: 'Number', default: 0 },
-      completedCubeCount: { type: 'Number', default: 0 },
+      pendingCubeIds: { type: 'Array' }, // task submitted
+      approvedCubeIds: { type: 'Array' }, // task approved
+      rejectedCubeIds: { type: 'Array' }, // task rejected
+      pendingNotFoundCubeIds: { type: 'Array' },
+      scoutAddedCubeIds: { type: 'Array' }, // // case when scout adds extra cube (briefings)
+      adminApprovedCubeIds: { type: 'Array' }, // case when admin pre-approves the cube (briefings)
+      counts: { type: 'Object' },
 
       quotas: { type: 'Object' } // only for parent briefing
+    }
+  },
+  TaskSubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      list: { type: 'Pointer', targetClass: 'TaskList' },
+      type: { type: 'String', required: true }, // scout, control or disassembly
+      cube: { type: 'Pointer', targetClass: 'Cube', required: true },
+      scout: { type: 'Pointer', targetClass: '_User', required: true },
+      status: { type: 'String', required: true },
+      result: { type: 'String', required: true }, // condition
+      form: { type: 'Object' },
+      photos: { type: 'Object' },
+      comments: { type: 'String' },
+      rejectionReason: { type: 'String' }
     }
   },
   ScoutSubmission: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
-      departureList: { type: 'Pointer', targetClass: 'DepartureList' },
+      taskList: { type: 'Pointer', targetClass: 'TaskList' },
       cube: { type: 'Pointer', targetClass: 'Cube', required: true },
       scout: { type: 'Pointer', targetClass: '_User', required: true },
       status: { type: 'String', required: true },
@@ -583,21 +599,21 @@ const schemaDefinitions = {
   ControlSubmission: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
-      departureList: { type: 'Pointer', targetClass: 'DepartureList' },
+      taskList: { type: 'Pointer', targetClass: 'TaskList' },
       cube: { type: 'Pointer', targetClass: 'Cube', required: true },
       scout: { type: 'Pointer', targetClass: '_User', required: true },
       status: { type: 'String', required: true },
       condition: { type: 'String' },
       beforePhoto: { type: 'Pointer', targetClass: 'FileObject' },
       afterPhoto: { type: 'Pointer', targetClass: 'FileObject' },
-      comment: { type: 'String' },
+      comments: { type: 'String' },
       rejectionReason: { type: 'String' }
     }
   },
   DisassemblySubmission: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
-      departureList: { type: 'Pointer', targetClass: 'DepartureList' },
+      taskList: { type: 'Pointer', targetClass: 'TaskList' },
       cube: { type: 'Pointer', targetClass: 'Cube', required: true },
       scout: { type: 'Pointer', targetClass: '_User', required: true },
       status: { type: 'String', required: true },
