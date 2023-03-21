@@ -47,7 +47,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
 Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submissionId }, user }) => {
   const submission = await $getOrFail(ScoutSubmission, submissionId, ['taskList', 'cube', 'photos'])
   const cube = submission.get('cube')
-
+  const cubeId = cube.id
   // if not found, soft delete the cube
   if (submission.get('form').notFound) {
     cube.set('dAt', new Date())
@@ -69,7 +69,7 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
   }
 
   submission.set({ status: 'approved' })
-  const audit = { user, fn: 'scout-submission-approve', data: { cubeId: cube.id } }
+  const audit = { user, fn: 'scout-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   return { message: 'Scouting genehmigt.', data: submission }
