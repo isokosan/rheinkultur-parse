@@ -377,7 +377,10 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: departureLi
   const cube = await $getOrFail('Cube', cubeId)
   const submission = submissionId
     ? await $getOrFail(ScoutSubmission, submissionId)
-    : new ScoutSubmission({ departureList, cube })
+    : await $query(ScoutSubmission)
+      .equalTo('departureList', departureList)
+      .equalTo('cube', cube)
+      .first({ useMasterKey: true }) || new ScoutSubmission({ departureList, cube })
   submission.set({
     scout: user,
     status: 'pending'
@@ -466,8 +469,11 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: departure
   const cube = await $getOrFail('Cube', cubeId)
   const submission = submissionId
     ? await $getOrFail(ControlSubmission, submissionId)
-    : new ControlSubmission({ departureList, cube })
-  if (condition !== 'no_ad') {
+    : await $query(ControlSubmission)
+      .equalTo('departureList', departureList)
+      .equalTo('cube', cube)
+      .first({ useMasterKey: true }) || new ControlSubmission({ departureList, cube })
+  if (condition !== 'no_ad' && condition !== 'disassembled') {
     comment = null
   }
   let changes
@@ -515,26 +521,43 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
   return { message: 'Kontrolle abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, condition, photoId }, user }) => {
+Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: departureListId, cubeId, submissionId, condition, photoId, comments }, user }) => {
   const departureList = await $getOrFail(DepartureList, departureListId)
   const cube = await $getOrFail('Cube', cubeId)
+  // even if submissionId was not given, check to see if there is an existing submission
   const submission = submissionId
     ? await $getOrFail(DisassemblySubmission, submissionId)
-    : new DisassemblySubmission({ departureList, cube })
+    : await $query(DisassemblySubmission)
+      .equalTo('departureList', departureList)
+      .equalTo('cube', cube)
+      .first({ useMasterKey: true }) || new DisassemblySubmission({ departureList, cube })
   let changes
   if (submission.id) {
-    changes = $changes(submission, { condition })
+    changes = $changes(submission, { condition, comments })
   }
   submission.set({
     scout: user,
     condition,
     status: 'pending',
-    photo: photoId ? await $getOrFail('FileObject', photoId) : null
+    photo: photoId ? await $getOrFail('FileObject', photoId) : null,
+    comments
   })
   const audit = { user, fn: 'disassembly-submission-submit', data: { cubeId, changes } }
   await submission.save(null, { useMasterKey: true })
+
   departureList.set({ status: 3 })
   await departureList.save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  // control-disassembled
+  const controlList = await $query('DepartureList')
+    .equalTo('type', 'control')
+    .equalTo('cubeIds', cubeId)
+    .first({ sessionToken: user.getSessionToken() })
+  controlList && await Parse.Cloud.run('control-submission-submit', {
+    id: controlList.id,
+    cubeId,
+    condition: 'disassembled',
+    comment: ['forward', 'disassembly', departureList.id, submission.id].join(':')
+  }, { sessionToken: user.getSessionToken() })
   return { message: 'Abbau erfolgreich.', data: submission }
 }, { requireUser: true })
 
@@ -545,6 +568,13 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('departureList').save(null, { useMasterKey: true, context: { countCubes: true, audit } })
+  // control-disassembled
+  const controlSubmission = await $query(ControlSubmission)
+    .equalTo('comment', ['forward', 'disassembly', submission.get('departureList').id, submission.id].join(':'))
+    .first({ useMasterKey: true })
+  controlSubmission && await Parse.Cloud.run('control-submission-approve', {
+    id: controlSubmission.id
+  }, { sessionToken: user.getSessionToken() })
   return { message: 'Abbau genehmigt.', data: submission }
 }, { requireUser: true })
 
