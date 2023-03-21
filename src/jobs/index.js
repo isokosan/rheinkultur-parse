@@ -124,7 +124,7 @@ const getScheduleNotificationsEmailConfig = async function () {
 
 Parse.Cloud.define('setScheduleNotificationsEmailConfig', function ({ params: { scheduleNotificationsEmail } }) {
   return Parse.Config.save({ scheduleNotificationsEmail })
-}, $adminOrMaster)
+}, $adminOnly)
 
 let healthQueue
 const updateQueues = {}
@@ -245,7 +245,7 @@ Parse.Cloud.define('triggerScheduledJob', async function ({ params: { job } }) {
       error: 'Invalid job'
     }
   },
-  ...$adminOrMaster
+  ...$adminOnly
 })
 
 Parse.Cloud.define('getScheduleData', async function () {
@@ -255,7 +255,7 @@ Parse.Cloud.define('getScheduleData', async function () {
   const redisInfo = parseRedisInfo(redisInfoRaw)
   const scheduleNotificationsEmail = await getScheduleNotificationsEmailConfig()
   return { redisInfo, scheduleNotificationsEmail }
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('fetchQueues', async function () {
   const schedule = await getScheduleConfig()
@@ -289,7 +289,7 @@ Parse.Cloud.define('fetchQueues', async function () {
     }
     return job
   }))
-}, $adminOrMaster)
+}, $adminOnly)
 
 const getLast = async function (queue) {
   let last = null
@@ -333,19 +333,19 @@ const getLast = async function (queue) {
 Parse.Cloud.define('clearQueue', function ({ params: { key, status } }) {
   const queue = updateQueues[key]
   return queue.clean(5000, status)
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('obliterateQueue', function ({ params: { key } }) {
   const queue = updateQueues[key]
   return queue.obliterate({ force: true })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('cancelJob', async function ({ params: { key, jobId } }) {
   const queue = updateQueues[key]
   const job = await queue.getJob(jobId)
   await job.moveToFailed(Error('Job wurde manuell abgebrochen.'), true)
   return job.discard()
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('saveSchedule', async function ({ params: { key, name, description, cron, timeoutMinutes, notificationDuration } }) {
   const config = await Parse.Config.get()
@@ -353,7 +353,7 @@ Parse.Cloud.define('saveSchedule', async function ({ params: { key, name, descri
   schedule[key] = { name, description, cron, timeoutMinutes, notificationDuration }
   await cleanAndStartupQueue({ schedule, key })
   return Parse.Config.save({ schedule })
-}, $adminOrMaster)
+}, $adminOnly)
 
 const checkScheduleHealth = async function () {
   const jobs = await Parse.Cloud.run('fetchQueues', {}, { useMasterKey: true })

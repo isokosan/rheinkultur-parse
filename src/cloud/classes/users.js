@@ -73,7 +73,7 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
   })
   const audit = { user: invitedBy, fn: 'user-invite' }
   return user.signUp(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('user-update', async ({ params: { id, ...params }, user: auth }) => {
   const user = await $getOrFail(Parse.User, id, ['companyPerson'])
@@ -106,7 +106,7 @@ Parse.Cloud.define('user-update', async ({ params: { id, ...params }, user: auth
 
   const audit = { user: auth, fn: 'user-update', data: { changes } }
   return user.save(null, { useMasterKey: true, context: { audit, clearSessions: (accTypeChanged || companyChanged) } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('user-ban', async ({ params: { id: userId }, user: auth }) => {
   const user = await $getOrFail(Parse.User, userId)
@@ -116,7 +116,7 @@ Parse.Cloud.define('user-ban', async ({ params: { id: userId }, user: auth }) =>
   user.set('isBanned', true)
   const audit = { user: auth, fn: 'user-ban' }
   return user.save(null, { useMasterKey: true, context: { audit, clearSessions: true } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('user-unban', async ({ params: { id: userId }, user: auth }) => {
   const user = await $getOrFail(Parse.User, userId)
@@ -126,7 +126,7 @@ Parse.Cloud.define('user-unban', async ({ params: { id: userId }, user: auth }) 
   user.set('isBanned', false)
   const audit = { user: auth, fn: 'user-unban' }
   return user.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 const getUserFromInviteToken = async function (token) {
   if (!token) {

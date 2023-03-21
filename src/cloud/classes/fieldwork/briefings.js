@@ -161,4 +161,4 @@ Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, p
 Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user, context: { seedAsId } }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   return briefing.destroy({ useMasterKey: true })
-}, $adminOrMaster)
+}, $adminOnly)

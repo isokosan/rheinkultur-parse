@@ -394,7 +394,7 @@ Parse.Cloud.define('booked-cubes', async () => {
     searchAfter = lastHit.sort
   }
   return cubes
-}, $adminOrMaster)
+}, $adminOnly)
 
 // Before is only defined if address is changing
 const indexCube = async (cube, before) => {

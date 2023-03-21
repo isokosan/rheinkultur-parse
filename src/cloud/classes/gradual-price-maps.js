@@ -42,12 +42,12 @@ Parse.Cloud.define('gradual-price-map-save', async ({ params: { id, code, map },
   gradualPriceMap.set({ code, map })
   const audit = { user, fn: 'gradual-price-map-update', data: { changes } }
   return gradualPriceMap.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('gradual-price-map-remove', async ({ params: { id } }) => {
   const gradualPriceMap = await $getOrFail(GradualPriceMap, id)
   return gradualPriceMap.destroy({ useMasterKey: true })
-}, $adminOrMaster)
+}, $adminOnly)
 
 const getGradualPrice = function (total, map) {
   let price = null

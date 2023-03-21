@@ -172,7 +172,7 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   taskList.set({ cubeIds })
   const audit = { user, fn: 'task-list-update', data: { cubeChanges } }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $adminOnly)
 
 Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -191,7 +191,7 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
     data: taskList.get('manager'),
     message: 'Manager gespeichert.'
   }
-}, { requireUser: true })
+}, $adminOnly)
 
 Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -211,7 +211,7 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
     data: taskList.get('scouts'),
     message: `Abfahrtsliste gespeichert. ${notifyScouts ? 'Scouts notified.' : ''}`
   }
-}, { requireUser: true })
+}, $scoutManagerOrAdmin)
 
 Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -228,10 +228,10 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
   const audit = { user, fn: 'task-list-update', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
-    data: taskList.get('quotas'),
+    data: { quotas: taskList.get('quotas'), counts: taskList.get('counts') },
     message: 'Anzahl gespeichert.'
   }
-}, { requireUser: true })
+}, $adminOnly)
 
 Parse.Cloud.define('task-list-update-due-date', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -248,7 +248,7 @@ Parse.Cloud.define('task-list-update-due-date', async ({ params: { id: taskListI
     data: taskList.get('dueDate'),
     message: 'Fälligkeitsdatum gespeichert.'
   }
-}, { requireUser: true })
+}, $adminOnly)
 
 async function validateAppointAssign (taskList) {
   if (!taskList.get('date') || !taskList.get('dueDate')) {
@@ -292,7 +292,7 @@ Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, use
     data: taskList.get('status'),
     message: 'Abfahrtslist ernennt. Manager notified.'
   }
-}, { requireUser: true })
+}, $adminOnly)
 
 Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -313,7 +313,7 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
     data: taskList.get('status'),
     message: 'Abfahrtslist beauftragt. Scout notified.'
   }
-}, { requireUser: true })
+}, $scoutManagerOrAdmin)
 
 Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: taskListId, cubeId, approved }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -330,17 +330,17 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
   const audit = { user, fn: 'scout-submission-preapprove', data: { cubeId, approved } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
-}, { requireUser: true })
+}, $internOrAdmin)
 
-// TODO: Removals
-// Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
-//   const taskList = await $getOrFail(TaskList, taskListId)
-//   if (!(!taskList.get('status') || taskList.get('status') === 'appointed')) {
-//     throw new Error('Only draft or appointed Abfahrtsliste can be removed.')
-//   }
-//   await taskList.destroy({ useMasterKey: true })
-//   return { message: 'Abfahrtsliste gelöscht.' }
-// }, { requireUser: true })
+// TODO: briefing lists should be removeable by intern users?
+Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (!(!taskList.get('status') || taskList.get('status') === 'appointed')) {
+    throw new Error('Only draft lists can be removed.')
+  }
+  await taskList.destroy({ useMasterKey: true })
+  return { message: 'Abfahrtsliste gelöscht.' }
+}, $internOrAdmin)
 
 Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -350,4 +350,4 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
   taskList.set({ status: 4 })
   const audit = { user, fn: 'task-list-complete' }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $scoutManagerOrAdmin)
