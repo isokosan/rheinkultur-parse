@@ -191,7 +191,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
     id: controlList.id,
     cubeId,
     condition: 'disassembled',
-    comment: ['forward', 'disassembly', taskList.id, submission.id].join(':')
+    comments: ['forward', 'disassembly', taskList.id, submission.id].join(':')
   }, { sessionToken: user.getSessionToken() })
   return { message: 'Abbau erfolgreich.', data: submission }
 }, { requireUser: true })
@@ -205,7 +205,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   // control-disassembled
   const controlSubmission = await $query(ControlSubmission)
-    .equalTo('comment', ['forward', 'disassembly', submission.get('taskList').id, submission.id].join(':'))
+    .equalTo('comments', ['forward', 'disassembly', submission.get('taskList').id, submission.id].join(':'))
     .first({ useMasterKey: true })
   controlSubmission && await Parse.Cloud.run('control-submission-approve', {
     id: controlSubmission.id

@@ -351,3 +351,29 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
   const audit = { user, fn: 'task-list-complete' }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, $scoutManagerOrAdmin)
+
+// async function massUpdateManager() {
+//   const query = $query('TaskList')
+//     .equalTo('state', $parsify('State', 'BY'))
+//     .equalTo('status', 0)
+//     .equalTo('manager', null)
+//   const taskListIds = await query.distinct('objectId', { useMasterKey: true })
+//   for (const id of taskListIds) {
+//     await Parse.Cloud.run('task-list-update-manager', { id, managerId: 'Uuk3gJOFBV' }, { useMasterKey: true })
+//     consola.info('manager set')
+//   }
+// }
+// massUpdateManager()
+
+// async function massAppoint() {
+//   const query = $query('TaskList')
+//     .equalTo('status', 0)
+//     .notEqualTo('manager', null)
+//   const taskListIds = await query.distinct('objectId', { useMasterKey: true })
+//   for (const id of taskListIds) {
+//     await Parse.Cloud.run('task-list-appoint', { id }, { useMasterKey: true })
+//       .then(() => consola.success('appointed'))
+//       .catch(consola.error)
+//   }
+// }
+// massAppoint()
