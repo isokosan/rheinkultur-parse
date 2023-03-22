@@ -4,48 +4,73 @@ const sendMail = require('@/services/email')
 
 const Notification = Parse.Object.extend('Notification')
 
-Parse.Cloud.beforeSave(Notification, ({ object: notification }) => {})
+const NOTIFICATIONS = {
+  'task-list-assigned': {
+    message: ({ placeKey }) => `You have been assigned to scout ${placeKey.split(':')[1]}.`,
+    route: ({ placeKey }) => ({ name: 'location', params: { placeKey } }),
+    skip: notification => $query(Notification)
+      .equalTo('user', notification.get('user'))
+      .equalTo('data.placeKey', notification.get('data').placeKey)
+      .greaterThan('createdAt', moment().subtract(1, 'day').toDate())
+      .exists({ useMasterKey: true })
+  },
+  'task-submission-rejected': {
+    message: ({ cubeId, rejectionReason }) => `Your submission for ${cubeId} was rejected. ${rejectionReason}`,
+    route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
+  }
+}
+
+const resolveMessage = (notification) => NOTIFICATIONS[notification.get('identifier')].message(notification.get('data'))
+const resolveRoute = (notification) => NOTIFICATIONS[notification.get('identifier')].route(notification.get('data'))
+const shouldSkip = (notification) => NOTIFICATIONS[notification.get('identifier')].skip?.(notification)
+
+Parse.Cloud.beforeSave(Notification, ({ object: notification }) => {
+  if (!NOTIFICATIONS[notification.get('identifier')]) { throw new Error('Unrecognized notification identifier') }
+})
 
 Parse.Cloud.afterSave(Notification, async ({ object: notification, context: { send } }) => {
   if (!send) { return }
+  if (await shouldSkip(notification)) { return }
+
   const user = notification.get('user')
   await user.fetch({ useMasterKey: true })
+
+  const message = resolveMessage(notification)
+  const web_url = `${process.env.WEBAPP_URL}/n/${notification.id}`
 
   // send email
   sendMail({
     to: user.get('email'),
-    subject: notification.get('message'),
+    subject: message,
     template: 'notification',
     variables: {
       user: notification.get('user').toJSON(),
-      notification: notification.toJSON()
+      message,
+      web_url
     }
   })
-
   // https://documentation.onesignal.com/reference/push-channel-properties
   client.createNotification({
-    contents: { en: notification.get('message') },
+    contents: { en: message },
     include_external_user_ids: [user.id],
-    web_url: process.env.WEBAPP_URL + (notification.get('uri') || '') + `?n=${notification.id}`
+    web_url
   })
 })
 
-function resolveWebAppRoute (notification) {
-  return {
-    name: 'location',
-    params: { placeKey: 'NI:Nordhorn' },
-    query: { cubeId: 'TLK-59211A26' }
-  }
-}
+Parse.Cloud.define('notification-see', async ({ params: { ids }, user }) => {
+  const notifications = await $query(Notification).containedIn('objectId', ids).equalTo('seenAt', null).find({ sessionToken: user.getSessionToken() })
+  notifications.forEach(notification => notification.set('seenAt', new Date()))
+  return Parse.Object.saveAll(notifications, { useMasterKey: true })
+}, { requireUser: true })
 
 Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
   const notification = await $query(Notification).get(id, { sessionToken: user.getSessionToken() })
-  await notification.set({ readAt: new Date() }).save(null, { useMasterKey: true })
-  return resolveWebAppRoute(notification)
+  !notification.get('readAt') && await notification.set('readAt', new Date()).save(null, { useMasterKey: true })
+  return resolveRoute(notification)
 }, { requireUser: true })
 
-const notify = async ({ user, message, uri, data }) => {
-  const notification = new Notification({ user, message, uri, data })
+const notify = async ({ user, message, data }) => {
+  const notification = new Notification({ user, message, data })
   return notification.save(null, { useMasterKey: true, context: { send: true } })
 }
 

@@ -532,9 +532,10 @@ const schemaDefinitions = {
       ]
     },
     fields: {
-      user: { type: 'Pointer', targetClass: '_User' },
-      message: { type: 'String', required: true },
+      user: { type: 'Pointer', targetClass: '_User', required: true },
+      identifier: { type: 'String', required: true },
       data: { type: 'Object' },
+      seenAt: { type: 'Date' },
       readAt: { type: 'Date' }
     }
   },

@@ -106,13 +106,16 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
 
 Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts } }) => {
   $audit(taskList, audit)
-  notifyScouts && consola.warn('Todo: Notify together')
-  // notifyScouts && $notify({
-  //   user: taskList.get('scouts'),
-  //   message: `You have been assigned to scout ${taskList.get('ort')}`,
-  //   uri: `/task-lists/${taskList.id}`,
-  //   data: { taskListId: taskList.id }
-  // })
+  const placeKey = [taskList.get('state').id, taskList.get('ort')].join(':')
+  for (const scout of taskList.get('scouts')) {
+    if (notifyScouts === true || notifyScouts?.includes(scout.id)) {
+      await $notify({
+        user: taskList.get('scout'),
+        identifier: 'task-list-assigned',
+        data: { placeKey }
+      })
+    }
+  }
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
@@ -191,8 +194,7 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
   const manager = managerId ? $parsify(Parse.User, managerId) : null
   taskList.set({ manager })
   const audit = { user, fn: 'task-list-update', data: { changes } }
-  const notifyManager = false
-  await taskList.save(null, { useMasterKey: true, context: { audit, notifyManager } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
     data: taskList.get('manager'),
     message: 'Manager gespeichert.'
@@ -209,13 +211,14 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
   const changes = { scoutIds: [currentScoutIds, scoutIds] }
   taskList.set('scouts', scoutIds ? scoutIds.map(id => $parsify(Parse.User, id)) : null)
   const audit = { user, fn: 'task-list-update', data: { changes } }
-  // TODO: Notify when changing scout
   let notifyScouts
-  // const notifyScouts = !!taskList.get('status')
+  if (taskList.get('status') > 1) {
+    notifyScouts = scoutIds.filter(scoutId => !currentScoutIds.includes(scoutId))
+  }
   await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts } })
   return {
     data: taskList.get('scouts'),
-    message: `Abfahrtsliste gespeichert. ${notifyScouts ? 'Scouts notified.' : ''}`
+    message: 'Abfahrtsliste gespeichert.'
   }
 }, $scoutManagerOrAdmin)
 
@@ -293,7 +296,7 @@ Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, use
   await validateAppointAssign(taskList)
   taskList.set({ status: 1 })
   const audit = { user, fn: 'task-list-appoint' }
-  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
     data: taskList.get('status'),
     message: 'Abfahrtslist ernennt. Manager notified.'
@@ -306,7 +309,7 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
     throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
   }
   if (!(taskList.get('scouts') || []).length) {
-    throw new Error('Need a scout to assign to')
+    throw new Error('Need at least one scout to assign to')
   }
   if (moment(taskList.get('date')).isAfter(await $today(), 'day')) {
     throw new Error(`You can assign this task only from ${moment(taskList.get('date')).format('DD.MM.YYYY')}`)
@@ -314,10 +317,10 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
   await validateAppointAssign(taskList)
   taskList.set({ status: 2 })
   const audit = { user, fn: 'task-list-assign' }
-  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScout: true, setCubeStatuses: true } })
+  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts: true } })
   return {
     data: taskList.get('status'),
-    message: 'Abfahrtslist beauftragt. Scout notified.'
+    message: 'Abfahrtslist beauftragt.'
   }
 }, $scoutManagerOrAdmin)
 

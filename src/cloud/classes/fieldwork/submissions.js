@@ -92,9 +92,8 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
   await $notify({
     user: submission.get('scout'),
-    message: `Your submission for ${submission.get('cube').id} was rejected. ${rejectionReason}`,
-    uri: `/location/${placeKey}/scout/${submission.get('taskList').id}/${cube.id}`,
-    data: { rejectionReason }
+    identifier: 'task-submission-rejected',
+    data: { type: 'scout', cubeId, placeKey, rejectionReason }
   })
   return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })
@@ -143,15 +142,14 @@ Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissi
 Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
   const submission = await $getOrFail(ControlSubmission, submissionId, ['taskList'])
   submission.set({ status: 'rejected', rejectionReason })
-  const cubeId = submission.get('cube').id
-  const audit = { user, fn: 'control-submission-reject', data: { cubeId, rejectionReason } }
+  const cube = submission.get('cube')
+  const audit = { user, fn: 'control-submission-reject', data: { cubeId: cube.id, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+  const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
   await $notify({
     user: submission.get('scout'),
-    message: `Your submission for ${submission.get('cube').id} was rejected. ${rejectionReason}`,
-    uri: `/task-lists/${submission.get('taskList').id}/control/${submission.get('cube').id}`,
-    data: { rejectionReason }
+    data: { type: 'Control', cubeId: cube.id, placeKey, rejectionReason }
   })
   return { message: 'Kontrolle abgelehnt.', data: submission }
 }, { requireUser: true })
@@ -212,15 +210,15 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
 Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
   const submission = await $getOrFail(DisassemblySubmission, submissionId)
   submission.set({ status: 'rejected', rejectionReason })
-  const cubeId = submission.get('cube').id
-  const audit = { user, fn: 'disassembly-submission-reject', data: { cubeId } }
+  const cube = submission.get('cube')
+  const audit = { user, fn: 'disassembly-submission-reject', data: { cubeId: cube.id } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+  const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
   await $notify({
     user: submission.get('scout'),
-    message: `Your submission for ${submission.get('cube').id} was rejected. ${rejectionReason}`,
-    uri: `/task-lists/${submission.get('taskList').id}/disassembly/${submission.get('cube').id}`,
-    data: { rejectionReason }
+    identifier: 'task-submission-rejected',
+    data: { type: 'disassembly', cubeId: cube.id, placeKey, rejectionReason }
   })
   return { message: 'Abbau abgelehnt.', data: submission }
 }, { requireUser: true })
