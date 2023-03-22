@@ -91,7 +91,13 @@ const updateJobs = {
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
     timeoutMinutes: 15,
-    cron: '0 2 * * *', // nightly at '2 am'
+    cron: '0 2 * * *', // nightly at 2 am
+    notificationDuration: 48
+  },
+  reindex_fieldwork: {
+    name: 'Suchindex von Feldarbeit aktualisieren',
+    timeoutMinutes: 60,
+    cron: '0 3 * * *', // nightly at 3 am
     notificationDuration: 48
   },
   recalculate_aldi_prices: {

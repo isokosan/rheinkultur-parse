@@ -1,5 +1,6 @@
 const { capitalize, sum } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
+const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const TaskList = Parse.Object.extend('TaskList')
 
 // $query('TaskList').each(tl => tl.save(null, { useMasterKey: true }), { useMasterKey: true }).then(consola.success)
@@ -100,6 +101,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     taskList.set({ quotasCompleted })
   }
   taskList.set({ statuses, counts })
+  await indexTaskList(taskList)
 })
 
 Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts } }) => {
@@ -151,6 +153,10 @@ Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
     }
   }
   return taskLists
+})
+
+Parse.Cloud.beforeDelete(TaskList, async ({ object: taskList }) => {
+  await unindexTaskList(taskList)
 })
 
 Parse.Cloud.afterDelete(TaskList, $deleteAudits)
