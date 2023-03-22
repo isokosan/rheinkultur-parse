@@ -535,9 +535,8 @@ Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, .
   }
 
   const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
-  if (production) {
-    await Parse.Cloud.run('production-update-cubes', { id: production.id, cubeIds }, { useMasterKey: true })
-  }
+  production && production.save(null, { useMasterKey: true })
+
   const audit = { user, fn: 'contract-update', data: { cubeChanges } }
   return contract.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
