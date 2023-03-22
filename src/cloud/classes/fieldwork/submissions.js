@@ -3,19 +3,21 @@ const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
-Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, photoIds, comments }, user }) => {
+async function fetchSubmission (taskListId, cubeId, SubmissionClass, submissionId) {
   const taskList = await $getOrFail(TaskList, taskListId)
   const cube = await $getOrFail('Cube', cubeId)
   const submission = submissionId
-    ? await $getOrFail(ScoutSubmission, submissionId)
-    : await $query(ScoutSubmission)
+    ? await $getOrFail(SubmissionClass, submissionId)
+    : await $query(SubmissionClass)
       .equalTo('taskList', taskList)
       .equalTo('cube', cube)
-      .first({ useMasterKey: true }) || new ScoutSubmission({ taskList, cube })
-  submission.set({
-    scout: user,
-    status: 'pending'
-  })
+      .first({ useMasterKey: true }) || new SubmissionClass({ taskList, cube })
+  return { taskList, cube, submission }
+}
+
+Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, photoIds, comments }, user }) => {
+  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ScoutSubmission, submissionId)
+  submission.set({ scout: user, status: 'pending' })
 
   // make sure the cube is added to the list if found
   const cubeIds = taskList.get('cubeIds') || []
@@ -96,21 +98,19 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comments }, user }) => {
-  const taskList = await $getOrFail(TaskList, taskListId)
-  const cube = await $getOrFail('Cube', cubeId)
-  const submission = submissionId
-    ? await $getOrFail(ControlSubmission, submissionId)
-    : await $query(ControlSubmission)
-      .equalTo('taskList', taskList)
-      .equalTo('cube', cube)
-      .first({ useMasterKey: true }) || new ControlSubmission({ taskList, cube })
-  if (condition !== 'no_ad' && condition !== 'disassembled') {
+Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comments, disassemblyId }, user }) => {
+  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ControlSubmission, submissionId)
+  submission.set({ scout: user, status: 'pending' })
+  if (condition !== 'no_ad') {
     comments = null
+  }
+  let disassembly
+  if (condition === 'disassembled' && disassemblyId) {
+    disassembly = await $getOrFail('DisassemblySubmission', disassemblyId)
   }
   let changes
   if (submission.id) {
-    changes = $changes(submission, { condition, comments })
+    changes = $changes(submission, { condition, comments, disassembly })
   }
   submission.set({
     scout: user,
@@ -118,6 +118,8 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
     condition,
     comments
   })
+  disassembly ? submission.set({ disassembly }) : submission.unset('disassembly')
+
   submission.set('beforePhoto', beforePhotoId ? await $getOrFail('FileObject', beforePhotoId) : null)
   submission.set('afterPhoto', afterPhotoId ? await $getOrFail('FileObject', afterPhotoId) : null)
   await submission.save(null, { useMasterKey: true })
@@ -154,15 +156,8 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, photoId, comments }, user }) => {
-  const taskList = await $getOrFail(TaskList, taskListId)
-  const cube = await $getOrFail('Cube', cubeId)
-  // even if submissionId was not given, check to see if there is an existing submission
-  const submission = submissionId
-    ? await $getOrFail(DisassemblySubmission, submissionId)
-    : await $query(DisassemblySubmission)
-      .equalTo('taskList', taskList)
-      .equalTo('cube', cube)
-      .first({ useMasterKey: true }) || new DisassemblySubmission({ taskList, cube })
+  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, DisassemblySubmission, submissionId)
+  submission.set({ scout: user, status: 'pending' })
   let changes
   if (condition === 'true') {
     comments = null
@@ -191,7 +186,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
     id: controlList.id,
     cubeId,
     condition: 'disassembled',
-    comments: ['forward', 'disassembly', taskList.id, submission.id].join(':')
+    disassemblyId: submission.id
   }, { sessionToken: user.getSessionToken() })
   return { message: 'Abbau erfolgreich.', data: submission }
 }, { requireUser: true })
@@ -205,7 +200,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   // control-disassembled
   const controlSubmission = await $query(ControlSubmission)
-    .equalTo('comments', ['forward', 'disassembly', submission.get('taskList').id, submission.id].join(':'))
+    .equalTo('disassembly', submission)
     .first({ useMasterKey: true })
   controlSubmission && await Parse.Cloud.run('control-submission-approve', {
     id: controlSubmission.id
