@@ -1,11 +1,12 @@
 const { faker, createFakeObj } = require('./../utils')
 
-// purgeFieldwork().then(seedBriefings).then(consola.success)
+// purgeFieldwork().then(seedBriefings).then(seedControls).then(consola.success)
 
 async function purgeFieldwork () {
   await (new Parse.Schema('Notification')).purge()
   const fieldwordClasses = ['Briefing', 'Control', 'DepartureList', 'TaskList', 'TaskSubmission', 'ScoutSubmission', 'ControlSubmission', 'DisassemblySubmission']
-  return Promise.all(fieldwordClasses.map(className => (new Parse.Schema(className)).purge())).then(consola.success)
+  await Promise.all(fieldwordClasses.map(className => (new Parse.Schema(className)).purge()))
+  consola.success('purged fieldwork')
 }
 
 const TEST_BRIEFINGS = [
@@ -100,7 +101,6 @@ async function seedBriefings () {
   const companyId = await $query('Company').equalTo('name', 'Kinetic Germany GmbH').first({ useMasterKey: true }).then(c => c.id)
   for (const item of TEST_BRIEFINGS) {
     const { name, date, dueDate, kvzIds, quotas } = item
-    consola.warn('TODO: quotas', quotas)
     if (await $query('Briefing').equalTo('name', name).count({ useMasterKey: true })) {
       continue
     }
@@ -123,8 +123,40 @@ async function seedBriefings () {
       lists[placeKey].push(cube.id)
     }
     await Parse.Cloud.run('briefing-add-lists', { id: briefing.id, lists }, { useMasterKey: true })
+    quotas && await $query('TaskList')
+      .equalTo('briefing', briefing)
+      .each(async (taskList) => {
+        const stateId = taskList.get('state').id
+        const ort = taskList.get('ort')
+        const placeKey = [stateId, ort].join(':')
+        if (quotas[placeKey]) {
+          await Parse.Cloud.run('task-list-update-quotas', { id: taskList.id, quotas: quotas[placeKey] }, { useMasterKey: true })
+        }
+      }, { useMasterKey: true })
   }
   consola.success('done seeding breifings')
+}
+
+async function seedControls () {
+  const controls = require('./../data/disassembly_control.json')
+    .filter(row => parseInt(row['KD-Nr.']) === 127)
+    .map(row => ({ no: 'V' + row.no, control: row.cont }))
+    .reduce((acc, row) => {
+      acc[row.no] = row.control
+      return acc
+    }, {})
+
+  const contractNos = []
+  for (const no of Object.keys(controls)) {
+    if (controls[no] !== '4/1/2023') {
+      continue
+    }
+    contractNos.push(no)
+  }
+
+  const criteria = [{ type: 'Company', value: 'FNFCxMgEEr', op: 'include' }]
+  criteria.push(...await $query('Contract').containedIn('no', contractNos).distinct('objectId', { useMasterKey: true }).then(ids => ids.map(id => ({ type: 'Contract', value: id, op: 'include' }))))
+  await Parse.Cloud.run('control-update-criteria', { id: 'o2zqX5G0BX', criteria }, { useMasterKey: true })
 }
 
 const fakeScout = async function ({ company }) {
@@ -146,6 +178,7 @@ async function seedScouts () {
   await createFakeObj(Parse.User, 10, fakeScout, { company: await $getOrFail('Company', '4EBkZmBra0') })
 }
 
+Parse.Cloud.define('seed-scouts', seedScouts, { requireMaster: true })
 Parse.Cloud.define('purge-fieldwork', purgeFieldwork, { requireMaster: true })
 Parse.Cloud.define('seed-briefings', seedBriefings, { requireMaster: true })
-Parse.Cloud.define('seed-scouts', seedScouts, { requireMaster: true })
+Parse.Cloud.define('seed-controls', seedControls, { requireMaster: true })
