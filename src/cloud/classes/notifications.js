@@ -59,8 +59,7 @@ Parse.Cloud.afterSave(Notification, async ({ object: notification, context: { se
 
 Parse.Cloud.define('notification-see', async ({ params: { ids }, user }) => {
   const notifications = await $query(Notification).containedIn('objectId', ids).equalTo('seenAt', null).find({ sessionToken: user.getSessionToken() })
-  notifications.forEach(notification => notification.set('seenAt', new Date()))
-  return Parse.Object.saveAll(notifications, { useMasterKey: true })
+  return Parse.Object.saveAll(notifications.map(notification => notification.set('seenAt', new Date())), { useMasterKey: true })
 }, { requireUser: true })
 
 Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
