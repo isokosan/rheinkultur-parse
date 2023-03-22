@@ -7,9 +7,7 @@ const Notification = Parse.Object.extend('Notification')
 Parse.Cloud.beforeSave(Notification, ({ object: notification }) => {})
 
 Parse.Cloud.afterSave(Notification, async ({ object: notification, context: { send } }) => {
-  if (!send) {
-    return
-  }
+  if (!send) { return }
   const user = notification.get('user')
   await user.fetch({ useMasterKey: true })
 

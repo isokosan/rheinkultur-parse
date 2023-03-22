@@ -89,10 +89,11 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   const audit = { user, fn: 'scout-submission-reject', data: { cubeId, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+  const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
   await $notify({
     user: submission.get('scout'),
     message: `Your submission for ${submission.get('cube').id} was rejected. ${rejectionReason}`,
-    uri: `/task-lists/${submission.get('taskList').id}/scout/${submission.get('cube').id}`,
+    uri: `/location/${placeKey}/scout/${submission.get('taskList').id}/${cube.id}`,
     data: { rejectionReason }
   })
   return { message: 'Scouting abgelehnt.', data: submission }

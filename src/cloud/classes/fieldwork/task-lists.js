@@ -80,7 +80,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     approved: statusVals.filter(x => x === 'approved').length,
     rejected: statusVals.filter(x => x === 'rejected').length
   }
-  counts.completed = parseInt(counts.pending + counts.approved - counts.rejected)
+  counts.completed = parseInt(counts.pending + counts.approved)
 
   if (taskType === 'scout' && quotas) {
     counts.total = sum(Object.values(quotas || {}))
