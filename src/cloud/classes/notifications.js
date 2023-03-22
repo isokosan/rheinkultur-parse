@@ -30,12 +30,18 @@ Parse.Cloud.afterSave(Notification, async ({ object: notification, context: { se
   })
 })
 
-Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
-  const notification = await $getOrFail(Notification, id)
-  if (notification.get('user').id !== user.id) {
-    throw new Error('Unauthorized user trying to read notification')
+function resolveWebAppRoute (notification) {
+  return {
+    name: 'location',
+    params: { placeKey: 'NI:Nordhorn' },
+    query: { cubeId: 'TLK-59211A26' }
   }
-  return notification.set({ readAt: new Date() }).save(null, { useMasterKey: true, context: { send: false } })
+}
+
+Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
+  const notification = await $query(Notification).get(id, { sessionToken: user.getSessionToken() })
+  await notification.set({ readAt: new Date() }).save(null, { useMasterKey: true })
+  return resolveWebAppRoute(notification)
 }, { requireUser: true })
 
 const notify = async ({ user, message, uri, data }) => {

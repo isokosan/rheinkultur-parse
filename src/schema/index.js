@@ -518,11 +518,22 @@ const schemaDefinitions = {
     CLP: { ...readAuthOnly, ...writeMasterOnly }
   },
   Notification: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    CLP: {
+      find: {},
+      count: {},
+      get: {},
+      create: {},
+      update: {},
+      delete: {},
+      addField: {},
+      protectedFields: {},
+      readUserFields: [
+        'user'
+      ]
+    },
     fields: {
       user: { type: 'Pointer', targetClass: '_User' },
       message: { type: 'String', required: true },
-      uri: { type: 'String' },
       data: { type: 'Object' },
       readAt: { type: 'Date' }
     }
