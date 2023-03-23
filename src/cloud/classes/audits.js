@@ -2,6 +2,21 @@ const { difference, isEqual } = require('lodash')
 
 const Audit = Parse.Object.extend('Audit')
 
+Parse.Cloud.beforeFind(Audit, ({ query, user }) => {
+  const company = user?.get('company')
+  if (company) {
+    let constraintQuery = $query('Audit').matchesQuery('user', $query(Parse.User).equalTo('company', company))
+    // if user is booking manager, get bookings related audits
+    if (user?.get('accType') === 'partner' && user?.get('permissions').includes('manage-bookings')) {
+      const bookingsQuery = $query('Audit')
+        .equalTo('itemClass', 'Booking')
+        .matchesKeyInQuery('itemId', 'objectId', $query('Booking').equalTo('company', company))
+      constraintQuery = Parse.Query.or(constraintQuery, bookingsQuery)
+    }
+    return Parse.Query.and(query, constraintQuery)
+  }
+})
+
 Parse.Cloud.beforeSave(Audit, ({ object: audit }) => {
   const data = audit.get('data')
   if (data) {

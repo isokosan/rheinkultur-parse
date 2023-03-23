@@ -5,9 +5,7 @@ const INDEXES = {
     config: {
       mappings: {
         properties: {
-          street: {
-            type: 'search_as_you_type'
-          }
+          street: { type: 'search_as_you_type' }
         }
       }
     },
@@ -21,16 +19,19 @@ const INDEXES = {
     config: {
       mappings: {
         properties: {
-          city: {
-            type: 'search_as_you_type'
-          }
+          ort: { type: 'search_as_you_type' }
         }
       }
     },
-    parseQuery: $query('Cube').distinct('ort'),
+    parseQuery: $query('City'),
     datasetMap: cities => cities.map(city => ({
-      _id: city,
-      doc: { city }
+      _id: city.id,
+      doc: {
+        objectId: city.id,
+        ort: city.get('ort'),
+        stateId: city.get('state').id,
+        gp: city.get('gp')?.toJSON()
+      }
     }))
   },
   'rheinkultur-cubes': {
@@ -84,6 +85,7 @@ const INDEXES = {
         cAt: cube.get('cAt'),
         sAt: cube.get('sAt'),
         vAt: cube.get('vAt'),
+        pOk: (cube.get('p1') && cube.get('p2')) ? true : undefined,
 
         // warnings
         bPLZ: cube.get('bPLZ'),
@@ -101,6 +103,38 @@ const INDEXES = {
         s: cube.get('s')
       }
     }))
+  },
+  'rheinkultur-fieldwork': {
+    config: {
+      mappings: {
+        properties: {
+          geo: { type: 'geo_point' },
+          status: {
+            type: 'byte'
+          }
+        }
+      }
+    },
+    parseQuery: $query('TaskList'),
+    datasetMap: taskLists => taskLists.map(taskList => ({
+      _id: taskList.id,
+      doc: {
+        objectId: taskList.id,
+        type: taskList.get('type'),
+        ort: taskList.get('ort'),
+        stateId: taskList.get('state')?.id,
+        status: taskList.get('status'),
+        gp: taskList.get('gp')?.toJSON(),
+        geo: {
+          lat: taskList.get('gp').latitude,
+          lon: taskList.get('gp').longitude
+        },
+        managerId: taskList.get('manager')?.id,
+        scoutIds: taskList.get('scouts')?.map(scout => scout.id),
+        date: taskList.get('date'),
+        dueDate: taskList.get('dueDate')
+      }
+    }))
   }
 }
 
@@ -114,13 +148,103 @@ const autocompleteSearch = async function (index, key, query) {
           [key]: query
         }
       }
+      // TODO: implement script based sorting on elasticsearch level
+      // sort: {
+      //   _script: {
+      //     type: 'number',
+      //     script: {
+      //       lang: "painless",
+      //       source: `doc['${key}.keyword'].value.length()`
+      //     },
+      //     order: 'asc'
+      //   }
+      // }
     }
   })
-  return hits.map(hit => hit._id)
+  hits.sort((a, b) => a._id.length - b._id.length)
+  return hits
 }
 
-Parse.Cloud.define('streets-autocomplete', ({ params: { query } }) => autocompleteSearch('rheinkultur-streets-autocomplete', 'street', query), { validateMasterKey: true })
-Parse.Cloud.define('cities-autocomplete', ({ params: { query } }) => autocompleteSearch('rheinkultur-cities-autocomplete', 'city', query), { validateMasterKey: true })
+Parse.Cloud.define(
+  'streets-autocomplete',
+  ({ params: { query } }) => autocompleteSearch('rheinkultur-streets-autocomplete', 'street', query)
+    .then(hits => hits.map(hit => hit._id)),
+  { validateMasterKey: true }
+)
+Parse.Cloud.define(
+  'cities-autocomplete',
+  ({ params: { query } }) => autocompleteSearch('rheinkultur-cities-autocomplete', 'ort', query)
+    .then(hits => hits.map(hit => hit._source)),
+  { validateMasterKey: true }
+)
+
+Parse.Cloud.define('search-fieldwork', async ({
+  params: {
+    // pk, // placeKey (stateId:ort)
+    c,
+    state: stateId,
+    type,
+    managerId,
+    scoutId,
+    status,
+    from,
+    pagination
+  }, user, master
+}) => {
+  // BUILD QUERY
+  const bool = { should: [], must: [], must_not: [], filter: [] }
+  const sort = ['_score']
+
+  type && bool.filter.push({ term: { 'type.keyword': type } })
+  stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
+  managerId && bool.filter.push({ term: { 'managerId.keyword': managerId } })
+  scoutId && bool.filter.push({ match: { scoutIds: scoutId } })
+  if (status === 'must_appoint') {
+    bool.filter.push({ term: { status: 0 } })
+  } else if (status === 'must_assign') {
+    bool.filter.push({ terms: { status: [0, 1] } })
+  } else if (status === 'wip') {
+    bool.filter.push({ terms: { status: [2, 3] } })
+  } else if (status === 'done') {
+    bool.filter.push({ term: { status: 4 } })
+  }
+
+  if (c) {
+    const [lon, lat] = c.split(',').map(parseFloat)
+    sort.unshift({
+      _geo_distance: {
+        geo: { lat, lon },
+        order: 'asc',
+        unit: 'km',
+        mode: 'min',
+        distance_type: 'plane',
+        ignore_unmapped: true
+      }
+    })
+  }
+
+  const searchResponse = await client.search({
+    index: 'rheinkultur-fieldwork',
+    body: {
+      query: { bool },
+      sort,
+      track_total_hits: true
+    },
+    from,
+    size: pagination || 50
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  const taskLists = await $query('TaskList')
+    .containedIn('objectId', hits.map(hit => hit._id))
+    .limit(hits.length)
+    .find({ useMasterKey: true })
+  const results = hits.map(hit => {
+    const obj = taskLists.find(obj => obj.id === hit._id)
+    c && obj.set('distance', hit.sort[0])
+    return obj.toJSON()
+  })
+  return { results, count }
+}, { validateMasterKey: true })
 
 Parse.Cloud.define('search', async ({
   params: {
@@ -134,6 +258,7 @@ Parse.Cloud.define('search', async ({
     plz,
     ort,
     state: stateId,
+    pk, // placeKey (stateId:ort)
     c,
     r,
     s,
@@ -147,7 +272,7 @@ Parse.Cloud.define('search', async ({
   }, user, master
 }) => {
   const isPublic = !master && !user
-  if (isPublic && s !== 'available' && s !== '') {
+  if (isPublic && s !== '0' && s !== '') {
     s = ''
   }
   s = s?.split(',') || []
@@ -160,11 +285,6 @@ Parse.Cloud.define('search', async ({
   lc && bool.filter.push({ term: { 'lc.keyword': lc } })
   media && bool.filter.push({ term: { 'media.keyword': media } })
   htId && bool.filter.push({ term: { 'ht.objectId.keyword': htId } })
-  str && bool.filter.push({ term: { 'str.keyword': str } })
-  hsnr && bool.filter.push({ match_phrase_prefix: { hsnr } })
-  plz && bool.filter.push({ match_phrase_prefix: { plz } })
-  ort && bool.filter.push({ term: { 'ort.keyword': ort } })
-  stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -208,7 +328,7 @@ Parse.Cloud.define('search', async ({
   // TODO: add filter for distributors (external users who are not scouts)
   isPublic && bool.must_not.push({ exists: { field: 'dAt' } })
 
-  if (s.includes('available') || s.includes('0')) {
+  if (s.includes('0')) {
     bool.must.push({
       bool: {
         should: [
@@ -220,9 +340,9 @@ Parse.Cloud.define('search', async ({
     })
   }
 
-  if (s.includes('ml') && ml) {
+  if (ml) {
     const [className, objectId] = ml.split('-')
-    bool.filter.push({
+    s.includes('ml') && bool.filter.push({
       terms: {
         'objectId.keyword': await $query(className)
           .select('cubeIds')
@@ -230,6 +350,11 @@ Parse.Cloud.define('search', async ({
           .then(marklist => marklist.get('cubeIds'))
       }
     })
+    if (className === 'TaskList') {
+      const list = await $getOrFail(className, objectId)
+      ort = list.get('ort')
+      stateId = list.get('state').id
+    }
   }
 
   // Booked
@@ -254,6 +379,8 @@ Parse.Cloud.define('search', async ({
   // single issues
   s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
+  s.includes('nV') && bool.must_not.push({ exists: { field: 'vAt' } })
+  s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
   s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
   s.includes('PDGA') && bool.must.push({ exists: { field: 'PDGA' } })
@@ -264,6 +391,18 @@ Parse.Cloud.define('search', async ({
 
   // Nicht gefunden
   s.includes('8') && bool.must.push({ exists: { field: 'dAt' } })
+
+  // address constraints
+
+  if (pk) {
+    [stateId, ort] = pk.split(':')
+  }
+
+  str && bool.filter.push({ term: { 'str.keyword': str } })
+  hsnr && bool.filter.push({ match_phrase_prefix: { hsnr } })
+  plz && bool.filter.push({ match_phrase_prefix: { plz } })
+  ort && bool.filter.push({ term: { 'ort.keyword': ort } })
+  stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
   if (returnQuery) {
     return {
@@ -355,7 +494,7 @@ Parse.Cloud.define('booked-cubes', async () => {
     searchAfter = lastHit.sort
   }
   return cubes
-}, $adminOrMaster)
+}, $adminOnly)
 
 // Before is only defined if address is changing
 const indexCube = async (cube, before) => {
@@ -368,14 +507,14 @@ const indexCube = async (cube, before) => {
   }
 
   // If updated and different, and none other exists check and remove before city
-  const beforeCity = before?.ort
-  const city = cube.get('ort')
-  if (beforeCity !== city) {
-    if (beforeCity && !await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', beforeCity).first({ useMasterKey: true })) {
-      await client.delete({ index: 'rheinkultur-cities-autocomplete', id: beforeCity }).then(consola.success).catch(consola.error)
-    }
-    await client.index({ index: 'rheinkultur-cities-autocomplete', id: city, body: { city } }).then(consola.success)
-  }
+  // const beforeCity = before?.ort
+  // const city = cube.get('ort')
+  // if (beforeCity !== city) {
+  //   if (beforeCity && !await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', beforeCity).first({ useMasterKey: true })) {
+  //     await client.delete({ index: 'rheinkultur-cities-autocomplete', id: beforeCity }).then(consola.success).catch(consola.error)
+  //   }
+  //   await client.index({ index: 'rheinkultur-cities-autocomplete', id: city, body: { city } }).then(consola.success)
+  // }
   const beforeStreet = before?.str
   const street = cube.get('str')
   if (beforeStreet !== street) {
@@ -388,14 +527,23 @@ const indexCube = async (cube, before) => {
 
 const unindexCube = async (cube) => {
   await client.delete({ index: 'rheinkultur-cubes', id: cube.id }).then(consola.success).catch(consola.error)
-  const city = cube.get('ort')
-  if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', city).first({ useMasterKey: true })) {
-    await client.delete({ index: 'rheinkultur-cities-autocomplete', id: city }).then(consola.success).catch(consola.error)
-  }
+  // const city = cube.get('ort')
+  // if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', city).first({ useMasterKey: true })) {
+  //   await client.delete({ index: 'rheinkultur-cities-autocomplete', id: city }).then(consola.success).catch(consola.error)
+  // }
   const street = cube.get('str')
   if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('str', street).first({ useMasterKey: true })) {
     await client.delete({ index: 'rheinkultur-streets-autocomplete', id: street }).then(consola.success).catch(consola.error)
   }
+}
+
+const indexTaskList = (taskList) => {
+  const [{ _id: id, doc: body }] = INDEXES['rheinkultur-fieldwork'].datasetMap([taskList])
+  return client.index({ index: 'rheinkultur-fieldwork', id, body })
+}
+
+const unindexTaskList = (taskList) => {
+  return client.delete({ index: 'rheinkultur-fieldwork', id: taskList.id }).then(consola.success).catch(consola.error)
 }
 
 const purgeIndexes = async function () {
@@ -413,5 +561,7 @@ module.exports = {
   INDEXES,
   purgeIndexes,
   indexCube,
-  unindexCube
+  unindexCube,
+  indexTaskList,
+  unindexTaskList
 }

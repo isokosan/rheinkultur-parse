@@ -25,6 +25,15 @@ const writeMasterOnly = {
   delete: {}
 }
 
+const taskSubmissionFields = {
+  taskList: { type: 'Pointer', targetClass: 'TaskList', required: true },
+  cube: { type: 'Pointer', targetClass: 'Cube', required: true },
+  scout: { type: 'Pointer', targetClass: '_User', required: true },
+  status: { type: 'String', required: true },
+  comments: { type: 'String' },
+  rejectionReason: { type: 'String' }
+}
+
 const schemaDefinitions = {
   _Role: {
     CLP: { ...readAuthOnly, ...writeMasterOnly }
@@ -42,7 +51,8 @@ const schemaDefinitions = {
       email: { type: 'String', required: true },
       pbx: { type: 'String' },
       mobile: { type: 'String' },
-      accType: { type: 'String', required: true }
+      accType: { type: 'String', required: true },
+      permissions: { type: 'Array' }
     }
   },
   Address: {
@@ -85,7 +95,7 @@ const schemaDefinitions = {
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company' },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
 
       motive: { type: 'String' },
       externalOrderNo: { type: 'String' },
@@ -179,7 +189,7 @@ const schemaDefinitions = {
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
 
       motive: { type: 'String' },
       externalOrderNo: { type: 'String' },
@@ -295,7 +305,7 @@ const schemaDefinitions = {
       date: { type: 'String', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },
       address: { type: 'Pointer', targetClass: 'Address', required: true },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' },
       invoice: { type: 'Pointer', targetClass: 'Invoice' },
       reason: { type: 'String' }, // reason that will be added to introduction text
@@ -358,7 +368,7 @@ const schemaDefinitions = {
       createdBy: { type: 'Pointer', targetClass: '_User' }, // to keep track of auto-generated invoices
       company: { type: 'Pointer', targetClass: 'Company' },
       address: { type: 'Pointer', targetClass: 'Address', required: true },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' }, // filled only when a contract is invoiced
       booking: { type: 'Pointer', targetClass: 'Booking' }, // filled only when a single booking is invoiced for production
       bookings: { type: 'Array' }, // filled only when a collection of bookings are invoiced in distributor quarterly bookings
@@ -373,7 +383,6 @@ const schemaDefinitions = {
       // Payment
       paymentType: { type: 'Number' }, // PAYMENT_TYPES
       dueDays: { type: 'Number', required: true, default: 14 },
-      // dueDate: { type: 'String', required: true },
 
       media: { type: 'Object' },
       /*
@@ -509,15 +518,104 @@ const schemaDefinitions = {
     CLP: { ...readAuthOnly, ...writeMasterOnly }
   },
   Notification: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    CLP: {
+      ...readMasterOnly,
+      ...writeMasterOnly,
+      readUserFields: ['user']
+    },
     fields: {
-      user: { type: 'Pointer', targetClass: '_User' },
-      message: { type: 'String', required: true },
-      uri: { type: 'String' },
+      user: { type: 'Pointer', targetClass: '_User', required: true },
+      identifier: { type: 'String', required: true },
       data: { type: 'Object' },
-      readAt: { type: 'Date' }
+      seenAt: { type: 'Date' },
+      readAt: { type: 'Date' },
+      sentAt: { type: 'Date' },
+      push: { type: 'Object' },
+      mail: { type: 'Object' }
     }
   },
+  // SCOUTING
+  Briefing: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true },
+      company: { type: 'Pointer', targetClass: 'Company' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      date: { type: 'String', required: true },
+      dueDate: { type: 'String', required: true },
+      status: { type: 'Number', required: true },
+
+      docs: { type: 'Array' },
+      responsibles: { type: 'Array' }
+    }
+  },
+  Control: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true },
+      date: { type: 'String', required: true },
+      dueDate: { type: 'String', required: true },
+      status: { type: 'Number', required: true },
+
+      lastControlBefore: { type: 'Number' },
+      criteria: { type: 'Array' },
+
+      responsibles: { type: 'Array' }
+    }
+  },
+  TaskList: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      type: { type: 'String', required: true }, // scout, control or disassembly
+      ort: { type: 'String' },
+      state: { type: 'Pointer', targetClass: 'State' },
+      date: { type: 'String', required: true }, // start date
+      dueDate: { type: 'String', required: true },
+      manager: { type: 'Pointer', targetClass: '_User' },
+      scouts: { type: 'Array' },
+      status: { type: 'Number', required: true },
+      cubeIds: { type: 'Array', default: [] },
+      cubeCount: { type: 'Number', default: 0 },
+
+      // only for scout and parent briefing
+      scoutAddedCubeIds: { type: 'Array' }, // // case when scout adds extra cube (briefings)
+      adminApprovedCubeIds: { type: 'Array' }, // case when admin pre-approves the cube (briefings)
+      quotas: { type: 'Object' },
+
+      // calculated
+      counts: { type: 'Object' },
+      statuses: { type: 'Object' },
+      quotasCompleted: { type: 'Object' } // only for parent briefing
+
+    }
+  },
+  ScoutSubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      ...taskSubmissionFields,
+      form: { type: 'Object' },
+      photos: { type: 'Array' }
+    }
+  },
+  ControlSubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      ...taskSubmissionFields,
+      condition: { type: 'String' },
+      beforePhoto: { type: 'Pointer', targetClass: 'FileObject' },
+      afterPhoto: { type: 'Pointer', targetClass: 'FileObject' },
+      disassembly: { type: 'Pointer', targetClass: 'DisassemblySubmission' }
+    }
+  },
+  DisassemblySubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      ...taskSubmissionFields,
+      condition: { type: 'String' },
+      photo: { type: 'Pointer', targetClass: 'FileObject' }
+    }
+  },
+  // TODO: Remove in favor of using enums
   State: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {

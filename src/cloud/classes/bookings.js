@@ -37,7 +37,8 @@ Parse.Cloud.beforeFind(Booking, ({ query }) => {
     'company',
     'companyPerson',
     'production',
-    'docs'
+    'docs',
+    'taskLists'
   ])
 })
 
@@ -49,6 +50,9 @@ Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
 
     if (query._include.includes('production')) {
       booking.set('production', await $query('Production').equalTo('booking', booking).first({ useMasterKey: true }))
+    }
+    if (query._include.includes('taskLists')) {
+      booking.set('taskLists', await $query('TaskList').equalTo('booking', booking).find({ useMasterKey: true }))
     }
   }
   return bookings
@@ -210,9 +214,8 @@ Parse.Cloud.define('booking-update-cubes', async ({ params: { id: bookingId, ...
   }
   booking.set({ cubeIds })
   const production = await $query('Production').equalTo('booking', booking).first({ useMasterKey: true })
-  if (production) {
-    await Parse.Cloud.run('production-update-cubes', { id: production.id, cubeIds }, { useMasterKey: true })
-  }
+  production && production.save(null, { useMasterKey: true })
+
   const audit = { user, fn: 'booking-update', data: { cubeChanges } }
   return booking.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })

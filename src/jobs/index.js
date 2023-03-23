@@ -12,9 +12,11 @@ let client
 
 const queueOptions = {
   prefix: `{${process.env.APP_ID}}`,
-  maxStalledCount: 0,
   metrics: {
     maxDataPoints: 60 * 24 * 7 // 1 week
+  },
+  settings: {
+    maxStalledCount: 0
   }
 }
 if (process.env.REDIS_MODE === 'cluster') {
@@ -48,13 +50,20 @@ const updateJobs = {
     name: 'Frühzeitig stornierte CityCubes sync.',
     description: 'Frees city cubes that have been early canceled and the date is now past',
     timeoutMinutes: 30,
-    cron: '30 0 * * *' // nightly at 00:30
+    cron: '0 1 * * *', // nightly at 01:00
+    notificationDuration: 48
   },
   end_extend: {
     name: 'Verträge/Buchungen beenden/verlängern (außer Kinetic).',
     description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
     timeoutMinutes: 120
     // cron: '0 0 * * *' // nightly
+  },
+  generate_disassembly_tasks: {
+    name: 'Abbauliste generieren.',
+    timeoutMinutes: 60,
+    // cron: '0 0 * * *', // nightly
+    notificationDuration: 48
   },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
@@ -67,22 +76,34 @@ const updateJobs = {
     timeoutMinutes: 120
     // cron: '0 * * * *' // hourly
   },
-  reindex_autocompletes: {
-    name: 'Aktualisierung von Suchindexen (Straßen und Orte).',
-    timeoutMinutes: 15,
-    cron: '0 0 * * *', // nightly
+  reindex_cubes: {
+    name: 'Suchindex von CityCubes aktualisieren',
+    timeoutMinutes: 60,
+    cron: '0 0 * * *', // nightly at midnight
     notificationDuration: 48
   },
-  reindex_search: {
-    name: 'Aktualisierung von Suchindexen (CityCubes).',
+  reindex_cities: {
+    name: 'Suchindex von Orte aktualisieren',
     timeoutMinutes: 60,
-    cron: '0 0 * * *', // nightly
+    cron: '0 1 * * *', // nightly at 1 am
+    notificationDuration: 48
+  },
+  reindex_streets: {
+    name: 'Suchindex von Straßen aktualisieren',
+    timeoutMinutes: 15,
+    cron: '0 2 * * *', // nightly at 2 am
+    notificationDuration: 48
+  },
+  reindex_fieldwork: {
+    name: 'Suchindex von Feldarbeit aktualisieren',
+    timeoutMinutes: 60,
+    cron: '0 3 * * *', // nightly at 3 am
     notificationDuration: 48
   },
   recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
     timeoutMinutes: 15,
-    cron: '0 1 * * *', // nightly at 1 am
+    cron: '15 2 * * *', // nightly at 2:15 am
     notificationDuration: 48
   },
   recalculate_future_contract_invoices: {
@@ -92,8 +113,8 @@ const updateJobs = {
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',
     timeoutMinutes: 15,
-    cron: '*/10 * * * *',
-    notificationDuration: 1
+    cron: '*/10 * * * *', // every 10 minutes
+    notificationDuration: 2
   }
 }
 
@@ -109,7 +130,7 @@ const getScheduleNotificationsEmailConfig = async function () {
 
 Parse.Cloud.define('setScheduleNotificationsEmailConfig', function ({ params: { scheduleNotificationsEmail } }) {
   return Parse.Config.save({ scheduleNotificationsEmail })
-}, $adminOrMaster)
+}, $adminOnly)
 
 let healthQueue
 const updateQueues = {}
@@ -187,6 +208,7 @@ const startScheduler = async function () {
     queue.on('completed', queueOnCompleted)
     await cleanAndStartupQueue({ schedule, key })
   }
+  if (DEVELOPMENT) { return }
   // setup the health queue
   healthQueue = createQueue('schedule_health')
   await clearScheduledJobs(healthQueue)
@@ -213,12 +235,12 @@ Parse.Cloud.define('triggerScheduledJob', async function ({ params: { job } }) {
   // if job is already running return false
   const queue = updateQueues[job]
   const [activeJob] = await queue.getActive()
-  if (activeJob) {
-    return false
-  }
+  if (activeJob) { return false }
+  const [waitingJob] = await queue.getWaiting()
+  if (waitingJob) { return false }
   const { timeoutMinutes } = updateJobs[job]
   const timeout = 1000 * 60 * timeoutMinutes
-  queue.add({}, { timeout })
+  queue.add({}, { timeout, attempts: 1, stalledInterval: 1000 })
   return true
 }, {
   fields: {
@@ -229,7 +251,7 @@ Parse.Cloud.define('triggerScheduledJob', async function ({ params: { job } }) {
       error: 'Invalid job'
     }
   },
-  ...$adminOrMaster
+  ...$adminOnly
 })
 
 Parse.Cloud.define('getScheduleData', async function () {
@@ -239,7 +261,7 @@ Parse.Cloud.define('getScheduleData', async function () {
   const redisInfo = parseRedisInfo(redisInfoRaw)
   const scheduleNotificationsEmail = await getScheduleNotificationsEmailConfig()
   return { redisInfo, scheduleNotificationsEmail }
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('fetchQueues', async function () {
   const schedule = await getScheduleConfig()
@@ -256,6 +278,9 @@ Parse.Cloud.define('fetchQueues', async function () {
       last,
       lastCompletedOn
     }
+    if (job.last?.status === 'active') {
+      job.runningId = job.last.id
+    }
     // calculate passed notification date
     // job is late when the difference is greater than or equal to one hour
     job.lastCompletedOn = job.lastCompleted
@@ -270,10 +295,10 @@ Parse.Cloud.define('fetchQueues', async function () {
     }
     return job
   }))
-}, $adminOrMaster)
+}, $adminOnly)
 
 const getLast = async function (queue) {
-  let last
+  let last = null
   const lastJobs = await queue.getJobs(['active', 'failed', 'completed'], 0, 0)
   if (!lastJobs.length) {
     return { last }
@@ -281,9 +306,10 @@ const getLast = async function (queue) {
   lastJobs.sort((a, b) => b.timestamp - a.timestamp)
   const lastCompleted = lastJobs.filter(j => j.finishedOn && !j.failedReason)[0]
   const lastCompletedOn = lastCompleted ? lastCompleted.finishedOn : null
-  const { returnvalue, failedReason, stacktrace, finishedOn, processedOn, attemptsMade, _progress } = lastJobs[0]
+  const { id, returnvalue, failedReason, stacktrace, finishedOn, processedOn, attemptsMade, _progress } = lastJobs[0]
   if (failedReason) {
     last = {
+      id,
       status: 'failed',
       failedReason,
       stacktrace,
@@ -293,6 +319,7 @@ const getLast = async function (queue) {
     }
   } else if (finishedOn) {
     last = {
+      id,
       status: 'completed',
       returnvalue,
       finishedOn,
@@ -300,6 +327,7 @@ const getLast = async function (queue) {
     }
   } else {
     last = {
+      id,
       status: 'active',
       progress: _progress,
       processedOn
@@ -311,7 +339,19 @@ const getLast = async function (queue) {
 Parse.Cloud.define('clearQueue', function ({ params: { key, status } }) {
   const queue = updateQueues[key]
   return queue.clean(5000, status)
-}, $adminOrMaster)
+}, $adminOnly)
+
+Parse.Cloud.define('obliterateQueue', function ({ params: { key } }) {
+  const queue = updateQueues[key]
+  return queue.obliterate({ force: true })
+}, $adminOnly)
+
+Parse.Cloud.define('cancelJob', async function ({ params: { key, jobId } }) {
+  const queue = updateQueues[key]
+  const job = await queue.getJob(jobId)
+  await job.moveToFailed(Error('Job wurde manuell abgebrochen.'), true)
+  return job.discard()
+}, $adminOnly)
 
 Parse.Cloud.define('saveSchedule', async function ({ params: { key, name, description, cron, timeoutMinutes, notificationDuration } }) {
   const config = await Parse.Config.get()
@@ -319,7 +359,7 @@ Parse.Cloud.define('saveSchedule', async function ({ params: { key, name, descri
   schedule[key] = { name, description, cron, timeoutMinutes, notificationDuration }
   await cleanAndStartupQueue({ schedule, key })
   return Parse.Config.save({ schedule })
-}, $adminOrMaster)
+}, $adminOnly)
 
 const checkScheduleHealth = async function () {
   const jobs = await Parse.Cloud.run('fetchQueues', {}, { useMasterKey: true })
@@ -327,7 +367,6 @@ const checkScheduleHealth = async function () {
   const lateJobs = jobs.filter(({ late }) => late === 1)
   if (lateJobs.length) {
     let html = '<p>The following jobs have not successfully completed within their allowed durations:</p>'
-    html += `<p><strong>Environment: ${process.env.NODE_ENV}</strong></p>`
     html += lateJobs.map(({ key, notificationDuration, lastCompletedTime }) => {
       return `
       <p><strong>${key}:</strong> (Hasn't run in the past ${notificationDuration} hour(s). Last completed on: ${lastCompletedTime ? lastCompletedTime.toString() : ''}</p>

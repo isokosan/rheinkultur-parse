@@ -517,6 +517,7 @@ async function getLessorCommissionRate ({ lc, stateId, ort, companyId }) {
   await getOrCacheLessorCommissions()
   const lessor = LESSOR_COMMISIONS[lc]
   if (!lessor) { throw new Error(`Verpächter mit code ${lc} nicht gefunden.`) }
+  // TODO: Change to meet placeKey criteria
   const placeKey = `${ort}:${stateId}`
   if (placeKey in (lessor.cityRates || {})) {
     return lessor.cityRates[placeKey]

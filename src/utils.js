@@ -29,13 +29,14 @@ const batch = (payload, serverURL) => Promise.all(chunk(payload, 50)
     })
   }))
 
-const ensureUniqueField = async function (parseObject, field) {
-  const exists = await $query(parseObject.className)
+const ensureUniqueField = async function (parseObject, ...fields) {
+  const query = $query(parseObject.className)
     .notEqualTo('objectId', parseObject.id || null)
-    .equalTo(field, parseObject.get(field))
-    .first({ useMasterKey: true })
-  if (exists) {
-    throw new Error(`${parseObject.className} mit ${field} existiert bereits.`)
+  for (const field of fields) {
+    query.equalTo(field, parseObject.get(field))
+  }
+  if (await query.first({ useMasterKey: true })) {
+    throw new Error(`${parseObject.className} mit ${fields.join(', ')} existiert bereits.`)
   }
 }
 

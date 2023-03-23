@@ -1,6 +1,6 @@
 const path = require('path')
 const { ensureUniqueField } = require('@/utils')
-const { createQueue } = require('@/cloud/jobs')
+const { createQueue } = require('@/jobs')
 const { getQuarterStartEnd } = require('@/shared')
 
 const QuarterlyReport = Parse.Object.extend('QuarterlyReport')
@@ -34,9 +34,9 @@ async function checkIfQuarterIsClosed (quarter) {
 const reportQueue = createQueue('process_quarterly_report')
 reportQueue.process(path.join(BASE_DIR, 'queues/index.js'))
 reportQueue.obliterate({ force: true })
-  .then(response => consola.success('obliterated', response))
-  .then(() => reportQueue.getJobs())
-  .then(response => consola.info('jobs', response))
+// .then(response => consola.success('obliterated', response))
+// .then(() => reportQueue.getJobs())
+// .then(response => consola.info('jobs', response))
 
 Parse.Cloud.beforeSave(QuarterlyReport, async ({ object: quarterlyReport }) => {
   await ensureUniqueField(quarterlyReport, 'quarter')
@@ -52,14 +52,14 @@ Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) 
     .descending('createdAt')
     .first({ useMasterKey: true })
   return report || checkIfQuarterIsClosed(quarter)
-}, $adminOrMaster)
+}, $adminOnly)
 
-Parse.Cloud.define('job-start', () => reportQueue.add({ id: 'L6OJ4k2Uo3' }).then(job => job.id), $adminOrMaster)
+Parse.Cloud.define('job-start', () => reportQueue.add({ id: 'L6OJ4k2Uo3' }).then(job => job.id), $adminOnly)
 
 Parse.Cloud.define('job-status', async ({ params: { jobId } }) => {
   const job = await reportQueue.getJob(jobId)
   return job?.progress()
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) => {
   const report = await $query('QuarterlyReport')
@@ -73,4 +73,4 @@ Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) 
     throw new Error('Job already added')
   }
   return reportQueue.add({ id: report.id }).then(job => job.id)
-}, $adminOrMaster)
+}, $adminOnly)

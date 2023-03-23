@@ -3,10 +3,34 @@ const { camelCase } = require('lodash')
 module.exports.ACC_TYPES = {
   admin: 'Administrator',
   intern: 'Benutzer',
-  scoutManager: 'Scout Manager',
   scout: 'Scout',
-  distributor: 'Vertriebspartner'
+  partner: 'Vertriebspartner' // confusing because extern / intern is unclear nad manage-bookings permission is anyways handling the logic
 }
+
+module.exports.PERMISSIONS = {
+  'manage-bookings': 'Manage Bookings',
+  'manage-scouts': 'Manage Scouts'
+  /*
+  cubes: 'CityCubes Public View', // verfügbar / nicht verfügbar
+  'cubes-detail': 'CityCubes Detail View', // details like booked, not marketable etc
+  'view-orders': 'Verträge und Buchungen einsehen', // View order details, when clicking on a cube, see which order
+  'manage-orders': 'Verträge und Buchungen verwalten', // Create, edit, delete etc
+  'view-vouchers': 'Rechnungen und Gutschriften einsehen',  // View voucher details
+  'manage-vouchers': 'Rechnungen und Gutschriften verwalten', // Create, edit, delete etc
+  'view-companies': 'Unternehmen einsehen',
+  'manage-companies': 'Unternehmen verwalten',
+  'view-products': 'Produkte einsehen',
+  'manage-products': 'Produkte verwalten',
+  'view-mobile-tasks': 'Mobile Aufgaben einsehen',
+  'manage-mobile-tasks': 'Mobile Aufgaben verwalten',
+  'manage-scouts': 'Scouts ',
+  'scout': 'Scout',
+  'control': 'Kontrol',
+  'assembly': 'Montage',
+  'disassembly': 'Abbau'
+  */
+}
+
 module.exports.BOOKING_STATUSES = {
   '-1': 'Gelöscht',
   0.0: 'Entwurf', // distributors
@@ -87,9 +111,12 @@ module.exports.INTEREST_RATES = {
   36: 15
 }
 
-module.exports.DEPARTURE_LIST_STATUSES = {
-  0: 'Entwurf',
-  appointed: 'Beauftragt',
-  in_progress: 'In Bearbeitung',
-  completed: 'Beendet'
+// TODO: numbers?
+module.exports.TASK_LIST_STATUSES = {
+  0: 'Entwurf (Nicht ernannt)',
+  1: 'Ernannt (Nicht beauftragt)',
+  2: 'Beauftragt',
+  3: 'In Bearbeitung',
+  4: 'Fertiggestellt',
+  5: 'Archiviert'
 }

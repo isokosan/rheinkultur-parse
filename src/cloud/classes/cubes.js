@@ -59,7 +59,7 @@ Parse.Cloud.beforeFind(Cube, async ({ query, user, master }) => {
   isPublic && query.equalTo('dAt', null)
 })
 
-const PUBLIC_FIELDS = ['media', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2']
+const PUBLIC_FIELDS = ['media', 'hti', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2']
 Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   const isPublic = !user && !master
   for (const cube of cubes) {
@@ -283,7 +283,7 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   cube.set({ vAt: new Date() })
   const audit = { user, fn: 'cube-verify' }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, $internOrMaster)
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id)
@@ -300,7 +300,7 @@ Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
   cube.set('vAt', null)
   const audit = { user, fn: 'cube-undo-verify' }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, $internOrMaster)
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-hide', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id)

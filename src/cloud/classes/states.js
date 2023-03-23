@@ -1,9 +1,7 @@
 const State = Parse.Object.extend('State')
 
-const { ensureUniqueField } = require('@/utils')
-
-Parse.Cloud.beforeSave(State, async ({ object: state }) => {
-  await ensureUniqueField(state, 'name')
+Parse.Cloud.beforeSave(State, async () => {
+  throw new Error('States are not allowed to be saved')
 })
 
 const fetchStates = async function () {

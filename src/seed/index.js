@@ -158,7 +158,7 @@ const dynamicClasses = [
   // /scouting
   'Briefing',
   'Control',
-  'DepartureList',
+  'TaskList',
   'ScoutSubmission',
   'ControlSubmission'
 ]

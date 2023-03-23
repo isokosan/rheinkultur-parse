@@ -363,7 +363,7 @@ router.get('/control', handleErrorAsync(async (req, res) => {
   const aldiTagIds = await (new Parse.Query('Tag')).containedIn('name', ['ALDI', 'ALDI Süd', 'ALDI Nord']).distinct('objectId', { useMasterKey: true })
   // control list might be for a single control list, or a control with many control lists
   const { id, controlId } = req.query
-  const query = new Parse.Query('DepartureList')
+  const query = new Parse.Query('TaskList')
   id && query.equalTo('objectId', id)
   if (controlId) {
     const control = await (new Parse.Query('Control')).equalTo('objectId', controlId).first({ useMasterKey: true })
@@ -406,13 +406,13 @@ router.get('/control', handleErrorAsync(async (req, res) => {
 
   let skip = 0
   while (true) {
-    const departureLists = await query.limit(10).skip(skip).find({ useMasterKey: true })
-    if (!departureLists.length) {
+    const taskLists = await query.limit(10).skip(skip).find({ useMasterKey: true })
+    if (!taskLists.length) {
       break
     }
-    skip += departureLists.length
-    for (const departureList of departureLists) {
-      const cubeIds = departureList.get('cubeIds') || []
+    skip += taskLists.length
+    for (const taskList of taskLists) {
+      const cubeIds = taskList.get('cubeIds') || []
       const cubes = await $query('Cube')
         .containedIn('objectId', cubeIds)
         .limit(cubeIds.length)
@@ -445,14 +445,14 @@ router.get('/control', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
-router.get('/departure-lists', handleErrorAsync(async (req, res) => {
+router.get('/task-lists', handleErrorAsync(async (req, res) => {
   const [className, objectId] = req.query.parent.split('-')
   const parent = await $getOrFail(className, objectId)
   const workbook = new excel.Workbook()
-  await $query('DepartureList')
+  await $query('TaskList')
     .equalTo(className.toLowerCase(), parent)
-    .each(async departureList => {
-      const worksheet = workbook.addWorksheet(`${departureList.get('ort')} (${departureList.get('state').id})`)
+    .each(async taskList => {
+      const worksheet = workbook.addWorksheet(`${taskList.get('ort')} (${taskList.get('state').id})`)
       const { columns, headerRowValues } = getColumnHeaders({
         objectId: { header: 'CityCube ID', width: 20 },
         htCode: { header: 'Gehäusetyp', width: 20 },
@@ -467,7 +467,7 @@ router.get('/departure-lists', handleErrorAsync(async (req, res) => {
       headerRow.font = { name: 'Calibri', bold: true, size: 12 }
       headerRow.height = 24
 
-      const cubeIds = departureList.get('cubeIds') || []
+      const cubeIds = taskList.get('cubeIds') || []
       const cubes = await (new Parse.Query('Cube'))
         .containedIn('objectId', cubeIds)
         .include(['ht', 'state'])
@@ -492,19 +492,20 @@ router.get('/departure-lists', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
-router.get('/departure-list', handleErrorAsync(async (req, res) => {
-  const departureList = await (new Parse.Query('DepartureList')).include('company').get(req.query.id, { useMasterKey: true })
+router.get('/task-list', handleErrorAsync(async (req, res) => {
+  const taskList = await (new Parse.Query('TaskList')).include('company').get(req.query.id, { useMasterKey: true })
   const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet(departureList.get('name'))
+  const worksheet = workbook.addWorksheet(taskList.get('name'))
 
   const infos = [
-    { label: 'Auftraggeber', content: departureList.get('company')?.get('name') || '-' },
-    { label: 'Abfahrtsliste', content: departureList.get('name') },
-    { label: 'Fälligkeitsdatum', content: departureList.get('dueDate') ? moment(departureList.get('dueDate')).format('DD.MM.YYYY') : '' }
+    { label: 'Auftraggeber', content: taskList.get('company')?.get('name') || '-' },
+    { label: 'Abfahrtsliste', content: taskList.get('name') },
+    { label: 'Fälligkeitsdatum', content: taskList.get('dueDate') ? moment(taskList.get('dueDate')).format('DD.MM.YYYY') : '' }
   ]
-  if (departureList.get('type') === 'scout') {
-    infos.push({ label: 'Anzahl', content: departureList.get('quota') || 'Alle' })
-  }
+  // TODO: anzahl export
+  // if (taskList.get('type') === 'scout') {
+  //   infos.push({ label: 'Anzahl', content: taskList.get('quotas') || 'Alle' })
+  // }
 
   let i = 1
   for (const info of infos) {
@@ -531,7 +532,7 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
   headerRow.height = 24
 
-  const cubeIds = departureList.get('cubeIds') || []
+  const cubeIds = taskList.get('cubeIds') || []
   const cubes = await (new Parse.Query('Cube'))
     .containedIn('objectId', cubeIds)
     .include(['ht', 'state'])
@@ -567,7 +568,7 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
   const states = await fetchStates()
 
   // add extra cubes for briefings in area
-  const query = departureList.get('briefing') && departureList.get('cubesQuery')
+  const query = taskList.get('briefing') && taskList.get('cubesQuery')
   if (query) {
     query.s = 'available'
     query.pagination = 1000
@@ -588,7 +589,7 @@ router.get('/departure-list', handleErrorAsync(async (req, res) => {
     }
   }
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=Abfahrtsliste ${departureList.get('name')}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=Abfahrtsliste ${taskList.get('name')}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 

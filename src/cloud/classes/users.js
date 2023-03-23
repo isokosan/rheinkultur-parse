@@ -53,6 +53,7 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
     firstName,
     lastName,
     accType,
+    permissions,
     companyId
   } = normalizeFields(params)
   const user = new Parse.User({
@@ -62,6 +63,7 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
     firstName,
     lastName,
     accType,
+    permissions,
     company: companyId
       ? await $getOrFail('Company', companyId)
       : undefined,
@@ -71,7 +73,7 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
   })
   const audit = { user: invitedBy, fn: 'user-invite' }
   return user.signUp(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('user-update', async ({ params: { id, ...params }, user: auth }) => {
   const user = await $getOrFail(Parse.User, id, ['companyPerson'])
@@ -104,7 +106,7 @@ Parse.Cloud.define('user-update', async ({ params: { id, ...params }, user: auth
 
   const audit = { user: auth, fn: 'user-update', data: { changes } }
   return user.save(null, { useMasterKey: true, context: { audit, clearSessions: (accTypeChanged || companyChanged) } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('user-ban', async ({ params: { id: userId }, user: auth }) => {
   const user = await $getOrFail(Parse.User, userId)
@@ -114,7 +116,7 @@ Parse.Cloud.define('user-ban', async ({ params: { id: userId }, user: auth }) =>
   user.set('isBanned', true)
   const audit = { user: auth, fn: 'user-ban' }
   return user.save(null, { useMasterKey: true, context: { audit, clearSessions: true } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('user-unban', async ({ params: { id: userId }, user: auth }) => {
   const user = await $getOrFail(Parse.User, userId)
@@ -124,7 +126,7 @@ Parse.Cloud.define('user-unban', async ({ params: { id: userId }, user: auth }) 
   user.set('isBanned', false)
   const audit = { user: auth, fn: 'user-unban' }
   return user.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 const getUserFromInviteToken = async function (token) {
   if (!token) {
@@ -171,6 +173,17 @@ const fetchUsers = async function () {
   }
   return response
 }
+
+// async function updateUserPasswords() {
+//   const users = await $query(Parse.User)
+//     .limit(1000)
+//     .find({ useMasterKey: true })
+//   for (const user of users) {
+//     await user.set('password', '123456').save(null, { useMasterKey: true })
+//   }
+//   consola.success('set user passwords')
+// }
+// updateUserPasswords()
 
 module.exports = {
   fetchUsers

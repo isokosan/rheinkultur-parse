@@ -48,7 +48,7 @@ Parse.Cloud.define('media-create', async ({
   })
   const audit = { user, fn: 'media-create' }
   return media.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('media-update-prices', async ({
   params: {
@@ -61,7 +61,7 @@ Parse.Cloud.define('media-update-prices', async ({
   media.set({ prices })
   const audit = { user, fn: 'media-update-prices' }
   return media.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 module.exports = {
   createMediae,

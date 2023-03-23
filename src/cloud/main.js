@@ -14,7 +14,7 @@ const {
   PRINT_PACKAGE_FACES: printPackageFaces,
   PRINT_PACKAGE_FILES: printPackageFiles,
   INTEREST_RATES: interestRates,
-  DEPARTURE_LIST_STATUSES: departureListStatuses
+  TASK_LIST_STATUSES: taskListStatuses
 } = require('@/schema/enums')
 
 const {
@@ -32,7 +32,7 @@ const {
   recurse: true
 })
 
-process.env.SEED && require('@/seed')
+process.env.SEED && require('@/seed/fieldwork')
 
 Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
   if (!user) { keys = ['states'] }
@@ -85,7 +85,7 @@ Parse.Cloud.define('enums', () => ({
   printPackageFaces,
   printPackageFiles,
   interestRates,
-  departureListStatuses
+  taskListStatuses
 }), { requireUser: true })
 
 // temporary solution to PLZ's without redis

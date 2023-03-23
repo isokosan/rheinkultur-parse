@@ -86,7 +86,7 @@ const fetchTags = async () => {
   const tags = await $query(Tag).find({ useMasterKey: true })
   const response = {}
   for (const tag of tags) {
-    response[tag.id] = { objectId: tag.id, name: tag.get('name') }
+    response[tag.id] = { className: 'Tag', objectId: tag.id, name: tag.get('name') }
   }
   return response
 }

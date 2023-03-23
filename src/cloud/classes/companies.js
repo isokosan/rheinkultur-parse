@@ -213,7 +213,7 @@ Parse.Cloud.define('company-update-distributor', async ({
   }
 
   return company.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('company-update-agency', async ({
   params: {
@@ -250,7 +250,7 @@ Parse.Cloud.define('company-update-agency', async ({
   }
 
   return company.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('company-update-lessor', async ({
   params: {
@@ -311,7 +311,7 @@ Parse.Cloud.define('company-update-lessor', async ({
   }
 
   return company.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOrMaster)
+}, $adminOnly)
 
 Parse.Cloud.define('company-remove', async ({ params: { id: companyId }, user }) => {
   const company = await $getOrFail(Company, companyId)

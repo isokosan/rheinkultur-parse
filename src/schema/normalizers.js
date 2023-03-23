@@ -1,4 +1,4 @@
-const { ACC_TYPES } = require('./enums')
+const { ACC_TYPES, PERMISSIONS } = require('./enums')
 
 const boolean = value => value === true
 const defined = value => value || null
@@ -23,7 +23,8 @@ module.exports = {
       'pbx',
       'mobile',
       'companyPerson',
-      'accType'
+      'accType',
+      'permissions'
     ],
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
@@ -37,6 +38,12 @@ module.exports = {
         companyPersonId: defined,
         accType (val) {
           return Object.keys(ACC_TYPES).includes(val) ? val : null
+        },
+        permissions (val) {
+          val = val || []
+          if (!Array.isArray(val)) val = [val]
+          val = val.filter(role => Object.keys(PERMISSIONS).includes(role))
+          return val.length ? val : null
         }
       }
       const normalized = {}
@@ -353,14 +360,15 @@ module.exports = {
       return normalized
     }
   },
-  departureLists: {
+  taskLists: {
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
-        type: value => ['scout', 'control'].includes(value) ? value : null,
+        type: value => ['scout', 'control', 'assembly', 'disassembly'].includes(value) ? value : null,
         name: normalizeString,
-        quota: normalizeInt,
+        quotas: value => ({ MFG: value?.MFG || undefined, KVZ: value?.KVZ || undefined }),
         dueDate: normalizeDateString,
-        scoutId: defined,
+        managerId: defined,
+        scoutIds: values => values ? values.filter(value => value) : null,
         cubeIds: normalizeCubeIds
       }
       const normalized = {}
@@ -368,7 +376,7 @@ module.exports = {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
       }
       if (normalized.type !== 'scout') {
-        delete normalized.quota
+        delete normalized.quotas
       }
       return normalized
     }

@@ -144,6 +144,12 @@ Parse.Cloud.beforeDelete(FileObject, async ({ object }) => {
   ])
 })
 
+Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
+  const isPublic = !user && !master
+  isPublic && query.equalTo('approved', true)
+  // TODO: constrain photos to only those of the user's cubes if not approved
+})
+
 Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto }) => {
   const user = cubePhoto.get('createdBy')
   await user.fetch({ useMasterKey: true })

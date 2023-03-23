@@ -10,6 +10,7 @@ global.$parsify = (className, objectId) => {
   item.id = objectId
   return item
 }
+global.$geopoint = (...args) => new Parse.GeoPoint(...args)
 global.$pointer = (className, objectId) => $parsify(className, objectId).toPointer()
 global.$query = className => new Parse.Query(className)
 global.$attr = (object, key) => typeof object.get === 'function' ? object.get(key) : object[key]
@@ -23,24 +24,26 @@ global.$getOrFail = function (className, objectId, include) {
       }
     })
 }
-global.$adminOrMaster = function ({ user, master }) {
-  if (master) {
-    return true
-  }
-  if (user && user.get('accType') === 'admin') {
-    return true
-  }
-  throw new Error('Validation Error')
-}
 
-global.$internOrMaster = function ({ user, master }) {
-  if (master) {
-    return true
+global.$adminOnly = function ({ user, master }) {
+  if (master) { return true }
+  if (user?.get('accType') === 'admin') { return true }
+  throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
+}
+global.$internOrAdmin = function ({ user, master }) {
+  if (master) { return true }
+  if (['intern', 'admin'].includes(user?.get('accType'))) { return true }
+  throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
+}
+global.$scoutManagerOrAdmin = function ({ user, master }) {
+  if (master) { return true }
+  if (user?.get('accType') === 'admin') { return true }
+  if (['intern', 'partner'].includes(user?.get('accType'))) {
+    if (user.get('permissions')?.includes('manage-scouts')) {
+      return true
+    }
   }
-  if (user && ['admin', 'intern'].includes(user.get('accType'))) {
-    return true
-  }
-  throw new Error('Validation Error')
+  throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
 }
 
 global.$wawiStart = '2023-01-01'

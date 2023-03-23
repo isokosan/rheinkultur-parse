@@ -11,10 +11,19 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   const bookingOrContract = production.get('booking') || production.get('contract')
   await bookingOrContract.fetch({ useMasterKey: true })
 
-  // clear cubeIds if tied to booking or contract
-  if (production.get('booking') || production.get('contract')) {
-    production.unset('cubeIds')
+  const cubeIds = bookingOrContract.get('cubeIds') || []
+  for (const key of ['printPackages', 'monthlies', 'prices', 'extras', 'totals']) {
+    const obj = production.get(key) || {}
+    for (const cubeId of Object.keys(obj)) {
+      if (!cubeIds.includes(cubeId)) {
+        delete obj[cubeId]
+      }
+    }
+    production.set({ key: obj })
   }
+
+  const total = round2(sum(Object.values(production.get('totals') || {})))
+  production.set({ total })
 
   !production.get('billing') && production.set({
     monthlies: null,
@@ -123,22 +132,6 @@ Parse.Cloud.afterFind(Production, async ({ query, objects }) => {
     }
   }
 })
-
-Parse.Cloud.define('production-update-cubes', async ({ params: { id: productionId, cubeIds } }) => {
-  const production = await $getOrFail(Production, productionId)
-  for (const key of ['printPackages', 'monthlies', 'prices', 'extras', 'totals']) {
-    const obj = production.get(key) || {}
-    for (const cubeId of Object.keys(obj)) {
-      if (!cubeIds.includes(cubeId)) {
-        delete obj[cubeId]
-      }
-    }
-    production.set({ key: obj })
-  }
-  const total = round2(sum(Object.values(production.get('totals') || {})))
-  production.set({ total })
-  return production.save(null, { useMasterKey: true })
-}, { requireUser: true })
 
 Parse.Cloud.define('production-add-assembly', async ({ params: { productionId } }) => {
   const production = await $getOrFail(Production, productionId)
