@@ -149,7 +149,8 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
   const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
   await $notify({
     user: submission.get('scout'),
-    data: { type: 'Control', cubeId: cube.id, placeKey, rejectionReason }
+    identifier: 'task-submission-rejected',
+    data: { type: 'control', cubeId: cube.id, placeKey, rejectionReason }
   })
   return { message: 'Kontrolle abgelehnt.', data: submission }
 }, { requireUser: true })

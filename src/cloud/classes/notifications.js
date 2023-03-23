@@ -28,6 +28,13 @@ Parse.Cloud.beforeSave(Notification, ({ object: notification }) => {
   if (!NOTIFICATIONS[notification.get('identifier')]) { throw new Error('Unrecognized notification identifier') }
 })
 
+Parse.Cloud.afterFind(Notification, async ({ objects: notifications }) => {
+  for (const notification of notifications) {
+    notification.set('message', resolveMessage(notification))
+    notification.set('web_url', `${process.env.WEBAPP_URL}/n/${notification.id}`)
+  }
+})
+
 Parse.Cloud.afterSave(Notification, async ({ object: notification, context: { send } }) => {
   if (!send) { return }
   if (await shouldSkip(notification)) { return }
@@ -35,8 +42,8 @@ Parse.Cloud.afterSave(Notification, async ({ object: notification, context: { se
   const user = notification.get('user')
   await user.fetch({ useMasterKey: true })
 
-  const message = resolveMessage(notification)
-  const web_url = `${process.env.WEBAPP_URL}/n/${notification.id}`
+  const message = notification.get('message')
+  const web_url = notification.get('web_url')
 
   // send email
   sendMail({
@@ -68,8 +75,8 @@ Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
   return resolveRoute(notification)
 }, { requireUser: true })
 
-const notify = async ({ user, message, data }) => {
-  const notification = new Notification({ user, message, data })
+const notify = async ({ user, identifier, data }) => {
+  const notification = new Notification({ user, identifier, data })
   return notification.save(null, { useMasterKey: true, context: { send: true } })
 }
 
