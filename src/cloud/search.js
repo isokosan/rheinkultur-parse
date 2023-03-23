@@ -125,10 +125,12 @@ const INDEXES = {
         stateId: taskList.get('state')?.id,
         status: taskList.get('status'),
         gp: taskList.get('gp')?.toJSON(),
-        geo: {
-          lat: taskList.get('gp').latitude,
-          lon: taskList.get('gp').longitude
-        },
+        geo: taskList.get('gp')
+          ? {
+            lat: taskList.get('gp').latitude,
+            lon: taskList.get('gp').longitude
+          }
+          : undefined,
         managerId: taskList.get('manager')?.id,
         scoutIds: taskList.get('scouts')?.map(scout => scout.id),
         date: taskList.get('date'),
@@ -240,6 +242,10 @@ Parse.Cloud.define('search-fieldwork', async ({
     .find({ useMasterKey: true })
   const results = hits.map(hit => {
     const obj = taskLists.find(obj => obj.id === hit._id)
+    if (!obj) {
+      Parse.Cloud.run('triggerScheduledJob', { job: 'reindex_fieldwork' }, { useMasterKey: true })
+      throw new Error('The search index is being re-synced, please try again in a minute.')
+    }
     c && obj.set('distance', hit.sort[0])
     return obj.toJSON()
   })

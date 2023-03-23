@@ -107,7 +107,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
 Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts } }) => {
   $audit(taskList, audit)
   const placeKey = [taskList.get('state').id, taskList.get('ort')].join(':')
-  for (const scout of taskList.get('scouts')) {
+  for (const scout of taskList.get('scouts') || []) {
     if (notifyScouts === true || notifyScouts?.includes(scout.id)) {
       await $notify({
         user: scout,

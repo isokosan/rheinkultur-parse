@@ -17,6 +17,11 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
     throw new Error('CityCube ID sollte nicht die folgende Zeichen behalten: ".", "$", "%", "?", "+", " ", "Ãœ"')
   }
 
+  // require state and ort (for placekey operations) - cannot update schema
+  if (!cube.get('state') || !cube.get('ort')) {
+    throw new Error('Cube requires at least gp, state and ort')
+  }
+
   if (seeding === true) { return }
   // trim address
   for (const key of ['str', 'hsnr', 'plz', 'ort']) {

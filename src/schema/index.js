@@ -252,8 +252,8 @@ const schemaDefinitions = {
       str: { type: 'String' }, // street
       hsnr: { type: 'String' }, // house number
       plz: { type: 'String' }, // postcode
-      ort: { type: 'String' }, // city
-      state: { type: 'Pointer', targetClass: 'State' }, // State
+      ort: { type: 'String', required: true }, // city - required was added later so not taking effect here
+      state: { type: 'Pointer', targetClass: 'State', required: true }, // State - required was added later so not taking effect here
 
       order: { type: 'Object' }, // current active order
       vAt: { type: 'Date' }, // verifiedAt Date
@@ -569,6 +569,7 @@ const schemaDefinitions = {
       type: { type: 'String', required: true }, // scout, control or disassembly
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
+      gp: { type: 'GeoPoint' }, // GeoPoint
       date: { type: 'String', required: true }, // start date
       dueDate: { type: 'String', required: true },
       manager: { type: 'Pointer', targetClass: '_User' },
@@ -615,7 +616,15 @@ const schemaDefinitions = {
       photo: { type: 'Pointer', targetClass: 'FileObject' }
     }
   },
-  // TODO: Remove in favor of using enums
+  // TODO: Remove the following in favor of using a better system?
+  City: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      ort: { type: 'String', required: true }, // required was added later so not taking effect here
+      state: { type: 'Pointer', targetClass: 'State', required: true }, // required was added later so not taking effect here
+      gp: { type: 'GeoPoint' }
+    }
+  },
   State: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
@@ -623,7 +632,10 @@ const schemaDefinitions = {
     }
   },
   Tag: {
-    CLP: { ...readAuthOnly, ...writeMasterOnly }
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      name: { type: 'String', required: true } // required was added later so not taking effect here
+    }
   }
 }
 
@@ -645,9 +657,10 @@ const schemaDefinitions = {
 
 const definitions = []
 for (const className of Object.keys(schemaDefinitions)) {
-  const { CLP: classLevelPermissions, fields } = schemaDefinitions[className]
+  const { CLP: classLevelPermissions, fields, indexes } = schemaDefinitions[className]
   definitions.push({
     className,
+    indexes,
     classLevelPermissions,
     fields
   })
@@ -665,5 +678,16 @@ for (const className of Object.keys(schemaDefinitions)) {
 
 module.exports = {
   definitions,
+  // If set to `true`, the Parse Server API for schema changes is disabled and schema
+  // changes are only possible by redeployingParse Server with a new schema definition
+  // lockSchemas: true,
+  // If set to `true`, Parse Server will automatically delete non-defined classes from
+  // the database; internal classes like `User` or `Role` are never deleted.
   strict: true
+  // If set to `true`, a field type change will cause the field including its data to be
+  // deleted from the database, and then a new field to be created with the new type
+  // recreateModifiedFields: false,
+  // If set to `true`, Parse Server will automatically delete non-defined class fields;
+  // internal fields in classes like User or Role are never deleted.
+  // deleteExtraFields: false
 }

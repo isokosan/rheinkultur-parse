@@ -80,15 +80,7 @@ const initApp = async () => {
     logLevel: 'error',
     maxLogFiles: '7d',
     verbose: false,
-    schema: {
-      ...require('./schema'),
-      beforeMigration () {
-        consola.info('migrating')
-      },
-      afterMigration () {
-        consola.success('migrated')
-      }
-    },
+    schema: require('./schema'),
     liveQuery: {
       classNames: [
         'Audit',

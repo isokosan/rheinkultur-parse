@@ -16,6 +16,8 @@ const createCity = async (body) => Parse.Cloud.httpRequest({
 module.exports = async function (job) {
   // get unique list of locations from cubes
   const locations = await $query('Cube')
+    .notEqualTo('ort', null)
+    .notEqualTo('state', null)
     .aggregate([{ $group: { _id: { ort: '$ort', stateP: '$state' } } }])
     .then(response => response.map(({ objectId }) => objectId))
   const locationsCount = Object.keys(locations).length
@@ -24,7 +26,7 @@ module.exports = async function (job) {
     const [, stateId] = stateP.split('$')
     const state = $pointer('State', stateId)
     const placeKey = [stateId, ort].join(':')
-    const exists = await $query('City').equalTo('objectId', placeKey).count()
+    const exists = await $query('City').equalTo('objectId', placeKey).count({ useMasterKey: true })
     if (!exists) {
       await createCity({
         objectId: placeKey,
