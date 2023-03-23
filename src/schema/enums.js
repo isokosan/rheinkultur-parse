@@ -4,7 +4,7 @@ module.exports.ACC_TYPES = {
   admin: 'Administrator',
   intern: 'Benutzer',
   scout: 'Scout',
-  partner: 'Vertriebspartner' // confusing because extern / intern is unclear nad manage-bookings permission is anyways handling the logic
+  partner: 'Vertriebspartner'
 }
 
 module.exports.PERMISSIONS = {
@@ -111,7 +111,6 @@ module.exports.INTEREST_RATES = {
   36: 15
 }
 
-// TODO: numbers?
 module.exports.TASK_LIST_STATUSES = {
   0: 'Entwurf (Nicht ernannt)',
   1: 'Ernannt (Nicht beauftragt)',
