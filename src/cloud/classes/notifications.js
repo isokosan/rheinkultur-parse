@@ -35,6 +35,13 @@ Parse.Cloud.afterFind(Notification, async ({ objects: notifications }) => {
   }
 })
 
+Parse.Cloud.afterLiveQueryEvent(Notification, async ({ object: notification, event }) => {
+  if (event === 'create' || event === 'update') {
+    notification.set('message', resolveMessage(notification))
+    notification.set('web_url', `${process.env.WEBAPP_URL}/n/${notification.id}`)
+  }
+})
+
 Parse.Cloud.afterSave(Notification, async ({ object: notification, context: { send } }) => {
   if (!send) { return }
   if (await shouldSkip(notification)) { return }
