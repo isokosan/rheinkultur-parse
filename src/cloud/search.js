@@ -303,7 +303,7 @@ Parse.Cloud.define('search', async ({
     })
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     // sort by distance if c is given (map)
-    sort.unshift({
+    isMap && sort.unshift({
       _geo_distance: {
         geo: { lat, lon },
         order: 'asc',
@@ -313,7 +313,9 @@ Parse.Cloud.define('search', async ({
         ignore_unmapped: true
       }
     })
-  } else {
+  }
+
+  if (!isMap) {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     sort.unshift({ 'objectId.keyword': 'asc' })
     // !id && sort.unshift({ 'hsnr.sort': 'asc' })
