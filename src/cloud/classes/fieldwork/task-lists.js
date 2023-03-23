@@ -355,14 +355,12 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
   return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
 }, $internOrAdmin)
 
-// TODO: briefing lists should be removeable by intern users?
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status')) {
-    throw new Error('Only draft lists can be removed.')
-  }
-  await taskList.destroy({ useMasterKey: true })
-  return { message: 'Abfahrtsliste gelöscht.' }
+  if (taskList.get('status')) { throw new Error('Only draft lists can be removed.') }
+  throw new Error('Task lists currently cannot be removed.')
+  // await taskList.destroy({ useMasterKey: true })
+  // return { message: 'Abfahrtsliste gelöscht.' }
 }, $internOrAdmin)
 
 Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, user }) => {
