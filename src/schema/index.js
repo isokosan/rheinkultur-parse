@@ -519,24 +519,19 @@ const schemaDefinitions = {
   },
   Notification: {
     CLP: {
-      find: {},
-      count: {},
-      get: {},
-      create: {},
-      update: {},
-      delete: {},
-      addField: {},
-      protectedFields: {},
-      readUserFields: [
-        'user'
-      ]
+      ...readMasterOnly,
+      ...writeMasterOnly,
+      readUserFields: ['user']
     },
     fields: {
       user: { type: 'Pointer', targetClass: '_User', required: true },
       identifier: { type: 'String', required: true },
       data: { type: 'Object' },
       seenAt: { type: 'Date' },
-      readAt: { type: 'Date' }
+      readAt: { type: 'Date' },
+      sentAt: { type: 'Date' },
+      push: { type: 'Object' },
+      mail: { type: 'Object' }
     }
   },
   // SCOUTING

@@ -110,7 +110,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
   for (const scout of taskList.get('scouts')) {
     if (notifyScouts === true || notifyScouts?.includes(scout.id)) {
       await $notify({
-        user: taskList.get('scout'),
+        user: scout,
         identifier: 'task-list-assigned',
         data: { placeKey }
       })
@@ -321,6 +321,20 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
   return {
     data: taskList.get('status'),
     message: 'Abfahrtslist beauftragt.'
+  }
+}, $scoutManagerOrAdmin)
+
+Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (![2, 3].includes(taskList.get('status'))) {
+    throw new Error('Only lists that are in progress can be retracted.')
+  }
+  taskList.set({ status: 1 })
+  const audit = { user, fn: 'task-list-retract' }
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  return {
+    data: taskList.get('status'),
+    message: 'Abfahrtslist zurückgezogen.'
   }
 }, $scoutManagerOrAdmin)
 
