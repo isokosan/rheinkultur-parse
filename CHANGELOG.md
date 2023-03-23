@@ -1,3 +1,44 @@
+# [1.12.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.3...1.12.0) (2023-03-23)
+
+
+### Bug Fixes
+
+* add after live query setters for notifications ([b04ff4a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b04ff4ad2ef95dd2ff5f51ae474b45404db2122a))
+* comment typo ([8cc8462](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8cc84626adc226130c98e25546f6801e71eeef0d))
+* comments ([1697f69](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1697f695ec6ac775e6fe192d9e05ef00d9b95f44))
+* control criteria ort ([0840059](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/084005912748d5ee5a88c8ab0bef536b87776d6e))
+* counts ([3700c1b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3700c1b29787feffe6840c29ebc84ccc4d0feafc))
+* counts of briefings in locations ([27a6b59](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/27a6b59cf51aca4be5ff9b4498eb75e4e64b9e0a))
+* cube id decode in audit reject ([feb146a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/feb146af06a08d367d4f39dc2564a129fd437a27))
+* cube save bug with encode ([e93da86](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e93da863736b1e18a937afdfd9a58165fe96f410))
+* cubeId in audits decoded version ([30274d7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/30274d7dc86d8f53d8ed1cf80ea1d3ad47133af2))
+* fix fieldwork initial value bugs ([dbf11bc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dbf11bc9c191d1a1ca8478f5e8a26f7ee22a5f67))
+* no criteria control ([fe109d7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fe109d778489e134790cef4d9a80e9a7b424da3c))
+* notification message and web_url get after find ([11a676d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/11a676def630a9ff45e3ddb271b1911d33519750))
+* notification sending push, mail and related notifications ([ebefb78](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ebefb780fbfc620a36f8d1d68df7209a931b77e8))
+* only append departure list due date from briefing if selected. ([9b6d33e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9b6d33e40096cad42f36061f86d2447a9db001be))
+* production removed cubeId data cleanup ([2358cf2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2358cf2dbb10f6938084cd613eab04c0b54ab523))
+* remove console logging of obliteration of report queue ([6a849fe](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6a849fe2d84205b9ef88daf0c7c07ca47338b26c))
+* task-list counts ([0cde2f6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0cde2f647028bfa9125f044b8472ff9398cb7ffd))
+
+
+### Features
+
+* add admin approved to quota counts ([923448e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/923448e975dd65fb1e15034eb206bc97e0219ef7))
+* add disassembly task generation on order level ([4ebf42b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4ebf42bf597dbb66bf2c334886250508c12df8bd))
+* add due days to departure lists ([a0ba852](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a0ba852725094b308f909d637bf1488fbd782d47))
+* add seed controls ([7f03411](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7f034112d037e1220ed78738f53f64611270f595))
+* aggregate counts for departures ([2ec349c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2ec349c1d3abe639faac813e1bb07fc6f69a177f))
+* disable task list remove ([c8877a6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c8877a6f7370f7d3591112b68ed5b77908527623))
+* handle control-disassembly ([db11f49](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/db11f494e57b27a8e7740d806598e683c5150d94))
+* move jobs out of classes ([8e43749](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8e437498d8d124399201746f6121944915337723))
+* remove departure lists fetching ([b92e1c3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b92e1c354c089a9ccaf5c9999c1686779c716b32))
+* remove ids in favor of statuses in task-list ([5deff65](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5deff6531ec8a633803df382b99eee611fcd2d05))
+* remove scoutable and available instead use "0" for briefing extras ([2099cde](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2099cdeec1d9e5af5c1ecb347ea0db50fae1958f))
+* set media from scout form ([12b02e5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/12b02e5c4b1856956fe3e6ea2566ea2c8022ccd8))
+* track scout added cubes ([7558358](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/755835859a1a2f80b0a80709b3d0a48b4138e734))
+* update schema to include latest changes ([541eff1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/541eff119607f81bf0ea89fb08ac5b27e6e3dfe3))
+
 ## [1.11.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.2...1.11.3) (2023-03-14)
 
 
