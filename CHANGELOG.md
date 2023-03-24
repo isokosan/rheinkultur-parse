@@ -1,3 +1,10 @@
+## [1.12.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.0...1.12.1) (2023-03-24)
+
+
+### Bug Fixes
+
+* cubes list sort by street name when radius given ([217d96f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/217d96feec7cd43087480ff9706830ce7cec3a86))
+
 # [1.12.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.11.3...1.12.0) (2023-03-23)
 
 
