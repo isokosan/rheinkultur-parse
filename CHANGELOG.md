@@ -1,3 +1,10 @@
+## [1.12.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.2...1.12.3) (2023-03-24)
+
+
+### Bug Fixes
+
+* add KVZ in front of hti in after find ([5cba40d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5cba40d967d763bcb9301dfdca6393b8d1d7ac18))
+
 ## [1.12.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.1...1.12.2) (2023-03-24)
 
 
