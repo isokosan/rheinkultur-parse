@@ -76,6 +76,9 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
     }
 
     cube.set('s', cube.getStatus())
+    if (cube.get('hti') && ['59', '82', '82 A', '82 B', '82 C', '83', '92'].includes(cube.get('hti'))) {
+      cube.set('hti', `KVZ ${cube.get('hti')}`)
+    }
 
     if (isPublic) {
       for (const key of Object.keys(cube.attributes)) {
