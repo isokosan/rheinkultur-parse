@@ -1,3 +1,10 @@
+## [1.12.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.1...1.12.2) (2023-03-24)
+
+
+### Bug Fixes
+
+* fieldwork seed controls ([061359f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/061359f7402d257305fc90bcb528d4245cfb57dc))
+
 ## [1.12.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.0...1.12.1) (2023-03-24)
 
 
