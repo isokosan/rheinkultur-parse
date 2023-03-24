@@ -1,6 +1,9 @@
 const { faker, createFakeObj } = require('./../utils')
 
-// purgeFieldwork().then(seedBriefings).then(seedControls).then(consola.success)
+// purgeFieldwork()
+// seedBriefings()
+// seedControls()
+// seedScouts()
 
 async function purgeFieldwork () {
   await (new Parse.Schema('Notification')).purge()
@@ -138,6 +141,7 @@ async function seedBriefings () {
 }
 
 async function seedControls () {
+  const control = await $query('Control').first({ useMasterKey: true }) || await Parse.Cloud.run('control-create', { name: 'Kinetic', date: '2023-04-01', dueDate: '2023-06-30' })
   const controls = require('./../data/disassembly_control.json')
     .filter(row => parseInt(row['KD-Nr.']) === 127)
     .map(row => ({ no: 'V' + row.no, control: row.cont }))
@@ -153,10 +157,9 @@ async function seedControls () {
     }
     contractNos.push(no)
   }
-
   const criteria = [{ type: 'Company', value: 'FNFCxMgEEr', op: 'include' }]
   criteria.push(...await $query('Contract').containedIn('no', contractNos).distinct('objectId', { useMasterKey: true }).then(ids => ids.map(id => ({ type: 'Contract', value: id, op: 'include' }))))
-  await Parse.Cloud.run('control-update-criteria', { id: 'o2zqX5G0BX', criteria }, { useMasterKey: true })
+  await Parse.Cloud.run('control-update-criteria', { id: control.id, criteria }, { useMasterKey: true })
 }
 
 const fakeScout = async function ({ company }) {

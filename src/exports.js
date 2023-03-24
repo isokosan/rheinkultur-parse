@@ -445,67 +445,30 @@ router.get('/control', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
-router.get('/task-lists', handleErrorAsync(async (req, res) => {
-  const [className, objectId] = req.query.parent.split('-')
-  const parent = await $getOrFail(className, objectId)
-  const workbook = new excel.Workbook()
-  await $query('TaskList')
-    .equalTo(className.toLowerCase(), parent)
-    .each(async taskList => {
-      const worksheet = workbook.addWorksheet(`${taskList.get('ort')} (${taskList.get('state').id})`)
-      const { columns, headerRowValues } = getColumnHeaders({
-        objectId: { header: 'CityCube ID', width: 20 },
-        htCode: { header: 'Gehäusetyp', width: 20 },
-        status: { header: 'Status', width: 15 },
-        address: { header: 'Anschrift', width: 30 },
-        plz: { header: 'PLZ', width: 15 },
-        ort: { header: 'Ort', width: 15 },
-        stateName: { header: 'Bundesland', width: 30 }
-      })
-      worksheet.columns = columns
-      const headerRow = worksheet.addRow(headerRowValues)
-      headerRow.font = { name: 'Calibri', bold: true, size: 12 }
-      headerRow.height = 24
+function getName ({ className, name, no }) {
+  if (name) { return name }
+  if (className === 'Booking') { return 'Buchung ' + no }
+  if (className === 'Contract') { return 'Vertrag ' + no }
+  return '-'
+}
 
-      const cubeIds = taskList.get('cubeIds') || []
-      const cubes = await (new Parse.Query('Cube'))
-        .containedIn('objectId', cubeIds)
-        .include(['ht', 'state'])
-        .limit(cubeIds.length)
-        .find({ useMasterKey: true })
-      for (const cube of cubes) {
-        const row = worksheet.addRow({
-          objectId: cube.id,
-          htCode: cube.get('ht')?.get('code') || cube.get('hti'),
-          status: CUBE_STATUSES[cube.get('s') || 0],
-          address: cube.get('str') + ' ' + cube.get('hsnr'),
-          plz: cube.get('plz'),
-          ort: cube.get('ort'),
-          stateName: cube.get('state').get('name')
-        })
-        !cube.get('ht') && (row.getCell(2).font = { name: 'Calibri', color: { argb: '808080' } })
-        cube.get('s') !== 0 && (row.getCell(3).font = { name: 'Calibri', color: { argb: 'ff2222' } })
-      }
-    }, { useMasterKey: true })
-  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=Alle Abfahrtsliste ${parent.get('name')}.xlsx`)
-  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
-}))
-
-router.get('/task-list', handleErrorAsync(async (req, res) => {
-  const taskList = await (new Parse.Query('TaskList')).include('company').get(req.query.id, { useMasterKey: true })
-  const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet(taskList.get('name'))
+const addTaskListSheet = async (workbook, taskList) => {
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('booking') || taskList.get('contract')
+  const company = parent?.get('company') ? await parent.get('company').fetch({ useMasterKey: true }) : null
+  const worksheet = workbook.addWorksheet(`${taskList.get('ort')} (${taskList.get('state').id})`)
 
   const infos = [
-    { label: 'Auftraggeber', content: taskList.get('company')?.get('name') || '-' },
-    { label: 'Abfahrtsliste', content: taskList.get('name') },
+    { label: 'Auftraggeber', content: company?.get('name') || '-' },
+    { label: 'Abfahrtsliste', content: `${taskList.get('ort')} (${taskList.get('state').get('name')})` },
     { label: 'Fälligkeitsdatum', content: taskList.get('dueDate') ? moment(taskList.get('dueDate')).format('DD.MM.YYYY') : '' }
   ]
-  // TODO: anzahl export
-  // if (taskList.get('type') === 'scout') {
-  //   infos.push({ label: 'Anzahl', content: taskList.get('quotas') || 'Alle' })
-  // }
+  if (taskList.get('quotas')) {
+    const quotas = taskList.get('quotas') || {}
+    infos.push({
+      label: 'Anzahl',
+      content: Object.keys(quotas).map(media => `${media}: ${quotas[media]}`).join(', ')
+    })
+  }
 
   let i = 1
   for (const info of infos) {
@@ -521,7 +484,7 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
   const { columns, headerRowValues } = getColumnHeaders({
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
-    hti: { header: 'Gehäusetyp TLK', width: 20 },
+    status: { header: 'Status', width: 15 },
     address: { header: 'Anschrift', width: 30 },
     plz: { header: 'PLZ', width: 15 },
     ort: { header: 'Ort', width: 15 },
@@ -541,8 +504,8 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
   for (const cube of cubes) {
     const row = worksheet.addRow({
       objectId: cube.id,
-      htCode: cube.get('ht')?.get('code'),
-      hti: cube.get('hti'),
+      htCode: cube.get('ht')?.get('code') || cube.get('hti'),
+      status: CUBE_STATUSES[cube.get('s') || 0],
       address: cube.get('str') + ' ' + cube.get('hsnr'),
       plz: cube.get('plz'),
       ort: cube.get('ort'),
@@ -568,31 +531,57 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
   const states = await fetchStates()
 
   // add extra cubes for briefings in area
-  const query = taskList.get('briefing') && taskList.get('cubesQuery')
-  if (query) {
-    query.s = 'available'
-    query.pagination = 1000
-    const { results } = await Parse.Cloud.run('search', query, { useMasterKey: true })
+  if (taskList.get('briefing')) {
+    const { results } = await Parse.Cloud.run('search', {
+      s: 'available',
+      pagination: 1000,
+      ort: taskList.get('ort'),
+      state: taskList.get('state').id
+    }, { useMasterKey: true })
     for (const doc of results) {
+      // TODO: Remove cubeIds that are in other briefing tasks in this area
       if (cubeIds.includes(doc.objectId)) {
         continue
       }
       worksheet.addRow({
         objectId: doc.objectId,
-        htCode: housingTypes[doc.ht?.id]?.code || '',
-        hti: doc.hti,
+        htCode: housingTypes[doc.ht?.id]?.code || doc.hti || '',
+        status: CUBE_STATUSES[doc.s || 0],
         address: doc.str + ' ' + doc.hsnr,
         plz: doc.plz,
         ort: doc.ort,
-        stateName: states[doc.stateId]?.name || ''
+        stateName: states[doc.stateId].name
       })
     }
   }
+}
+
+router.get('/task-list', handleErrorAsync(async (req, res) => {
+  const taskList = await (new Parse.Query('TaskList')).include('state').get(req.query.id, { useMasterKey: true })
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('booking') || taskList.get('contract')
+  const name = getName(parent.toJSON())
+  const workbook = new excel.Workbook()
+  await addTaskListSheet(workbook, taskList)
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=Abfahrtsliste ${taskList.get('name')}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${name} ${taskList.get('ort')}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
+router.get('/task-lists', handleErrorAsync(async (req, res) => {
+  const [className, objectId] = req.query.parent.split('-')
+  const parent = await $getOrFail(className, objectId)
+  const name = getName(parent.toJSON())
+  const workbook = new excel.Workbook()
+  await $query('TaskList')
+    .equalTo(className.toLowerCase(), parent)
+    .include('state')
+    .each(async taskList => {
+      await addTaskListSheet(workbook, taskList)
+    }, { useMasterKey: true })
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=Alle Abfahrtsliste ${name}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
 router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   const invoice = await $getOrFail('Invoice', req.query.id, ['contract', 'booking'])
   const periodStart = invoice.get('periodStart')
