@@ -998,6 +998,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
         cubes.push({
           cubeId,
           invoiceNo: invoice.get('lexNo'),
+          invoiceId: invoice.id,
           periodEnd,
           cubeEnd,
           diff: mediaItem.total
@@ -1011,6 +1012,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
         cubes.push({
           cubeId,
           invoiceNo: invoice.get('lexNo'),
+          invoiceId: invoice.id,
           periodEnd,
           cubeEnd,
           diff: round2(total - newTotal)
@@ -1019,17 +1021,26 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     }
   }
 
-  const invoices = {}
+  const invoiceTotals = {}
+  const invoiceCubes = {}
   for (const cube of cubes) {
-    if (!invoices[cube.invoiceNo]) {
-      invoices[cube.invoiceNo] = 0
+    if (!cube.diff) { continue }
+    if (!invoiceTotals[cube.invoiceNo]) {
+      invoiceTotals[cube.invoiceNo] = 0
     }
-    invoices[cube.invoiceNo] += cube.diff
+    invoiceTotals[cube.invoiceNo] += cube.diff
+    const invoiceCube = [cube.invoiceId, cube.cubeId].join(':')
+    invoiceCubes[invoiceCube] = cube.diff
   }
-  const invoiceNos = Object.keys(invoices)
-  const price = round2(sum(cubes.map((cube) => cube.diff)))
+  const invoiceNos = Object.keys(invoiceTotals)
+  const total = round2(sum(Object.values(invoiceCubes)))
 
-  if (!price || !invoiceNos.length) { return }
+  if (!total || !invoiceNos.length) { return }
+  const invoices = await $query('Invoice')
+    .containedIn('lexNo', invoiceNos)
+    .limit(invoiceNos.length)
+    .find({ useMasterKey: true })
+    .then(invs => invs.map(inv => inv.toPointer()))
 
   const creditNote = $parsify('CreditNote')
   creditNote.set({
@@ -1037,14 +1048,16 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     address: invoiceAddress,
     companyPerson: contract.get('companyPerson'),
     contract,
+    invoices,
+    invoiceCubes,
     status: 0,
     date: await $today(),
-    lineItems: [{ name: 'Dauerwerbung Media', price }],
+    lineItems: [{ name: 'Dauerwerbung Media', price: total }],
     reason: [
       'Folgende CityCubes entfallen von Vertrag:',
       Object.keys(cancellations).map(cubeId => `${cubeId}: ${cancellations[cubeId] === true ? 'Herausgenommen' : moment(cancellations[cubeId]).format('DD.MM.YYYY')}`).join(', '),
       `Folgende ${invoiceNos.length > 1 ? 'Rechnungen wurden' : 'Rechnung wurde'} gutgeschrieben:`,
-      invoiceNos.map((invoiceNo) => `${invoiceNo}: ${priceString(invoices[invoiceNo])}€`).join(', ')
+      invoiceNos.map((invoiceNo) => `${invoiceNo}: ${priceString(invoiceTotals[invoiceNo])}€`).join(', ')
     ].join('\n')
   })
   const audit = { user, fn: 'credit-note-generate' }

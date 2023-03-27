@@ -219,7 +219,7 @@ const schemaDefinitions = {
       billingCycle: { type: 'Number', required: true },
       paymentType: { type: 'Number' },
       dueDays: { type: 'Number' },
-      pricingModel: { type: 'String' }, // gradual | none
+      pricingModel: { type: 'String' }, // gradual | zero | none
       gradualPriceMap: { type: 'Pointer', targetClass: 'GradualPriceMap' },
       skipInvoiceEmails: { type: 'Boolean' },
       invoiceDescription: { type: 'String' },
@@ -308,11 +308,25 @@ const schemaDefinitions = {
       // companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' },
       invoice: { type: 'Pointer', targetClass: 'Invoice' },
+      invoices: { type: 'Array' },
       reason: { type: 'String' }, // reason that will be added to introduction text
       introduction: { type: 'String' }, // introduction that will appear on lex office
 
       periodStart: { type: 'String' },
       periodEnd: { type: 'String' },
+
+      media: { type: 'Object' },
+      /*
+        items: MediaCalculationItem[] {
+          cubeId,
+          invoiceNo: String
+          periodEnd: String
+          cubeEnd: String
+          diff: Number // price diff
+          ...extraFields: [for exports]
+        }
+        total
+      */
 
       // LEX
       lexNo: { type: 'String' },
@@ -418,6 +432,10 @@ const schemaDefinitions = {
       agency: { type: 'Pointer', targetClass: 'Company' },
       commissionRate: { type: 'Number' },
       commission: { type: 'Object' },
+
+      // lessor info
+      lessor: { type: 'Pointer', targetClass: 'Company' },
+      lessorRate: { type: 'Number' },
 
       /*
         net: Number // net total

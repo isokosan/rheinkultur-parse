@@ -123,6 +123,125 @@ async function processMediaInvoices (start, end) {
   return response
 }
 
+async function processMediaCreditNotes (start, end) {
+  const response = []
+  let i = 0
+  // const creditNoteMediaRows = {}
+
+  const creditNotesQuery = $query('CreditNote')
+    .equalTo('status', 2)
+    .notEqualTo('media', null)
+    .greaterThan('periodEnd', start)
+    .lessThanOrEqualTo('periodStart', end)
+    .include(['company', 'contract', 'booking', 'bookings'])
+  await creditNotesQuery.each(async (creditNote) => {
+    const periodStart = creditNote.get('periodStart') > start
+      ? creditNote.get('periodStart')
+      : start
+    const creditNotePeriodEnd = creditNote.get('periodEnd') < end
+      ? creditNote.get('periodEnd')
+      : end
+
+    consola.info(creditNote.get('lexNo'), { periodStart, creditNotePeriodEnd })
+
+    /*
+    // agency commission rate
+    const agencyId = invoice.get('agency')?.id
+    const agencyRate = invoice.get('commissionRate') || 0
+
+    const mediaItems = invoice.get('media')?.items || []
+    const cubeIds = mediaItems.map(mediaItem => mediaItem.cubeId)
+    const cubeSummaries = await getCubeSummaries(cubeIds)
+    for (const mediaItem of mediaItems) {
+      const cubeId = mediaItem.cubeId
+      delete mediaItem.cubeId
+      delete mediaItem.total // will be recalculated afterwards
+      const cubeSummary = cubeSummaries[cubeId]
+      // invoice might span a longer time than a quarter, so make sure the cube end is within the start-end period
+      const cubePeriodEnd = mediaItem.periodEnd < invoicePeriodEnd ? mediaItem.periodEnd : invoicePeriodEnd
+      if (cubePeriodEnd < periodStart) { continue }
+      // make sure to recalculate months for the quarter
+      const months = moment(cubePeriodEnd).add(1, 'days').diff(moment(periodStart), 'months', true)
+
+      const contract = invoice.get('contract')
+      const row = {
+        invoiceNo: invoice.get('lexNo'),
+        orderNo: contract.get('no'),
+        ...cubeSummary,
+        ...mediaItem,
+        periodStart,
+        periodEnd: cubePeriodEnd,
+        months
+      }
+      row.companyId = invoice.get('company').id
+      row.companyName = invoice.get('company')?.get('name')
+      if (contract) {
+        const { startsAt, endsAt, initialDuration, extendedDuration } = contract.attributes
+        row.start = startsAt
+        row.end = endsAt
+        row.duration = initialDuration
+        if (extendedDuration) {
+          row.duration += `+${extendedDuration}`
+        }
+        // check early cancel
+        const cubeCanceledAt = contract.get('earlyCancellations')?.[cubeId]
+        if (cubeCanceledAt === true) { continue }
+        if (cubeCanceledAt && cubeCanceledAt < endsAt) {
+          row.end = cubeCanceledAt
+          row.duration = moment(cubeCanceledAt).diff(startsAt, 'months', true)
+        }
+      }
+
+      // apply agency artes
+      row.monthlyNet = row.monthly
+      if (agencyId) {
+        row.agencyId = agencyId
+        row.agencyRate = agencyRate
+      }
+
+      // TODO: check later
+      row.motive = contract.get('motive')
+      row.externalOrderNo = contract.get('externalOrderNo')
+      row.campaignNo = contract.get('campaignNo')
+      row.extraCols = invoice.get('extraCols')
+
+      if (!invoiceMediaRows[cubeId]) {
+        invoiceMediaRows[cubeId] = []
+      }
+      invoiceMediaRows[cubeId].push(row)
+    }
+    */
+    i++
+  }, { useMasterKey: true })
+  consola.info(`Processed ${i} media credit notes`)
+  return response
+  // attempt to combine rows that can be combined from invoices
+  // Sort and check if zeitraumend and next zeitraumstart end up. If so, add the two rows together, and repeat until there is no more matches
+  // Then flatten and push to rows
+  // for (const cubeId of Object.keys(invoiceMediaRows)) {
+  //   const lines = invoiceMediaRows[cubeId]
+  //   lines.sort((a, b) => a.periodStart > b.periodStart ? 1 : -1)
+  //   while (lines.length) {
+  //     const row = lines.shift()
+  //     while (lines.length) {
+  //       // Check if orderNo, agencyId, agencyId and monthly are the same
+  //       if (lines[0].orderNo === row.orderNo && lines[0].agencyId === row.agencyId && lines[0].agencyRate === row.agencyRate && lines[0].monthly === row.monthly) {
+  //         if (moment(lines[0].periodStart).isSame(moment(row.periodEnd).add(1, 'days'))) {
+  //           const nextRow = lines.shift()
+  //           row.periodEnd = nextRow.periodEnd
+  //           row.months = round5(row.months + nextRow.months)
+  //           row.invoiceNo += `, ${nextRow.invoiceNo}`
+  //           continue
+  //         }
+  //       }
+  //       break
+  //     }
+  //     response.push(row)
+  //   }
+  // }
+  // return response
+}
+
 // (MA Lionsgroup BV - Quarterly Invoice or Aktionsverwungen etc)
 async function processCustomInvoices (start, end) {
   const response = []
@@ -703,6 +822,7 @@ module.exports = async function (job) {
 
 // processBookings('2021-01-01', '2021-03-31').then(consola.info)
 // processBookings('2023-01-01', '2023-03-31')
+processMediaCreditNotes('2023-01-01', '2023-03-31')
 
 // processCustomInvoices('2022-10-01', '2022-12-31')
 // processCustomInvoices('2023-01-01', '2023-03-31')

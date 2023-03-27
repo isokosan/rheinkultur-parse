@@ -1,3 +1,9 @@
+/*
+  Required info for reports:
+  => Invoice (for agency rates)
+  => Cube (for regional comissions)
+ */
+
 const { normalizeString, creditNotes: { normalizeFields } } = require('@/schema/normalizers')
 const { getDocumentTotals, getTaxRatePercentage } = require('@/shared')
 const { durationString } = require('@/utils')
@@ -123,7 +129,7 @@ async function getLexDocumentId (lexId) {
 }
 
 Parse.Cloud.beforeFind(CreditNote, async ({ query }) => {
-  query.include(['contract', 'invoice'])
+  query.include(['contract', 'invoices'])
   if (query._include.includes('all')) {
     query.include([
       'company',
@@ -189,7 +195,7 @@ Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedA
     companyPersonId,
     contractId,
     bookingId,
-    invoiceId,
+    invoiceIds,
     date,
     periodStart,
     periodEnd,
@@ -210,7 +216,7 @@ Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedA
   creditNote.set({ tags: creditNote.get('company').get('tags') })
   contractId && creditNote.set('contract', await $getOrFail('Contract', contractId))
   bookingId && creditNote.set('booking', await $getOrFail('Booking', bookingId))
-  invoiceId && creditNote.set('invoice', await $getOrFail('Invoice', invoiceId))
+  invoiceIds && creditNote.set('invoices', await Promise.all(invoiceIds.map(id => $getOrFail('Invoice', id))))
 
   const audit = { user, fn: 'credit-note-create' }
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
@@ -264,6 +270,13 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
+Parse.Cloud.define('credit-note-update-invoice-cubes', async ({ params: { id: creditNoteId, invoiceCubes }, user }) => {
+  const creditNote = await $getOrFail(CreditNote, creditNoteId, ['invoices'])
+  creditNote.set('invoiceCubes', invoiceCubes)
+  const audit = { user, fn: 'credit-note-update-invoice-cubes' }
+  return creditNote.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
 Parse.Cloud.define('credit-note-reset-introduction', async ({ params: { id: creditNoteId }, user }) => {
   const creditNote = await $getOrFail(CreditNote, creditNoteId, ['contract', 'booking'])
   if (creditNote.get('status') > 1) {
@@ -292,7 +305,7 @@ Parse.Cloud.define('credit-note-remove', async ({ params: { id: creditNoteId } }
 
 Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, email }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-  const creditNote = await $getOrFail(CreditNote, creditNoteId, ['company', 'address', 'companyPerson'])
+  const creditNote = await $getOrFail(CreditNote, creditNoteId, ['company', 'address', 'companyPerson', 'invoices'])
   if (creditNote.get('status') > 1) {
     throw new Error('Can only issue draft or planned creditNotes')
   }
@@ -303,16 +316,9 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
     throw new Error('Can\'t issue 0€ creditNote')
   }
 
-  const invoice = creditNote.get('invoice')
-  if (invoice) {
-    if (!invoice.get('date') || !invoice.get('lexNo')) {
-      await invoice.fetch({ useMasterKey: true })
-    }
-  }
-
   const { lex, supplement, street, zip, city, countryCode } = creditNote.get('address').attributes
   if (!lex?.id) {
-    throw new Error(`Die Abrechnungsaddresse ist noch nicht vollständig hinterlegt. Bitte überprüfen Sie die Stammdaten. (${invoice.id})`)
+    throw new Error(`Die Abrechnungsaddresse ist noch nicht vollständig hinterlegt. Bitte überprüfen Sie die Stammdaten. (${creditNote.id})`)
   }
 
   const { id: lexId, resourceUri: lexUri } = await lexApi('/credit-notes?finalize=true', 'POST', {
@@ -349,10 +355,10 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
     },
     title: 'Gutschrift',
     introduction: creditNote.get('introduction'),
-    remark: invoice
+    remark: creditNote.get('invoices')
       ? [
-        `Gutschrift zur Rechnung Nummer ${invoice.get('lexNo')} vom ${moment(invoice.get('date')).format('DD.MM.YYYY')}`,
-        'Falls die Rechnung bereits gezahlt wurde, wird Ihnen der Betrag in den nächsten Tagen gutgeschrieben.'
+        `Gutschrift zur Rechnung(en): ${creditNote.get('invoices').map(inv => `${inv.get('lexNo')} vom ${moment(inv.get('date')).format('DD.MM.YYYY')}`).join(', ')}`,
+        'Falls die Rechnungen bereits gezahlt wurden, wird Ihnen der Betrag in den nächsten Tagen gutgeschrieben.'
       ].join('\n\n')
       : 'Der Betrag wird Ihnen in den nächsten Tagen gutgeschrieben.'
   })
