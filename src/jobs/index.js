@@ -1,48 +1,8 @@
-const Queue = require('bull')
 const path = require('path')
 const { parse: parseRedisInfo } = require('redis-info')
-const { getRedisOptions, getRedisClient } = require('@/services/redis')
+const createQueue = require('@/services/bull')
 const sendMail = require('@/services/email')
-
-const isDev = process.env.NODE_ENV === 'development'
 const tz = 'Europe/Berlin'
-
-let subscriber
-let client
-
-const queueOptions = {
-  prefix: `{${process.env.APP_ID}}`,
-  metrics: {
-    maxDataPoints: 60 * 24 * 7 // 1 week
-  },
-  settings: {
-    maxStalledCount: 0
-  }
-}
-if (process.env.REDIS_MODE === 'cluster') {
-  queueOptions.createClient = function (type) {
-    if (type === 'client') {
-      if (!client) {
-        client = getRedisClient({ db: 3 })
-      }
-      return client
-    }
-    if (type === 'subscriber') {
-      if (!subscriber) {
-        subscriber = getRedisClient({ db: 3 })
-      }
-      return subscriber
-    }
-    if (type === 'bclient') {
-      return getRedisClient({ db: 3 })
-    }
-    throw new Error(`Unexpected connection type: ${type}`)
-  }
-} else {
-  queueOptions.redis = getRedisOptions({ db: 3 })
-}
-
-const createQueue = key => new Queue(key, queueOptions)
 
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
@@ -61,9 +21,9 @@ const updateJobs = {
   },
   generate_disassembly_tasks: {
     name: 'Abbauliste generieren.',
-    timeoutMinutes: 60,
+    timeoutMinutes: 60
     // cron: '0 0 * * *', // nightly
-    notificationDuration: 48
+    // notificationDuration: 48
   },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
@@ -142,13 +102,13 @@ for (const key of Object.keys(updateJobs)) {
 }
 
 const queueOnFailed = function (job, error) {
-  isDev && consola.error('job failed:', job.queue.name, error)
+  DEVELOPMENT && consola.error('job failed:', job.queue.name, error)
 }
 const queueOnError = function (error) {
-  isDev && consola.error('queue errored:', error)
+  DEVELOPMENT && consola.error('queue errored:', error)
 }
 const queueOnCompleted = async function (job, result) {
-  isDev && consola.success('job completed:', job.queue.name, result)
+  DEVELOPMENT && consola.success('job completed:', job.queue.name, result)
   // save the last completed info on the job config
   const key = job.queue.name
   const { finishedOn, processedOn } = job
@@ -172,7 +132,7 @@ const cleanAndStartupQueue = async function ({ schedule, key }) {
   const timeoutMinutes = (schedule[key] || {}).timeoutMinutes || defaultTimeoutMinutes
   const timeout = 1000 * 60 * timeoutMinutes
   await clearScheduledJobs(queue)
-  if (debug === 'cron' && cron && isDev) {
+  if (debug === 'cron' && cron && DEVELOPMENT) {
     queue.add({}, {
       repeat: { tz, cron },
       timeout
@@ -182,7 +142,7 @@ const cleanAndStartupQueue = async function ({ schedule, key }) {
   if (debug === true) {
     queue.add({}, { timeout })
   }
-  if (!isDev && cron) {
+  if (!DEVELOPMENT && cron) {
     queue.add({}, {
       repeat: { tz, cron },
       timeout,
@@ -380,5 +340,3 @@ const checkScheduleHealth = async function () {
   }
   return Promise.resolve(lateJobs)
 }
-
-module.exports = { createQueue, getLast }

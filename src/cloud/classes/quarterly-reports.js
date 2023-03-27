@@ -1,9 +1,30 @@
 const path = require('path')
+const createQueue = require('@/services/bull')
 const { ensureUniqueField } = require('@/utils')
-const { createQueue } = require('@/jobs')
 const { getQuarterStartEnd } = require('@/shared')
 
 const QuarterlyReport = Parse.Object.extend('QuarterlyReport')
+
+const reportQueue = createQueue('process_quarterly_report')
+reportQueue.process(path.join(BASE_DIR, 'queues/index.js'))
+reportQueue.obliterate({ force: true }).then(response => consola.success('obliterated', response))
+// reportQueue.getJobs().then(response => consola.info('jobs', response))
+
+function validateQuarterYearString (str) {
+  const regex = /^[1-4]-\d{4}$/
+  if (!regex.test(str)) {
+    throw new Error('Invalid quarter year string')
+  }
+}
+
+Parse.Cloud.beforeSave(QuarterlyReport, async ({ object: quarterlyReport }) => {
+  validateQuarterYearString(quarterlyReport.get('quarter'))
+  await ensureUniqueField(quarterlyReport, 'quarter')
+})
+
+Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
+  !query._include.includes('rows') && query.exclude('rows')
+})
 
 async function checkIfQuarterIsClosed (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
@@ -27,50 +48,53 @@ async function checkIfQuarterIsClosed (quarter) {
     // TODO: Check if Marc Asriel quarterly invoice is issued
   ])
   if (contracts || bookings || invoices) {
-    throw new Error(`Quartal ${quarter} ist noch nicht geschlossen.`)
+    return {
+      contracts: contracts || undefined,
+      bookings: bookings || undefined,
+      invoices: invoices || undefined
+    }
   }
+  return true
 }
 
-const reportQueue = createQueue('process_quarterly_report')
-reportQueue.process(path.join(BASE_DIR, 'queues/index.js'))
-reportQueue.obliterate({ force: true })
-// .then(response => consola.success('obliterated', response))
-// .then(() => reportQueue.getJobs())
-// .then(response => consola.info('jobs', response))
-
-Parse.Cloud.beforeSave(QuarterlyReport, async ({ object: quarterlyReport }) => {
-  await ensureUniqueField(quarterlyReport, 'quarter')
-})
-
-Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
-  !query._include.includes('rows') && query.exclude('rows')
-})
-
 Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) => {
-  const report = await $query('QuarterlyReport')
+  const report = await $query(QuarterlyReport)
     .equalTo('quarter', quarter)
     .descending('createdAt')
     .first({ useMasterKey: true })
-  return report || checkIfQuarterIsClosed(quarter)
-}, $adminOnly)
-
-Parse.Cloud.define('job-start', () => reportQueue.add({ id: 'L6OJ4k2Uo3' }).then(job => job.id), $adminOnly)
-
-Parse.Cloud.define('job-status', async ({ params: { jobId } }) => {
-  const job = await reportQueue.getJob(jobId)
-  return job?.progress()
+  if (report) {
+    return { report }
+  }
+  return { closeable: await checkIfQuarterIsClosed(quarter) }
 }, $adminOnly)
 
 Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) => {
-  const report = await $query('QuarterlyReport')
+  let report = await $query(QuarterlyReport)
     .equalTo('quarter', quarter)
     .descending('createdAt')
     .first({ useMasterKey: true })
   if (!report) {
-    throw new Error(`Quarter ${quarter} not found.`)
+    report = new QuarterlyReport({ quarter })
+    await report.save(null, { useMasterKey: true })
   }
   if (report.get('jobId')) {
     throw new Error('Job already added')
   }
-  return reportQueue.add({ id: report.id }).then(job => job.id)
+  const newJobId = await reportQueue.add({ id: report.id }).then(job => job.id)
+  consola.warn('NEW JOB ID', newJobId)
+  return newJobId
+}, $adminOnly)
+
+Parse.Cloud.define('job-start', ({ params: { id } }) => reportQueue.add({ id }).then(job => job.id), $adminOnly)
+
+Parse.Cloud.define('job-status', async ({ params: { jobId } }) => {
+  const job = await reportQueue.getJob(jobId)
+  if (!job) {
+    throw new Error('Job not found')
+  }
+  consola.info(job)
+  if (job.failedReason || job.stacktrace.length) {
+    throw new Error({ message: job.failedReason, stacktrace: job.stacktrace })
+  }
+  return job?.progress()
 }, $adminOnly)

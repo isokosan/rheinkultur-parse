@@ -496,7 +496,7 @@ const schemaDefinitions = {
   QuarterlyReport: {
     CLP: { ...readMasterOnly, ...writeMasterOnly },
     fields: {
-      quarter: { type: 'String', required: true }
+      quarter: { type: 'String', required: true } // Q-YYYY
     }
   },
   PLZ: {

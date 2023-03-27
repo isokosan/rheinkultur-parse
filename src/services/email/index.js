@@ -3,6 +3,10 @@ const nodemailer = require('nodemailer')
 const fs = require('fs').promises
 const path = require('path')
 
+if (DEVELOPMENT && !process.env.MAIL_DEV_TO) {
+  throw new Error('Please set a development to email address for emails')
+}
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT || 465,
