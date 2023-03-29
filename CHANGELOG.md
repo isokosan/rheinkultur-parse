@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.13.0...1.13.1) (2023-03-29)
+
+
+### Bug Fixes
+
+* update booking extends to match auftragsliste ([8e2f1d1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8e2f1d107585ea78cd89ff30ef8d05be3bd0c292))
+
 # [1.13.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.3...1.13.0) (2023-03-27)
 
 
