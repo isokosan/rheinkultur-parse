@@ -125,3 +125,30 @@ Parse.Cloud.define('manual-updates-canceled', async () => {
   }
   return response
 })
+
+async function updateBookingExtends () {
+  const autoExtendMap = require('@/seed/data/autovercsv.json').reduce((acc, row) => {
+    const { no, e } = row
+    acc[no] = e.toLowerCase().trim() === 'ja'
+    return acc
+  }, {})
+  const shouldNotAutoExtend = Object.keys(autoExtendMap)
+    .filter(no => !autoExtendMap[no])
+    .map(no => 'B' + no)
+  await $query('Booking')
+    .notEqualTo('autoExtendsBy', null)
+    .containedIn('no', shouldNotAutoExtend)
+    .each(async (booking) => {
+      const autoExtendsBy = null
+      const autoExtendsAt = null
+      const changes = $changes(booking, { autoExtendsBy })
+      const audit = { fn: 'booking-update', data: { changes } }
+      await booking.set({ autoExtendsBy, autoExtendsAt }).save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+      consola.success('ok', booking.get('no'))
+    }, { useMasterKey: true })
+}
+
+Parse.Cloud.define('manual-update-booking-extends', async () => {
+  updateBookingExtends()
+  return 'ok'
+}, { requireMaster: true })
