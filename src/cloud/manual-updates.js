@@ -126,7 +126,7 @@ Parse.Cloud.define('manual-updates-canceled', async () => {
   return response
 }, { requireMaster: true })
 
-Parse.Cloud.define('manual-updates-credit-note-data', async () => {
+Parse.Cloud.define('manual-updates-credit-note-periods', async () => {
   let i = 0
   // add missing periods
   const missingGtVon = await $query('CreditNote').contains('introduction', 'Gutschriftzeitraum: von').equalTo('periodStart', null).find({ useMasterKey: true })
@@ -163,7 +163,9 @@ Parse.Cloud.define('manual-updates-credit-note-data', async () => {
 
   return i
 })
+// Parse.Cloud.run('manual-updates-credit-note-periods', null, { useMasterKey: true }).then(consola.info)
 
+// Required invoice linking for media form
 Parse.Cloud.define('manual-updates-credit-note-invoices', async () => {
   let i = 0
   const creditNotes = await $query('CreditNote').equalTo('invoices', null).notEqualTo('invoice', null).find({ useMasterKey: true })
@@ -177,41 +179,80 @@ Parse.Cloud.define('manual-updates-credit-note-invoices', async () => {
     ['GS23-00038', ['RE23-00502']],
     ['GS23-00039', ['RE23-00406']],
     ['GS23-00040', ['RE23-00197']],
-    ['GS23-00067', ['RE23-00511', 'RE23-00601']]
+    ['GS23-00067', ['RE23-00511', 'RE23-00601']],
+    ['GS23-00085', ['RE23-00070']]
   ]
 
   for (const [gsNo, invoiceNos] of updates) {
     const creditNote = await $query('CreditNote').equalTo('lexNo', gsNo).first({ useMasterKey: true })
+    if (!creditNote) { continue }
     const invoices = await $query('Invoice').containedIn('lexNo', invoiceNos).find({ useMasterKey: true })
     creditNote.set('invoices', invoices)
     await creditNote.save(null, { useMasterKey: true })
     i++
   }
-
   return i
 })
 
-Parse.Cloud.define('manual-updates-credit-note-medias', async () => {
-  const hasLessorInvoicesQuery = $query('CreditNote').matchesQuery('invoice', $query('Invoice').notEqualTo('lessor', null))
-  const hasNonZeroContractQuery = $query('CreditNote').matchesQuery('contract', $query('Contract').notEqualTo('pricingModel', 'zero'))
-  const creditNotesQuery = Parse.Query.or(hasLessorInvoicesQuery, hasNonZeroContractQuery)
-    .equalTo('status', 2)
-    // .equalTo('media', null)
-    .notEqualTo('periodEnd', null)
-    .notEqualTo('periodStart', null)
-    .include(['company', 'contract', 'booking', 'bookings'])
-  await creditNotesQuery.each(async (creditNote) => {
-    consola.info(creditNote.get('lexNo'), creditNote.get('lineItems')[0].name, creditNote.get('periodStart'), creditNote.get('periodEnd'))
-    // lets grap the cubes
-    const contract = creditNote.get('contract')
-    const invoice = creditNote.get('invoice')
-    consola.info(contract, invoice)
-  }, { useMasterKey: true })
-}, { requireMaster: true })
-
-// Parse.Cloud.run('manual-updates-credit-note-invoices', null, { useMasterKey: true }).then(consola.info)
-// Parse.Cloud.run('manual-updates-credit-note-data', null, { useMasterKey: true }).then(consola.info)
-// Parse.Cloud.run('manual-updates-credit-note-medias', null, { useMasterKey: true })
+// Parse.Cloud.define('manual-updates-credit-note-medias', async () => {
+//   const hasLessorInvoicesQuery = $query('CreditNote').matchesQuery('invoices', $query('Invoice').notEqualTo('lessor', null))
+//   const hasNonZeroContractQuery = $query('CreditNote').matchesQuery('contract', $query('Contract').notEqualTo('pricingModel', 'zero'))
+//   const creditNotesQuery = Parse.Query.or(hasLessorInvoicesQuery, hasNonZeroContractQuery)
+//     .equalTo('status', 2)
+//     .equalTo('media', null)
+//     .notEqualTo('periodEnd', null)
+//     .notEqualTo('periodStart', null)
+//     .include(['company', 'contract', 'booking', 'bookings'])
+//   return creditNotesQuery.find({ useMasterKey: true }).then(cns => cns.map(cn => cn.get('lexNo')))
+//   const mediaUpdates = {
+//     // all cubes canceled in period
+//     'GS23-00023': {
+//       'WmSH6aQXvC:TLK-2122A518': { start: '2023-01-01', end: '2023-01-31', total: 38 },
+//       'WmSH6aQXvC:TLK-2124A503': { start: '2023-01-01', end: '2023-01-31', total: 38 },
+//       'WmSH6aQXvC:TLK-2126A69': { start: '2023-01-01', end: '2023-01-31', total: 38 }
+//     },
+//     // all cubes canceled in period
+//     'GS23-00024': {
+//       'XrB4pfxaa0:TLK-2122A518': { start: '2023-02-01', end: '2023-02-28', total: 38 },
+//       'XrB4pfxaa0:TLK-2124A503': { start: '2023-02-01', end: '2023-02-28', total: 38 },
+//       'XrB4pfxaa0:TLK-2126A69': { start: '2023-02-01', end: '2023-02-28', total: 38 }
+//     },
+//     // cube partly canceled withing invoice period
+//     'GS23-00036': {
+//       'NjHquWKYwt:TLK-48632V1100': { start: '2023-01-17', end: '2023-03-31', total: 74.52 }
+//     },
+//     // one cube of many canceled within total period
+//     'GS23-00038': {
+//       '4u1IAkRopJ:TLK-45321A14': { start: '2023-02-01', end: '2023-03-31', total: 100 }
+//     },
+//     'GS23-00039': {},
+//     'GS23-00040': {},
+//     // wrong total within the period
+//     'GS23-00041': {
+//       '6GGsvagy5m:TLK-71525A36': { start: '2023-02-15', end: '2023-03-31', total: 1.83 },
+//       '6GGsvagy5m:TLK-71525A539': { start: '2023-02-15', end: '2023-03-31', total: 1.82 }
+//     },
+//     // partly canceled: Rückbau aufgrund einer Satzung der Stadt
+//     'GS23-00065': {
+//       'ImGX46hrSn:TLK-77251A27': { start: '2023-02-01', end: '2023-03-31', total: 76.30 }
+//     },
+//     // Vandalismus, 2 months of 3 canceled
+//     'GS23-00066': {
+//       'ZTEWAWp0OS:TLK-23751A5': { start: '2023-02-01', end: '2023-03-31', total: 76.30 }
+//     },
+//     // 2 invoices, early canceled cube!
+//     // TODO: Maybe combine? or maybe not...
+//     'GS23-00067': {
+//       'Sksc82Bu00:TLK-77217A46': { start: '2023-02-01', end: '2023-02-28', total: 37.50 },
+//       'gLjzuEfTxG:TLK-77217A46': { start: '2023-03-01', end: '2023-03-31', total: 37.50 }
+//     },
+//     // Need to learn which cube
+//     'GS23-00085': {
+//       'zDBphaytiQ:?': { start: '2023-02-15', end: '2023-03-31', total: 65.63 }
+//     }
+//   }
+// }, { requireMaster: true })
+// Parse.Cloud.run('manual-updates-credit-note-medias', null, { useMasterKey: true }).then(consola.info)
 
 async function updateBookingExtends () {
   const autoExtendMap = require('@/seed/data/autovercsv.json').reduce((acc, row) => {
