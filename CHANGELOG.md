@@ -1,3 +1,24 @@
+## [1.13.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.13.0...1.13.1) (2023-03-29)
+
+
+### Bug Fixes
+
+* update booking extends to match auftragsliste ([8e2f1d1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8e2f1d107585ea78cd89ff30ef8d05be3bd0c292))
+
+# [1.13.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.3...1.13.0) (2023-03-27)
+
+
+### Features
+
+* bull as service ([76f09bc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/76f09bc72e0a401414eb197312d4164ca74d4c9c))
+
+## [1.12.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.2...1.12.3) (2023-03-24)
+
+
+### Bug Fixes
+
+* add KVZ in front of hti in after find ([5cba40d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5cba40d967d763bcb9301dfdca6393b8d1d7ac18))
+
 ## [1.12.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.12.1...1.12.2) (2023-03-24)
 
 
