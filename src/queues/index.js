@@ -47,7 +47,7 @@ async function processMediaInvoices (start, end) {
 
       const contract = invoice.get('contract')
       const row = {
-        invoiceNo: invoice.get('lexNo'),
+        voucherNos: invoice.get('lexNo'),
         orderNo: contract.get('no'),
         ...cubeSummary,
         ...mediaItem,
@@ -111,7 +111,7 @@ async function processMediaInvoices (start, end) {
             const nextRow = lines.shift()
             row.periodEnd = nextRow.periodEnd
             row.months = round5(row.months + nextRow.months)
-            row.invoiceNo += `, ${nextRow.invoiceNo}`
+            row.voucherNos += `, ${nextRow.voucherNos}`
             continue
           }
         }
@@ -126,8 +126,6 @@ async function processMediaInvoices (start, end) {
 async function processMediaCreditNotes (start, end) {
   const response = []
   let i = 0
-  // const creditNoteMediaRows = {}
-
   const creditNotesQuery = $query('CreditNote')
     .equalTo('status', 2)
     .notEqualTo('media', null)
@@ -135,46 +133,39 @@ async function processMediaCreditNotes (start, end) {
     .lessThanOrEqualTo('periodStart', end)
     .include(['company', 'contract', 'booking', 'bookings'])
   await creditNotesQuery.each(async (creditNote) => {
-    const periodStart = creditNote.get('periodStart') > start
-      ? creditNote.get('periodStart')
-      : start
-    const creditNotePeriodEnd = creditNote.get('periodEnd') < end
-      ? creditNote.get('periodEnd')
-      : end
+    const items = creditNote.get('media')
+    const cubeIds = []
+    const invoiceIds = []
+    for (const [invoiceId, cubeId] of Object.keys(items).map(key => key.split(':'))) {
+      !invoiceIds.includes(invoiceId) && invoiceIds.push(invoiceId)
+      cubeId && !cubeIds.includes(cubeId) && cubeIds.push(cubeId)
+    }
 
-    consola.info(creditNote.get('lexNo'), { periodStart, creditNotePeriodEnd })
-
-    /*
-    // agency commission rate
-    const agencyId = invoice.get('agency')?.id
-    const agencyRate = invoice.get('commissionRate') || 0
-
-    const mediaItems = invoice.get('media')?.items || []
-    const cubeIds = mediaItems.map(mediaItem => mediaItem.cubeId)
     const cubeSummaries = await getCubeSummaries(cubeIds)
-    for (const mediaItem of mediaItems) {
-      const cubeId = mediaItem.cubeId
-      delete mediaItem.cubeId
-      delete mediaItem.total // will be recalculated afterwards
-      const cubeSummary = cubeSummaries[cubeId]
-      // invoice might span a longer time than a quarter, so make sure the cube end is within the start-end period
-      const cubePeriodEnd = mediaItem.periodEnd < invoicePeriodEnd ? mediaItem.periodEnd : invoicePeriodEnd
-      if (cubePeriodEnd < periodStart) { continue }
+    const invoices = await $query('Invoice').containedIn('objectId', invoiceIds).limit(invoiceIds.length).find({ useMasterKey: true })
+    const contract = creditNote.get('contract')
+    for (const key of Object.keys(items)) {
+      const [invoiceId, cubeId] = key.split(':')
+      const mediaItem = items[key]
+      // credit note period might span a longer time than a quarter, so make sure the cube end is within the start-end period
+      // const cubePeriodEnd = mediaItem.periodEnd < invoicePeriodEnd ? mediaItem.periodEnd : invoicePeriodEnd
+      // if (cubePeriodEnd < periodStart) { continue }
       // make sure to recalculate months for the quarter
-      const months = moment(cubePeriodEnd).add(1, 'days').diff(moment(periodStart), 'months', true)
-
-      const contract = invoice.get('contract')
+      // const months = moment(cubePeriodEnd).add(1, 'days').diff(moment(periodStart), 'months', true)
+      const invoice = invoices.find(invoice => invoice.id === invoiceId)
+      const agencyId = invoice.get('agency')?.id
+      const agencyRate = invoice.get('commissionRate') || 0
+      const cubeSummary = cubeId ? cubeSummaries[cubeId] : {}
       const row = {
-        invoiceNo: invoice.get('lexNo'),
-        orderNo: contract.get('no'),
+        voucherNos: [creditNote.get('lexNo'), invoice.get('lexNo')].join(', '),
+        orderNo: contract?.get('no'),
         ...cubeSummary,
-        ...mediaItem,
-        periodStart,
-        periodEnd: cubePeriodEnd,
-        months
+        periodStart: mediaItem.start,
+        periodEnd: mediaItem.end,
+        total: mediaItem.total * -1
       }
-      row.companyId = invoice.get('company').id
-      row.companyName = invoice.get('company')?.get('name')
+      row.companyId = creditNote.get('company').id
+      row.companyName = creditNote.get('company')?.get('name')
       if (contract) {
         const { startsAt, endsAt, initialDuration, extendedDuration } = contract.attributes
         row.start = startsAt
@@ -182,13 +173,6 @@ async function processMediaCreditNotes (start, end) {
         row.duration = initialDuration
         if (extendedDuration) {
           row.duration += `+${extendedDuration}`
-        }
-        // check early cancel
-        const cubeCanceledAt = contract.get('earlyCancellations')?.[cubeId]
-        if (cubeCanceledAt === true) { continue }
-        if (cubeCanceledAt && cubeCanceledAt < endsAt) {
-          row.end = cubeCanceledAt
-          row.duration = moment(cubeCanceledAt).diff(startsAt, 'months', true)
         }
       }
 
@@ -200,46 +184,16 @@ async function processMediaCreditNotes (start, end) {
       }
 
       // TODO: check later
-      row.motive = contract.get('motive')
-      row.externalOrderNo = contract.get('externalOrderNo')
-      row.campaignNo = contract.get('campaignNo')
+      row.motive = contract?.get('motive')
+      row.externalOrderNo = contract?.get('externalOrderNo')
+      row.campaignNo = contract?.get('campaignNo')
       row.extraCols = invoice.get('extraCols')
-
-      if (!invoiceMediaRows[cubeId]) {
-        invoiceMediaRows[cubeId] = []
-      }
-      invoiceMediaRows[cubeId].push(row)
+      response.push(row)
     }
-    */
     i++
   }, { useMasterKey: true })
   consola.info(`Processed ${i} media credit notes`)
   return response
-  // attempt to combine rows that can be combined from invoices
-  // Sort and check if zeitraumend and next zeitraumstart end up. If so, add the two rows together, and repeat until there is no more matches
-  // Then flatten and push to rows
-  // for (const cubeId of Object.keys(invoiceMediaRows)) {
-  //   const lines = invoiceMediaRows[cubeId]
-  //   lines.sort((a, b) => a.periodStart > b.periodStart ? 1 : -1)
-  //   while (lines.length) {
-  //     const row = lines.shift()
-  //     while (lines.length) {
-  //       // Check if orderNo, agencyId, agencyId and monthly are the same
-  //       if (lines[0].orderNo === row.orderNo && lines[0].agencyId === row.agencyId && lines[0].agencyRate === row.agencyRate && lines[0].monthly === row.monthly) {
-  //         if (moment(lines[0].periodStart).isSame(moment(row.periodEnd).add(1, 'days'))) {
-  //           const nextRow = lines.shift()
-  //           row.periodEnd = nextRow.periodEnd
-  //           row.months = round5(row.months + nextRow.months)
-  //           row.invoiceNo += `, ${nextRow.invoiceNo}`
-  //           continue
-  //         }
-  //       }
-  //       break
-  //     }
-  //     response.push(row)
-  //   }
-  // }
-  // return response
 }
 
 // (MA Lionsgroup BV - Quarterly Invoice or Aktionsverwungen etc)
@@ -481,8 +435,7 @@ async function processOccupiedCubes (start, end) {
   const PGCubeSummaries = await getCubeSummaries(PG)
   for (const cubeSummary of Object.values(PGCubeSummaries)) {
     const row = {
-      ...cubeSummary,
-      monthly: 0
+      ...cubeSummary
     }
     row.motive = 'Privates Grundstück'
     response.push(row)
@@ -496,8 +449,7 @@ async function processOccupiedCubes (start, end) {
   const AgwbCubeSummaries = await getCubeSummaries(Agwb)
   for (const cubeSummary of Object.values(AgwbCubeSummaries)) {
     const row = {
-      ...cubeSummary,
-      monthly: 0
+      ...cubeSummary
     }
     row.motive = 'Malation (Aus grau wird bunt)'
     response.push(row)
@@ -629,6 +581,9 @@ async function getOrCacheLessorCommissions () {
 }
 
 async function getLessorCommissionRate ({ lc, stateId, ort, companyId }) {
+  if (!lc) {
+    return 0
+  }
   await getOrCacheLessorCommissions()
   const lessor = LESSOR_COMMISIONS[lc]
   if (!lessor) { throw new Error(`Verpächter mit code ${lc} nicht gefunden.`) }
@@ -666,6 +621,8 @@ module.exports = async function (job) {
   const zeroContracts = await processCustomContracts(start, end)
   job.progress('Processing occupied cubes...')
   const occupiedCubes = await processOccupiedCubes(start, end)
+  job.progress('Processing media credit notes...')
+  const creditNotes = await processMediaCreditNotes(start, end)
   job.progress('Formatting data into rows...')
   const rows = await Promise.all([
     ...mediaInvoices,
@@ -673,7 +630,8 @@ module.exports = async function (job) {
     ...periodicDistributors,
     ...bookings,
     ...zeroContracts,
-    ...occupiedCubes
+    ...occupiedCubes,
+    ...creditNotes
   ].map(async (row) => {
     // in quarterly reports we use only htCode
     row.htCode = row.htCode || row.hti || row.media
@@ -687,7 +645,7 @@ module.exports = async function (job) {
     if (row.agencyRate) {
       const agencyRatio = round5(row.agencyRate / 100) || 0
       const monthlyAgency = round2(row.monthlyNet * agencyRatio) || 0
-      row.agencyTotal = round2((row.months || 0) * monthlyAgency) || 0
+      row.agencyTotal = round2(row.totalNet * agencyRatio) || 0
       row.monthlyNet = round2(row.monthlyNet - monthlyAgency) || 0
       row.totalNet = round2(row.totalNet - row.agencyTotal) || 0
     }
@@ -697,7 +655,7 @@ module.exports = async function (job) {
       row.regionalRate = regionalCommission.rate
       const regionalRatio = round5(row.regionalRate / 100) || 0
       const monthlyRegional = round2(row.monthlyNet * regionalRatio) || 0
-      row.regionalTotal = round2((row.months || 0) * monthlyRegional) || 0
+      row.regionalTotal = round2(row.totalNet * regionalRatio) || 0
       row.monthlyNet = round2(row.monthlyNet - monthlyRegional) || 0
       row.totalNet = round2(row.totalNet - row.regionalTotal) || 0
     }
@@ -706,7 +664,7 @@ module.exports = async function (job) {
     row.serviceRate = 15
     const serviceRatio = round5(row.serviceRate / 100) || 0
     const monthlyService = round2(row.monthlyNet * serviceRatio) || 0
-    row.serviceTotal = round2((row.months || 0) * monthlyService) || 0
+    row.serviceTotal = round2(row.totalNet * serviceRatio) || 0
     row.monthlyNet = round2(row.monthlyNet - monthlyService) || 0
     row.totalNet = round2(row.totalNet - row.serviceTotal) || 0
 
@@ -714,8 +672,7 @@ module.exports = async function (job) {
     if (lessorRate) {
       row.lessorRate = lessorRate
       const lessorRatio = round5(row.lessorRate / 100)
-      const monthlyLessor = round2(row.monthlyNet * lessorRatio) || 0
-      row.lessorTotal = round2((row.months || 0) * monthlyLessor) || 0
+      row.lessorTotal = round2(row.totalNet * lessorRatio) || 0
     }
     return row
   }))
@@ -822,7 +779,7 @@ module.exports = async function (job) {
 
 // processBookings('2021-01-01', '2021-03-31').then(consola.info)
 // processBookings('2023-01-01', '2023-03-31')
-processMediaCreditNotes('2023-01-01', '2023-03-31')
+// processMediaCreditNotes('2023-01-01', '2023-03-31').then(consola.info)
 
 // processCustomInvoices('2022-10-01', '2022-12-31')
 // processCustomInvoices('2023-01-01', '2023-03-31')

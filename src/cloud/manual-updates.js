@@ -195,15 +195,16 @@ Parse.Cloud.define('manual-updates-credit-note-invoices', async () => {
 })
 
 // decide whether or not to include invoice data
-Parse.Cloud.define('manual-updates-credit-note-medias', async () => {
-  const hasLessorInvoicesQuery = $query('CreditNote').matchesQuery('invoices', $query('Invoice').notEqualTo('lessor', null))
-  const hasNonZeroContractQuery = $query('CreditNote').matchesQuery('contract', $query('Contract').notEqualTo('pricingModel', 'zero'))
-  const creditNotesQuery = Parse.Query.or(hasLessorInvoicesQuery, hasNonZeroContractQuery)
-    .equalTo('status', 2)
-    .equalTo('media', null)
-    .notEqualTo('periodEnd', null)
-    .notEqualTo('periodStart', null)
-    .include(['company', 'contract', 'booking', 'bookings'])
+Parse.Cloud.define('manual-updates-credit-note-mediae', async () => {
+  // const hasLessorInvoicesQuery = $query('CreditNote').matchesQuery('invoices', $query('Invoice').notEqualTo('lessor', null))
+  // const hasNonZeroContractQuery = $query('CreditNote').matchesQuery('contract', $query('Contract').notEqualTo('pricingModel', 'zero'))
+  // const creditNotesQuery = Parse.Query.or(hasLessorInvoicesQuery, hasNonZeroContractQuery)
+  //   .equalTo('status', 2)
+  //   .equalTo('media', null)
+  //   .notEqualTo('periodEnd', null)
+  //   .notEqualTo('periodStart', null)
+  //   .include(['company', 'contract', 'booking', 'bookings'])
+  // return creditNotesQuery.find({ useMasterKey: true }).then(cns => cns.map(cn => cn.get('lexNo')))
   const mediaUpdates = {
     // all cubes canceled in period
     'GS23-00023': {
@@ -227,9 +228,9 @@ Parse.Cloud.define('manual-updates-credit-note-medias', async () => {
     },
     // early canceled cubes trifft one invoice
     'GS23-00039': {
-      '7P24ZrsGx1:TLK-48632A14': { start: '2023-01-17', end: '2023-03-31', total: 63.05 },
-      '7P24ZrsGx1:TLK-48632A6': { start: '2023-01-17', end: '2023-03-31', total: 105.09 },
-      '7P24ZrsGx1:TLK-48633R512': { start: '2023-01-17', end: '2023-03-31', total: 105.09 }
+      '7P24ZrsGx1:TLK-48632A14': { start: '2023-01-17', end: '2023-03-31', total: 74.52 },
+      '7P24ZrsGx1:TLK-48632A6': { start: '2023-01-17', end: '2023-03-31', total: 74.52 },
+      '7P24ZrsGx1:TLK-48633R512': { start: '2023-01-17', end: '2023-03-31', total: 124.20 }
     },
     // extra case that touches two previous periods, one without invoice!
     // ask for which cube the 98,45€ and which period it was calculated for
@@ -260,10 +261,18 @@ Parse.Cloud.define('manual-updates-credit-note-medias', async () => {
       '2aDj3DEfAY:TLK-21291A50': { start: '2023-02-15', end: '2023-03-31', total: 65.63 }
     }
   }
-  consola.info(mediaUpdates)
-  return creditNotesQuery.find({ useMasterKey: true }).then(cns => cns.map(cn => cn.get('lexNo')))
+  let i = 0
+  for (const lexNo of Object.keys(mediaUpdates)) {
+    const creditNote = await $query('CreditNote').equalTo('lexNo', lexNo).first({ useMasterKey: true })
+    if (!creditNote) { continue }
+    const media = mediaUpdates[lexNo]
+    creditNote.set({ media })
+    await creditNote.save(null, { useMasterKey: true })
+    i++
+  }
+  return i
 }, { requireMaster: true })
-// Parse.Cloud.run('manual-updates-credit-note-medias', null, { useMasterKey: true }).then(consola.info)
+// Parse.Cloud.run('manual-updates-credit-note-mediae', null, { useMasterKey: true }).then(consola.success)
 
 async function updateBookingExtends () {
   const autoExtendMap = require('@/seed/data/autovercsv.json').reduce((acc, row) => {

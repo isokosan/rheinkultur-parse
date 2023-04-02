@@ -811,7 +811,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     totalNet: { header: 'Rheinkultur Netto', width: 15, style: priceStyle },
     lessorRate: { header: 'Pacht %', width: 10, style: percentStyle },
     lessorTotal: { header: 'Pachtsumme', width: 15, style: priceStyle },
-    invoiceNo: { header: 'Rechnungsnr.', width: 20 }
+    voucherNos: { header: 'Belege.', width: 20 }
   }
 
   if (distributorId) {
@@ -827,7 +827,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
-    delete fields.invoiceNo
+    delete fields.voucherNos
   }
   if (agencyId) {
     const agencyName = await $getOrFail('Company', agencyId).then((company) => company.get('name'))
@@ -839,7 +839,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
-    delete fields.invoiceNo
+    delete fields.voucherNos
   }
   if (regionId) {
     const regionName = report.get('regionals')[regionId].name
@@ -851,7 +851,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.totalNet
     delete fields.lessorRate
     delete fields.lessorTotal
-    delete fields.invoiceNo
+    delete fields.voucherNos
   }
   if (lessorCode) {
     filename = `${lessorCode} ${quarter} Pacht`
@@ -862,7 +862,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.regionalTotal
     delete fields.serviceRate
     delete fields.serviceTotal
-    delete fields.invoiceNo
+    delete fields.voucherNos
   }
 
   const rows = report.get('rows').filter((row) => {
