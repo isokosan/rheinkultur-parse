@@ -165,7 +165,7 @@ Parse.Cloud.define('manual-updates-credit-note-periods', async () => {
 })
 // Parse.Cloud.run('manual-updates-credit-note-periods', null, { useMasterKey: true }).then(consola.info)
 
-// Required invoice linking for media form
+// Required invoice linking for media forms
 Parse.Cloud.define('manual-updates-credit-note-invoices', async () => {
   let i = 0
   const creditNotes = await $query('CreditNote').equalTo('invoices', null).notEqualTo('invoice', null).find({ useMasterKey: true })
@@ -194,64 +194,75 @@ Parse.Cloud.define('manual-updates-credit-note-invoices', async () => {
   return i
 })
 
-// Parse.Cloud.define('manual-updates-credit-note-medias', async () => {
-//   const hasLessorInvoicesQuery = $query('CreditNote').matchesQuery('invoices', $query('Invoice').notEqualTo('lessor', null))
-//   const hasNonZeroContractQuery = $query('CreditNote').matchesQuery('contract', $query('Contract').notEqualTo('pricingModel', 'zero'))
-//   const creditNotesQuery = Parse.Query.or(hasLessorInvoicesQuery, hasNonZeroContractQuery)
-//     .equalTo('status', 2)
-//     .equalTo('media', null)
-//     .notEqualTo('periodEnd', null)
-//     .notEqualTo('periodStart', null)
-//     .include(['company', 'contract', 'booking', 'bookings'])
-//   return creditNotesQuery.find({ useMasterKey: true }).then(cns => cns.map(cn => cn.get('lexNo')))
-//   const mediaUpdates = {
-//     // all cubes canceled in period
-//     'GS23-00023': {
-//       'WmSH6aQXvC:TLK-2122A518': { start: '2023-01-01', end: '2023-01-31', total: 38 },
-//       'WmSH6aQXvC:TLK-2124A503': { start: '2023-01-01', end: '2023-01-31', total: 38 },
-//       'WmSH6aQXvC:TLK-2126A69': { start: '2023-01-01', end: '2023-01-31', total: 38 }
-//     },
-//     // all cubes canceled in period
-//     'GS23-00024': {
-//       'XrB4pfxaa0:TLK-2122A518': { start: '2023-02-01', end: '2023-02-28', total: 38 },
-//       'XrB4pfxaa0:TLK-2124A503': { start: '2023-02-01', end: '2023-02-28', total: 38 },
-//       'XrB4pfxaa0:TLK-2126A69': { start: '2023-02-01', end: '2023-02-28', total: 38 }
-//     },
-//     // cube partly canceled withing invoice period
-//     'GS23-00036': {
-//       'NjHquWKYwt:TLK-48632V1100': { start: '2023-01-17', end: '2023-03-31', total: 74.52 }
-//     },
-//     // one cube of many canceled within total period
-//     'GS23-00038': {
-//       '4u1IAkRopJ:TLK-45321A14': { start: '2023-02-01', end: '2023-03-31', total: 100 }
-//     },
-//     'GS23-00039': {},
-//     'GS23-00040': {},
-//     // wrong total within the period
-//     'GS23-00041': {
-//       '6GGsvagy5m:TLK-71525A36': { start: '2023-02-15', end: '2023-03-31', total: 1.83 },
-//       '6GGsvagy5m:TLK-71525A539': { start: '2023-02-15', end: '2023-03-31', total: 1.82 }
-//     },
-//     // partly canceled: Rückbau aufgrund einer Satzung der Stadt
-//     'GS23-00065': {
-//       'ImGX46hrSn:TLK-77251A27': { start: '2023-02-01', end: '2023-03-31', total: 76.30 }
-//     },
-//     // Vandalismus, 2 months of 3 canceled
-//     'GS23-00066': {
-//       'ZTEWAWp0OS:TLK-23751A5': { start: '2023-02-01', end: '2023-03-31', total: 76.30 }
-//     },
-//     // 2 invoices, early canceled cube!
-//     // TODO: Maybe combine? or maybe not...
-//     'GS23-00067': {
-//       'Sksc82Bu00:TLK-77217A46': { start: '2023-02-01', end: '2023-02-28', total: 37.50 },
-//       'gLjzuEfTxG:TLK-77217A46': { start: '2023-03-01', end: '2023-03-31', total: 37.50 }
-//     },
-//     // Yearly invoice, one cube one period affected
-//     'GS23-00085': {
-//       '2aDj3DEfAY:TLK-21291A50': { start: '2023-02-15', end: '2023-03-31', total: 65.63 }
-//     }
-//   }
-// }, { requireMaster: true })
+// decide whether or not to include invoice data
+Parse.Cloud.define('manual-updates-credit-note-medias', async () => {
+  const hasLessorInvoicesQuery = $query('CreditNote').matchesQuery('invoices', $query('Invoice').notEqualTo('lessor', null))
+  const hasNonZeroContractQuery = $query('CreditNote').matchesQuery('contract', $query('Contract').notEqualTo('pricingModel', 'zero'))
+  const creditNotesQuery = Parse.Query.or(hasLessorInvoicesQuery, hasNonZeroContractQuery)
+    .equalTo('status', 2)
+    .equalTo('media', null)
+    .notEqualTo('periodEnd', null)
+    .notEqualTo('periodStart', null)
+    .include(['company', 'contract', 'booking', 'bookings'])
+  const mediaUpdates = {
+    // all cubes canceled in period
+    'GS23-00023': {
+      'WmSH6aQXvC:TLK-2122A518': { start: '2023-01-01', end: '2023-01-31', total: 38 },
+      'WmSH6aQXvC:TLK-2124A503': { start: '2023-01-01', end: '2023-01-31', total: 38 },
+      'WmSH6aQXvC:TLK-2126A69': { start: '2023-01-01', end: '2023-01-31', total: 38 }
+    },
+    // all cubes canceled in period
+    'GS23-00024': {
+      'XrB4pfxaa0:TLK-2122A518': { start: '2023-02-01', end: '2023-02-28', total: 38 },
+      'XrB4pfxaa0:TLK-2124A503': { start: '2023-02-01', end: '2023-02-28', total: 38 },
+      'XrB4pfxaa0:TLK-2126A69': { start: '2023-02-01', end: '2023-02-28', total: 38 }
+    },
+    // cube partly canceled withing invoice period
+    'GS23-00036': {
+      'NjHquWKYwt:TLK-48632V1100': { start: '2023-01-17', end: '2023-03-31', total: 74.52 }
+    },
+    // one cube of many canceled within total period
+    'GS23-00038': {
+      '4u1IAkRopJ:TLK-45321A14': { start: '2023-02-01', end: '2023-03-31', total: 100 }
+    },
+    // early canceled cubes trifft one invoice
+    'GS23-00039': {
+      '7P24ZrsGx1:TLK-48632A14': { start: '2023-01-17', end: '2023-03-31', total: 63.05 },
+      '7P24ZrsGx1:TLK-48632A6': { start: '2023-01-17', end: '2023-03-31', total: 105.09 },
+      '7P24ZrsGx1:TLK-48633R512': { start: '2023-01-17', end: '2023-03-31', total: 105.09 }
+    },
+    // extra case that touches two previous periods, one without invoice!
+    // ask for which cube the 98,45€ and which period it was calculated for
+    'GS23-00040': {
+      'w7rZfMeaYG:TLK-?': { start: '2022-11-01', end: '2023-01-18', total: 98.45 }
+    },
+    // wrong total within the period
+    'GS23-00041': {
+      '6GGsvagy5m:TLK-71525A36': { start: '2023-02-15', end: '2023-03-31', total: 1.83 },
+      '6GGsvagy5m:TLK-71525A539': { start: '2023-02-15', end: '2023-03-31', total: 1.82 }
+    },
+    // partly canceled: Rückbau aufgrund einer Satzung der Stadt
+    'GS23-00065': {
+      'ImGX46hrSn:TLK-77251A27': { start: '2023-02-01', end: '2023-03-31', total: 76.30 }
+    },
+    // Vandalismus, 2 months of 3 canceled
+    'GS23-00066': {
+      'ZTEWAWp0OS:TLK-23751A5': { start: '2023-02-01', end: '2023-03-31', total: 76.30 }
+    },
+    // 2 invoices, early canceled cube!
+    // TODO: Maybe combine? or maybe not...
+    'GS23-00067': {
+      'Sksc82Bu00:TLK-77217A46': { start: '2023-02-01', end: '2023-02-28', total: 37.50 },
+      'gLjzuEfTxG:TLK-77217A46': { start: '2023-03-01', end: '2023-03-31', total: 37.50 }
+    },
+    // Yearly invoice, one cube one period affected
+    'GS23-00085': {
+      '2aDj3DEfAY:TLK-21291A50': { start: '2023-02-15', end: '2023-03-31', total: 65.63 }
+    }
+  }
+  consola.info(mediaUpdates)
+  return creditNotesQuery.find({ useMasterKey: true }).then(cns => cns.map(cn => cn.get('lexNo')))
+}, { requireMaster: true })
 // Parse.Cloud.run('manual-updates-credit-note-medias', null, { useMasterKey: true }).then(consola.info)
 
 async function updateBookingExtends () {
