@@ -26,7 +26,7 @@ Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
   !query._include.includes('rows') && query.exclude('rows')
 })
 
-async function checkIfQuarterIsClosed (quarter) {
+async function checkIfQuarterIsReportable (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
   const [contracts, bookings, invoices] = await Promise.all([
     // check contracts ended / extended
@@ -63,9 +63,9 @@ Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) 
     .descending('createdAt')
     .first({ useMasterKey: true })
   if (!report) {
-    const closeable = await checkIfQuarterIsClosed(quarter)
-    if (!closeable) {
-      return { closeable }
+    const reportable = await checkIfQuarterIsReportable(quarter)
+    if (!reportable) {
+      return { reportable }
     }
     return { report: await new QuarterlyReport({ quarter }).save(null, { useMasterKey: true }) }
   }
