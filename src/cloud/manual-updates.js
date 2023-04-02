@@ -246,9 +246,9 @@ Parse.Cloud.define('manual-updates-credit-note-invoices', async () => {
 //       'Sksc82Bu00:TLK-77217A46': { start: '2023-02-01', end: '2023-02-28', total: 37.50 },
 //       'gLjzuEfTxG:TLK-77217A46': { start: '2023-03-01', end: '2023-03-31', total: 37.50 }
 //     },
-//     // Need to learn which cube
+//     // Yearly invoice, one cube one period affected
 //     'GS23-00085': {
-//       'zDBphaytiQ:?': { start: '2023-02-15', end: '2023-03-31', total: 65.63 }
+//       '2aDj3DEfAY:TLK-21291A50': { start: '2023-02-15', end: '2023-03-31', total: 65.63 }
 //     }
 //   }
 // }, { requireMaster: true })
