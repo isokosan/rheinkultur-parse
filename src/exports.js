@@ -12,7 +12,7 @@ const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
 const { getLexFile, getLexInvoiceDocument, getLexCreditNoteDocument } = require('@/services/lex')
 const { getCubeSummaries } = require('@/shared')
-const { round2, durationString } = require('@/utils')
+const { round2, dateString, durationString } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
@@ -799,7 +799,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     duration: { header: 'Laufzeit', width: 10, style: alignRight },
     periodStart: { header: 'Zeitraumstart', width: 12, style: dateStyle },
     periodEnd: { header: 'Zeitraumende', width: 12, style: dateStyle },
-    monthly: { header: 'Monatsmiete', width: 12, style: priceStyle },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
     months: { header: 'Monate', width: 10, style: monthsStyle },
     total: { header: 'Zeitraumsumme', width: 15, style: priceStyle },
     agencyRate: { header: 'Agentur %', width: 10, style: percentStyle },
@@ -880,10 +880,10 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     }
     return true
   }).map((row) => {
-    row.start = moment(row.start).format('DD.MM.YYYY')
-    row.end = moment(row.end).format('DD.MM.YYYY')
-    row.periodStart = moment(row.periodStart).format('DD.MM.YYYY')
-    row.periodEnd = moment(row.periodEnd).format('DD.MM.YYYY')
+    row.start = dateString(row.start)
+    row.end = dateString(row.end)
+    row.periodStart = dateString(row.periodStart)
+    row.periodEnd = dateString(row.periodEnd)
     return row
   })
 

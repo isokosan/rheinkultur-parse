@@ -62,20 +62,23 @@ Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) 
     .equalTo('quarter', quarter)
     .descending('createdAt')
     .first({ useMasterKey: true })
-  if (report) {
-    return { report }
+  if (!report) {
+    const closeable = await checkIfQuarterIsClosed(quarter)
+    if (!closeable) {
+      return { closeable }
+    }
+    return { report: await new QuarterlyReport({ quarter }).save(null, { useMasterKey: true }) }
   }
-  return { closeable: await checkIfQuarterIsClosed(quarter) }
+  return { report }
 }, $adminOnly)
 
 Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) => {
-  let report = await $query(QuarterlyReport)
+  const report = await $query(QuarterlyReport)
     .equalTo('quarter', quarter)
     .descending('createdAt')
     .first({ useMasterKey: true })
   if (!report) {
-    report = new QuarterlyReport({ quarter })
-    await report.save(null, { useMasterKey: true })
+    throw new Error('Report not found')
   }
   if (report.get('jobId')) {
     throw new Error('Job already added')

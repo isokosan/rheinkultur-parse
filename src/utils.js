@@ -86,6 +86,11 @@ function durationString (end, start) {
   return days === 1 ? `${days} Tag` : `${days} Tage`
 }
 
+function dateString (date) {
+  if (!date) { return }
+  return moment(date).format('DD.MM.YYYY')
+}
+
 const replaceLocalIp = function (url) {
   if (!url.includes('0.0.0.0')) {
     return url
@@ -110,5 +115,6 @@ module.exports = {
   round2,
   round5,
   priceString,
+  dateString,
   durationString
 }
