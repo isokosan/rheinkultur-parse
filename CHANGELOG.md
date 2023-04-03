@@ -1,3 +1,10 @@
+## [1.13.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.13.1...1.13.2) (2023-04-02)
+
+
+### Bug Fixes
+
+* require jobs ([c6199b6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c6199b6314d47e690b7d551c80a45408955419b8))
+
 ## [1.13.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.13.0...1.13.1) (2023-03-29)
 
 
