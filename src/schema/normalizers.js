@@ -340,7 +340,14 @@ module.exports = {
         periodStart: normalizeDateString,
         periodEnd: normalizeDateString,
         introduction: normalizeString,
-        mediaItems: defined,
+        mediaItems (items) {
+          for (const key of Object.keys(items)) {
+            if (!items[key].total) {
+              delete items[key]
+            }
+          }
+          return items
+        },
         lineItems (value) {
           const lineItems = value || []
           for (const item of lineItems) {
