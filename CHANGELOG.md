@@ -1,3 +1,20 @@
+# [1.14.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.13.2...1.14.0) (2023-04-03)
+
+
+### Bug Fixes
+
+* formatDate only if date exists in exports ([2008aba](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2008aba0826d6e050f036751b2139d19a948ca03))
+* GS00085 media ([8549ccd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8549ccd69e6d241626ac4e9aa025b0606ff30f76))
+* remove 0 totals from ([a0cdf26](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a0cdf2629976a0c3fe236aff0f457c56b76fe8c9))
+
+
+### Features
+
+* add manual updates to credit note media ([aa4c6c5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/aa4c6c5a2bd94d2bea2f00c931a72e54f424a3e8))
+* add media to credit note functions ([fde6526](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fde652603e0f9d0602b8b7bb47e0712e96822177))
+* bull as service ([08276b7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/08276b7ccb7197c3ceb5f1ef8cf6a1810c6c5a36))
+* deprecate late-start ([8a58be6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8a58be6d5c287031dd2f66ef239fac295ef19f2f))
+
 ## [1.13.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.13.1...1.13.2) (2023-04-02)
 
 
