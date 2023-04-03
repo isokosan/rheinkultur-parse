@@ -172,20 +172,24 @@ async function processCreditNotes (start, end) {
     .lessThanOrEqualTo('periodStart', end)
     .include(['company', 'contract', 'booking', 'bookings'])
   await creditNotesQuery.each(async (creditNote) => {
-    const items = creditNote.get('media')
+    const mediaItems = creditNote.get('mediaItems')
     const cubeIds = []
     const invoiceIds = []
-    for (const [invoiceId, cubeId] of Object.keys(items).map(key => key.split(':'))) {
+    for (const [invoiceId, cubeId] of Object.keys(mediaItems).map(key => key.split(':'))) {
       !invoiceIds.includes(invoiceId) && invoiceIds.push(invoiceId)
       cubeId && !cubeIds.includes(cubeId) && cubeIds.push(cubeId)
     }
 
     const cubeSummaries = await getCubeSummaries(cubeIds)
-    const invoices = await $query('Invoice').containedIn('objectId', invoiceIds).limit(invoiceIds.length).find({ useMasterKey: true })
+    const invoices = await $query('Invoice')
+      .containedIn('objectId', invoiceIds)
+      .limit(invoiceIds.length)
+      .include('lessor')
+      .find({ useMasterKey: true })
     const contract = creditNote.get('contract')
-    for (const key of Object.keys(items)) {
+    for (const key of Object.keys(mediaItems)) {
       const [invoiceId, cubeId] = key.split(':')
-      const mediaItem = items[key]
+      const mediaItem = mediaItems[key]
       // credit note period might span a longer time than a quarter, so make sure the cube end is within the start-end period
       // const cubePeriodEnd = mediaItem.periodEnd < invoicePeriodEnd ? mediaItem.periodEnd : invoicePeriodEnd
       // if (cubePeriodEnd < periodStart) { continue }
@@ -194,11 +198,11 @@ async function processCreditNotes (start, end) {
       const invoice = invoices.find(invoice => invoice.id === invoiceId)
       const agencyId = invoice.get('agency')?.id
       const agencyRate = invoice.get('commissionRate') || 0
-      const cubeSummary = cubeId ? cubeSummaries[cubeId] : {}
+      const cubeOrLessorInfo = cubeId ? cubeSummaries[cubeId] : { lc: invoice.get('lessor').get('lessor').code, lessorRate: invoice.get('lessorRate') }
       const row = {
         voucherNos: [creditNote.get('lexNo'), invoice.get('lexNo')].join(', '),
         orderNo: contract?.get('no'),
-        ...cubeSummary,
+        ...cubeOrLessorInfo,
         periodStart: mediaItem.start,
         periodEnd: mediaItem.end,
         total: mediaItem.total * -1
@@ -543,7 +547,11 @@ async function getOrCacheLessorCommissions () {
   return LESSOR_COMMISIONS
 }
 
-async function getLessorCommissionRate ({ lc, stateId, ort, companyId }) {
+async function getLessorCommissionRate ({ lc, stateId, ort, companyId, lessorRate }) {
+  // if lessorRate is already defined, return it directly
+  if (lessorRate) {
+    return lessorRate
+  }
   if (!lc) {
     return 0
   }

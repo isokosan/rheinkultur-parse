@@ -195,12 +195,12 @@ Parse.Cloud.define('manual-updates-credit-note-invoices', async () => {
 })
 
 // decide whether or not to include invoice data
-Parse.Cloud.define('manual-updates-credit-note-mediae', async () => {
+Parse.Cloud.define('manual-updates-credit-note-media-items', async () => {
   // const hasLessorInvoicesQuery = $query('CreditNote').matchesQuery('invoices', $query('Invoice').notEqualTo('lessor', null))
   // const hasNonZeroContractQuery = $query('CreditNote').matchesQuery('contract', $query('Contract').notEqualTo('pricingModel', 'zero'))
   // const creditNotesQuery = Parse.Query.or(hasLessorInvoicesQuery, hasNonZeroContractQuery)
   //   .equalTo('status', 2)
-  //   .equalTo('media', null)
+  //   .equalTo('mediaItems', null)
   //   .notEqualTo('periodEnd', null)
   //   .notEqualTo('periodStart', null)
   //   .include(['company', 'contract', 'booking', 'bookings'])
@@ -265,14 +265,14 @@ Parse.Cloud.define('manual-updates-credit-note-mediae', async () => {
   for (const lexNo of Object.keys(mediaUpdates)) {
     const creditNote = await $query('CreditNote').equalTo('lexNo', lexNo).first({ useMasterKey: true })
     if (!creditNote) { continue }
-    const media = mediaUpdates[lexNo]
-    creditNote.set({ media })
+    const mediaItems = mediaUpdates[lexNo]
+    creditNote.set({ mediaItems })
     await creditNote.save(null, { useMasterKey: true })
     i++
   }
   return i
 }, { requireMaster: true })
-// Parse.Cloud.run('manual-updates-credit-note-mediae', null, { useMasterKey: true }).then(consola.success)
+// Parse.Cloud.run('manual-updates-credit-note-media-items', null, { useMasterKey: true }).then(consola.success)
 
 async function updateBookingExtends () {
   const autoExtendMap = require('@/seed/data/autovercsv.json').reduce((acc, row) => {

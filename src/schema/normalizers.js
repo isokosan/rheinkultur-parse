@@ -340,7 +340,7 @@ module.exports = {
         periodStart: normalizeDateString,
         periodEnd: normalizeDateString,
         introduction: normalizeString,
-        media: defined,
+        mediaItems: defined,
         lineItems (value) {
           const lineItems = value || []
           for (const item of lineItems) {

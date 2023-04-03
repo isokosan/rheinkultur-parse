@@ -199,6 +199,7 @@ Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedA
     date,
     periodStart,
     periodEnd,
+    mediaItems,
     lineItems
   } = normalizeFields(params)
 
@@ -209,6 +210,7 @@ Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedA
     date,
     periodStart,
     periodEnd,
+    mediaItems,
     lineItems,
     createdBy: user
   })
@@ -232,7 +234,7 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
     date,
     periodStart,
     periodEnd,
-    media,
+    mediaItems,
     lineItems,
     introduction
   } = normalizeFields(params)
@@ -242,6 +244,7 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
     date,
     periodStart,
     periodEnd,
+    mediaItems,
     introduction,
     lineItems
   })
@@ -249,7 +252,7 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
     date,
     periodStart,
     periodEnd,
-    media,
+    mediaItems,
     introduction,
     lineItems
   })

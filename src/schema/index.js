@@ -310,12 +310,12 @@ const schemaDefinitions = {
       invoice: { type: 'Pointer', targetClass: 'Invoice' },
       invoices: { type: 'Array' },
       reason: { type: 'String' }, // reason that will be added to introduction text
+      mediaItems: { type: 'Object' }, // holds pacht relevant info from invoices
       introduction: { type: 'String' }, // introduction that will appear on lex office
 
       periodStart: { type: 'String' },
       periodEnd: { type: 'String' },
 
-      media: { type: 'Object' },
       /*
         items: MediaCalculationItem[] {
           cubeId,
