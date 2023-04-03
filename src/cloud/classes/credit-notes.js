@@ -175,16 +175,7 @@ Parse.Cloud.beforeSave(CreditNote, async ({ object: creditNote, context: { rewri
 
 Parse.Cloud.afterSave(CreditNote, ({ object: creditNote, context: { audit } }) => { $audit(creditNote, audit) })
 
-Parse.Cloud.afterDelete(CreditNote, async ({ object: creditNote }) => {
-  const contract = await $query('Contract').equalTo('lateStart.creditNote', creditNote).first({ useMasterKey: true })
-  if (contract) {
-    const lateStart = contract.get('lateStart')
-    lateStart.creditNote = null
-    contract.set({ lateStart })
-    await contract.save(null, { useMasterKey: true })
-  }
-  $deleteAudits({ object: creditNote })
-})
+Parse.Cloud.afterDelete(CreditNote, $deleteAudits)
 
 Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }

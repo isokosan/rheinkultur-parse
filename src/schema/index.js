@@ -223,7 +223,7 @@ const schemaDefinitions = {
       gradualPriceMap: { type: 'Pointer', targetClass: 'GradualPriceMap' },
       skipInvoiceEmails: { type: 'Boolean' },
       invoiceDescription: { type: 'String' },
-      lateStart: { type: 'Object' },
+      // lateStart: { type: 'Object' }, // deprecated
 
       // agency
       agency: { type: 'Pointer', targetClass: 'Company' },

@@ -982,65 +982,72 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
   }
 
   // create a credit note
-  const cubes = []
+  const invoiceTotals = {}
+  const creditNoteMediaItems = {}
   for (const cubeId of Object.keys(cancellations)) {
     const cubeEnd = cancellations[cubeId]
     for (const invoice of issuedInvoices) {
-      const mediaItems = invoice.get('media').items
-      const mediaItem = mediaItems.find(item => item.cubeId === cubeId)
+      const invoiceNo = invoice.get('lexNo')
+      const invoiceMediaItems = invoice.get('media').items
+      const mediaItem = invoiceMediaItems.find(item => item.cubeId === cubeId)
       if (!mediaItem) {
         continue
       }
       const periodStart = invoice.get('periodStart')
       const periodEnd = mediaItem.periodEnd || invoice.get('periodEnd')
+      // cube canceled already before the invoice
       if (cubeEnd === true || moment(cubeEnd).isBefore(periodStart)) {
-        // cube canceled already before the invoice
-        cubes.push({
-          cubeId,
-          invoiceNo: invoice.get('lexNo'),
-          invoiceId: invoice.id,
-          periodEnd,
-          cubeEnd,
-          diff: mediaItem.total
-        })
+        const diff = mediaItem.total
+        if (!diff) { continue }
+        if (invoiceTotals[invoiceNo] === undefined) {
+          invoiceTotals[invoiceNo] = 0
+        }
+        invoiceTotals[invoiceNo] += diff
+        const key = [invoice.id, cubeId].join(':')
+        creditNoteMediaItems[key] = {
+          start: invoice.get('periodStart'),
+          end: periodEnd,
+          total: diff
+        }
         continue
       }
+      // cube canceled within the invoice period
       if (moment(cubeEnd).isBefore(periodEnd)) {
         const { monthly, total } = mediaItem
         const { total: newTotal } = getPeriodTotal(periodStart, cubeEnd, monthly)
-        // cube canceled within the invoice period
-        cubes.push({
-          cubeId,
-          invoiceNo: invoice.get('lexNo'),
-          invoiceId: invoice.id,
-          periodEnd,
-          cubeEnd,
-          diff: round2(total - newTotal)
-        })
+        const diff = round2(total - newTotal)
+        if (!diff) { continue }
+        if (invoiceTotals[invoiceNo] === undefined) {
+          invoiceTotals[invoiceNo] = 0
+        }
+        invoiceTotals[invoiceNo] += diff
+        const key = [invoice.id, cubeId].join(':')
+        creditNoteMediaItems[key] = {
+          start: cubeEnd,
+          end: periodEnd,
+          total: diff
+        }
       }
     }
   }
 
-  const invoiceTotals = {}
-  const invoiceCubes = {}
-  for (const cube of cubes) {
-    if (!cube.diff) { continue }
-    if (!invoiceTotals[cube.invoiceNo]) {
-      invoiceTotals[cube.invoiceNo] = 0
-    }
-    invoiceTotals[cube.invoiceNo] += cube.diff
-    const invoiceCube = [cube.invoiceId, cube.cubeId].join(':')
-    invoiceCubes[invoiceCube] = cube.diff
-  }
+  const total = round2(sum(Object.values(creditNoteMediaItems).map(item => item.total)))
   const invoiceNos = Object.keys(invoiceTotals)
-  const total = round2(sum(Object.values(invoiceCubes)))
-
   if (!total || !invoiceNos.length) { return }
   const invoices = await $query('Invoice')
     .containedIn('lexNo', invoiceNos)
     .limit(invoiceNos.length)
     .find({ useMasterKey: true })
     .then(invs => invs.map(inv => inv.toPointer()))
+
+  const creditNotePeriodStart = Object.values(creditNoteMediaItems).reduce((min, item) => {
+    if (!min) { return item.start }
+    return moment(item.start).isBefore(min) ? item.start : min
+  }, null)
+  const creditNotePeriodEnd = Object.values(creditNoteMediaItems).reduce((max, item) => {
+    if (!max) { return item.end }
+    return moment(item.end).isAfter(max) ? item.end : max
+  }, null)
 
   const creditNote = $parsify('CreditNote')
   creditNote.set({
@@ -1049,7 +1056,9 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
     companyPerson: contract.get('companyPerson'),
     contract,
     invoices,
-    invoiceCubes,
+    mediaItems: creditNoteMediaItems,
+    periodStart: creditNotePeriodStart,
+    periodEnd: creditNotePeriodEnd,
     status: 0,
     date: await $today(),
     lineItems: [{ name: 'Dauerwerbung Media', price: total }],
@@ -1522,95 +1531,4 @@ Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user 
   contract.set('status', -1)
   const audit = { user, fn: 'contract-remove' }
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
-
-Parse.Cloud.define('contract-set-late-start', async ({ params: { id: contractId, date, diffInDays, periodTotal }, user }) => {
-  const contract = await $getOrFail(Contract, contractId)
-  const beforeLateStart = contract.get('lateStart')
-  const creditNote = beforeLateStart?.creditNote
-    ? await beforeLateStart?.creditNote.fetch({ useMasterKey: true })
-    : undefined
-  const lateStart = { date, diffInDays, periodTotal, creditNote }
-  contract.set({ lateStart })
-  const audit = { user, fn: 'contract-set-late-start', data: { changes: { date: [beforeLateStart?.date, date] } } }
-  let message = beforeLateStart ? 'Verspäteter Vertragsbeginn geändert.' : 'Verspäteter Vertragsbeginn gesetzt.'
-  if (creditNote && creditNote.get('status') === 1) {
-    const creditNoteAudit = { user, fn: 'credit-note-regenerate' }
-    creditNote.set('periodEnd', moment(date).subtract(1, 'day').format('YYYY-MM-DD'))
-    creditNote.set('lineItems', [{
-      name: `Verzögerte Montage am ${moment(date).format('DD.MM.YYYY')}`,
-      price: periodTotal
-    }])
-    await creditNote.save(null, { useMasterKey: true, context: { audit: creditNoteAudit, rewriteIntroduction: true } })
-    message += ' Gutschrift neu generiert.'
-  }
-  await contract.save(null, { useMasterKey: true, context: { audit } })
-  return message
-}, { requireUser: true })
-
-Parse.Cloud.define('contract-unset-late-start', async ({ params: { id: contractId }, user }) => {
-  const contract = await $getOrFail(Contract, contractId)
-  const lateStart = contract.get('lateStart')
-  const creditNote = lateStart?.creditNote
-    ? await lateStart?.creditNote.fetch({ useMasterKey: true })
-    : undefined
-  if (creditNote && creditNote.get('status') > 1) {
-    throw new Error('Gutschrift bereits abgeschlossen')
-  }
-  contract.unset('lateStart')
-  const audit = { user, fn: 'contract-set-late-start', data: { changes: { date: [lateStart?.date, null] } } }
-  let message = 'Verspäteter Vertragsbeginn gelöscht.'
-  if (creditNote) {
-    await creditNote.destroy({ useMasterKey: true })
-    message += ' Gutchrift gelöscht.'
-  }
-  await contract.save(null, { useMasterKey: true, context: { audit } })
-  return message
-}, { requireUser: true })
-
-// FOR LEASE START DATE CREDIT NOTE CALCULATION
-Parse.Cloud.define('contract-get-period-total', async ({ params: { id: contractId, startsAt, endsAt } }) => {
-  const contract = await $getOrFail(Contract, contractId)
-  let monthlyTotal = sum(Object.values(contract.get('monthlyMedia') || {}))
-  if (contract.get('pricingModel') === 'gradual') {
-    const { gradualPrice } = await getPredictedCubeGradualPrice(contract, startsAt)
-    monthlyTotal = gradualPrice * contract.get('cubeCount')
-  }
-  return getPeriodTotal(startsAt, endsAt, monthlyTotal).total
-}, { requireUser: true })
-
-Parse.Cloud.define('contract-generate-late-start-credit-note', async ({ params: { id: contractId }, user }) => {
-  const contract = await $getOrFail(Contract, contractId)
-  if (!contract.get('lateStart')) {
-    throw new Error('Vertrag hat keine Verspätung')
-  }
-  if (contract.get('lateStart').creditNote) {
-    consola.info(contract.get('lateStart').creditNote)
-    throw new Error('Es wurde bereits eine Gutschrift erstellt')
-  }
-  const creditNote = $parsify('CreditNote')
-  const lateStart = contract.get('lateStart')
-  creditNote.set({
-    status: 1,
-    company: contract.get('company'),
-    address: contract.get('invoiceAddress') || contract.get('address'),
-    companyPerson: contract.get('companyPerson'),
-    contract,
-    date: await $today(),
-    periodStart: contract.get('startsAt'),
-    periodEnd: moment(lateStart.date).subtract(1, 'day').format('YYYY-MM-DD'),
-    lineItems: [{
-      name: `Verzögerte Montage am ${moment(lateStart.date).format('DD.MM.YYYY')}`,
-      price: lateStart.periodTotal
-    }]
-  })
-  const company = creditNote.get('company')
-  await company.fetchWithInclude('tags', { useMasterKey: true })
-  creditNote.set({ tags: company.get('tags') })
-  const audit = { user, fn: 'credit-note-generate' }
-  await creditNote.save(null, { useMasterKey: true, context: { audit } })
-  lateStart.creditNote = $parsify('CreditNote', creditNote.id)
-  contract.set({ lateStart })
-  await contract.save(null, { useMasterKey: true })
-  return 'Gutschrift generiert'
 }, { requireUser: true })
