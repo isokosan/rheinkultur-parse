@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.14.0...1.15.0) (2023-04-03)
+
+
+### Features
+
+* add verified hts export ([ba08de9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ba08de9050444885bdf2cb8dc7c891e5165c6ddf))
+
 # [1.14.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.13.2...1.14.0) (2023-04-03)
 
 
