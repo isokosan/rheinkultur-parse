@@ -123,7 +123,46 @@ async function processMediaInvoices (start, end) {
   return response
 }
 
-async function processMediaCreditNotes (start, end) {
+// Pachtrelevant without contract
+async function processCustomInvoices (start, end) {
+  const response = []
+  const invoicesQuery = $query('Invoice')
+    .equalTo('status', 2)
+    .equalTo('media', null)
+    .notEqualTo('lessor', null)
+    .greaterThan('periodEnd', start)
+    .lessThanOrEqualTo('periodStart', end)
+  let i = 0
+  await invoicesQuery
+    .include(['company', 'lessor'])
+    .skip(i)
+    .each((invoice) => {
+      consola.warn('Custom Invoice', invoice.get('lexNo'))
+      const row = {
+        voucherNos: invoice.get('lexNo'),
+        lc: invoice.get('lessor').get('lessor').code,
+        companyId: invoice.get('company').id,
+        companyName: invoice.get('company').get('name'),
+        start: invoice.get('periodStart'),
+        end: invoice.get('periodEnd')
+      }
+      row.periodStart = row.start > start ? row.start : start
+      row.periodEnd = row.end < end ? row.end : end
+      const duration = moment(row.end).add(1, 'days').diff(moment(row.start), 'months', true)
+      const months = moment(row.periodEnd).add(1, 'days').diff(moment(row.periodStart), 'months', true)
+      row.total = invoice.get('netTotal') || 0
+      row.duration = round2(duration)
+      row.months = months
+      // TODO: check later
+      row.extraCols = invoice.get('extraCols')
+      response.push(row)
+      i++
+    }, { useMasterKey: true })
+  consola.info(`Processed ${i} custom invoices`)
+  return response
+}
+
+async function processCreditNotes (start, end) {
   const response = []
   let i = 0
   const creditNotesQuery = $query('CreditNote')
@@ -193,82 +232,6 @@ async function processMediaCreditNotes (start, end) {
     i++
   }, { useMasterKey: true })
   consola.info(`Processed ${i} media credit notes`)
-  return response
-}
-
-// (MA Lionsgroup BV - Quarterly Invoice or Aktionsverwungen etc)
-async function processCustomInvoices (start, end) {
-  const response = []
-  const invoicesQuery = $query('Invoice')
-    .equalTo('status', 2)
-    .equalTo('media', null)
-    .notEqualTo('lessor', null)
-    .greaterThan('periodEnd', start)
-    .lessThanOrEqualTo('periodStart', end)
-  let i = 0
-  while (true) {
-    const invoices = await invoicesQuery
-      .include(['company', 'lessor'])
-      .skip(i)
-      .find({ useMasterKey: true })
-    if (!invoices.length) { break }
-    for (const invoice of invoices) {
-      const row = {
-        lc: invoice.get('lessor').get('lessor').code,
-        companyId: invoice.get('company').id,
-        companyName: invoice.get('company').get('name'),
-        start: invoice.get('periodStart'),
-        end: invoice.get('periodEnd')
-      }
-      row.periodStart = row.start > start ? row.start : start
-      row.periodEnd = row.end < end ? row.end : end
-      const duration = moment(row.end).add(1, 'days').diff(moment(row.start), 'months', true)
-      const months = moment(row.periodEnd).add(1, 'days').diff(moment(row.periodStart), 'months', true)
-      const netTotal = invoice.get('netTotal') || 0
-      row.duration = round2(duration)
-      row.months = months
-      row.monthly = round2(netTotal / duration)
-      // TODO: check later
-      row.extraCols = invoice.get('extraCols')
-      response.push(row)
-    }
-    i += invoices.length
-  }
-  consola.info(`Processed ${i} custom invoices`)
-  return response
-}
-
-// process when distributor is billed quarterly a set amount
-async function processPeriodicDistributors (start, end) {
-  const response = []
-  let i = 0
-  while (true) {
-    const companies = await $query('Company')
-      .notEqualTo('distributor.periodicInvoicing', null)
-      .skip(i)
-      .find({ useMasterKey: true })
-    if (!companies.length) { break }
-    for (const company of companies) {
-      const { periodicInvoicing } = company.get('distributor')
-      const { total, lessorId, extraCols } = periodicInvoicing
-      const lessor = await $getOrFail('Company', lessorId)
-      const lessorCode = lessor.get('lessor').code
-      const row = {
-        lc: lessorCode,
-        companyId: company.id,
-        companyName: company.get('name'),
-        distributorId: company.id,
-        periodStart: start,
-        periodEnd: end,
-        duration: 3,
-        total,
-        extraCols
-      }
-      response.push(row)
-    }
-    i += companies.length
-  }
-  consola.info(`Processed ${i} periodic invoices`)
   return response
 }
 
@@ -614,20 +577,17 @@ module.exports = async function (job) {
   const mediaInvoices = await processMediaInvoices(start, end)
   job.progress('Processing custom invoices...')
   const customInvoices = await processCustomInvoices(start, end)
-  job.progress('Processing distributor bookings...')
-  const periodicDistributors = await processPeriodicDistributors(start, end)
   const bookings = await processBookings(start, end)
   job.progress('Processing 0€ contracts...')
   const zeroContracts = await processCustomContracts(start, end)
   job.progress('Processing occupied cubes...')
   const occupiedCubes = await processOccupiedCubes(start, end)
   job.progress('Processing media credit notes...')
-  const creditNotes = await processMediaCreditNotes(start, end)
+  const creditNotes = await processCreditNotes(start, end)
   job.progress('Formatting data into rows...')
   const rows = await Promise.all([
     ...mediaInvoices,
     ...customInvoices,
-    ...periodicDistributors,
     ...bookings,
     ...zeroContracts,
     ...occupiedCubes,
@@ -779,9 +739,9 @@ module.exports = async function (job) {
 
 // processBookings('2021-01-01', '2021-03-31').then(consola.info)
 // processBookings('2023-01-01', '2023-03-31')
-// processMediaCreditNotes('2023-01-01', '2023-03-31').then(consola.info)
+// processCreditNotes('2023-01-01', '2023-03-31').then(consola.info)
 
-// processCustomInvoices('2022-10-01', '2022-12-31')
+// processCustomInvoices('2023-01-01', '2023-03-31').then(consola.info)
 // processCustomInvoices('2023-01-01', '2023-03-31')
 // processCustomInvoices('2023-04-01', '2023-06-30')
 

@@ -232,6 +232,7 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
     date,
     periodStart,
     periodEnd,
+    media,
     lineItems,
     introduction
   } = normalizeFields(params)
@@ -248,6 +249,7 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
     date,
     periodStart,
     periodEnd,
+    media,
     introduction,
     lineItems
   })
@@ -269,12 +271,6 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
   const audit = { user, fn: 'credit-note-update', data: { changes } }
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
-
-// Parse.Cloud.define('credit-note-update-media', async ({ params: { id: creditNoteId, media }, user }) => {
-//   const creditNote = await $getOrFail(CreditNote, creditNoteId, ['invoices'])
-//   creditNote.set('media', media)
-//   return creditNote.save(null, { useMasterKey: true })
-// }, { requireMaster: true })
 
 Parse.Cloud.define('credit-note-reset-introduction', async ({ params: { id: creditNoteId }, user }) => {
   const creditNote = await $getOrFail(CreditNote, creditNoteId, ['contract', 'booking'])

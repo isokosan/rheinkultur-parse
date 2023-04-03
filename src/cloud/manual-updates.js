@@ -235,7 +235,7 @@ Parse.Cloud.define('manual-updates-credit-note-mediae', async () => {
     // extra case that touches two previous periods, one without invoice!
     // ask for which cube the 98,45€ and which period it was calculated for
     'GS23-00040': {
-      'w7rZfMeaYG:TLK-?': { start: '2022-11-01', end: '2023-01-18', total: 98.45 }
+      'w7rZfMeaYG:TLK-82140A13': { start: '2022-11-01', end: '2023-01-18', total: 98.45 }
     },
     // wrong total within the period
     'GS23-00041': {
