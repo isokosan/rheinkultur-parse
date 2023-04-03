@@ -335,11 +335,19 @@ module.exports = {
         companyPersonId: defined,
         contractId: defined,
         bookingId: defined,
-        invoiceId: defined,
+        invoiceIds: defined,
         date: normalizeDateString,
         periodStart: normalizeDateString,
         periodEnd: normalizeDateString,
         introduction: normalizeString,
+        mediaItems (items) {
+          for (const key of Object.keys(items)) {
+            if (!items[key].total) {
+              delete items[key]
+            }
+          }
+          return items
+        },
         lineItems (value) {
           const lineItems = value || []
           for (const item of lineItems) {
