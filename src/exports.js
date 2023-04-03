@@ -37,6 +37,7 @@ const dateStyle = { numFmt: 'dd.mm.yyyy', ...alignRight }
 const priceStyle = { numFmt: '#,##0.00 "€";[Red]-#,##0.00 "€"', ...alignRight }
 const percentStyle = { numFmt: '#.##"%";#.##"%";""', ...alignRight }
 const monthsStyle = { numFmt: '#.####', ...alignRight }
+const numberStyle = { numFmt: '#,####', ...alignRight }
 
 router.get('/cubes', handleErrorAsync(async (req, res) => {
   const housingTypes = await fetchHousingTypes()
@@ -113,6 +114,34 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', 'attachment; filename=Cubes.xlsx')
   res.set('Content-Length', buffer.length)
   return res.send(buffer)
+}))
+
+router.get('/hts', handleErrorAsync(async (req, res) => {
+  const housingTypes = Object.values(await fetchHousingTypes())
+  const workbook = new excel.Workbook()
+  const { columns, headerRowValues } = getColumnHeaders({
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    count: { header: 'Verifizierte CityCubes', width: 30, style: numberStyle }
+  })
+  const worksheet = workbook.addWorksheet('Sheet 1')
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 24
+
+  for (const { code, objectId } of housingTypes) {
+    worksheet.addRow({
+      htCode: code,
+      count: await $query('Cube')
+        .notEqualTo('vAt', null)
+        .equalTo('ht', $parsify('HousingType', objectId))
+        .count({ useMasterKey: true })
+    })
+  }
+  const filename = `Verified Gehäusetypen (Stand ${moment().format('DD.MM.YYYY')})`
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
 function getCubeOrderDates (cube, order) {

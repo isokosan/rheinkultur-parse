@@ -95,7 +95,7 @@ const schemaDefinitions = {
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company' },
-      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      companyPerson: { type: 'Pointer', targetClass: 'Person' },
 
       motive: { type: 'String' },
       externalOrderNo: { type: 'String' },
@@ -189,7 +189,7 @@ const schemaDefinitions = {
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },
-      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      companyPerson: { type: 'Pointer', targetClass: 'Person' },
 
       motive: { type: 'String' },
       externalOrderNo: { type: 'String' },
@@ -305,28 +305,14 @@ const schemaDefinitions = {
       date: { type: 'String', required: true },
       company: { type: 'Pointer', targetClass: 'Company', required: true },
       address: { type: 'Pointer', targetClass: 'Address', required: true },
-      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' },
-      invoice: { type: 'Pointer', targetClass: 'Invoice' },
       invoices: { type: 'Array' },
       reason: { type: 'String' }, // reason that will be added to introduction text
       mediaItems: { type: 'Object' }, // holds pacht relevant info from invoices
       introduction: { type: 'String' }, // introduction that will appear on lex office
-
       periodStart: { type: 'String' },
       periodEnd: { type: 'String' },
-
-      /*
-        items: MediaCalculationItem[] {
-          cubeId,
-          invoiceNo: String
-          periodEnd: String
-          cubeEnd: String
-          diff: Number // price diff
-          ...extraFields: [for exports]
-        }
-        total
-      */
 
       // LEX
       lexNo: { type: 'String' },
@@ -382,7 +368,7 @@ const schemaDefinitions = {
       createdBy: { type: 'Pointer', targetClass: '_User' }, // to keep track of auto-generated invoices
       company: { type: 'Pointer', targetClass: 'Company' },
       address: { type: 'Pointer', targetClass: 'Address', required: true },
-      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' }, // filled only when a contract is invoiced
       booking: { type: 'Pointer', targetClass: 'Booking' }, // filled only when a single booking is invoiced for production
       bookings: { type: 'Array' }, // filled only when a collection of bookings are invoiced in distributor quarterly bookings

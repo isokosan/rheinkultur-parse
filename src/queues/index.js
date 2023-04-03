@@ -167,7 +167,7 @@ async function processCreditNotes (start, end) {
   let i = 0
   const creditNotesQuery = $query('CreditNote')
     .equalTo('status', 2)
-    .notEqualTo('media', null)
+    .notEqualTo('mediaItems', null)
     .greaterThan('periodEnd', start)
     .lessThanOrEqualTo('periodStart', end)
     .include(['company', 'contract', 'booking', 'bookings'])
