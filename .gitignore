@@ -58,3 +58,4 @@ elasticsearch
 backups
 imports
 cluster.yaml
+local

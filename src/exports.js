@@ -800,7 +800,7 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
 
 router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   const { quarter } = req.params
-  const { distributorId, agencyId, regionId, lessorCode } = req.query
+  const { distributorId, agencyId, regionId, tagId, lessorCode } = req.query
   const report = await $query('QuarterlyReport')
     .equalTo('quarter', quarter)
     .descending('createdAt')
@@ -882,6 +882,24 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.lessorTotal
     delete fields.voucherNos
   }
+
+  let orderNosFilter
+  if (tagId) {
+    const tag = await $getOrFail('Tag', tagId)
+    orderNosFilter = await $query('Contract').equalTo('tags', tag).distinct('no', { useMasterKey: true })
+    filename = `${tag.get('name')} ${quarter}`
+    delete fields.agencyRate
+    delete fields.agencyTotal
+    delete fields.regionalRate
+    delete fields.regionalTotal
+    delete fields.serviceRate
+    delete fields.serviceTotal
+    delete fields.totalNet
+    delete fields.lessorRate
+    delete fields.lessorTotal
+    delete fields.voucherNos
+  }
+
   if (lessorCode) {
     filename = `${lessorCode} ${quarter} Pacht`
     delete fields.total
@@ -900,6 +918,9 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     }
     if (agencyId) {
       return row.agencyId === agencyId
+    }
+    if (orderNosFilter) {
+      return orderNosFilter.includes(row.orderNo)
     }
     if (regionId) {
       return row.regionId === regionId
