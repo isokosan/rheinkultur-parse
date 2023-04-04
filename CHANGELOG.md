@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.16.0...1.17.0) (2023-04-04)
+
+
+### Features
+
+* add states to hts export ([c41cea3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c41cea3ffce9ba3967f66514f7708ab3b1f06558))
+
 # [1.16.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.15.0...1.16.0) (2023-04-04)
 
 
