@@ -817,7 +817,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     .include('rows')
     .first({ useMasterKey: true })
 
-  let filename = `Auftragsliste ${quarter}`
+  let filename = `Auftragsliste Q${quarter}`
   const workbook = new excel.Workbook()
   const worksheet = workbook.addWorksheet('Quartalsbericht')
   const fields = {
@@ -855,7 +855,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
 
   if (distributorId) {
     const distributorName = await $getOrFail('Company', distributorId).then((company) => company.get('name'))
-    filename = `${distributorName} ${quarter}`
+    filename = `${distributorName} Q${quarter}`
     delete fields.companyName
     delete fields.agencyRate
     delete fields.agencyTotal
@@ -870,7 +870,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   }
   if (agencyId) {
     const agencyName = await $getOrFail('Company', agencyId).then((company) => company.get('name'))
-    filename = `${agencyName} ${quarter}`
+    filename = `${agencyName} Q${quarter}`
     delete fields.regionalRate
     delete fields.regionalTotal
     delete fields.serviceRate
@@ -882,7 +882,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   }
   if (regionId) {
     const regionName = report.get('regionals')[regionId].name
-    filename = `${regionName} ${quarter}`
+    filename = `${regionName} Q${quarter}`
     delete fields.agencyRate
     delete fields.agencyTotal
     delete fields.serviceRate
@@ -897,7 +897,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   if (tagId) {
     const tag = await $getOrFail('Tag', tagId)
     orderNosFilter = await $query('Contract').equalTo('tags', tag).distinct('no', { useMasterKey: true })
-    filename = `${tag.get('name')} ${quarter}`
+    filename = `${tag.get('name')} Q${quarter}`
     delete fields.agencyRate
     delete fields.agencyTotal
     delete fields.regionalRate
@@ -911,7 +911,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   }
 
   if (lessorCode) {
-    filename = `${lessorCode} ${quarter} Pacht`
+    filename = `${lessorCode} Q${quarter} Pacht`
     delete fields.total
     delete fields.agencyRate
     delete fields.agencyTotal
