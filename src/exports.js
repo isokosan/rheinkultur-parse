@@ -118,27 +118,37 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
 
 router.get('/hts', handleErrorAsync(async (req, res) => {
   const housingTypes = Object.values(await fetchHousingTypes())
+  const states = Object.values(await fetchStates())
   const workbook = new excel.Workbook()
-  const { columns, headerRowValues } = getColumnHeaders({
+  const fields = {
     htCode: { header: 'Gehäusetyp', width: 20 },
-    count: { header: 'Verifizierte CityCubes', width: 30, style: numberStyle }
-  })
+    count: { header: 'Gesamt', width: 10, style: numberStyle }
+  }
+  for (const { objectId, name } of states) {
+    fields[`state:${objectId}`] = { header: name, width: 15, style: numberStyle }
+  }
+  const { columns, headerRowValues } = getColumnHeaders(fields)
   const worksheet = workbook.addWorksheet('Sheet 1')
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
-  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.font = { name: 'Calibri', bold: true, size: 9 }
   headerRow.height = 24
 
-  for (const { code, objectId } of housingTypes) {
-    worksheet.addRow({
-      htCode: code,
-      count: await $query('Cube')
-        .notEqualTo('vAt', null)
-        .equalTo('ht', $parsify('HousingType', objectId))
-        .count({ useMasterKey: true })
-    })
+  for (const { code: htCode, objectId } of housingTypes) {
+    const row = { htCode }
+    // use mongodb aggregate to count verified cubes by state
+    const pipeline = [
+      { $match: { _p_ht: 'HousingType$' + objectId, vAt: { $exists: true, $ne: null } } },
+      { $group: { _id: '$state', count: { $sum: 1 } } }
+    ]
+    const counts = await $query('Cube').aggregate(pipeline)
+    row.count = counts.reduce((sum, { count }) => sum + count, 0)
+    for (const { objectId, count } of counts) {
+      row[`state:${objectId}`] = count
+    }
+    worksheet.addRow(row)
   }
-  const filename = `Verified Gehäusetypen (Stand ${moment().format('DD.MM.YYYY')})`
+  const filename = `Verifizierte Gehäusetypen nach Bundesland (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
