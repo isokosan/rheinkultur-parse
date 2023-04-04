@@ -1,3 +1,10 @@
+## [1.17.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.1...1.17.2) (2023-04-04)
+
+
+### Bug Fixes
+
+* add Q in front of quarter string in export filenames ([a366f87](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a366f8704e4e7eddaebeabd542fc469b77dd728c))
+
 ## [1.17.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.0...1.17.1) (2023-04-04)
 
 
