@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.15.0...1.16.0) (2023-04-04)
+
+
+### Features
+
+* add tag export (via contract nos) ([fb0b127](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fb0b127eb7eb2991f19e9b235361bef15afb130a))
+
 # [1.15.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.14.0...1.15.0) (2023-04-03)
 
 
