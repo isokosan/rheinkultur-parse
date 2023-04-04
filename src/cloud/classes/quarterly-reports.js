@@ -64,7 +64,7 @@ Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) 
     .first({ useMasterKey: true })
   if (!report) {
     const reportable = await checkIfQuarterIsReportable(quarter)
-    if (!reportable) {
+    if (reportable !== true) {
       return { reportable }
     }
     return { report: await new QuarterlyReport({ quarter }).save(null, { useMasterKey: true }) }
