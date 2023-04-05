@@ -1,3 +1,4 @@
+const request = require('request')
 const redis = require('./redis')
 
 const Authorization = `Bearer ${process.env.LEX_ACCESS_TOKEN}`
@@ -9,21 +10,27 @@ const headers = {
 
 const htmlEncode = val => val.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
 
-const lexApi = async (resourceurl, method = 'GET', body = {}) => Parse.Cloud.httpRequest({
-  url: 'https://api.lexoffice.io/v1' + resourceurl,
-  method,
-  body,
-  headers
-})
-  .catch((error) => {
-    consola.info(resourceurl, method)
-    if (error.status === 404) {
-      throw new Error('Lexoffice Ressource nicht gefunden')
-    }
-    consola.error(error.status, error.data)
-    throw new Error('LexApi error: ' + error.text)
+const lexApi = async (resourceurl, method = 'GET', body = {}) => {
+  return new Promise((resolve, reject) => {
+    return request({
+      url: 'https://api.lexoffice.io/v1' + resourceurl,
+      method,
+      body,
+      json: true,
+      headers,
+      timeout: 30000
+    }, function (error, response, body) {
+      if (error) {
+        if (error.status === 404) {
+          return reject(new Error('Lexoffice Ressource nicht gefunden'))
+        }
+        consola.info(error, body)
+        return reject(new Error('LexApi error: ' + error.message))
+      }
+      return resolve(body)
+    })
   })
-  .then(({ data }) => data)
+}
 
 const getLexFile = documentId => Parse.Cloud.httpRequest({
   url: 'https://api.lexoffice.io/v1/files/' + documentId,

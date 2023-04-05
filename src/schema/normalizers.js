@@ -341,7 +341,7 @@ module.exports = {
         periodEnd: normalizeDateString,
         introduction: normalizeString,
         mediaItems (items) {
-          for (const key of Object.keys(items)) {
+          for (const key of Object.keys(items || {})) {
             if (!items[key].total) {
               delete items[key]
             }
