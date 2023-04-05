@@ -1,3 +1,10 @@
+## [1.17.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.2...1.17.3) (2023-04-05)
+
+
+### Bug Fixes
+
+* use requests for lex-api to increase timeout ([85a3eec](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/85a3eec17673be9f4acaf3885392ca95df97e643))
+
 ## [1.17.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.1...1.17.2) (2023-04-04)
 
 
