@@ -1,3 +1,10 @@
+## [1.17.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.3...1.17.4) (2023-04-06)
+
+
+### Bug Fixes
+
+* remove credit notes for now from reports ([cb9d5cf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cb9d5cfb60351327cde6df45ac3e4e64674f74f6))
+
 ## [1.17.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.2...1.17.3) (2023-04-05)
 
 
