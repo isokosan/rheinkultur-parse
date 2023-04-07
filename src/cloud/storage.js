@@ -38,20 +38,12 @@ const getThumbnailBase64 = async (file) => {
     return fromBase64(base64, options).bulk(-1, true)
       .then(pages => pages.map(page => page.base64))
       .then(mergeImages)
-      .catch((error) => {
-        consola.error(error)
-        return null
-      })
   }
   return sharp(Buffer.from(base64, 'base64'))
     .resize({ height: 270, width: 270, fit: sharp.fit.inside })
     .withMetadata()
     .toBuffer()
     .then(data => data.toString('base64'))
-    .catch((error) => {
-      consola.error(error)
-      return null
-    })
 }
 
 const getSize1000Base64 = async (file) => {
@@ -73,7 +65,16 @@ const getSize1000Base64 = async (file) => {
 Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   const name = file._metadata.name
   const { assetType, cubeId } = file.tags()
-  const thumb64 = await getThumbnailBase64(file)
+  let thumb64
+  try {
+    thumb64 = await getThumbnailBase64(file)
+  } catch (error) {
+    // abort save and delete file instead if thumbnail errors
+    await file.destroy({ useMasterKey: true })
+    consola.error(error)
+    error.message = `Datei ist beschädigt: ${error.message}.`
+    throw error
+  }
   let thumb
   if (thumb64) {
     thumb = new Parse.File('thumb.png', { base64: thumb64 }, 'image/png', { thumb: 'true' })
