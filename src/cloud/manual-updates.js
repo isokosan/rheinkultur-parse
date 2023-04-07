@@ -125,3 +125,23 @@ Parse.Cloud.define('manual-updates-canceled', async () => {
   }
   return response
 }, { requireMaster: true })
+
+async function savePairs (from) {
+  let pairs = require('./pairs.json')
+  from && (pairs = pairs.slice(from))
+  const total = pairs.length
+  let i = 0
+  for (const [a, r] of pairs) {
+    const cube = await $query('Cube').get(a, { useMasterKey: true })
+    cube && await cube.save(null, { useMasterKey: true }).catch(consola.error)
+    i++
+    const progress = Math.round((i / total) * 100)
+    consola.success('set pairs', progress + '%', a, r, i, '/', total)
+  }
+  consola.success('DONE')
+}
+
+Parse.Cloud.define('manual-updates-ar', async ({ params: { from } }) => {
+  savePairs(from)
+  return 'ok'
+}, { requireMaster: true })
