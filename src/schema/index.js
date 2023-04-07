@@ -259,7 +259,9 @@ const schemaDefinitions = {
       vAt: { type: 'Date' }, // verifiedAt Date
       cAt: { type: 'Date' }, // lastControlledAt Date
       sAt: { type: 'Date' }, // lastScoutedAt Date
-      dAt: { type: 'Date' }, // deletedAt Date
+      dAt: { type: 'Date' }, // deletedAt Date (not found)
+      // hAt: { type: 'Date' }, // hiddenAt Date (has pair or other reason)
+      pair: { type: 'Pointer', targetClass: 'Cube' }, // Cube pair, if filled this one will be hidden
 
       // warnings
       MBfD: { type: 'Boolean' }, // Boolean // promoted location (göferderter Standort)

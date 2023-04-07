@@ -58,7 +58,8 @@ module.exports.CUBE_STATUSES = {
   0: 'Verfügbar',
   5: 'Vermarktet',
   7: 'Nicht vermarktungsfähig',
-  8: 'Nicht gefunden'
+  8: 'Nicht gefunden',
+  9: 'Ausgeblendet (A/R)'
 }
 module.exports.INVOICE_STATUSES = {
   0: 'Entwurf',

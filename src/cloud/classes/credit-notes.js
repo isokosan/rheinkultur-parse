@@ -103,7 +103,7 @@ const CreditNote = Parse.Object.extend('CreditNote', {
 // agentur provision
 // cubes entfallen von Buchung / Vertrag
 // error inside a Rechnung
-// late belegungstart (contract) OK
+// late belegungstart (contract) Deprecated for custom
 // special cases (custom)
 
 async function validateCreditNoteDate (dateOfNewCreditNote) {

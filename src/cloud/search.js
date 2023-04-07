@@ -98,6 +98,7 @@ const INDEXES = {
 
         klsId: cube.get('importData')?.klsId,
         order: cube.get('order'),
+        pair: cube.get('pair'),
 
         // status (calculated attribute)
         s: cube.get('s')
@@ -281,7 +282,7 @@ Parse.Cloud.define('search', async ({
   if (isPublic && s !== '0' && s !== '') {
     s = ''
   }
-  s = s?.split(',') || []
+  s = s ? s.split(',').filter(Boolean) : []
 
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
@@ -334,7 +335,10 @@ Parse.Cloud.define('search', async ({
 
   // STATUS PUBLIC
   // TODO: add filter for distributors (external users who are not scouts)
-  isPublic && bool.must_not.push({ exists: { field: 'dAt' } })
+  if (isPublic) {
+    bool.must_not.push({ exists: { field: 'dAt' } })
+    bool.must_not.push({ exists: { field: 'pair' } })
+  }
 
   if (s.includes('0')) {
     bool.must.push({
@@ -383,6 +387,12 @@ Parse.Cloud.define('search', async ({
       minimum_should_match: 1
     }
   })
+  s.includes('8')
+    ? bool.must.push({ exists: { field: 'dAt' } })
+    : bool.must_not.push({ exists: { field: 'dAt' } })
+  s.includes('9')
+    ? bool.must.push({ exists: { field: 'pair' } })
+    : bool.must_not.push({ exists: { field: 'pair' } })
 
   // single issues
   s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
@@ -397,11 +407,7 @@ Parse.Cloud.define('search', async ({
   s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })
   s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
 
-  // Nicht gefunden
-  s.includes('8') && bool.must.push({ exists: { field: 'dAt' } })
-
   // address constraints
-
   if (pk) {
     [stateId, ort] = pk.split(':')
   }

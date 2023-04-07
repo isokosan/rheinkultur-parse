@@ -4,10 +4,14 @@ const Cube = Parse.Object.extend('Cube', {
   getStatus () {
     // available, booked, not available, not found
     if (this.get('order')) { return 5 }
+    if (this.get('pair')) { return 9 }
     if (this.get('dAt')) { return 8 }
     if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb')) {
       return 7
     }
+    // if (this.get('TTMR') || this.get('PDGA')) {
+    //   return 6
+    // }
     return 0
   }
 })
@@ -18,9 +22,8 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
   }
 
   // require state and ort (for placekey operations) - cannot update schema
-  if (!cube.get('state') || !cube.get('ort')) {
-    throw new Error('Cube requires at least gp, state and ort')
-  }
+  if (!cube.get('state')) { throw new Error(`Cube ${cube.id} missing state`) }
+  if (!cube.get('ort')) { throw new Error(`Cube ${cube.id} missing ort`) }
 
   if (seeding === true) { return }
   // trim address
@@ -47,8 +50,58 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
   cube.unset('s').unset('bPLZ').unset('PDGA').unset('klsId')
 })
 
+function getARPair (cubeId) {
+  // regex to test a single A character
+  if (/^(?!.*A.*A.*$).*A.*$/.test(cubeId)) {
+    return $query(Cube).equalTo('objectId', cubeId.replace('A', 'R')).first({ useMasterKey: true })
+  }
+  // regex to test a single R character
+  if (/^(?!.*R.*R.*$).*R.*$/.test(cubeId)) {
+    return $query(Cube).equalTo('objectId', cubeId.replace('R', 'A')).first({ useMasterKey: true })
+  }
+  return null
+}
+
+async function checkARPair (cube) {
+  if (cube.get('lc') !== 'TLK') { return }
+  const pair = await getARPair(cube.id)
+  if (!pair) { return }
+  function setPair (a, b) {
+    if (a.get('pair')?.id === b.id) { return }
+    const audit = { fn: 'cube-set-pair', data: { pairId: b.id } }
+    return a.set('pair', b).save(null, { useMasterKey: true, context: { audit } })
+  }
+  function unsetPair (a) {
+    if (!a.get('pair')) { return }
+    const audit = { fn: 'cube-unset-pair', data: { pairId: a.get('pair').id } }
+    return a.unset('pair').save(null, { useMasterKey: true, context: { audit } })
+  }
+  if (cube.get('order')) {
+    await unsetPair(cube)
+    pair.get('order') ? await unsetPair(pair) : await setPair(pair, cube)
+    return
+  }
+  if (pair.get('order')) {
+    await unsetPair(pair)
+    cube.get('order') ? await unsetPair(cube) : await setPair(cube, pair)
+    return
+  }
+  // if both are not booked, hide the R pair
+  if (cube.id.includes('A')) {
+    await unsetPair(cube)
+    await setPair(pair, cube)
+    return
+  }
+  await unsetPair(pair)
+  await setPair(cube, pair)
+}
+
 Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit } }) => {
   audit && $audit(cube, audit)
+  // check cube pairs, if the save was not initiated by pair function
+  if (!audit || !['cube-set-pair', 'cube-unset-pair'].includes(audit.fn)) {
+    checkARPair(cube)
+  }
 })
 
 Parse.Cloud.beforeDelete(Cube, async ({ object: cube }) => {
@@ -61,7 +114,7 @@ Parse.Cloud.afterDelete(Cube, $deleteAudits)
 // TODO: Also hide for external users like distributors that do not scout
 Parse.Cloud.beforeFind(Cube, async ({ query, user, master }) => {
   const isPublic = !user && !master
-  isPublic && query.equalTo('dAt', null)
+  isPublic && query.equalTo('dAt', null).equalTo('pair', null)
 })
 
 const PUBLIC_FIELDS = ['media', 'hti', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2']
@@ -120,6 +173,10 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
         .find({ useMasterKey: true })
         .then(scoutSubmissions => scoutSubmissions.map(b => b.toJSON()))
       cube.set('scoutSubmissions', scoutSubmissions)
+    }
+
+    if (query._include.includes('otherPair')) {
+      cube.set('otherPair', await getARPair(cube.id))
     }
   }
   return cubes
@@ -236,7 +293,6 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
     }
   }
   const changes = $changes(cube, updates)
-  consola.info(changes)
   if (!Object.keys(changes).length) {
     throw new Error('Keine Warnungen geändert.')
   }
@@ -246,32 +302,6 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
-
-// TOTEST
-// Parse.Cloud.define('cubes-bulk-update-warnings', async ({ params: { cubeIds, ...params }, user }) => {
-//   const updates = {}
-//   for (const field of ['MBfD', 'nMR', 'TTMR', 'PG', 'Agwb']) {
-//     if (params[field] !== undefined) {
-//       updates[field] = params[field] || undefined
-//     }
-//   }
-//   let i = 0
-//   for (const id of cubeIds) {
-//     try {
-//       const cube = await $getOrFail(Cube, id)
-//       const changes = $changes(cube, updates)
-//       for (const field of Object.keys(updates)) {
-//         updates[field] ? cube.set({ [field]: updates[field] }) : cube.unset(field)
-//       }
-//       const audit = { user, fn: 'cube-update', data: { changes } }
-//       await $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-//       i++
-//     } catch (error) {
-//       consola.error(error)
-//     }
-//   }
-//   return i
-// }, { requireUser: true })
 
 Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id)
@@ -302,7 +332,6 @@ Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
   const contracts = await $query('Contract').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).find({ useMasterKey: true })
   const bookings = await $query('Booking').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).find({ useMasterKey: true })
   if (contracts.length || bookings.length) {
-    consola.error({ cubeId: cube.id, contracts, bookings })
     throw new Error('CityCubes that are in finalized contracts/bookings cannot be unverified. Please contact an administrator.')
   }
   cube.set('vAt', null)

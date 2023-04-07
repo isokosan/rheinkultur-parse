@@ -32,4 +32,4 @@ Parse.Cloud.define('goto', async ({ params: { date } }) => {
 //   await $query(Parse.User).each(user => user.set('password', '123456').save(null, { useMasterKey: true }), { useMasterKey: true })
 //   consola.success('set user passwords')
 // }
-// initializeForDevelopment()
+// // initializeForDevelopment()
