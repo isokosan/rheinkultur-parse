@@ -1,3 +1,15 @@
+# [1.19.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.18.0...1.19.0) (2023-04-07)
+
+
+### Bug Fixes
+
+* Reject file save on thumbnail generation error ([7dbe0f0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7dbe0f0c71b3ec7cde009326895acbc0c03f84f5))
+
+
+### Features
+
+* add AR pairs manual update ([61f8f2e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/61f8f2eb914a57b9112115871281c254a31982fa))
+
 # [1.18.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.4...1.18.0) (2023-04-07)
 
 
