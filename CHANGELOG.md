@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.4...1.18.0) (2023-04-07)
+
+
+### Features
+
+* cube AR pairs ([efa9d43](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/efa9d437944da3e08942fb59329f5cc96f6d1eb1))
+
 ## [1.17.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.17.3...1.17.4) (2023-04-06)
 
 
