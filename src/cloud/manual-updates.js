@@ -1,9 +1,3 @@
-const { setCubeOrderStatuses } = require('@/shared')
-
-Parse.Cloud.define('manual-updates-set-cube-statuses', ({ params: { orderClass, orderId } }) => {
-  return $getOrFail(orderClass, orderId).then(setCubeOrderStatuses)
-}, { requireMaster: true })
-
 // IF OVERLAPPING PLANNED INVOICES, DELETE MANUALLY
 Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
   const allInvoices = await $query('Invoice')
@@ -124,24 +118,4 @@ Parse.Cloud.define('manual-updates-canceled', async () => {
     response[contract.get('no')] = newEndsAt || shouldEndAt
   }
   return response
-}, { requireMaster: true })
-
-async function savePairs (from) {
-  let pairs = require('./pairs.json')
-  from && (pairs = pairs.slice(from))
-  const total = pairs.length
-  let i = 0
-  for (const [a, r] of pairs) {
-    const cube = await $query('Cube').get(a, { useMasterKey: true })
-    cube && await cube.save(null, { useMasterKey: true }).catch(consola.error)
-    i++
-    const progress = Math.round((i / total) * 100)
-    consola.success('set pairs', progress + '%', a, r, i, '/', total)
-  }
-  consola.success('DONE')
-}
-
-Parse.Cloud.define('manual-updates-ar', async ({ params: { from } }) => {
-  savePairs(from)
-  return 'ok'
 }, { requireMaster: true })
