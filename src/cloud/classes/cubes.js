@@ -6,11 +6,12 @@ const Cube = Parse.Object.extend('Cube', {
     if (this.get('order')) { return 5 }
     if (this.get('pair')) { return 9 }
     if (this.get('dAt')) { return 8 }
-    if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb')) {
+    if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG')) {
       return 7
     }
-    // if (this.get('TTMR') || this.get('PDGA')) {
-    //   return 6
+    // When doing so should change the query of availability, or mark this as 4 instead of 6
+    // if (this.get('TTMR') || this.get('PDGA') || this.get('Agwb')) {
+    //   return 4
     // }
     return 0
   }
