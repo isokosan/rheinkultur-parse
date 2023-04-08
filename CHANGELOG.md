@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.19.0...1.20.0) (2023-04-08)
+
+
+### Features
+
+* make Agwb verfügbar ([272fa49](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/272fa49a3c1e45e73adc59fca3e28bfeb6a86baf))
+
 # [1.19.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.18.0...1.19.0) (2023-04-07)
 
 
