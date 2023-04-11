@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.20.0...1.20.1) (2023-04-11)
+
+
+### Bug Fixes
+
+* submission approve and reject include cube in fetch ([854ee79](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/854ee79d6b89fbdbaaf4e271c626403498d75f53))
+
 # [1.20.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.19.0...1.20.0) (2023-04-08)
 
 
