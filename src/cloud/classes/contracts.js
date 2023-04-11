@@ -846,6 +846,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   const contractStart = contract.get('startsAt')
   const contractEnd = contract.get('endsAt')
   const billingCycle = contract.get('billingCycle')
+  const paymentType = contract.get('paymentType')
   for (const invoice of invoices) {
     let updated = false
     const periodStart = invoice.get('periodStart')
@@ -890,6 +891,11 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     let replanned = false
     if (periodStart <= contractEnd && invoice.get('status') === 4) {
       invoice.set('status', 1)
+      replanned = true
+    }
+
+    if (paymentType !== invoice.get('paymentType')) {
+      invoice.set('paymentType', paymentType)
       replanned = true
     }
 
