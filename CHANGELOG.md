@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.20.1...1.21.0) (2023-04-11)
+
+
+### Features
+
+* payment type update when contract changes payment type ([2a0c692](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2a0c69206a0b3e6cfab1da0f7f3a999758c58491))
+
 ## [1.20.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.20.0...1.20.1) (2023-04-11)
 
 
