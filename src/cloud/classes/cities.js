@@ -44,30 +44,3 @@ Parse.Cloud.afterFind('City', ({ objects: cities }) => {
     city.id = decodeURIComponent(city.id)
   }
 })
-
-// async function uploadCities() {
-//   await $query('City').eachBatch(async (cities) => {
-//     const requests = cities.map(city => ({
-//       method: 'POST',
-//       path: '/parse/classes/City/',
-//       body: {
-//         objectId: city.id,
-//         ort: city.get('ort'),
-//         state: city.get('state').toPointer(),
-//         gp: city.get('gp').toJSON()
-//       }
-//     }))
-//     await Parse.Cloud.httpRequest({
-//       method: 'POST',
-//       url: `${process.env.PRODUCTION_SERVER_URL}/batch`,
-//       headers: {
-//         'Content-Type': 'application/json;charset=utf-8',
-//         'X-Parse-Application-Id': process.env.APP_ID,
-//         'X-Parse-Master-Key': process.env.MASTER_KEY
-//       },
-//       body: { requests }
-//     }).catch(err => consola.error(err.text))
-//     consola.info('Uploaded', cities.length, 'cities')
-//   }, { useMasterKey: true })
-// }
-// uploadCities()

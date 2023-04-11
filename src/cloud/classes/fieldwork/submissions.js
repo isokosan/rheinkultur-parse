@@ -130,7 +130,7 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
 }, { requireUser: true })
 
 Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissionId }, user }) => {
-  const submission = await $getOrFail(ControlSubmission, submissionId, ['taskList'])
+  const submission = await $getOrFail(ControlSubmission, submissionId, ['taskList', 'cube'])
   submission.set({ status: 'approved' })
   const cubeId = submission.get('cube').id
   const audit = { user, fn: 'control-submission-approve', data: { cubeId } }
@@ -140,7 +140,7 @@ Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissi
 }, { requireUser: true })
 
 Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
-  const submission = await $getOrFail(ControlSubmission, submissionId, ['taskList'])
+  const submission = await $getOrFail(ControlSubmission, submissionId, ['taskList', 'cube'])
   submission.set({ status: 'rejected', rejectionReason })
   const cube = submission.get('cube')
   const audit = { user, fn: 'control-submission-reject', data: { cubeId: cube.id, rejectionReason } }
@@ -192,7 +192,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: submissionId }, user }) => {
-  const submission = await $query(DisassemblySubmission).include(['taskList']).get(submissionId, { useMasterKey: true })
+  const submission = await $getOrFail(DisassemblySubmission, submissionId, ['taskList', 'cube'])
   submission.set({ status: 'approved' })
   const cubeId = submission.get('cube').id
   const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
@@ -209,7 +209,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
-  const submission = await $getOrFail(DisassemblySubmission, submissionId)
+  const submission = await $getOrFail(DisassemblySubmission, submissionId, ['taskList', 'cube'])
   submission.set({ status: 'rejected', rejectionReason })
   const cube = submission.get('cube')
   const audit = { user, fn: 'disassembly-submission-reject', data: { cubeId: cube.id } }
