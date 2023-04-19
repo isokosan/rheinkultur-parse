@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.0...1.21.1) (2023-04-19)
+
+
+### Bug Fixes
+
+* exports htId to ht.objectId ([c3f0582](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c3f05821e019d65e995106cd76839184b82e0e04))
+
 # [1.21.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.20.1...1.21.0) (2023-04-11)
 
 
