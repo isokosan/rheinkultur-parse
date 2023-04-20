@@ -38,19 +38,19 @@ const INDEXES = {
     config: {
       mappings: {
         properties: {
-          geo: { type: 'geo_point' }
-          // hsnr: {
-          //   type: 'text',
-          //   fields: {
-          //     // https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-icu.html
-          //     sort: {
-          //       type: 'icu_collation_keyword',
-          //       index: false,
-          //       numeric: true,
-          //       case_level: false
-          //     }
-          //   }
-          // }
+          geo: { type: 'geo_point' },
+          // https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-icu.html
+          hsnr: {
+            type: 'text',
+            fields: {
+              sort: {
+                type: 'icu_collation_keyword',
+                index: false,
+                numeric: true,
+                case_level: false
+              }
+            }
+          }
         }
       }
     },
@@ -287,7 +287,7 @@ Parse.Cloud.define('search', async ({
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']
-  id && bool.must.push({ match_phrase_prefix: { objectId: id } })
+  id && bool.must.push({ wildcard: { 'objectId.keyword': `*${id}*` } })
   klsId && bool.filter.push({ match_phrase_prefix: { klsId } })
   lc && bool.filter.push({ term: { 'lc.keyword': lc } })
   media && bool.filter.push({ term: { 'media.keyword': media } })
@@ -319,7 +319,7 @@ Parse.Cloud.define('search', async ({
   if (!isMap) {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     sort.unshift({ 'objectId.keyword': 'asc' })
-    // !id && sort.unshift({ 'hsnr.sort': 'asc' })
+    !id && sort.unshift({ 'hsnr.sort': 'asc' })
     !id && sort.unshift({ 'str.keyword': 'asc' })
   }
 

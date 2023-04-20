@@ -20,6 +20,9 @@ services:
       - elasticsearchdata:/home/dev/rheinkultur/elasticsearch/data
     ports:
       - 127.0.0.1:9200:9200
+    command: >
+      bash -c "bin/elasticsearch-plugin install analysis-icu;
+      bin/elasticsearch"
     networks:
       - es-network
   kibana:
