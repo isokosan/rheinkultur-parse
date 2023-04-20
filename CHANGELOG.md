@@ -1,3 +1,10 @@
+## [1.21.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.2...1.21.3) (2023-04-20)
+
+
+### Bug Fixes
+
+* attempt to only sort by hsnr if option in params ([c61f4f4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c61f4f4bdd44584ba76056e243dff0ba2ab97521))
+
 ## [1.21.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.1...1.21.2) (2023-04-20)
 
 
