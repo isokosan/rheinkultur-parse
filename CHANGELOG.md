@@ -1,3 +1,10 @@
+## [1.21.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.1...1.21.2) (2023-04-20)
+
+
+### Bug Fixes
+
+* readd credit notes to reports ([98cbf79](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/98cbf79dfc7edf1a6c8f896ec3b70d9d804aaa36))
+
 ## [1.21.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.0...1.21.1) (2023-04-19)
 
 
