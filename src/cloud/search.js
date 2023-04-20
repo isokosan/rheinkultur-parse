@@ -275,7 +275,8 @@ Parse.Cloud.define('search', async ({
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
-    returnQuery
+    returnQuery,
+    hsnrSort
   }, user, master
 }) => {
   const isPublic = !master && !user
@@ -319,7 +320,7 @@ Parse.Cloud.define('search', async ({
   if (!isMap) {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     sort.unshift({ 'objectId.keyword': 'asc' })
-    !id && sort.unshift({ 'hsnr.sort': 'asc' })
+    !id && hsnrSort && sort.unshift({ 'hsnr.sort': 'asc' })
     !id && sort.unshift({ 'str.keyword': 'asc' })
   }
 
