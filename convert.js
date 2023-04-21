@@ -16,8 +16,12 @@ const ZONES = {
 }
 
 function convertGaussKruger (x, y) {
-  x = parseInt(x)
-  y = parseInt(y)
+  x = parseInt(x.replace(/,/g, '').replace(/\./g, ''))
+  y = parseInt(y.replace(/,/g, '').replace(/\./g, ''))
+  const [xInt, xDec] = [`${x}`.substr(0, 7), `${x}`.substr(7)]
+  const [yInt, yDec] = [`${y}`.substr(0, 7), `${y}`.substr(7)]
+  x = parseFloat(`${xInt}.${xDec}`)
+  y = parseFloat(`${yInt}.${yDec}`)
   const fromDef = ZONES[`${x}`[0]]
   if (!fromDef) {
     throw new Error(`no epsg definition def for x: ${x}, y: ${y}`)
@@ -27,3 +31,8 @@ function convertGaussKruger (x, y) {
 }
 
 module.exports = convertGaussKruger
+
+// console.log(convertGaussKruger('5410561', '5658703'))
+// console.log(convertGaussKruger('5,410,549,495', '5,658,702,073'))
+// 351  49  A90  35149A90  1067  Dresden  Adlergasse  1:00 AM  82  Sachsen  14612000  4648058  5,410,549,495  5,658,702,073  Ausbau_erfolgt_Vec  Mod2014  \N  \N  Super_Vectoring
+// 351  49  A90  35149A90  01067  Dresden  Adlergasse  1  82  Sachsen  14612000  4648058  5410561  5658703  Ausbau_erfolgt_Vec  THS  Mod2014  \N  Super_Vectoring  13.7221542  51.056399
