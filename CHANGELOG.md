@@ -1,3 +1,10 @@
+## [1.21.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.4...1.21.5) (2023-04-23)
+
+
+### Bug Fixes
+
+* separate field for numeric search ([1bd012b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1bd012b2b1ed65cbea03f56d2728c15018fce091))
+
 ## [1.21.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.3...1.21.4) (2023-04-23)
 
 
