@@ -39,13 +39,7 @@ const INDEXES = {
       mappings: {
         properties: {
           geo: { type: 'geo_point' },
-          // https://www.elastic.co/guide/en/elasticsearch/plugins/current/analysis-icu.html
-          hsnr: {
-            type: 'icu_collation_keyword',
-            index: false,
-            numeric: true,
-            case_level: false
-          }
+          hsnr_numeric: { type: 'double' }
         }
       }
     },
@@ -64,6 +58,7 @@ const INDEXES = {
         // address
         str: cube.get('str'),
         hsnr: cube.get('hsnr'),
+        hsnr_numeric: isNaN(parseInt(cube.get('hsnr'))) ? undefined : parseInt(cube.get('hsnr')),
         plz: cube.get('plz'),
         ort: cube.get('ort'),
         state: cube.get('state')
@@ -270,8 +265,7 @@ Parse.Cloud.define('search', async ({
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
-    returnQuery,
-    hsnrSort
+    returnQuery
   }, user, master
 }) => {
   const isPublic = !master && !user
@@ -315,8 +309,11 @@ Parse.Cloud.define('search', async ({
   if (!isMap) {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     sort.unshift({ 'objectId.keyword': 'asc' })
-    !id && (DEVELOPMENT || hsnrSort) && sort.unshift({ hsnr: 'asc' })
+    !id && sort.unshift({ 'hsnr.keyword': 'asc' })
+    !id && sort.unshift({ hsnr_numeric: 'asc' })
     !id && sort.unshift({ 'str.keyword': 'asc' })
+    !id && sort.unshift({ 'ort.keyword': 'asc' })
+    !id && sort.unshift({ 'stateId.keyword': 'asc' })
   }
 
   if (verifiable) {
