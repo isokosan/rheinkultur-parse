@@ -103,6 +103,7 @@ Parse.Cloud.define('manual-updates-clean-audits', async () => {
 
 Parse.Cloud.define('manual-updates-canceled', async () => {
   const response = {}
+  // all canceled contracts
   const contracts = await $query('Contract').notEqualTo('canceledAt', null).limit(1000).find({ useMasterKey: true })
   for (const contract of contracts) {
     const endsAt = contract.get('endsAt')
