@@ -1,3 +1,10 @@
+## [1.21.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.6...1.21.7) (2023-04-24)
+
+
+### Bug Fixes
+
+* dates as utc dates in excel without time component ([b37cd10](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b37cd10ba40acef1c230e31f629c6d199c30039e))
+
 ## [1.21.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.5...1.21.6) (2023-04-24)
 
 
