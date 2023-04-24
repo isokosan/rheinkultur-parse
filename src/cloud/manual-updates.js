@@ -1,11 +1,42 @@
-// IF OVERLAPPING PLANNED INVOICES, DELETE MANUALLY
+Parse.Cloud.define('manual-updates-clean-audits', async () => {
+  let skip = 0
+  let i = 0
+  while (true) {
+    const audits = await $query('Audit').notEqualTo('data.changes', null).select('data').skip(skip).limit(1000).find({ useMasterKey: true })
+    if (!audits.length) { break }
+    for (const audit of audits) {
+      const data = audit.get('data')
+      let changed = false
+      for (const key of Object.keys(data.changes)) {
+        const [before, after] = data.changes[key]
+        if (before === after) {
+          delete data.changes[key]
+          changed = true
+        }
+      }
+      if (changed) {
+        if (!Object.keys(data.changes).length) {
+          delete data.changes
+        }
+        Object.keys(data).length
+          ? await audit.set({ data }).save(null, { useMasterKey: true })
+          : await audit.destroy({ useMasterKey: true })
+        i++
+      }
+    }
+    skip += audits.length
+  }
+  return i
+}, { requireMaster: true })
+
+// CHECK OVERLAPPING PLANNED INVOICES OF CONTRACTS
 Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
   const allInvoices = await $query('Invoice')
     .notEqualTo('periodStart', null)
     .notEqualTo('periodEnd', null)
     .notEqualTo('media', null)
     .notEqualTo('contract', null)
-    .notEqualTo('status', 3) // canceled
+    .notContainedIn('status', [3, 4]) // canceled
     .ascending('periodStart')
     .select('contract.no', 'contract.startsAt', 'contract.initialDuration', 'contract.extendedDuration', 'periodStart', 'periodEnd')
     .limit(10000)
@@ -53,6 +84,7 @@ Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
   return contracts
 }, { requireMaster: true })
 
+// CHECK END DATES OF NON-CANCELED CONTRACTS
 Parse.Cloud.define('manual-updates-check-end-dates', async () => {
   const allRunningContracts = await $query('Contract')
     .equalTo('canceledAt', null)
@@ -68,37 +100,6 @@ Parse.Cloud.define('manual-updates-check-end-dates', async () => {
     }
   }
   return response
-}, { requireMaster: true })
-
-Parse.Cloud.define('manual-updates-clean-audits', async () => {
-  let skip = 0
-  let i = 0
-  while (true) {
-    const audits = await $query('Audit').notEqualTo('data.changes', null).select('data').skip(skip).limit(1000).find({ useMasterKey: true })
-    if (!audits.length) { break }
-    for (const audit of audits) {
-      const data = audit.get('data')
-      let changed = false
-      for (const key of Object.keys(data.changes)) {
-        const [before, after] = data.changes[key]
-        if (before === after) {
-          delete data.changes[key]
-          changed = true
-        }
-      }
-      if (changed) {
-        if (!Object.keys(data.changes).length) {
-          delete data.changes
-        }
-        Object.keys(data).length
-          ? await audit.set({ data }).save(null, { useMasterKey: true })
-          : await audit.destroy({ useMasterKey: true })
-        i++
-      }
-    }
-    skip += audits.length
-  }
-  return i
 }, { requireMaster: true })
 
 Parse.Cloud.define('manual-updates-canceled', async () => {

@@ -152,7 +152,7 @@ function getPeriodEnd ({ periodStart, billingCycle, contractStart, contractEnd, 
     return nextPeriodStart.isBefore(contractEnd) ? nextPeriodStart.subtract(1, 'day') : contractEnd
   }
   // if next invoice start is defined, use one day before for end
-  if (nextInvoice) {
+  if (nextInvoice && contractEnd.isSameOrAfter(nextInvoice.get('periodStart'))) {
     return moment(nextInvoice.get('periodStart')).subtract(1, 'day')
   }
   // if contract ends in this year use that as contract cut
@@ -851,7 +851,6 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     let updated = false
     const periodStart = invoice.get('periodStart')
     const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd, nextInvoice: invoices[i + 1] }).format('YYYY-MM-DD')
-
     if (contract.get('pricingModel') === 'gradual') {
       const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
       invoice.set('gradualCount', gradualCount)
