@@ -1,3 +1,10 @@
+## [1.21.6](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.5...1.21.6) (2023-04-24)
+
+
+### Bug Fixes
+
+* add motive to cube order status ([2d7c0e2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2d7c0e22d7ed4e35c45079e6bdedb4d1c1a3d89b))
+
 ## [1.21.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.4...1.21.5) (2023-04-23)
 
 
