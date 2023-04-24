@@ -204,7 +204,7 @@ Parse.Cloud.define('triggerScheduledJob', async function ({ params: { job } }) {
   if (waitingJob) { return false }
   const { timeoutMinutes } = updateJobs[job]
   const timeout = 1000 * 60 * timeoutMinutes
-  queue.add({}, { timeout, attempts: 1, stalledInterval: 1000 })
+  queue.add({}, { timeout, attempts: 1 })
   return true
 }, {
   fields: {
