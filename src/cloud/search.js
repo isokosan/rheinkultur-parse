@@ -261,6 +261,7 @@ Parse.Cloud.define('search', async ({
     s,
     ml,
     cId,
+    motive,
     verifiable,
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
@@ -366,6 +367,7 @@ Parse.Cloud.define('search', async ({
   if (s.includes('5')) {
     bool.must.push({ exists: { field: 'order' } })
     cId && bool.must.push({ match: { 'order.company.objectId': cId } })
+    motive && bool.must.push({ match_phrase_prefix: { 'order.motive': motive } })
   }
   // Nicht vermarktungsfähig
   s.includes('7') && bool.must.push({

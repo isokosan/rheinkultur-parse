@@ -1,31 +1,29 @@
-Parse.Cloud.define('manual-updates-clean-audits', async () => {
-  let skip = 0
+Parse.Cloud.define('manual-updates-clean-audits', async ({ params: { preview } }) => {
   let i = 0
-  while (true) {
-    const audits = await $query('Audit').notEqualTo('data.changes', null).select('data').skip(skip).limit(1000).find({ useMasterKey: true })
-    if (!audits.length) { break }
-    for (const audit of audits) {
-      const data = audit.get('data')
-      let changed = false
-      for (const key of Object.keys(data.changes)) {
-        const [before, after] = data.changes[key]
-        if (before === after) {
-          delete data.changes[key]
-          changed = true
-        }
+  await $query('Audit').notEqualTo('data.changes', null).select(['fn', 'data']).each(async (audit) => {
+    const data = audit.get('data')
+    let changed = false
+    for (const key of Object.keys(data.changes)) {
+      const [before, after] = data.changes[key]
+      if (before === after) {
+        delete data.changes[key]
+        changed = true
       }
-      if (changed) {
-        if (!Object.keys(data.changes).length) {
-          delete data.changes
-        }
+    }
+    if (changed) {
+      if (!Object.keys(data.changes).length) {
+        delete data.changes
+      }
+      if (preview) {
+        consola.info(audit.get('fn'), audit.get('data'), data)
+      } else {
         Object.keys(data).length
           ? await audit.set({ data }).save(null, { useMasterKey: true })
           : await audit.destroy({ useMasterKey: true })
-        i++
       }
+      i++
     }
-    skip += audits.length
-  }
+  }, { useMasterKey: true })
   return i
 }, { requireMaster: true })
 
@@ -86,15 +84,19 @@ Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
 
 // CHECK END DATES OF NON-CANCELED CONTRACTS
 Parse.Cloud.define('manual-updates-check-end-dates', async () => {
-  const allRunningContracts = await $query('Contract')
+  const contracts = await $query('Contract')
     .equalTo('canceledAt', null)
     .select(['no', 'startsAt', 'initialDuration', 'extendedDuration', 'endsAt'])
     .limit(1000)
     .find({ useMasterKey: true })
   const response = {}
-  for (const contract of allRunningContracts) {
-    const { no, startsAt, initialDuration, extendedDuration, endsAt } = contract.attributes
-    const shouldEndAt = moment(startsAt).add(initialDuration, 'months').add(extendedDuration || 0, 'months').subtract(1, 'day').format('YYYY-MM-DD')
+  for (const contract of contracts) {
+    const { no, startsAt, endsAt } = contract.attributes
+    const shouldEndAt = moment(startsAt)
+      .add(contract.get('initialDuration'), 'months')
+      .add(contract.get('extendedDuration') || 0, 'months')
+      .subtract(1, 'day')
+      .format('YYYY-MM-DD')
     if (shouldEndAt !== endsAt) {
       response[no] = { startsAt, endsAt, shouldEndAt }
     }
@@ -102,10 +104,13 @@ Parse.Cloud.define('manual-updates-check-end-dates', async () => {
   return response
 }, { requireMaster: true })
 
-Parse.Cloud.define('manual-updates-canceled', async () => {
+// CHECK END DATES OF CANCELED CONTRACTS
+Parse.Cloud.define('manual-updates-check-canceled-end-dates', async () => {
+  const contracts = await $query('Contract')
+    .notEqualTo('canceledAt', null)
+    .limit(1000)
+    .find({ useMasterKey: true })
   const response = {}
-  // all canceled contracts
-  const contracts = await $query('Contract').notEqualTo('canceledAt', null).limit(1000).find({ useMasterKey: true })
   for (const contract of contracts) {
     const endsAt = contract.get('endsAt')
     const shouldEndAt = moment(contract.get('startsAt'))
@@ -113,11 +118,14 @@ Parse.Cloud.define('manual-updates-canceled', async () => {
       .add(contract.get('extendedDuration') || 0, 'months')
       .subtract(1, 'day')
       .format('YYYY-MM-DD')
-    let newEndsAt
-    if (endsAt !== shouldEndAt) {
-      newEndsAt = endsAt
+    if (shouldEndAt === endsAt) {
+      consola.info(contract.get('no'))
+      continue
     }
-    response[contract.get('no')] = newEndsAt || shouldEndAt
+    response[contract.get('no')] = {
+      endsAt: shouldEndAt,
+      newEndsAt: endsAt
+    }
   }
   return response
 }, { requireMaster: true })

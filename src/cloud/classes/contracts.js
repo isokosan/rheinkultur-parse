@@ -12,6 +12,10 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
   contract.isNew() && !contract.get('no') && contract.set({ no: await getNewNo('V' + moment(await $today()).format('YY') + '-', Contract, 'no') })
   UNSET_NULL_FIELDS.forEach(field => !contract.get(field) && contract.unset(field))
 
+  // const shouldEndAt = moment(contract.get('startsAt')).add(contract.get('initialDuration'), 'months').add(contract.get('extendedDuration') || 0, 'months').subtract(1, 'day').format('YYYY-MM-DD')
+  // if (contract.get('canceledEndsAt')) {
+  // }
+
   if (contract.get('pricingModel') === 'gradual') {
     if (!contract.get('gradualPriceMap')) {
       const company = contract.get('company')

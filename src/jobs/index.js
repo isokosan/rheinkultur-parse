@@ -70,6 +70,10 @@ const updateJobs = {
     name: 'Recalculate all future invoices from contracts.',
     timeoutMinutes: 60
   },
+  sync_cube_statuses: {
+    name: 'Sync Cube Statuses',
+    timeoutMinutes: 60
+  },
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',
     timeoutMinutes: 15,
