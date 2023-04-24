@@ -1,3 +1,10 @@
+## [1.21.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.7...1.21.8) (2023-04-24)
+
+
+### Bug Fixes
+
+* remove job stalled interval config ([fecf9f0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fecf9f049c303be7369209f1233317083abce59f))
+
 ## [1.21.7](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.6...1.21.7) (2023-04-24)
 
 
