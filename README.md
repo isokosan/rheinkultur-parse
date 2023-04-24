@@ -12,7 +12,7 @@
 # Restoring gzip backup and syncing for development
 
 mongo rheinkultur-wawi --eval "db.dropDatabase()"
-mongorestore --host localhost:27017 --gzip --archive=rheinkultur-20230424.gz --db rheinkultur-wawi
+mongorestore --host localhost:27017 --gzip --db rheinkultur-wawi --archive=rheinkultur-20230424.gz 
 
 
 // contracts to check

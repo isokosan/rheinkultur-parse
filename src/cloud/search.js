@@ -262,6 +262,8 @@ Parse.Cloud.define('search', async ({
     ml,
     cId,
     motive,
+    sb,
+    sd,
     verifiable,
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
@@ -309,12 +311,16 @@ Parse.Cloud.define('search', async ({
 
   if (!isMap) {
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
-    sort.unshift({ 'objectId.keyword': 'asc' })
-    !id && sort.unshift({ 'hsnr.keyword': 'asc' })
-    !id && sort.unshift({ hsnr_numeric: 'asc' })
-    !id && sort.unshift({ 'str.keyword': 'asc' })
-    !id && sort.unshift({ 'ort.keyword': 'asc' })
-    !id && sort.unshift({ 'stateId.keyword': 'asc' })
+    if (sb === 'objectId') {
+      sort.unshift({ 'objectId.keyword': sd })
+    }
+    if (sb === 'hsnr') {
+      sort.unshift({ 'hsnr.keyword': sd })
+      sort.unshift({ hsnr_numeric: sd })
+      sort.unshift({ 'str.keyword': sd })
+      sort.unshift({ 'ort.keyword': sd })
+      sort.unshift({ 'stateId.keyword': sd })
+    }
   }
 
   if (verifiable) {

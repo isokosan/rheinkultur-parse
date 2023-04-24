@@ -11,7 +11,6 @@ Parse.Cloud.define('goto', async ({ params: { date } }) => {
 })
 
 // async function initializeForDevelopment() {
-//   Parse.Config.save({ today: '2023-04-08' })
 //   // sync lex accounts with dev lex
 //   await $query('Address').notEqualTo('lex', null).each(async (address) => {
 //     // check if address name exists on lexoffice
@@ -33,4 +32,5 @@ Parse.Cloud.define('goto', async ({ params: { date } }) => {
 //   await $query(Parse.User).each(user => user.set('password', '123456').save(null, { useMasterKey: true }), { useMasterKey: true })
 //   consola.success('set user passwords')
 // }
-// // initializeForDevelopment()
+// initializeForDevelopment()
+// Parse.Config.save({ today: '2023-03-21' })
