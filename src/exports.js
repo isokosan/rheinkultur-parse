@@ -154,6 +154,8 @@ router.get('/hts', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
+const startOfUtcDate = val => val ? moment.utc(val).startOf('day').toDate() : undefined
+
 function getCubeOrderDates (cube, order) {
   const { startsAt, endsAt, earlyCancellations, initialDuration, extendedDuration } = order.attributes
   const earlyCanceledAt = earlyCancellations?.[cube.id]
@@ -162,8 +164,8 @@ function getCubeOrderDates (cube, order) {
     return { duration: '0', canceledEarly }
   }
   return {
-    start: moment(startsAt).format('DD.MM.YYYY'),
-    end: moment(earlyCanceledAt || endsAt).format('DD.MM.YYYY'),
+    start: startOfUtcDate(startsAt),
+    end: startOfUtcDate(earlyCanceledAt || endsAt),
     duration: canceledEarly
       ? durationString(earlyCanceledAt, startsAt)
       : [initialDuration, extendedDuration].filter(x => x).join('+'),
@@ -191,6 +193,10 @@ async function getContractRows (contract, { housingTypes, states }) {
   for (const cube of cubes) {
     const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract)
     const monthly = getCubeMonthlyMedia(cube, contract)
+    const autoExtends = contract.get('autoExtendsBy')
+      ? ((contract.get('canceledAt') || canceledEarly) ? 'nein (gekündigt)' : 'ja')
+      : 'nein'
+
     rows.push({
       orderNo: contract.get('no'),
       motive,
@@ -206,6 +212,7 @@ async function getContractRows (contract, { housingTypes, states }) {
       start,
       end,
       duration,
+      autoExtends,
       monthly,
       pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(x => x).join(': '),
       canceledEarly
@@ -280,11 +287,14 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     start: { header: 'Startdatum', width: 12, style: dateStyle },
     end: { header: 'Enddatum', width: 12, style: dateStyle },
     duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    autoExtends: { header: 'A-V', width: 15, style: alignRight },
     monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
     pp: { header: 'Belegungspaket', width: 20 }
   })
 
-  const worksheet = workbook.addWorksheet(company.get('name'))
+  const safeName = company.get('name').replace(/\//g, '').replace(/\s\s+/g, ' ').trim()
+  consola.info(safeName)
+  const worksheet = workbook.addWorksheet(safeName)
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
@@ -306,7 +316,6 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
 
   for (const item of rows) {
     const row = worksheet.addRow(item)
-    item.canceledEarly && console.log()
     item.canceledEarly && (row.getCell(13).font = { name: 'Calibri', bold: true, color: { argb: 'ff2222' } })
     item.canceledEarly && (row.getCell(14).font = { name: 'Calibri', bold: true, color: { argb: 'ff2222' } })
   }
@@ -471,10 +480,8 @@ router.get('/control', handleErrorAsync(async (req, res) => {
           plz: cube.get('plz'),
           ort: cube.get('ort'),
           stateName: states[cube.get('state')?.id]?.name || '',
-          startsAt: contractOrBooking.get('startsAt')
-            ? moment(contractOrBooking.get('startsAt')).format('DD.MM.YYYY')
-            : '-',
-          endsAt: moment(cube.get('order').endsAt).format('DD.MM.YYYY')
+          startsAt: startOfUtcDate(contractOrBooking.get('startsAt')),
+          endsAt: startOfUtcDate(cube.get('order').endsAt)
         })
       }
     }
@@ -785,8 +792,8 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   worksheet.columns = columns
   worksheet.addRows(rows.map(row => ({
     ...row,
-    periodStart: row.periodStart ? moment(row.periodStart).format('DD.MM.YYYY') : '',
-    periodEnd: row.periodEnd ? moment(row.periodEnd).format('DD.MM.YYYY') : ''
+    periodStart: startOfUtcDate(row.periodStart),
+    periodEnd: startOfUtcDate(row.periodEnd)
   })))
   const totalRow = worksheet.addRow({
     monthlyMedia: invoice.get('media')?.monthlyTotal,
