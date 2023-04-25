@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.0...1.22.1) (2023-04-25)
+
+
+### Bug Fixes
+
+* safe name in worksheet exports ([82f7178](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/82f71787ea4f9905c09d2b810270ef5ee0f44167))
+
 # [1.22.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.8...1.22.0) (2023-04-25)
 
 
