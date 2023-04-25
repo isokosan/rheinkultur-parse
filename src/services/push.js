@@ -4,6 +4,8 @@ const client = new OneSignal.Client(process.env.ONESIGNAL_APP_ID, process.env.ON
 const sendPush = async function (userId, message, url) {
   const { body } = await client.createNotification({
     include_external_user_ids: [userId],
+    channel_for_external_user_ids: 'push',
+    isAnyWeb: true,
     contents: { en: message },
     web_url: url
   })
