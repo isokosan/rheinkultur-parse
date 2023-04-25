@@ -20,6 +20,8 @@ const { CUBE_STATUSES } = require('@/schema/enums')
 
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
+const safeName = name => name.replace(/\//g, '').replace(/\s\s+/g, ' ').trim()
+
 // common sheets functions
 function getColumnHeaders (headers) {
   const columns = []
@@ -246,7 +248,7 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
   })
 
   const contract = await $getOrFail('Contract', req.params.contractId)
-  const worksheet = workbook.addWorksheet(contract.get('no'))
+  const worksheet = workbook.addWorksheet(safeName(contract.get('no')))
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
@@ -292,9 +294,7 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     pp: { header: 'Belegungspaket', width: 20 }
   })
 
-  const safeName = company.get('name').replace(/\//g, '').replace(/\s\s+/g, ' ').trim()
-  consola.info(safeName)
-  const worksheet = workbook.addWorksheet(safeName)
+  const worksheet = workbook.addWorksheet(safeName(company.get('name')))
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
@@ -501,7 +501,7 @@ function getName ({ className, name, no }) {
 const addTaskListSheet = async (workbook, taskList) => {
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('booking') || taskList.get('contract')
   const company = parent?.get('company') ? await parent.get('company').fetch({ useMasterKey: true }) : null
-  const worksheet = workbook.addWorksheet(`${taskList.get('ort')} (${taskList.get('state').id})`)
+  const worksheet = workbook.addWorksheet(safeName(`${taskList.get('ort')} (${taskList.get('state').id})`))
 
   const infos = [
     { label: 'Auftraggeber', content: company?.get('name') || '-' },
