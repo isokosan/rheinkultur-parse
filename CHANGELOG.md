@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.8...1.22.0) (2023-04-25)
+
+
+### Features
+
+* pOk filter, show TLK cubes only ([d6b1e16](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d6b1e161de62252635f9d9e255e35dd406905683))
+
 ## [1.21.8](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.21.7...1.21.8) (2023-04-24)
 
 
