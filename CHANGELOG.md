@@ -1,3 +1,10 @@
+## [1.22.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.1...1.22.2) (2023-04-25)
+
+
+### Bug Fixes
+
+* fix app id and api key for onesignal ([d434616](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d434616526e0a3c794189557f8929832d81de3de))
+
 ## [1.22.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.0...1.22.1) (2023-04-25)
 
 
