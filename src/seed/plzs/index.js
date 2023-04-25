@@ -45,15 +45,6 @@ const seed = async function () {
   return redis.scard('no-marketing-rights')
 }
 
-const getPlzDict = () => {
-  const dict = {}
-  for (const { plz, bundesland, ort } of require('./plzs.json')) {
-    dict[plz] = { bundesland, ort }
-  }
-  return dict
-}
-
 module.exports = {
-  seed,
-  getPlzDict
+  seed
 }

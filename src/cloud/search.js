@@ -400,6 +400,7 @@ Parse.Cloud.define('search', async ({
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
   s.includes('nV') && bool.must_not.push({ exists: { field: 'vAt' } })
   s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
+  s.includes('pOk') && bool.must.push({ exists: { field: 'pOk' } })
   s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
   s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
   s.includes('PDGA') && bool.must.push({ exists: { field: 'PDGA' } })

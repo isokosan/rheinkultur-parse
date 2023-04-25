@@ -1,4 +1,4 @@
-const { getPlzDict } = require('@/seed/plzs')
+const getPlzDict = require('./../plzs/dict')
 
 const cleanVal = (val) => {
   if (typeof val === 'string') {
@@ -92,7 +92,8 @@ const getAllImportedRows = async (lc, date) => {
   return [...cubes, ...errors]
 }
 
-const seedCube = async (body, seeding = true) => Parse.Cloud.httpRequest({
+const axios = require('axios')
+const seedCube = async (body, seeding = true) => axios({
   method: 'POST',
   url: `${process.env.PUBLIC_SERVER_URL}/classes/Cube`,
   headers: {
@@ -101,7 +102,7 @@ const seedCube = async (body, seeding = true) => Parse.Cloud.httpRequest({
     'X-Parse-Master-Key': process.env.MASTER_KEY,
     'X-Parse-Cloud-Context': JSON.stringify({ seeding })
   },
-  body
+  data: body
 })
 
 module.exports = {

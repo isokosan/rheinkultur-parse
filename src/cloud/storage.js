@@ -153,6 +153,10 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
 
 Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto }) => {
   const user = cubePhoto.get('createdBy')
+  if (!user) {
+    cubePhoto.set('approved', true)
+    return
+  }
   await user.fetch({ useMasterKey: true })
   if (user.get('accType') !== 'scout') {
     cubePhoto.set('approved', true)
