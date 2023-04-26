@@ -589,7 +589,8 @@ const schemaDefinitions = {
       // only for scout and parent briefing
       scoutAddedCubeIds: { type: 'Array' }, // // case when scout adds extra cube (briefings)
       adminApprovedCubeIds: { type: 'Array' }, // case when admin pre-approves the cube (briefings)
-      quotas: { type: 'Object' },
+      quota: { type: 'Number' }, // single quota
+      quotas: { type: 'Object' }, // media based quota
 
       // calculated
       counts: { type: 'Object' },

@@ -39,7 +39,6 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.get('scoutAddedCubeIds') && taskList.set('scoutAddedCubeIds', [...new Set(taskList.get('scoutAddedCubeIds'))])
 
   const taskType = taskList.get('type')
-  const quotas = taskList.get('quotas')
 
   const submissionClass = capitalize(taskType) + 'Submission'
   const submissions = taskList.isNew()
@@ -82,10 +81,12 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   }
   counts.completed = parseInt(counts.pending + counts.approved)
 
-  if (taskType === 'scout' && quotas) {
-    counts.total = sum(Object.values(quotas || {}))
+  if (taskType === 'scout') {
+    const quota = taskList.get('quota')
+    const quotas = taskList.get('quotas')
+    counts.total = quota || sum(Object.values(quotas || {}))
     const quotasCompleted = {}
-    for (const media of Object.keys(quotas)) {
+    for (const media of ['MFG', 'KVZ']) {
       quotasCompleted[media] = await $query(submissionClass)
         .equalTo('taskList', taskList)
         .containedIn('status', ['pending', 'approved'])
@@ -167,6 +168,11 @@ Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
         }
         taskList.set('quotaStatus', quotaStatus.join(' | '))
       }
+      if (taskList.get('quota')) {
+        const quota = taskList.get('quota')
+        const quotasCompleted = taskList.get('quotasCompleted') || {}
+        taskList.set('quotaStatus', sum(Object.values(quotasCompleted)) + '/' + quota)
+      }
     }
     taskList.set('dueDays', moment(taskList.get('dueDate')).diff(today, 'days'))
     if (query._include.includes('submissions')) {
@@ -246,17 +252,19 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
   if (taskList.get('type') !== 'scout') {
     throw new Error('Nur für Scout-Listen')
   }
-  const { quotas } = normalizeFields({ ...params, type: taskList.get('type') })
+  const { quota, quotas } = normalizeFields({ ...params, type: taskList.get('type') })
 
-  const changes = $changes(taskList, { quotas })
-  if (!changes.quotas) {
+  const changes = $changes(taskList, { quota, quotas })
+  if (!Object.keys(changes).length) {
     throw new Error('Keine Änderungen')
   }
-  taskList.set({ quotas })
+  quota ? taskList.set({ quota }) : taskList.unset('quota')
+  quotas ? taskList.set({ quotas }) : taskList.unset('quotas')
+
   const audit = { user, fn: 'task-list-update', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
-    data: { quotas: taskList.get('quotas'), counts: taskList.get('counts') },
+    data: { quota: taskList.get('quota'), quotas: taskList.get('quotas'), counts: taskList.get('counts') },
     message: 'Anzahl gespeichert.'
   }
 }, $adminOnly)
@@ -283,7 +291,7 @@ async function validateAppointAssign (taskList) {
     throw new Error('Please set date and due date first.')
   }
   if (taskList.get('type') === 'scout') {
-    if (!taskList.get('quotas')) {
+    if (!taskList.get('quotas') && !taskList.get('quota')) {
       throw new Error('Please set quotas.')
     }
   }

@@ -508,6 +508,11 @@ const addTaskListSheet = async (workbook, taskList) => {
     { label: 'Abfahrtsliste', content: `${taskList.get('ort')} (${taskList.get('state').get('name')})` },
     { label: 'Fälligkeitsdatum', content: taskList.get('dueDate') ? moment(taskList.get('dueDate')).format('DD.MM.YYYY') : '' }
   ]
+  // singular quota
+  if (taskList.get('quota')) {
+    infos.push({ label: 'Anzahl', content: taskList.get('quota') })
+  }
+  // media based quota
   if (taskList.get('quotas')) {
     const quotas = taskList.get('quotas') || {}
     infos.push({
