@@ -4,6 +4,15 @@ global.consola = require('consola')
 global.moment = require('moment')
 moment.locale('de')
 
+global.$cleanDict = (dict = {}) => {
+  for (const key in dict) {
+    if (dict[key] === undefined) {
+      delete dict[key]
+    }
+  }
+  return Object.keys(dict).length > 0 ? dict : undefined
+}
+
 global.$parsify = (className, objectId) => {
   const Item = Parse.Object.extend(className)
   const item = new Item()

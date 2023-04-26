@@ -15,6 +15,7 @@ module.exports = {
     DEVELOPMENT: true,
     moment: true,
     sendMail: true,
+    $cleanDict: true,
     $adminOnly: true,
     $internOrAdmin: true,
     $scoutManagerOrAdmin: true,

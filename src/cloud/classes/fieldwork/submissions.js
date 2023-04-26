@@ -65,8 +65,9 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
     cube.set('state', $parsify('State', stateId))
     cube.set('media', media)
     cube.set('ht', $parsify('HousingType', htId))
-    const { sides } = form
-    cube.set({ sides, vAt: new Date() })
+    cube.set('sides', form.sides)
+    cube.set('scoutData', $cleanDict(form.scoutData))
+    cube.set('vAt', new Date())
     await $saveWithEncode(cube, null, { useMasterKey: true })
   }
 
