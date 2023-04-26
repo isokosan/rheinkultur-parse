@@ -31,6 +31,14 @@ Parse.Cloud.afterSave(Notification, ({ object: notification }) => {
   notification.get('sentAt') || send(notification)
 })
 
+Parse.Cloud.beforeFind(Notification, async ({ query, user, master }) => {
+  user && !master && query.equalTo('user', user)
+})
+
+Parse.Cloud.beforeSubscribe(Notification, async ({ query, user, master }) => {
+  user && !master && query.equalTo('user', user)
+})
+
 Parse.Cloud.afterFind(Notification, async ({ objects: notifications, user }) => {
   const see = user && notifications
     .filter(notification => !notification.get('seenAt') && notification.get('user').id === user.id)

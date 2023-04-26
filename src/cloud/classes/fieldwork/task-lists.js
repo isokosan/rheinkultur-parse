@@ -104,7 +104,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   await indexTaskList(taskList)
 })
 
-Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts } }) => {
+Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts, locationCleanup } }) => {
   $audit(taskList, audit)
   const placeKey = [taskList.get('state').id, taskList.get('ort')].join(':')
   for (const scout of taskList.get('scouts') || []) {
@@ -114,6 +114,25 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
         identifier: 'task-list-assigned',
         data: { placeKey }
       })
+    }
+  }
+  // check if scout has other active tasks in the location
+  if (locationCleanup) {
+    const placeKey = taskList.get('state').id + ':' + taskList.get('ort')
+    for (const scout of taskList.get('scouts') || []) {
+      const count = await $query('TaskList')
+        .equalTo('ort', taskList.get('ort'))
+        .equalTo('state', taskList.get('state'))
+        .equalTo('scouts', scout)
+        .containedIn('status', [2, 3])
+        .count({ useMasterKey: true })
+      if (!count) {
+        $query('Notification')
+          .equalTo('user', scout)
+          .containedIn('identifier', ['task-list-assigned', 'task-submission-rejected'])
+          .equalTo('data.placeKey', placeKey)
+          .each(notification => notification.destroy({ useMasterKey: true }), { useMasterKey: true })
+      }
     }
   }
 })
@@ -324,6 +343,7 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
   }
 }, $scoutManagerOrAdmin)
 
+// check if location has tasks remaining
 Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (![2, 3].includes(taskList.get('status'))) {
@@ -331,7 +351,7 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
   }
   taskList.set({ status: 1 })
   const audit = { user, fn: 'task-list-retract' }
-  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   return {
     data: taskList.get('status'),
     message: 'Abfahrtslist zurückgezogen.'
@@ -363,6 +383,7 @@ Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) =>
   // return { message: 'Abfahrtsliste gelöscht.' }
 }, $internOrAdmin)
 
+// check if location has tasks remaining
 Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status') !== 3) {
@@ -370,7 +391,7 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
   }
   taskList.set({ status: 4 })
   const audit = { user, fn: 'task-list-complete' }
-  return taskList.save(null, { useMasterKey: true, context: { audit } })
+  return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
 }, $scoutManagerOrAdmin)
 
 // async function massUpdateManager() {
