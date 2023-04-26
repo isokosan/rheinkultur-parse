@@ -1,3 +1,10 @@
+## [1.22.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.2...1.22.3) (2023-04-26)
+
+
+### Bug Fixes
+
+* add user constraint before subscribe and find in notifications ([a3c7666](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a3c766645635bd5486a4d9d55722dbcd3331137b))
+
 ## [1.22.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.1...1.22.2) (2023-04-25)
 
 
