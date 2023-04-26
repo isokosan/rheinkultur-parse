@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.3...1.23.0) (2023-04-26)
+
+
+### Features
+
+* add scout data to scout forms and approvals ([951b380](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/951b3805b64c08fc3a2659f80c15a21d66ae004a))
+
 ## [1.22.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.2...1.22.3) (2023-04-26)
 
 
