@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.23.0...1.24.0) (2023-04-26)
+
+
+### Features
+
+* add all quota to scouting ([c23f827](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c23f82721109d110e35935e077b9da764c476da3))
+
 # [1.23.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.22.3...1.23.0) (2023-04-26)
 
 
