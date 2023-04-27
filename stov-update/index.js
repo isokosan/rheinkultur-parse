@@ -49,6 +49,7 @@ async function generateSeedRowFn () {
     let state = cleanVal(row.bundesland)
 
     const importData = {
+      i,
       kvzId: cleanVal(row.kvz_id),
       klsId: cleanVal(row.kls_id),
       date,
@@ -98,13 +99,12 @@ async function generateSeedRowFn () {
       }
     }
 
-    const MBfD = row.ausbautreiber1 === 'MBfD' ? true : undefined
+    const MBfD = row.ausbautreiber1?.startsWith('MBfD') ? true : undefined
 
     const existingCube = await $query('Cube').equalTo('objectId', objectId).first({ useMasterKey: true })
     if (!existingCube) {
       try {
         await seedCube({
-          i,
           objectId,
           lc,
           hti,
@@ -132,12 +132,17 @@ async function generateSeedRowFn () {
       return objectId
     }
 
-    // if verified, only update the geopoint
+    // update the geopoint and import data in any case
+    existingCube.set({ importData, hti, gp })
+    //  set MBfD if true
+    MBfD ? existingCube.set({ MBfD }) : existingCube.unset('MBfD')
     if (existingCube.get('vAt')) {
-      existingCube.set({ importData, gp })
       await existingCube.save(null, { useMasterKey: true })
       return objectId + ' verified update'
     }
+    existingCube.set({ str, hsnr, plz, ort, state })
+    // update the ht if defined
+    ht && existingCube.set({ ht })
     await existingCube.save(null, { useMasterKey: true })
     return objectId + ' unverified update'
   }

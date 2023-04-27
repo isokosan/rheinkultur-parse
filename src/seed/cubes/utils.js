@@ -2,7 +2,7 @@ const getPlzDict = require('./../plzs/dict')
 
 const cleanVal = (val) => {
   if (typeof val === 'string') {
-    if (['\n', '\\n', '\\N', '-', 'Unbekannt', 'unbekannt'].includes(val)) {
+    if (['\n', '\\n', '\\N', '-', 'Unbekannt', 'unbekannt', 'Keine Angaben'].includes(val)) {
       return undefined
     }
     val = val?.trim() || undefined
@@ -66,9 +66,9 @@ const getLastImportedRow = async (lc, date) => {
   const lastCube = await $query('Cube')
     .equalTo('lc', lc)
     .equalTo('importData.date', date || null)
-    .descending('i')
+    .descending('importData.i')
     .first({ useMasterKey: true })
-    .then(c => c?.get('i') || 0)
+    .then(c => c?.get('importData')?.i || 0)
   const lastError = await $query('SkippedCubeImport')
     .equalTo('lc', lc)
     .equalTo('date', date || null)
@@ -84,7 +84,7 @@ const getAllImportedRows = async (lc, date) => {
   const cubes = await $query('Cube')
     .equalTo('lc', lc)
     .equalTo('importData.date', date || null)
-    .distinct('i', { useMasterKey: true })
+    .distinct('importData.i', { useMasterKey: true })
   const errors = await $query('SkippedCubeImport')
     .equalTo('lc', lc)
     .equalTo('date', date || null)
