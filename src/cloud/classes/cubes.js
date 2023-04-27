@@ -329,6 +329,10 @@ Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
   if (!cube.get('vAt')) { throw new Error('CityCube ist nicht verifiziert.') }
   // do not allow unverifying if the cube was in a past production with assembly, or contract etc (temporary)
   const contracts = await $query('Contract').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).include('production').find({ useMasterKey: true })
+  const fixedPricingContracts = contracts.filter(c => c.get('pricingModel') === 'fixed').map(c => c.get('no'))
+  if (fixedPricingContracts.length) {
+    throw new Error('CityCubes that are in finalized contracts with fixed pricing cannot be unverified. Please contact an administrator.')
+  }
   const bookings = await $query('Booking').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).include('production').find({ useMasterKey: true })
   const orderNosWithProduction = [...contracts, ...bookings].filter(bc => bc.get('production')).map(bc => bc.get('no'))
   if (orderNosWithProduction.length) {
