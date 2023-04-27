@@ -1,3 +1,10 @@
+## [1.24.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.1...1.24.2) (2023-04-27)
+
+
+### Bug Fixes
+
+* add contract fixed pricing check to cube undo finalize ([73811e0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/73811e063fd24dca21c6e02b9b0a05df74cc161f))
+
 ## [1.24.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.0...1.24.1) (2023-04-27)
 
 
