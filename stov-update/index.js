@@ -29,7 +29,6 @@ async function generateSeedRowFn () {
     const row = await axios({ url: 'http://localhost:5001/index/' + i }).then(res => res.data)
     const objectId = await getCubeId(lc, date, i, row, 'kvz_id')
     if (!objectId) { return false }
-
     // if cube already updated, skip
     if (await $query('Cube').equalTo('objectId', objectId).equalTo('importData.date', date).count({ useMasterKey: true })) {
       consola.info('Cube already updated', objectId)
@@ -57,7 +56,12 @@ async function generateSeedRowFn () {
       hsnr,
       plz,
       ort,
-      state
+      state,
+      scs_cluster: cleanVal(row.scs_cluster),
+      ausbautreiber: cleanVal(row.ausbautreiber),
+      ausbautreiber1: cleanVal(row.ausbautreiber1),
+      ausbautreiber2: cleanVal(row.ausbautreiber2),
+      versorgung: cleanVal(row.versorgung)
     }
 
     let ht
@@ -99,7 +103,7 @@ async function generateSeedRowFn () {
       }
     }
 
-    const MBfD = row.ausbautreiber1?.startsWith('MBfD') ? true : undefined
+    const MBfD = importData.ausbautreiber1?.startsWith('MBfD') ? true : undefined
 
     const existingCube = await $query('Cube').equalTo('objectId', objectId).first({ useMasterKey: true })
     if (!existingCube) {
@@ -131,7 +135,7 @@ async function generateSeedRowFn () {
       }
       return objectId
     }
-
+    existingCube.id = encodeURIComponent(existingCube.id)
     // update the geopoint and import data in any case
     existingCube.set({ importData, hti, gp })
     //  set MBfD if true
@@ -150,7 +154,6 @@ async function generateSeedRowFn () {
 
 const seed = async function () {
   const allImportedRows = await getAllImportedRows(lc, date)
-  consola.info(allImportedRows)
   const { count } = await axios({ url: 'http://localhost:5001/count' }).then(res => res.data)
   consola.info(`seeding ${count - allImportedRows.length} remaining ${lc} from total ${count}`)
   const seedRow = await generateSeedRowFn()
@@ -163,4 +166,3 @@ const seed = async function () {
 }
 
 seed()
-// generateSeedRowFn().then(seedRow => seedRow(17))
