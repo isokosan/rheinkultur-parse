@@ -1,4 +1,4 @@
-const { capitalize, sum } = require('lodash')
+const { capitalize, sum, intersection } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const TaskList = Parse.Object.extend('TaskList')
@@ -35,8 +35,9 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.set('cubeCount', cubeIds.length)
   taskList.set('gp', await getCenterOfCubes(cubeIds))
 
-  taskList.get('adminApprovedCubeIds') && taskList.set('adminApprovedCubeIds', [...new Set(taskList.get('adminApprovedCubeIds'))])
-  taskList.get('scoutAddedCubeIds') && taskList.set('scoutAddedCubeIds', [...new Set(taskList.get('scoutAddedCubeIds'))])
+  for (const cubeIdField of ['adminApprovedCubeIds', 'scoutAddedCubeIds']) {
+    taskList.get(cubeIdField) && taskList.set(cubeIdField, intersection([...new Set(taskList.get(cubeIdField))], cubeIds))
+  }
 
   const taskType = taskList.get('type')
 
@@ -369,7 +370,7 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
 Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: taskListId, cubeId, approved }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   const cube = await $getOrFail('Cube', cubeId)
-  if (!cube.get('vAt')) {
+  if (taskList.get('type') === 'scout' && !cube.get('vAt')) {
     throw new Error('Only verified cubes can be approved')
   }
   let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
@@ -380,7 +381,10 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
   taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
   const audit = { user, fn: 'scout-submission-preapprove', data: { cubeId, approved } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
-  return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
+  if (taskList.get('type') === 'scout') {
+    return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
+  }
+  return approved ? 'Marked as complete' : 'Cube unmarked as complete'
 }, $internOrAdmin)
 
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
@@ -394,13 +398,10 @@ Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) =>
 // check if location has tasks remaining
 Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status') !== 3) {
-    throw new Error('Only in_progress Abfahrtsliste can be completed.')
-  }
   taskList.set({ status: 4 })
   const audit = { user, fn: 'task-list-complete' }
   return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
-}, $scoutManagerOrAdmin)
+}, $internOrAdmin)
 
 // async function massUpdateManager() {
 //   const query = $query('TaskList')

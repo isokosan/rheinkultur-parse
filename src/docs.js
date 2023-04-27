@@ -231,7 +231,7 @@ const generateContractExtend = async (contract) => {
   return data.documentId
 }
 
-// TODO: Add a check to not remove fileIds saved in contracts BUT! we have to check production server
+// TOLATER: Add a check to not remove fileIds saved in contracts BUT! we have to check production server
 // const cleanup = async () => {
 //   let i = 0
 //   while(true) {

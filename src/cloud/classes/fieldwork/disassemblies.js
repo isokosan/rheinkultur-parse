@@ -1,3 +1,5 @@
+const { difference } = require('lodash')
+
 async function upsertTaskList (attrs) {
   // first check if a departure list with the same
   // uniqueTogether = { type, booking, contract, ort, state, date }
@@ -17,16 +19,21 @@ async function upsertTaskList (attrs) {
     .equalTo('contract', attrs.contract)
     .containedIn('cubeIds', attrs.cubeIds)
   exists && otherLists.notEqualTo('objectId', exists.id)
-
-  // TODO: abbau check
-  // await otherLists.each(async list => removeCubesFromList(list, cubeIds), { useMasterKey: true })
+  await otherLists.each(async (list) => {
+    // TODO: abbau check
+    const cubeIds = difference(list.get('cubeIds'), attrs.cubeIds)
+    const cubeChanges = $cubeChanges(list, cubeIds)
+    if (cubeChanges) {
+      const audit = { fn: 'task-list-update', data: { cubeChanges } }
+      await list.set({ cubeIds }).save(null, { useMasterKey: true, context: { audit } })
+    }
+  }, { useMasterKey: true })
 
   if (exists) {
     const cubeChanges = $cubeChanges(exists, attrs.cubeIds)
     if (!cubeChanges) { return exists }
     const audit = { fn: 'task-list-update', data: { cubeChanges } }
-    exists.set('cubeIds', attrs.cubeIds)
-    return exists.save(null, { useMasterKey: true, context: { audit } })
+    return exists.set('cubeIds', attrs.cubeIds).save(null, { useMasterKey: true, context: { audit } })
   }
   const TaskList = Parse.Object.extend('TaskList')
   const taskList = new TaskList(attrs)
@@ -35,25 +42,33 @@ async function upsertTaskList (attrs) {
 }
 
 async function processOrder (className, objectId) {
-  const periodStart = moment(await $today()).startOf('month').subtract(1, 'month').format('YYYY-MM-DD')
-  const periodEnd = moment(await $today()).endOf('month').add(1, 'month').format('YYYY-MM-DD')
+  const periodStart = moment(await $today()).startOf('month').subtract(1, 'week').format('YYYY-MM-DD')
+  const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
   const order = await $getOrFail(className, objectId)
+
+  // abort if disassembly will not be done by RMV, or if done outside of WaWi
   if (!order.get('disassembly')) { return }
+  if (order.get('markedDisassembled') === true) { return }
+
+  const { cubeIds, markedDisassembled, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
+
   // get ending at dates of all cubes
-  const { cubeIds, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
   const cubeEndDates = {}
   for (const cubeId of cubeIds) {
+    if (markedDisassembled?.[cubeId]) {
+      continue
+    }
     const earlyCanceledAt = earlyCancellations?.[cubeId]
     if (earlyCanceledAt === true) {
       continue
+    }
+    if (!autoExtendsAt || canceledAt) {
+      cubeEndDates[cubeId] = endsAt
     }
     if (earlyCanceledAt) {
       cubeEndDates[cubeId] = earlyCanceledAt
     }
     // TODO: Add later ending cubes
-    if (!autoExtendsAt || canceledAt) {
-      cubeEndDates[cubeId] = endsAt
-    }
   }
 
   const keys = {}
@@ -84,8 +99,8 @@ async function processOrder (className, objectId) {
   for (const uniqueKey in keys) {
     const [ort, stateId, date] = uniqueKey.split('_')
     const cubeIds = keys[uniqueKey]
+    consola.info(uniqueKey, cubeIds.length)
     const state = $pointer('State', stateId)
-    // TODO: check if exists remove or syncronize
     await upsertTaskList({
       type: 'disassembly',
       ort,
@@ -114,6 +129,18 @@ Parse.Cloud.define('disassembly-order-update', async ({
   bc.set({ disassembly })
   const audit = { user, fn: className.toLowerCase() + '-update', data: { changes } }
   return bc.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
+Parse.Cloud.define('disassembly-mark-done', async ({
+  params: {
+    className,
+    id,
+    markedDisassembled
+  }, user
+}) => {
+  const bc = await $query(className).get(id, { useMasterKey: true })
+  bc.set({ markedDisassembled })
+  return bc.save(null, { useMasterKey: true })
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-tasks-regenerate', async ({

@@ -117,6 +117,6 @@ module.exports.TASK_LIST_STATUSES = {
   1: 'Ernannt (Nicht beauftragt)',
   2: 'Beauftragt',
   3: 'In Bearbeitung',
-  4: 'Fertiggestellt',
+  4: 'Erledigt',
   5: 'Archiviert'
 }

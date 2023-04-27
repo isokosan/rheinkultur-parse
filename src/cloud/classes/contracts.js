@@ -765,7 +765,6 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
 
   await validateContractFinalize(contract, skipCubeValidations)
 
-  // generate invoices (TODO: only if it was already not finalized)
   const Invoice = Parse.Object.extend('Invoice')
   await contract.get('company').fetchWithInclude('company', { useMasterKey: true })
   for (const item of await getInvoicesPreview(contract)) {
