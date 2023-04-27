@@ -326,14 +326,13 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
 
 Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id)
-  if (!cube.get('vAt')) {
-    throw new Error('CityCube ist nicht verifiziert')
-  }
+  if (!cube.get('vAt')) { throw new Error('CityCube ist nicht verifiziert.') }
   // do not allow unverifying if the cube was in a past production with assembly, or contract etc (temporary)
-  const contracts = await $query('Contract').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).find({ useMasterKey: true })
-  const bookings = await $query('Booking').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).find({ useMasterKey: true })
-  if (contracts.length || bookings.length) {
-    throw new Error('CityCubes that are in finalized contracts/bookings cannot be unverified. Please contact an administrator.')
+  const contracts = await $query('Contract').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).include('production').find({ useMasterKey: true })
+  const bookings = await $query('Booking').equalTo('cubeIds', cube.id).greaterThanOrEqualTo('status', 3).include('production').find({ useMasterKey: true })
+  const orderNosWithProduction = [...contracts, ...bookings].filter(bc => bc.get('production')).map(bc => bc.get('no'))
+  if (orderNosWithProduction.length) {
+    throw new Error('CityCubes that are in finalized contracts/bookings which have production cannot be unverified. Please contact an administrator.')
   }
   cube.set('vAt', null)
   const audit = { user, fn: 'cube-undo-verify' }
