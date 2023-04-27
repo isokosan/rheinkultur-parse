@@ -1,3 +1,10 @@
+## [1.24.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.0...1.24.1) (2023-04-27)
+
+
+### Bug Fixes
+
+* enable undo-verify if order has no production ([0c8b778](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0c8b778be6a903391b387fa1dbebc1211cff99ff))
+
 # [1.24.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.23.0...1.24.0) (2023-04-26)
 
 
