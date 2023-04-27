@@ -8,6 +8,9 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 11
   },
+  plugins: [
+    'rk-lint'
+  ],
   globals: {
     Parse: true,
     consola: true,
@@ -46,6 +49,7 @@ module.exports = {
     semi: ['error', 'never'],
     'eol-last': ['error', 'always'],
     'comma-dangle': ['error', 'never'],
-    indent: [2, 2]
+    indent: [2, 2],
+    'rk-lint/cube-no-save': 'warn'
   }
 }
