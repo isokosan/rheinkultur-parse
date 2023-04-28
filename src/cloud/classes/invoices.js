@@ -21,7 +21,7 @@ const Invoice = Parse.Object.extend('Invoice', {
       await companyPerson.fetch({ useMasterKey: true })
     }
     const { prefix, firstName, lastName } = companyPerson.attributes
-    return [prefix, firstName, lastName].filter(x => x).join(' ')
+    return [prefix, firstName, lastName].filter(Boolean).join(' ')
   },
   async getIntroduction () {
     const lines = []

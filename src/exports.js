@@ -170,7 +170,7 @@ function getCubeOrderDates (cube, order) {
     end: startOfUtcDate(earlyCanceledAt || endsAt),
     duration: canceledEarly
       ? durationString(earlyCanceledAt, startsAt)
-      : [initialDuration, extendedDuration].filter(x => x).join('+'),
+      : [initialDuration, extendedDuration].filter(Boolean).join('+'),
     canceledEarly
   }
 }
@@ -216,7 +216,7 @@ async function getContractRows (contract, { housingTypes, states }) {
       duration,
       autoExtends,
       monthly,
-      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(x => x).join(': '),
+      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(Boolean).join(': '),
       canceledEarly
     })
   }
@@ -348,7 +348,7 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
       plz,
       ort,
       stateName: states[state.id]?.name || '',
-      pp: [no, name].filter(x => x).join(' - '),
+      pp: [no, name].filter(Boolean).join(' - '),
       templates: process.env.WEBAPP_URL + '/pp/' + ppId + '?ht=' + ht.id
     })
   }

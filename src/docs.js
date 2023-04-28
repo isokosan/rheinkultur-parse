@@ -51,7 +51,7 @@ const generateContract = async (contract) => {
     let contactPersonName = ''
     if (companyPerson) {
       const { prefix, firstName, lastName } = companyPerson.attributes
-      contactPersonName = [prefix, firstName, lastName].filter(x => x).join(' ')
+      contactPersonName = [prefix, firstName, lastName].filter(Boolean).join(' ')
     }
 
     const companyAddress = [
@@ -60,7 +60,7 @@ const generateContract = async (contract) => {
       contract.get('address').get('supplement'),
       contract.get('address').get('street'),
       `${contract.get('address').get('zip')} ${contract.get('address').get('city')}` + await getCountryText(contract.get('address').get('countryCode'))
-    ].filter(x => x).join('\n')
+    ].filter(Boolean).join('\n')
 
     const invoiceAddress = !contract.get('invoiceAddress')
       ? '(X) entspricht der Adresse Mieter'
@@ -69,7 +69,7 @@ const generateContract = async (contract) => {
         contract.get('invoiceAddress').get('supplement'),
         contract.get('invoiceAddress').get('street'),
         `${contract.get('invoiceAddress').get('zip')} ${contract.get('invoiceAddress').get('city')}` + await getCountryText(contract.get('invoiceAddress').get('countryCode'))
-      ].filter(x => x).join('\n')
+      ].filter(Boolean).join('\n')
 
     let autoExtends = 'verlängert sich nicht automatisch'
     let autoExtendDetails = '.'
@@ -211,7 +211,7 @@ const generateContractExtend = async (contract) => {
       contract.get('address').get('supplement'),
       contract.get('address').get('street'),
       `${contract.get('address').get('zip')} ${contract.get('address').get('city')}` + await getCountryText(contract.get('address').get('countryCode'))
-    ].filter(x => x).join('\n')
+    ].filter(Boolean).join('\n')
 
     return replacementsToRequests({
       companyAddress,

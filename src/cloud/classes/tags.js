@@ -63,7 +63,7 @@ Parse.Cloud.define('item-tags', async ({ params: { itemId, itemClass, tagIds }, 
   if (!Object.keys(data).length) {
     throw new Error('Keine Änderungen')
   }
-  const tags = tagIds.filter(x => x).map(id => $pointer('Tag', id))
+  const tags = tagIds.filter(Boolean).map(id => $pointer('Tag', id))
   tags.length ? item.set({ tags }) : item.unset('tags')
   const audit = { user, fn: 'update-tags', data }
   await item.save(null, { useMasterKey: true, context: { audit } })

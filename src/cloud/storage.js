@@ -220,7 +220,7 @@ Parse.Cloud.define('item-docs', async ({ params: { itemId, itemClass, docIds }, 
   }
 
   docIds.length
-    ? item.set({ docs: docIds.filter(x => x).map(id => $pointer('FileObject', id)) })
+    ? item.set({ docs: docIds.filter(Boolean).map(id => $pointer('FileObject', id)) })
     : item.unset('docs')
   const audit = { user, fn: 'update-docs', data }
   await item.save(null, { useMasterKey: true, context: { audit } })

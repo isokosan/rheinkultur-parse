@@ -103,7 +103,7 @@ async function generateSeedRowFn () {
       }
     }
 
-    const MBfD = importData.ausbautreiber1?.startsWith('MBfD') ? true : undefined
+    const MBfD = importData.ausbautreiber?.startsWith('MBfD') ? true : undefined
 
     const existingCube = await $query('Cube').equalTo('objectId', objectId).first({ useMasterKey: true })
     if (!existingCube) {
