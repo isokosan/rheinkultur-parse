@@ -15,7 +15,6 @@ const {
   prepareDicts,
   getCubeId,
   skipCubeImport,
-  getLastImportedRow,
   getAllImportedRows,
   seedCube
 } = require('./../src/seed/cubes/utils')
@@ -31,13 +30,13 @@ async function generateSeedRowFn () {
     if (!objectId) { return false }
     // if cube already updated, skip
     if (await $query('Cube').equalTo('objectId', objectId).equalTo('importData.date', date).count({ useMasterKey: true })) {
-      consola.info('Cube already updated', objectId)
+      // consola.info('Cube already updated', objectId)
       return false
     }
 
     // if skipped import already exists, skip
     if (await $query('SkippedCubeImport').equalTo('cubeId', objectId).equalTo('date', date).count({ useMasterKey: true })) {
-      consola.info('Import already skipped', objectId)
+      // consola.info('Import already skipped', objectId)
       return false
     }
 
@@ -152,17 +151,60 @@ async function generateSeedRowFn () {
   }
 }
 
-const seed = async function () {
-  const allImportedRows = await getAllImportedRows(lc, date)
-  const { count } = await axios({ url: 'http://localhost:5001/count' }).then(res => res.data)
-  consola.info(`seeding ${count - allImportedRows.length} remaining ${lc} from total ${count}`)
-  const seedRow = await generateSeedRowFn()
-  for (let i = await getLastImportedRow(lc, date); i < count; i++) {
+const operations = {}
+const last10Updates = new Array(10).fill('-')
+const seed = async function (seedRow, from, to) {
+  const key = [from, to].join('-')
+  const count = to - from
+  const allImportedRows = await getAllImportedRows(lc, date, from, to)
+  for (let i = from; i < to; i++) {
     if (allImportedRows.includes(i)) { continue }
     const objectId = await seedRow(i)
-    consola.success(i, `${objectId || 'Skipped'} import`)
+    const updateMessage = `${i}: ${objectId || 'Skipped'}`
+    last10Updates.unshift(updateMessage)
+    last10Updates.length > 10 && last10Updates.pop()
+    operations[key] = `${i} (${parseInt(100 * (i - from) / count)}%)`
   }
-  consola.success('Seeded cubes')
+  operations[key] = true
 }
 
-seed()
+async function start () {
+  const seedRow = await generateSeedRowFn()
+  const { count } = await axios({ url: 'http://localhost:5001/count' }).then(res => res.data)
+  let from = 0
+  let to = 25000
+  while (from < count) {
+    operations[`${from}-${to}`] = null
+    seed(seedRow, from, to)
+    from = to
+    to += 25000
+    to > count && (to = count)
+  }
+  import('log-update').then(({ default: logUpdate }) => {
+    const interval = setInterval(() => {
+      const runningOperations = Object.keys(operations)
+        .filter(key => operations[key] && operations[key] !== true)
+        .map(key => `${key}: ${operations[key]}`)
+      if (Object.keys(operations).every(key => operations[key] === true)) {
+        consola.success('DONE')
+        clearInterval(interval)
+        return
+      }
+      logUpdate(`
+LAST 10 UPDATES:
+${last10Updates.join('\n')}
+----
+RUNNING OPERATIONS:
+${runningOperations.join('\n')}
+`)
+    }, 1000)
+  })
+}
+start()
+
+$query('Cube')
+  .equalTo('lc', lc)
+  .notEqualTo('importData.date', date)
+  // .count({ useMasterKey: true })
+  .distinct('objectId', { useMasterKey: true })
+  .then(consola.warn)

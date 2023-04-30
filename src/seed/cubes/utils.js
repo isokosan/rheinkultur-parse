@@ -59,36 +59,61 @@ async function skipCubeImport (fields) {
   return false
 }
 
-const getLastImportedRow = async (lc, date) => {
+const getLastImportedRow = async (lc, date, fromIndex, toIndex) => {
   if (!lc) {
     throw new Error('getLastImportedRow: lc is required')
   }
-  const lastCube = await $query('Cube')
+  const lastCubeQuery = $query('Cube')
     .equalTo('lc', lc)
     .equalTo('importData.date', date || null)
     .descending('importData.i')
+  fromIndex && lastCubeQuery.greaterThanOrEqualTo('importData.i', fromIndex)
+  toIndex && lastCubeQuery.lessThan('importData.i', toIndex)
+  const lastCubeIndex = await lastCubeQuery
     .first({ useMasterKey: true })
-    .then(c => c?.get('importData')?.i || 0)
-  const lastError = await $query('SkippedCubeImport')
+    .then(c => c?.get('importData')?.i || fromIndex)
+  const lastErrorQuery = $query('SkippedCubeImport')
     .equalTo('lc', lc)
     .equalTo('date', date || null)
     .descending('i')
+  fromIndex && lastErrorQuery.greaterThanOrEqualTo('i', fromIndex)
+  toIndex && lastErrorQuery.lessThan('i', toIndex)
+  const lastErrorIndex = await lastErrorQuery
     .first({ useMasterKey: true })
-    .then(iE => iE?.get('i') || 0)
-  return Math.max(lastCube, lastError)
+    .then(iE => iE?.get('i') || fromIndex)
+  return Math.max(lastCubeIndex, lastErrorIndex)
 }
-const getAllImportedRows = async (lc, date) => {
+const getAllImportedRows = async (lc, date, fromIndex, toIndex) => {
   if (!lc) {
     throw new Error('getAllImportedRows: lc and date are required')
   }
-  const cubes = await $query('Cube')
+  const cubesQuery = $query('Cube')
     .equalTo('lc', lc)
     .equalTo('importData.date', date || null)
-    .distinct('importData.i', { useMasterKey: true })
-  const errors = await $query('SkippedCubeImport')
+  fromIndex && cubesQuery.greaterThanOrEqualTo('importData.i', fromIndex)
+  toIndex && cubesQuery.lessThan('importData.i', toIndex)
+  const cubes = await cubesQuery.distinct('importData.i', { useMasterKey: true })
+  const errorsQuery = $query('SkippedCubeImport')
     .equalTo('lc', lc)
     .equalTo('date', date || null)
-    .distinct('i', { useMasterKey: true })
+  fromIndex && errorsQuery.greaterThanOrEqualTo('i', fromIndex)
+  toIndex && errorsQuery.lessThan('i', toIndex)
+  const errors = await errorsQuery.distinct('i', { useMasterKey: true })
+  return [...cubes, ...errors]
+}
+
+const getAllImportedObjectIds = async (lc, date) => {
+  if (!lc) {
+    throw new Error('getAllImportedObjectIds: lc and date are required')
+  }
+  const cubesQuery = $query('Cube')
+    .equalTo('lc', lc)
+    .equalTo('importData.date', date || null)
+  const cubes = await cubesQuery.distinct('objectId', { useMasterKey: true })
+  const errorsQuery = $query('SkippedCubeImport')
+    .equalTo('lc', lc)
+    .equalTo('date', date || null)
+  const errors = await errorsQuery.distinct('cubeId', { useMasterKey: true })
   return [...cubes, ...errors]
 }
 
@@ -112,5 +137,6 @@ module.exports = {
   skipCubeImport,
   getLastImportedRow,
   getAllImportedRows,
+  getAllImportedObjectIds,
   seedCube
 }
