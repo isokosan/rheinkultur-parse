@@ -1,3 +1,10 @@
+## [1.24.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.2...1.24.3) (2023-05-01)
+
+
+### Bug Fixes
+
+* remove crons ([2008a58](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2008a58f10ff563c3fc69325dfebf2b1db55cafa))
+
 ## [1.24.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.1...1.24.2) (2023-04-27)
 
 
