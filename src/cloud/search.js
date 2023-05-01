@@ -87,6 +87,7 @@ const INDEXES = {
         TTMR: cube.get('TTMR'),
 
         klsId: cube.get('importData')?.klsId,
+        stovDate: cube.get('importData')?.date,
         order: cube.get('order'),
         pair: cube.get('pair'),
 
@@ -408,6 +409,7 @@ Parse.Cloud.define('search', async ({
   s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
   s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })
   s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
+  s.includes('nStov') && bool.must_not.push({ match: { stovDate: '2023-04-21' } })
 
   // address constraints
   if (pk) {

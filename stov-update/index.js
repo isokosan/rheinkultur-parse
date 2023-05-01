@@ -1,8 +1,8 @@
 require('dotenv').config()
 const axios = require('axios')
 global.Parse = require('parse/node')
-// Parse.serverURL = process.env.PRODUCTION_SERVER_URL
-Parse.serverURL = process.env.PUBLIC_SERVER_URL
+Parse.serverURL = process.env.PRODUCTION_SERVER_URL
+// Parse.serverURL = process.env.PUBLIC_SERVER_URL
 console.log(Parse.serverURL)
 Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MASTER_KEY)
 require('./../src/globals')
@@ -15,12 +15,23 @@ const {
   prepareDicts,
   getCubeId,
   skipCubeImport,
-  getAllImportedRows,
-  seedCube
+  getAllImportedRows
 } = require('./../src/seed/cubes/utils')
 
 const lc = 'TLK'
 const date = '2023-04-21'
+
+const seedCube = async (body, seeding = true) => axios({
+  method: 'POST',
+  url: `${process.env.PRODUCTION_SERVER_URL}/classes/Cube`,
+  headers: {
+    'Content-Type': 'application/json;charset=utf-8',
+    'X-Parse-Application-Id': process.env.APP_ID,
+    'X-Parse-Master-Key': process.env.MASTER_KEY,
+    'X-Parse-Cloud-Context': JSON.stringify({ seeding })
+  },
+  data: body
+})
 
 async function generateSeedRowFn () {
   const { plzs, states, hts } = await prepareDicts()
@@ -126,7 +137,6 @@ async function generateSeedRowFn () {
           consola.warn(`${objectId} exists`)
           return false
         }
-        consola.error(error.text)
         const e = error.data?.message || error.message
         // There is no error message, then what is the error ???
         if (!e) { throw new Error(error) }
@@ -202,9 +212,33 @@ ${runningOperations.join('\n')}
 }
 start()
 
-$query('Cube')
-  .equalTo('lc', lc)
-  .notEqualTo('importData.date', date)
-  // .count({ useMasterKey: true })
-  .distinct('objectId', { useMasterKey: true })
-  .then(consola.warn)
+// async function checkNotUpdated() {
+//   let found = 0
+//   let notFound = 0
+//   const skippedCubeIds = await $query('SkippedCubeImport').distinct('cubeId', { useMasterKey: true })
+//   const nonUpdatedCubes = await $query('Cube')
+//     .equalTo('lc', lc)
+//     .notContainedIn('objectId', skippedCubeIds)
+//     .notEqualTo('importData.date', date)
+//     .distinct('objectId', { useMasterKey: true })
+//   for (objectId of nonUpdatedCubes) {
+//     if (!(/^[A-Za-z0-9ÄÖÜäöüß*_/()-]+$/).test(objectId)) {
+//       consola.error('Should delete', objectId)
+//       continue
+//     }
+//     const row = await axios({ url: 'http://localhost:5001/objectId/' + encodeURIComponent(objectId) })
+//       .then(res => res.data)
+//       .catch(error => error.response.data)
+//     if (!row.error) {
+//       found++
+//       consola.warn(objectId, row)
+//       continue
+//     }
+//     notFound++
+//   }
+//   consola.warn('found', found)
+//   consola.warn('notFound', notFound)
+//   return
+// }
+
+// checkNotUpdated()
