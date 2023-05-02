@@ -33,7 +33,9 @@ app.get('/index/:index', async (req, res) => {
     row.breite = lat
     row.laenge = lon
   }
-  row.bundesland = row.bundesland.replace(/Ã¼/g, 'ü')
+  if (row.bundesland) {
+    row.bundesland = row.bundesland.replace(/Ã¼/g, 'ü')
+  }
   return res.send(row)
 })
 

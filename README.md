@@ -26,6 +26,7 @@ V21-0050 => https://wawi.rheinkultur-medien.de/contracts/mMt3Jjkd0y
 Test docker build:
 docker buildx build --platform linux/amd64 -f Dockerfile . -t mammuthosting/rheinkultur-wawi:latest
 
+Example with photos with same id
 96221A600
 96221R600
 96221V1021
