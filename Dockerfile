@@ -9,6 +9,9 @@ COPY package.json ./
 COPY yarn.lock ./
 COPY CHANGELOG.md ./
 
+# copy local npm package
+COPY rk-lint ./rk-lint
+
 FROM base AS dependencies
 USER node
 RUN yarn install --frozen-lockfile --production --non-interactive --no-progress --prefer-offline

@@ -574,9 +574,25 @@ const purgeIndexes = async function () {
 
 Parse.Cloud.define('purge-search-indexes', purgeIndexes, { requireMaster: true })
 
+async function createOrUpdateIndex (index) {
+  const { config } = INDEXES[index]
+  // NOTE: If you run into resource_exists issues, delete the docker containers etc with "docker system prune"
+  if (await client.indices.exists({ index })) {
+    // close, update and then open the index if exists
+    await client.indices.close({ index })
+    config.settings && await client.indices.putSettings({ index, body: config.settings })
+    config.mappings && await client.indices.putMapping({ index, body: config.mappings })
+    await client.indices.open({ index })
+    return client.indices.refresh({ index })
+  }
+  // create with new settings if does not exist
+  return client.indices.create({ index, body: INDEXES[index].config })
+}
+
 module.exports = {
   client,
   INDEXES,
+  createOrUpdateIndex,
   purgeIndexes,
   indexCube,
   unindexCube,

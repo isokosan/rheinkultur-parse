@@ -1,10 +1,8 @@
-const { client, INDEXES } = require('@/cloud/search')
+const { client, INDEXES, createOrUpdateIndex } = require('@/cloud/search')
 
-// If you run into resource_exists issues, delete the docker containers etc with "docker system prune"
 module.exports = async function (job) {
   const index = 'rheinkultur-fieldwork'
-  await client.indices.exists({ index }) && await client.indices.delete({ index })
-  await client.indices.create({ index, body: INDEXES[index].config })
+  await createOrUpdateIndex(index)
   const query = INDEXES[index].parseQuery
   const total = await query.count({ useMasterKey: true })
   let i = 0
@@ -22,5 +20,5 @@ module.exports = async function (job) {
     job && job.progress(progress)
   }
   const { count } = await client.count({ index })
-  return `${index} created and filled with ${count} items`
+  return `${count} items saved in ${index}`
 }
