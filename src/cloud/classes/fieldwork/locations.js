@@ -1,5 +1,7 @@
 Parse.Cloud.define('tasks-locations', async ({ user }) => {
-  const taskLists = await $query('TaskList').find({ sessionToken: user.get('sessionToken') })
+  const taskLists = await $query('TaskList')
+    .equalTo('scouts', user)
+    .find({ sessionToken: user.get('sessionToken') })
   const locations = {}
   for (const taskList of taskLists) {
     const { ort, state, gp, type, counts } = taskList.attributes

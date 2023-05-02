@@ -172,6 +172,7 @@ Parse.Cloud.define(
   { validateMasterKey: true }
 )
 
+// runs only on fieldwork list view
 Parse.Cloud.define('search-fieldwork', async ({
   params: {
     // pk, // placeKey (stateId:ort)
@@ -188,6 +189,10 @@ Parse.Cloud.define('search-fieldwork', async ({
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']
+  if (user && user.get('accType') === 'partner') {
+    managerId = user.id
+    bool.must.push({ range: { status: { gt: 0 } } })
+  }
 
   type && bool.filter.push({ term: { 'type.keyword': type } })
   stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })

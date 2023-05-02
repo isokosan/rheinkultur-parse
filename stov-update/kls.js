@@ -1,8 +1,8 @@
 require('dotenv').config()
 const axios = require('axios')
 global.Parse = require('parse/node')
-// Parse.serverURL = process.env.PRODUCTION_SERVER_URL
-Parse.serverURL = process.env.PUBLIC_SERVER_URL
+Parse.serverURL = process.env.PRODUCTION_SERVER_URL
+// Parse.serverURL = process.env.PUBLIC_SERVER_URL
 console.log(Parse.serverURL)
 Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MASTER_KEY)
 require('./../src/globals')
@@ -13,7 +13,7 @@ const {
 } = require('./../src/seed/cubes/utils')
 
 const lc = 'TLK'
-const date = '2023-05-02'
+const date = '2023-05-04'
 
 async function generateSeedRowFn () {
   return async function seedRow (i) {
@@ -22,18 +22,26 @@ async function generateSeedRowFn () {
     const klsId = cleanVal(row.KLS_ID)
     const str = cleanVal(row.Strasse)
     const hsnr = cleanVal(row.HS_NR)
+    let gp
+    try {
+      const [latitude, longitude] = [parseFloat(row.breite), parseFloat(row.laenge)]
+      gp = new Parse.GeoPoint({ latitude, longitude })
+    } catch (error) {
+      console.error('Error parsing geo point')
+    }
     let cubeCount = 0
     await Parse.Query.or(
       $query('Cube').equalTo('importData.klsId', klsId),
       $query('Cube').equalTo('objectId', 'TLK-' + kvzId)
     )
-      .equalTo('importData.date', '2023-04-21')
-      .equalTo('vAt', null)
+      .notEqualTo('importData.date', date)
       .each(async (cube) => {
         const importData = cube.get('importData')
         importData.i = i
-        importData.date = '2023-05-02'
-        cube.set({ importData, str, hsnr })
+        importData.date = date
+        cube.set('importData', importData)
+        gp && cube.set('gp', gp)
+        !cube.get('vAt') && cube.set({ str, hsnr })
         cube.id = encodeURIComponent(cube.id)
         // eslint-disable-next-line rk-lint/cube-no-save
         await cube.save(null, { useMasterKey: true })

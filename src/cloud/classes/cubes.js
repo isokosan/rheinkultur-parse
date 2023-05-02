@@ -17,7 +17,7 @@ const Cube = Parse.Object.extend('Cube', {
   }
 })
 
-Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding } }) => {
+Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating } }) => {
   if (!(/^[A-Za-z0-9ÄÖÜäöüß*_/()-]+$/.test(cube.id))) {
     throw new Error('CityCube ID sollte nicht die folgende Zeichen behalten: ".", "$", "%", "?", "+", " ", "Ãœ"')
   }
@@ -26,7 +26,6 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
   if (!cube.get('state')) { throw new Error(`Cube ${cube.id} missing state`) }
   if (!cube.get('ort')) { throw new Error(`Cube ${cube.id} missing ort`) }
 
-  if (seeding === true) { return }
   // trim address
   for (const key of ['str', 'hsnr', 'plz', 'ort']) {
     cube.get(key) && cube.set(key, cube.get(key).trim())
@@ -43,6 +42,8 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, seeding }
     const placeKey = [cube.get('state')?.id, cube.get('ort')].join(':')
     $PDGA[placeKey] ? cube.set('PDGA', true) : cube.unset('PDGA')
   }
+
+  if (updating === true) { return }
 
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
@@ -97,10 +98,10 @@ async function checkARPair (cube) {
   await setPair(cube, pair)
 }
 
-Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit } }) => {
+Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit, updating } }) => {
   audit && $audit(cube, audit)
   // check cube pairs, if the save was not initiated by pair function
-  if (!audit || !['cube-set-pair', 'cube-unset-pair'].includes(audit.fn)) {
+  if (updating || !audit || !['cube-set-pair', 'cube-unset-pair'].includes(audit.fn)) {
     checkARPair(cube)
   }
 })
