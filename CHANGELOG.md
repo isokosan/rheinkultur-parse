@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.25.1...1.26.0) (2023-05-02)
+
+
+### Features
+
+* context updating in cubes to speed up updates ([27f3835](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/27f3835e49fefb46002e4f44c880bb623ec192f9))
+
 ## [1.25.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.25.0...1.25.1) (2023-05-02)
 
 
