@@ -1,3 +1,10 @@
+## [1.24.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.3...1.24.4) (2023-05-02)
+
+
+### Bug Fixes
+
+* add rk-lint to dockerfile copy ([548a0ea](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/548a0ea34c3b0947b7ea0aac4f348443cf22fc06))
+
 ## [1.24.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.2...1.24.3) (2023-05-01)
 
 
