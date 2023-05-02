@@ -85,6 +85,7 @@ const initApp = async () => {
       classNames: [
         'Audit',
         'Comment',
+        'TaskList',
         'Notification'
       ],
       pubSubAdapter
