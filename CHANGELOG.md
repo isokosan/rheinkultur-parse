@@ -1,3 +1,10 @@
+## [1.26.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.26.0...1.26.1) (2023-05-02)
+
+
+### Bug Fixes
+
+* updating after save ([bcb9ef9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bcb9ef9ca60f31198096c3fcf52839a0e867f44e))
+
 # [1.26.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.25.1...1.26.0) (2023-05-02)
 
 
