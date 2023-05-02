@@ -16,9 +16,16 @@ mongorestore --host localhost:27017 --gzip --db rheinkultur-wawi --archive=rhein
 
 then go to development.js and uncomment sync
 
+// scout app example:
+TLK-33324A10 TLK-33324A70
+
+
 // contracts to check
 V21-0050 => https://wawi.rheinkultur-medien.de/contracts/mMt3Jjkd0y
 
-
 Test docker build:
 docker buildx build --platform linux/amd64 -f Dockerfile . -t mammuthosting/rheinkultur-wawi:latest
+
+96221A600
+96221R600
+96221V1021
