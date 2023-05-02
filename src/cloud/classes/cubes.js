@@ -255,7 +255,6 @@ Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, use
     ? cube.set({ ht, media: ht.get('media') })
     : cube.unset('ht')
   const audit = { user, fn: 'cube-update', data: { changes } }
-  cube.id = encodeURI(cube.id)
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
