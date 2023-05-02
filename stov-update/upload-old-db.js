@@ -59,7 +59,7 @@ async function updateCube (id) {
     !cube.get('vAt') && cube.set({ ht, hti, str, hsnr, ort, plz, state })
     cube.id = encodeURIComponent(cube.id)
     // eslint-disable-next-line rk-lint/cube-no-save
-    await cube.save(null, { useMasterKey: true })
+    await cube.save(null, { useMasterKey: true, context: { updating: true } })
     return id
   } catch (error) {
 

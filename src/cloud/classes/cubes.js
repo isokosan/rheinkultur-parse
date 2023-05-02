@@ -99,9 +99,10 @@ async function checkARPair (cube) {
 }
 
 Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit, updating } }) => {
+  if (updating === true) { return }
   audit && $audit(cube, audit)
   // check cube pairs, if the save was not initiated by pair function
-  if (updating || !audit || !['cube-set-pair', 'cube-unset-pair'].includes(audit.fn)) {
+  if (!audit || !['cube-set-pair', 'cube-unset-pair'].includes(audit.fn)) {
     checkARPair(cube)
   }
 })
