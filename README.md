@@ -18,3 +18,7 @@ then go to development.js and uncomment sync
 
 // contracts to check
 V21-0050 => https://wawi.rheinkultur-medien.de/contracts/mMt3Jjkd0y
+
+
+Test docker build:
+docker buildx build --platform linux/amd64 -f Dockerfile . -t mammuthosting/rheinkultur-wawi:latest

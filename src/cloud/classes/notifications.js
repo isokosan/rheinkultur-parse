@@ -5,6 +5,7 @@ const Notification = Parse.Object.extend('Notification')
 
 const NOTIFICATIONS = {
   'task-list-assigned': {
+    mail: false,
     message: ({ placeKey }) => `You have been assigned to scout ${placeKey.split(':')[1]}.`,
     route: ({ placeKey }) => ({ name: 'location', params: { placeKey } }),
     related: notification => $query(Notification)
@@ -14,6 +15,7 @@ const NOTIFICATIONS = {
       .first({ useMasterKey: true })
   },
   'task-submission-rejected': {
+    mail: false,
     message: ({ cubeId, rejectionReason }) => `Your submission for ${cubeId} was rejected. ${rejectionReason}`,
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
   }
@@ -22,6 +24,14 @@ const NOTIFICATIONS = {
 const resolveMessage = (notification) => NOTIFICATIONS[notification.get('identifier')].message(notification.get('data'))
 const resolveRoute = (notification) => NOTIFICATIONS[notification.get('identifier')].route(notification.get('data'))
 const resolveRelated = (notification) => NOTIFICATIONS[notification.get('identifier')].related?.(notification)
+const resolveShouldSendPush = (notification, user) => {
+  const { push } = NOTIFICATIONS[notification.get('identifier')]
+  return push !== false // && user.get('settings').notifications.push
+}
+const resolveShouldSendMail = (notification, user) => {
+  const { mail } = NOTIFICATIONS[notification.get('identifier')]
+  return mail !== false // && user.get('settings').notifications.email
+}
 
 Parse.Cloud.beforeSave(Notification, ({ object: notification }) => {
   if (!NOTIFICATIONS[notification.get('identifier')]) { throw new Error('Unrecognized notification identifier') }
@@ -82,8 +92,8 @@ const send = async (notification) => {
   const message = resolveMessage(notification)
   const url = `${process.env.WEBAPP_URL}/n/${notification.id}`
 
-  notification.set('push', await sendPush(user.id, message, url))
-  notification.set('mail', await sendMail({
+  resolveShouldSendPush(notification, user) && notification.set('push', await sendPush(user.id, message, url))
+  resolveShouldSendMail(notification, user) && notification.set('mail', await sendMail({
     to: user.get('email'),
     subject: message,
     template: 'notification',
