@@ -1,3 +1,10 @@
+## [1.25.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.25.0...1.25.1) (2023-05-02)
+
+
+### Bug Fixes
+
+* save with encode in housing types ([167758c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/167758cf14ccb0a4a2841bfd5dfda5c11ef2afd4))
+
 # [1.25.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.4...1.25.0) (2023-05-02)
 
 
