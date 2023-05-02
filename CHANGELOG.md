@@ -1,3 +1,15 @@
+# [1.25.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.4...1.25.0) (2023-05-02)
+
+
+### Bug Fixes
+
+* add should send mail/push resolvers to notifications ([4302414](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/43024147070e8b01c0f1e0f67fa34596189e8643))
+
+
+### Features
+
+* add TaskList to LiveQuery classes ([f8a67b3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f8a67b31db8704929461b1ba7d737c6f1782606c))
+
 ## [1.24.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.24.3...1.24.4) (2023-05-02)
 
 
