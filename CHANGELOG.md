@@ -1,3 +1,10 @@
+## [1.28.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.28.0...1.28.1) (2023-05-03)
+
+
+### Bug Fixes
+
+* count other kls photos instead of exists check ([15356c5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/15356c547d2a3ec25f546422dceede1302f21660))
+
 # [1.28.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.27.0...1.28.0) (2023-05-03)
 
 
