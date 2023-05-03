@@ -43,7 +43,7 @@ async function generateSeedRowFn () {
         gp && cube.set('gp', gp)
         !cube.get('vAt') && cube.set({ str, hsnr })
         cube.id = encodeURIComponent(cube.id)
-        // eslint-disable-next-line rk-lint/cube-no-save
+        // eslint-disable-next-line rk-lint/cube-must-encode
         await cube.save(null, { useMasterKey: true })
         cubeCount++
       }, { useMasterKey: true })

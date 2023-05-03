@@ -50,6 +50,6 @@ module.exports = {
     'eol-last': ['error', 'always'],
     'comma-dangle': ['error', 'never'],
     indent: [2, 2],
-    'rk-lint/cube-no-save': 'warn'
+    'rk-lint/cube-must-encode': 'warn'
   }
 }

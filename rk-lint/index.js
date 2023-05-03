@@ -1,5 +1,5 @@
 module.exports = {
   rules: {
-    'cube-no-save': require('./rules/cube-no-save')
+    'cube-must-encode': require('./rules/cube-must-encode')
   }
 }
