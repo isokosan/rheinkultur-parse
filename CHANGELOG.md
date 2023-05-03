@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.28.1...1.29.0) (2023-05-03)
+
+
+### Features
+
+* disassemblies monthly export ([619e45a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/619e45abb0e5b25b213ebbbb0ef1a98c195b3251))
+
 ## [1.28.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.28.0...1.28.1) (2023-05-03)
 
 
