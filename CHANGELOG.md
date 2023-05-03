@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.26.1...1.27.0) (2023-05-03)
+
+
+### Features
+
+* add temporary kls id to cube photos ([9cd26b2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9cd26b21aaaa0cd78458033535d59cfbc94ce3e4))
+
 ## [1.26.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.26.0...1.26.1) (2023-05-02)
 
 
