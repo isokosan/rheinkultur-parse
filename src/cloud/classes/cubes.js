@@ -392,9 +392,17 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
   return { message, p1: cube.get('p1'), p2: cube.get('p2') }
 }, { requireUser: true })
 
-Parse.Cloud.define('cube-photo-remove-kls-id', async ({ params: { photoId } }) => {
+Parse.Cloud.define('cube-photo-revert-original', async ({ params: { photoId } }) => {
   const photo = await $getOrFail('CubePhoto', photoId)
-  photo.unset('klsId')
+  const original = photo.get('original')
+  await photo.get('file')?.destroy({ useMasterKey: true }).catch(consola.error)
+  photo.unset('original').set('file', original)
+  return photo.save(null, { useMasterKey: true, context: { regenerateSize1000: true, regenerateThumb: true } })
+}, { requireUser: true })
+
+Parse.Cloud.define('cube-photo-remove-kls-id', async ({ params: { photoId }, user }) => {
+  const photo = await $getOrFail('CubePhoto', photoId)
+  photo.set('createdBy', user).unset('klsId')
   await photo.save(null, { useMasterKey: true })
   const cubeId = photo.get('cubeId')
   const otherKlsPhotos = await $query('CubePhoto').equalTo('cubeId', cubeId).notEqualTo('klsId', null).count({ useMasterKey: true })
