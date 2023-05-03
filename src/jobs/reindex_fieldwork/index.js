@@ -1,8 +1,10 @@
-const { client, INDEXES, createOrUpdateIndex } = require('@/cloud/search')
+const { client, INDEXES } = require('@/cloud/search')
 
 module.exports = async function (job) {
   const index = 'rheinkultur-fieldwork'
-  await createOrUpdateIndex(index)
+  // delete index
+  await client.indices.exists({ index }) && await client.indices.delete({ index })
+  await client.indices.create({ index, body: INDEXES[index].config })
   const query = INDEXES[index].parseQuery
   const total = await query.count({ useMasterKey: true })
   let i = 0

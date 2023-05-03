@@ -42,22 +42,22 @@ async function upsertTaskList (attrs) {
 }
 
 async function processOrder (className, objectId) {
-  const periodStart = moment(await $today()).startOf('month').subtract(1, 'week').format('YYYY-MM-DD')
-  const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
+  // Temporary start may 1
+  const periodStart = '2023-05-01'
+  const periodEnd = '2023-08-31'
+  // const periodStart = moment(await $today()).startOf('month').subtract(1, 'week').format('YYYY-MM-DD')
+  // const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
   const order = await $getOrFail(className, objectId)
 
   // abort if disassembly will not be done by RMV, or if done outside of WaWi
   if (!order.get('disassembly')) { return }
-  if (order.get('markedDisassembled') === true) { return }
+  // if (order.get('markedDisassembled') === true) { return }
 
-  const { cubeIds, markedDisassembled, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
+  const { cubeIds, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
 
   // get ending at dates of all cubes
   const cubeEndDates = {}
   for (const cubeId of cubeIds) {
-    if (markedDisassembled?.[cubeId]) {
-      continue
-    }
     const earlyCanceledAt = earlyCancellations?.[cubeId]
     if (earlyCanceledAt === true) {
       continue
@@ -129,18 +129,6 @@ Parse.Cloud.define('disassembly-order-update', async ({
   bc.set({ disassembly })
   const audit = { user, fn: className.toLowerCase() + '-update', data: { changes } }
   return bc.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
-
-Parse.Cloud.define('disassembly-mark-done', async ({
-  params: {
-    className,
-    id,
-    markedDisassembled
-  }, user
-}) => {
-  const bc = await $query(className).get(id, { useMasterKey: true })
-  bc.set({ markedDisassembled })
-  return bc.save(null, { useMasterKey: true })
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-tasks-regenerate', async ({

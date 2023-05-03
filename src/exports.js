@@ -633,6 +633,69 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', `attachment; filename=Alle Abfahrtsliste ${name}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
+
+router.get('/disassemblies/:monthYear', handleErrorAsync(async (req, res) => {
+  const month = moment(req.params.monthYear, 'MM-YYYY')
+  const from = moment(month).startOf('month').format('YYYY-MM-DD')
+  const to = moment(month).endOf('month').format('YYYY-MM-DD')
+
+  const workbook = new excel.Workbook()
+  const worksheet = workbook.addWorksheet(safeName(`Abbauliste ${req.params.monthYear}`))
+
+  const { columns, headerRowValues } = getColumnHeaders({
+    orderNo: { header: 'Auftragsnr.', width: 20 },
+    customerName: { header: 'Kunde', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    address: { header: 'Anschrift', width: 30 },
+    plz: { header: 'PLZ', width: 15 },
+    ort: { header: 'Ort', width: 15 },
+    stateName: { header: 'Bundesland', width: 30 },
+    motive: { header: 'Motiv', width: 20 },
+    from: { header: 'Abbau ab', width: 15, style: dateStyle },
+    status: { header: 'Status', width: 15 }
+  })
+
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 24
+
+  await $query('TaskList')
+    .equalTo('type', 'disassembly')
+    .greaterThanOrEqualTo('date', from)
+    .lessThanOrEqualTo('date', to)
+    .include(['booking', 'contract', 'booking.company', 'contract.company'])
+    .each(async taskList => {
+      const cubeIds = taskList.get('cubeIds') || []
+      const order = taskList.get('booking') || taskList.get('contract')
+      const cubes = await (new Parse.Query('Cube'))
+        .containedIn('objectId', cubeIds)
+        .include(['ht', 'state'])
+        .limit(cubeIds.length)
+        .find({ useMasterKey: true })
+      for (const cube of cubes) {
+        worksheet.addRow({
+          orderNo: order.get('no'),
+          customerName: order.get('company')?.get('name'),
+          objectId: cube.id,
+          htCode: cube.get('ht')?.get('code') || cube.get('hti'),
+          address: cube.get('str') + ' ' + cube.get('hsnr'),
+          plz: cube.get('plz'),
+          ort: cube.get('ort'),
+          stateName: cube.get('state').get('name'),
+          motive: order.get('motive'),
+          from: dateString(taskList.get('date'))
+        })
+      }
+    }, { useMasterKey: true })
+
+  // add all to rows
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=Abbauliste ${req.params.monthYear}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
 router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   const invoice = await $getOrFail('Invoice', req.query.id, ['contract', 'booking'])
   const periodStart = invoice.get('periodStart')
