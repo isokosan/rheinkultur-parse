@@ -182,6 +182,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     c,
     state: stateId,
     type,
+    start,
     managerId,
     scoutId,
     status,
@@ -198,6 +199,14 @@ Parse.Cloud.define('search-fieldwork', async ({
   }
 
   type && bool.filter.push({ term: { 'type.keyword': type } })
+
+  if (start) {
+    const gte = moment(start, 'MM-YYYY').startOf('month')
+    const lte = moment(start, 'MM-YYYY').endOf('month')
+    bool.filter.push({ range: { date: { gte, lte } } })
+    sort.unshift({ date: { order: 'asc' } })
+  }
+
   stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
   managerId && bool.filter.push({ term: { 'managerId.keyword': managerId } })
   scoutId && bool.filter.push({ match: { scoutIds: scoutId } })
