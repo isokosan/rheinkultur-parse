@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.27.0...1.28.0) (2023-05-03)
+
+
+### Features
+
+* add kls-id remove and multiple photos search & fix ([2c212a1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2c212a12bd6e3f582e2504f14f9c644bd8b9eefd))
+
 # [1.27.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.26.1...1.27.0) (2023-05-03)
 
 
