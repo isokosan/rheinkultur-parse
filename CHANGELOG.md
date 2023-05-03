@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.30.0...1.31.0) (2023-05-03)
+
+
+### Features
+
+* add photo editing and original revert ([05a6561](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/05a6561dd8a368f3cfccc5a54ec69e0751dd9b57))
+
 # [1.30.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.29.0...1.30.0) (2023-05-03)
 
 
