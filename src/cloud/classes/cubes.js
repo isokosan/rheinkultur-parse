@@ -397,8 +397,8 @@ Parse.Cloud.define('cube-photo-remove-kls-id', async ({ params: { photoId } }) =
   photo.unset('klsId')
   await photo.save(null, { useMasterKey: true })
   const cubeId = photo.get('cubeId')
-  const otherKlsPhotosExist = await $query('CubePhoto').equalTo('cubeId', cubeId).notEqualTo('klsId', null).exists({ useMasterKey: true })
-  if (!otherKlsPhotosExist) {
+  const otherKlsPhotos = await $query('CubePhoto').equalTo('cubeId', cubeId).notEqualTo('klsId', null).count({ useMasterKey: true })
+  if (otherKlsPhotos === 0) {
     const cube = await $getOrFail(Cube, cubeId)
     const legacyScoutResults = cube.get('legacyScoutResults') || {}
     if (legacyScoutResults && legacyScoutResults.multipleImages) {
