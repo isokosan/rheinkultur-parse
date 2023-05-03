@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.29.0...1.30.0) (2023-05-03)
+
+
+### Features
+
+* add date filter to fieldwork search ([62e11e5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/62e11e5518d8101a501009d41ed7bab2c81c1576))
+
 # [1.29.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.28.1...1.29.0) (2023-05-03)
 
 
