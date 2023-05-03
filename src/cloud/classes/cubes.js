@@ -392,6 +392,25 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
   return { message, p1: cube.get('p1'), p2: cube.get('p2') }
 }, { requireUser: true })
 
+Parse.Cloud.define('cube-photo-remove-kls-id', async ({ params: { photoId } }) => {
+  const photo = await $getOrFail('CubePhoto', photoId)
+  photo.unset('klsId')
+  await photo.save(null, { useMasterKey: true })
+  const cubeId = photo.get('cubeId')
+  const otherKlsPhotosExist = await $query('CubePhoto').equalTo('cubeId', cubeId).notEqualTo('klsId', null).exists({ useMasterKey: true })
+  if (!otherKlsPhotosExist) {
+    const cube = await $getOrFail(Cube, cubeId)
+    const legacyScoutResults = cube.get('legacyScoutResults') || {}
+    if (legacyScoutResults && legacyScoutResults.multipleImages) {
+      legacyScoutResults.multipleImagesFixed = true
+      cube.set({ legacyScoutResults })
+      await $saveWithEncode(cube, null, { useMasterKey: true })
+      return { message: 'All photos marked as belonging to this cube.' }
+    }
+  }
+  return { message: 'Photo marked as belonging to cube.' }
+}, { requireUser: true })
+
 Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, cancellations, generateCreditNote }, user }) => {
   const item = await $getOrFail(itemClass, itemId)
   const earlyCancellations = item.get('earlyCancellations') || {}
