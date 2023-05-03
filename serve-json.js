@@ -11,7 +11,7 @@ console.log(`starting up ${filename}`)
 const all = require('./imports/' + filename)
 const dict = {}
 for (const row of all) {
-  const objectId = 'TLK-' + row.KVZ_ID
+  const objectId = 'TLK-' + row.kvz_id
   dict[objectId] = row
 }
 
@@ -34,9 +34,9 @@ app.get('/index/:index', async (req, res) => {
     row.laenge = lon
   }
 
-  if (row.bundesland) {
-    row.bundesland = row.bundesland.replace(/Ã¼/g, 'ü')
-  }
+  // if (row.bundesland) {
+  //   row.bundesland = row.bundesland.replace(/Ã¼/g, 'ü')
+  // }
   return res.send(row)
 })
 

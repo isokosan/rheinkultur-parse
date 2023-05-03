@@ -64,7 +64,7 @@ const getSize1000Base64 = async (file) => {
 
 Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   const name = file._metadata.name
-  const { assetType, cubeId } = file.tags()
+  const { assetType, cubeId, klsId } = file.tags()
   let thumb64
   try {
     thumb64 = await getThumbnailBase64(file)
@@ -82,7 +82,7 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   }
   if (cubeId) {
     const cubePhoto = new Parse.Object('CubePhoto')
-    cubePhoto.set({ cubeId, file, thumb, createdBy: user })
+    cubePhoto.set({ cubeId, klsId, file, thumb, createdBy: user })
     return cubePhoto.save(null, { useMasterKey: true })
   }
   if (!assetType) {

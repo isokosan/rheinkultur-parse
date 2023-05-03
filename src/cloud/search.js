@@ -396,10 +396,10 @@ Parse.Cloud.define('search', async ({
   })
   s.includes('8')
     ? bool.must.push({ exists: { field: 'dAt' } })
-    : bool.must_not.push({ exists: { field: 'dAt' } })
+    : (!s.includes('all') && bool.must_not.push({ exists: { field: 'dAt' } }))
   s.includes('9')
     ? bool.must.push({ exists: { field: 'pair' } })
-    : bool.must_not.push({ exists: { field: 'pair' } })
+    : (!s.includes('all') && bool.must_not.push({ exists: { field: 'pair' } }))
 
   // single issues
   s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
@@ -414,7 +414,7 @@ Parse.Cloud.define('search', async ({
   s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
   s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })
   s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
-  s.includes('nStov') && bool.must_not.push({ match: { stovDate: '2023-04-21' } })
+  // s.includes('nStov') && bool.must_not.push({ match: { stovDate: '2023-04-21' } })
 
   // address constraints
   if (pk) {
