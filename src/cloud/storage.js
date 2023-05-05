@@ -6,20 +6,9 @@ const { difference } = require('lodash')
 const { PRINT_PACKAGE_FILES } = require('@/schema/enums')
 const FileObject = Parse.Object.extend('FileObject')
 
-Parse.Cloud.beforeSaveFile(async ({ file }) => {
-  if (file._metadata.name) {
-    file._metadata.name = encodeURIComponent(file._metadata.name)
-  }
-  const extension = file._name.split('.').reverse()[0].toLowerCase()
-  if (['jpeg', 'jpg'].includes(extension)) {
-    const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
-      .jpeg({ mozjpeg: true })
-      .withMetadata()
-      .toBuffer()
-      .then(data => data.toString('base64'))
-    return new Parse.File(file._name, { base64 }, undefined, file._metadata, file._tags)
-  }
-})
+function handleFileDestroyError (error) {
+  consola.error('Skipped destroy file:', error.message)
+}
 
 const getThumbnailBase64 = async (file) => {
   if (file._metadata.thumb) {
@@ -57,10 +46,25 @@ const getSize1000Base64 = async (file) => {
     .toBuffer()
     .then(data => data.toString('base64'))
     .catch((error) => {
-      consola.error(error)
+      handleFileDestroyError(error)
       return null
     })
 }
+
+Parse.Cloud.beforeSaveFile(async ({ file }) => {
+  if (file._metadata.name) {
+    file._metadata.name = encodeURIComponent(file._metadata.name)
+  }
+  const extension = file._name.split('.').reverse()[0].toLowerCase()
+  if (['jpeg', 'jpg'].includes(extension)) {
+    const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
+      .jpeg({ mozjpeg: true })
+      .withMetadata()
+      .toBuffer()
+      .then(data => data.toString('base64'))
+    return new Parse.File(file._name, { base64 }, undefined, file._metadata, file._tags)
+  }
+})
 
 Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   const name = file._metadata.name
@@ -88,19 +92,81 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   if (originalId) {
     const cubePhoto = await $getOrFail('CubePhoto', originalId)
     const original = cubePhoto.get('original') || cubePhoto.get('file')
-    // destroy old thumb if exists
-    await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(consola.error)
+    await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
     cubePhoto.set({ original, file, thumb })
     return cubePhoto.save(null, { useMasterKey: true, context: { regenerateSize1000: true } })
   }
-  if (!assetType) {
-    return
-  }
+
+  if (!assetType) { return }
+
   const fileObject = new Parse.Object('FileObject')
   const ext = name.split('.').reverse()[0]
   fileObject.set({ file, name, ext, thumb, fileSize, contentType: file._source.type, assetType, createdBy: user })
   await fileObject.save(null, { useMasterKey: true })
   return fileObject
+})
+
+Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
+  const isPublic = !user && !master
+  isPublic && query.equalTo('approved', true)
+  // TODO: constrain photos to only those of the user's cubes if not approved
+})
+
+Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regenerateThumb, regenerateSize1000 } }) => {
+  console.log('saved cube photo', { regenerateThumb, regenerateSize1000 })
+  if (regenerateThumb) {
+    await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
+    cubePhoto.unset('thumb')
+  }
+  // consola.info('thumb', cubePhoto.get('thumb') ? 'exists' : 'does not exist')
+  if (!cubePhoto.get('thumb')) {
+    const base64 = await getThumbnailBase64(cubePhoto.get('file'))
+    const thumb = new Parse.File('thumb.png', { base64 }, 'image/png', { thumb: 'true' })
+    await thumb.save({ useMasterKey: true })
+    cubePhoto.set({ thumb })
+    // consola.info('thumb generated')
+  }
+  if (regenerateSize1000) {
+    await cubePhoto.get('size1000')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
+    cubePhoto.unset('size1000')
+  }
+  // consola.info('size1000', cubePhoto.get('size1000') ? 'exists' : 'does not exist')
+  if (!cubePhoto.get('size1000')) {
+    const base64 = await getSize1000Base64(cubePhoto.get('file'))
+    const size1000 = new Parse.File('size1000.png', { base64 }, 'image/png', { thumb: 'size1000' })
+    await size1000.save({ useMasterKey: true })
+    cubePhoto.set({ size1000 })
+    // consola.info('size1000 generated')
+  }
+
+  if (!cubePhoto.get('approved')) {
+    const user = cubePhoto.get('createdBy')
+    if (!user) {
+      cubePhoto.set('approved', true)
+      return
+    }
+    await user.fetch({ useMasterKey: true })
+    if (user.get('accType') !== 'scout') {
+      cubePhoto.set('approved', true)
+    }
+  }
+})
+
+// The CubePhoto will not be deleted unless the file associated with it is successfuly deleted, or is already not found
+Parse.Cloud.beforeDelete('CubePhoto', async ({ object }) => {
+  const cube = await $getOrFail('Cube', object.get('cubeId'))
+  if (cube.get('p1')?.id === object.id) {
+    throw new Error('Als Front verwendetes Foto kann nicht gelöscht werden.')
+  }
+  if (cube.get('p2')?.id === object.id || cube.get('p3')?.id === object.id) {
+    throw new Error('Als Umfeldfoto verwendetes Foto kann nicht gelöscht werden.')
+  }
+  return Promise.all([
+    object.get('file')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError), // deletes file if exists
+    object.get('original')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError), // deletes original if exists
+    object.get('size1000')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError), // deletes size1000 if exists
+    object.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError) // deletes thumb if exists
+  ])
 })
 
 // TODO: change this to asset type map
@@ -148,63 +214,8 @@ Parse.Cloud.beforeDelete(FileObject, async ({ object }) => {
   }
 
   return Promise.all([
-    object.get('file')?.destroy({ useMasterKey: true }).catch(consola.error), // deletes file if exists
-    object.get('thumb')?.destroy({ useMasterKey: true }).catch(consola.error) // deletes thumb if exists
-  ])
-})
-
-Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
-  const isPublic = !user && !master
-  isPublic && query.equalTo('approved', true)
-  // TODO: constrain photos to only those of the user's cubes if not approved
-})
-
-Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regenerateThumb, regenerateSize1000 } }) => {
-  const user = cubePhoto.get('createdBy')
-  if (!user) {
-    cubePhoto.set('approved', true)
-    return
-  }
-  await user.fetch({ useMasterKey: true })
-  if (user.get('accType') !== 'scout') {
-    cubePhoto.set('approved', true)
-  }
-  if (regenerateThumb) {
-    await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(consola.error)
-    const file = cubePhoto.get('file')
-    const thumb = new Parse.File('thumb.png', { base64: await getThumbnailBase64(file) }, 'image/png', { thumb: 'true' })
-    await thumb.save({ useMasterKey: true })
-    cubePhoto.set('thumb', thumb)
-  }
-  if (regenerateSize1000) {
-    await cubePhoto.get('size1000')?.destroy({ useMasterKey: true }).catch(consola.error)
-    consola.info('destroyed old size1000')
-    cubePhoto.unset('size1000')
-  }
-})
-
-Parse.Cloud.afterSave('CubePhoto', async ({ object: cubePhoto }) => {
-  if (!cubePhoto.get('size1000')) {
-    const base64 = await getSize1000Base64(cubePhoto.get('file'))
-    const size1000 = new Parse.File('size1000.png', { base64 }, 'image/png', { thumb: 'size1000' })
-    await size1000.save({ useMasterKey: true })
-    cubePhoto.set({ size1000 })
-    await cubePhoto.save(null, { useMasterKey: true })
-  }
-})
-
-// The CubePhoto will not be deleted unless the file associated with it is successfuly deleted, or is already not found
-Parse.Cloud.beforeDelete('CubePhoto', async ({ object }) => {
-  const cube = await $getOrFail('Cube', object.get('cubeId'))
-  if (cube.get('p1')?.id === object.id) {
-    throw new Error('Als Front verwendetes Foto kann nicht gelöscht werden.')
-  }
-  if (cube.get('p2')?.id === object.id || cube.get('p3')?.id === object.id) {
-    throw new Error('Als Umfeldfoto verwendetes Foto kann nicht gelöscht werden.')
-  }
-  return Promise.all([
-    object.get('file')?.destroy({ useMasterKey: true }).catch(consola.error), // deletes file if exists
-    object.get('thumb')?.destroy({ useMasterKey: true }).catch(consola.error) // deletes thumb if exists
+    object.get('file')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError), // deletes file if exists
+    object.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError) // deletes thumb if exists
   ])
 })
 
