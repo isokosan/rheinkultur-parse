@@ -1,3 +1,10 @@
+## [1.31.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.0...1.31.1) (2023-05-05)
+
+
+### Bug Fixes
+
+* cube photo deletions and generations of sizes ([b2bed37](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b2bed37af684b0af078dad760f15ac08bf383ee4))
+
 # [1.31.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.30.0...1.31.0) (2023-05-03)
 
 
