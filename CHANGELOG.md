@@ -1,3 +1,10 @@
+## [1.31.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.2...1.31.3) (2023-05-07)
+
+
+### Bug Fixes
+
+* do not allow approved on photos with klsId ([9ea0bcc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9ea0bccf7fc6e7c64d1a28570d8a78823daf3678))
+
 ## [1.31.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.1...1.31.2) (2023-05-07)
 
 
