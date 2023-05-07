@@ -1,3 +1,10 @@
+## [1.31.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.3...1.31.4) (2023-05-07)
+
+
+### Bug Fixes
+
+* remove approved check on klsId ([2bf1ae4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2bf1ae49971259d39b754276272311528a601d39))
+
 ## [1.31.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.2...1.31.3) (2023-05-07)
 
 
