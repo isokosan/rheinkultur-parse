@@ -108,7 +108,7 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
 
 Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
   const isPublic = !user && !master
-  isPublic && query.equalTo('approved', true)
+  isPublic && query.equalTo('approved', true).equalTo('klsId', null) // temporary fix until KLS id is resolved
   // TODO: constrain photos to only those of the user's cubes if not approved
 })
 
