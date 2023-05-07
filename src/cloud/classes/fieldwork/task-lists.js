@@ -400,7 +400,18 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
   const taskList = await $getOrFail(TaskList, taskListId)
   taskList.set({ status: 4 })
   const audit = { user, fn: 'task-list-complete' }
-  return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+  const data = await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+  return { data, message: 'Task list marked complete' }
+}, $internOrAdmin)
+
+// revert complete mark
+Parse.Cloud.define('task-list-revert-complete', async ({ params: { id: taskListId }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (taskList.get('status') !== 4) { throw new Error('Only completed can be reverted') }
+  taskList.set('status', 0)
+  const audit = { user, fn: 'task-list-revert-complete' }
+  const data = await taskList.save(null, { useMasterKey: true, context: { audit } })
+  return { data, message: 'Task list reverted' }
 }, $internOrAdmin)
 
 // async function massUpdateManager() {

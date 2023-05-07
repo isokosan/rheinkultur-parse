@@ -118,32 +118,30 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
     await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
     cubePhoto.unset('thumb')
   }
-  // consola.info('thumb', cubePhoto.get('thumb') ? 'exists' : 'does not exist')
   if (!cubePhoto.get('thumb')) {
     const base64 = await getThumbnailBase64(cubePhoto.get('file'))
     const thumb = new Parse.File('thumb.png', { base64 }, 'image/png', { thumb: 'true' })
     await thumb.save({ useMasterKey: true })
     cubePhoto.set({ thumb })
-    // consola.info('thumb generated')
   }
   if (regenerateSize1000) {
     await cubePhoto.get('size1000')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
     cubePhoto.unset('size1000')
   }
-  // consola.info('size1000', cubePhoto.get('size1000') ? 'exists' : 'does not exist')
   if (!cubePhoto.get('size1000')) {
     const base64 = await getSize1000Base64(cubePhoto.get('file'))
     const size1000 = new Parse.File('size1000.png', { base64 }, 'image/png', { thumb: 'size1000' })
     await size1000.save({ useMasterKey: true })
     cubePhoto.set({ size1000 })
-    // consola.info('size1000 generated')
   }
 
+  if (cubePhoto.get('klsId')) {
+    return cubePhoto.unset('approved')
+  }
   if (!cubePhoto.get('approved')) {
     const user = cubePhoto.get('createdBy')
     if (!user) {
-      cubePhoto.set('approved', true)
-      return
+      return cubePhoto.set('approved', true)
     }
     await user.fetch({ useMasterKey: true })
     if (user.get('accType') !== 'scout') {
