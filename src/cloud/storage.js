@@ -135,9 +135,6 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
     cubePhoto.set({ size1000 })
   }
 
-  if (cubePhoto.get('klsId')) {
-    return cubePhoto.unset('approved')
-  }
   if (!cubePhoto.get('approved')) {
     const user = cubePhoto.get('createdBy')
     if (!user) {
