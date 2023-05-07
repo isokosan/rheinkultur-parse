@@ -1,3 +1,10 @@
+## [1.31.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.1...1.31.2) (2023-05-07)
+
+
+### Bug Fixes
+
+* hide cubes that have klsId ([cb6ff0f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cb6ff0f350cca058485f0bb055dc58ae6b8bad42))
+
 ## [1.31.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.0...1.31.1) (2023-05-05)
 
 
