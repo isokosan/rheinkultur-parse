@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.4...1.32.0) (2023-05-08)
+
+
+### Features
+
+* add State to control criteria ([847c996](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/847c9960f41903a59a170d18ad204f085026db07))
+
 ## [1.31.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.3...1.31.4) (2023-05-07)
 
 
