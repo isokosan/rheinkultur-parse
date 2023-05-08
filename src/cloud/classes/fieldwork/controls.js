@@ -29,6 +29,7 @@ function getCubesQuery (control) {
 
   const filters = {
     placeKey: { include: [], exclude: [] },
+    State: { include: [], exclude: [] },
     Tag: { include: [], exclude: [] },
     Company: { include: [], exclude: [] },
     Contract: { include: [], exclude: [] },
@@ -52,6 +53,18 @@ function getCubesQuery (control) {
       return $query('Cube').equalTo('ort', ort).equalTo('state', $parsify('State', stateId))
     })
     cubesQuery = Parse.Query.and(cubesQuery, Parse.Query.nor(...placesQuery))
+  }
+  if (filters.State.include.length) {
+    const statesQuery = filters.State.include.map((stateId) => {
+      return $query('Cube').equalTo('state', $parsify('State', stateId))
+    })
+    cubesQuery = Parse.Query.and(cubesQuery, Parse.Query.or(...statesQuery))
+  }
+  if (filters.State.exclude.length) {
+    const statesQuery = filters.State.exclude.map((stateId) => {
+      return $query('Cube').equalTo('state', $parsify('State', stateId))
+    })
+    cubesQuery = Parse.Query.and(cubesQuery, Parse.Query.nor(...statesQuery))
   }
   if (filters.Tag.include.length) {
     const tagsQuery = $query('Tag')
@@ -137,7 +150,7 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
     for (const control of controls) {
       const criteria = control.get('criteria') || []
       for (const item of criteria) {
-        if (['Tag', 'Company', 'Contract', 'Booking'].includes(item.type)) {
+        if (['State', 'Tag', 'Company', 'Contract', 'Booking'].includes(item.type)) {
           item.item = await $getOrFail(item.type, item.value)
             .then(obj => ({ ...obj.toJSON(), className: item.type }))
         }
