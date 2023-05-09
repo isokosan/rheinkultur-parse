@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.32.1...1.33.0) (2023-05-09)
+
+
+### Features
+
+* add task-list-locations ([bca2281](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bca228104567b4164edb45188d857cc2bbffc42e))
+
 ## [1.32.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.32.0...1.32.1) (2023-05-09)
 
 
