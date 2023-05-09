@@ -34,6 +34,13 @@ global.$getOrFail = function (className, objectId, include) {
     })
 }
 
+global.$pk = (obj) => {
+  const stateId = obj.get?.('state')?.id || obj.state?.objectId
+  if (!stateId) { return }
+  const ort = obj.get?.('ort') || obj.ort
+  return [stateId, ort].join(':')
+}
+
 global.$adminOnly = function ({ user, master }) {
   if (master) { return true }
   if (user?.get('accType') === 'admin') { return true }

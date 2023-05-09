@@ -25,6 +25,7 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating 
   // require state and ort (for placekey operations) - cannot update schema
   if (!cube.get('state')) { throw new Error(`Cube ${cube.id} missing state`) }
   if (!cube.get('ort')) { throw new Error(`Cube ${cube.id} missing ort`) }
+  cube.set('pk', $pk(cube))
 
   // trim address
   for (const key of ['str', 'hsnr', 'plz', 'ort']) {

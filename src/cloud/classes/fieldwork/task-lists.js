@@ -34,6 +34,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.set('cubeIds', cubeIds)
   taskList.set('cubeCount', cubeIds.length)
   taskList.set('gp', await getCenterOfCubes(cubeIds))
+  taskList.set('pk', $pk(taskList))
 
   for (const cubeIdField of ['adminApprovedCubeIds', 'scoutAddedCubeIds']) {
     taskList.get(cubeIdField) && taskList.set(cubeIdField, intersection([...new Set(taskList.get(cubeIdField))], cubeIds))
@@ -208,6 +209,10 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   const audit = { user, fn: 'task-list-update', data: { cubeChanges } }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, $adminOnly)
+
+Parse.Cloud.define('task-list-locations', async ({ params: { parent: { className, objectId } } }) => {
+  return $query('TaskList').equalTo(className.toLowerCase(), $parsify(className, objectId)).distinct('pk')
+}, $internOrAdmin)
 
 Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)

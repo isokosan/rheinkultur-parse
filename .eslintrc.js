@@ -39,6 +39,7 @@ module.exports = {
     $cubeChanges: true,
     $states: true,
     $saveWithEncode: true,
+    $pk: true,
     $bPLZ: true,
     $PDGA: true
   },

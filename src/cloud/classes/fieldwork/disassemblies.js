@@ -51,7 +51,7 @@ async function processOrder (className, objectId) {
 
   // abort if disassembly will not be done by RMV, or if done outside of WaWi
   if (!order.get('disassembly')) { return }
-  // if (order.get('markedDisassembled') === true) { return }
+  if (order.get('disassemblySkip') === true) { return }
 
   const { cubeIds, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
 
@@ -121,12 +121,14 @@ Parse.Cloud.define('disassembly-order-update', async ({
   params: {
     className,
     id,
-    disassembly
+    disassembly,
+    disassemblySkip
   }, user
 }) => {
   const bc = await $query(className).get(id, { useMasterKey: true })
-  const changes = $changes(bc, { disassembly })
-  bc.set({ disassembly })
+  const changes = $changes(bc, { disassembly, disassemblySkip })
+  disassembly ? bc.set({ disassembly }) : bc.unset('disassembly')
+  disassemblySkip ? bc.set({ disassemblySkip }) : bc.unset('disassemblySkip')
   const audit = { user, fn: className.toLowerCase() + '-update', data: { changes } }
   return bc.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
