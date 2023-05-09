@@ -1,3 +1,10 @@
+## [1.32.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.32.0...1.32.1) (2023-05-09)
+
+
+### Bug Fixes
+
+* task list complete response and task-list complete revert ([b41f364](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b41f364a85da4017064602b67814c17237a98ca9))
+
 # [1.32.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.31.4...1.32.0) (2023-05-08)
 
 
