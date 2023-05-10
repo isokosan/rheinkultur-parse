@@ -1,42 +1,64 @@
-const { difference } = require('lodash')
+// const Disassembly = Parse.Object.extend('Disassembly')
+// const TaskList = Parse.Object.extend('TaskList')
+
+// Parse.Cloud.beforeSave(Disassembly, ({ object: disassembly }) => {
+//   !disassembly.get('status') && disassembly.set('status', 0)
+// })
+
+// Parse.Cloud.afterSave(Disassembly, ({ object: Disassembly, context: { audit } }) => { $audit(disassembly, audit) })
+
+// Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => {
+//   // disassembly tasks
+//   const pipeline = [
+//     { $match: { _p_disassembly: { $in: disassemblies.map(c => 'Disassembly$' + c.id) } } },
+//     { $group: { _id: '$disassembly', taskListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+//   ]
+//   const counts = await $query('TaskList').aggregate(pipeline)
+//     .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
+//   for (const disassembly of disassemblies) {
+//     disassembly.set(counts[disassembly.id])
+//   }
+// })
 
 async function upsertTaskList (attrs) {
-  // first check if a departure list with the same
+  // get admin approved cubes in each area to carry the information if the date has changed, and apply to each list. The list before save triggers will clear any non-listed cubes.
+  const adminApprovedCubeIds = await $query('TaskList')
+    .equalTo('type', 'disassembly')
+    .equalTo('booking', attrs.booking)
+    .equalTo('contract', attrs.contract)
+    .equalTo('ort', attrs.ort)
+    .equalTo('state', attrs.state)
+    .notEqualTo('adminApprovedCubeIds', null)
+    .notEqualTo('adminApprovedCubeIds', [])
+    .distinct('adminApprovedCubeIds', { useMasterKey: true })
+    .then(response => response.flat())
+
+  // first check if a departure list with the same unique attrs exists
   // uniqueTogether = { type, booking, contract, ort, state, date }
-  const exists = await $query('TaskList')
+  const existing = await $query('TaskList')
     .equalTo('type', 'disassembly')
     .equalTo('booking', attrs.booking)
     .equalTo('contract', attrs.contract)
     .equalTo('ort', attrs.ort)
     .equalTo('state', attrs.state)
     .equalTo('date', attrs.date)
-    .first({ useMasterKey: true })
-
-  // remove cubeIds from other disassembly lists if it now appears here
-  const otherLists = await $query('TaskList')
-    .equalTo('type', 'disassembly')
-    .equalTo('booking', attrs.booking)
-    .equalTo('contract', attrs.contract)
-    .containedIn('cubeIds', attrs.cubeIds)
-  exists && otherLists.notEqualTo('objectId', exists.id)
-  await otherLists.each(async (list) => {
-    // TODO: abbau check
-    const cubeIds = difference(list.get('cubeIds'), attrs.cubeIds)
-    const cubeChanges = $cubeChanges(list, cubeIds)
-    if (cubeChanges) {
-      const audit = { fn: 'task-list-update', data: { cubeChanges } }
-      await list.set({ cubeIds }).save(null, { useMasterKey: true, context: { audit } })
-    }
-  }, { useMasterKey: true })
-
+    .find({ useMasterKey: true })
+  const [exists, ...duplicates] = existing
+  duplicates.length && await Promise.all(duplicates.map((duplicate) => {
+    consola.warn('Removing duplicate disassembly', duplicate.attributes)
+    return duplicate.destroy({ useMasterKey: true })
+  }))
   if (exists) {
     const cubeChanges = $cubeChanges(exists, attrs.cubeIds)
     if (!cubeChanges) { return exists }
     const audit = { fn: 'task-list-update', data: { cubeChanges } }
-    return exists.set('cubeIds', attrs.cubeIds).save(null, { useMasterKey: true, context: { audit } })
+    return exists
+      .set('cubeIds', attrs.cubeIds)
+      .set('adminApprovedCubeIds', adminApprovedCubeIds)
+      .save(null, { useMasterKey: true, context: { audit } })
   }
   const TaskList = Parse.Object.extend('TaskList')
-  const taskList = new TaskList(attrs)
+  const taskList = new TaskList({ ...attrs, adminApprovedCubeIds })
   const audit = { fn: 'task-list-generate' }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }
@@ -50,8 +72,14 @@ async function processOrder (className, objectId) {
   const order = await $getOrFail(className, objectId)
 
   // abort if disassembly will not be done by RMV, or if done outside of WaWi
-  if (!order.get('disassembly')) { return }
-  if (order.get('disassemblySkip') === true) { return }
+  if (!order.get('disassembly') || order.get('disassemblySkip')) {
+    // clear all lists which are still in draft status
+    await $query('TaskList')
+      .equalTo(className.toLowerCase(), order)
+      .equalTo('status', 0)
+      .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
+    return
+  }
 
   const { cubeIds, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
 
@@ -95,11 +123,24 @@ async function processOrder (className, objectId) {
     }
     keys[uniqueKey].push(cubeId)
   }
+
+  // Remove all lists which no longer fit the criteria
+  await $query('TaskList')
+    .equalTo(className.toLowerCase(), order)
+    .eachBatch(async (lists) => {
+      for (const list of lists) {
+        const uniqueKey = [list.get('ort'), list.get('state').id, list.get('date')].join('_')
+        if (!keys[uniqueKey]) {
+          consola.warn('key removed', list)
+          await list.destroy({ useMasterKey: true })
+        }
+      }
+    }, { useMasterKey: true })
+
   let i = 0
   for (const uniqueKey in keys) {
     const [ort, stateId, date] = uniqueKey.split('_')
     const cubeIds = keys[uniqueKey]
-    consola.info(uniqueKey, cubeIds.length)
     const state = $pointer('State', stateId)
     await upsertTaskList({
       type: 'disassembly',
@@ -141,7 +182,7 @@ Parse.Cloud.define('disassembly-tasks-regenerate', async ({
 }) => {
   const bc = await $query(className).get(id, { useMasterKey: true })
   await processOrder(className, id)
-  const audit = { user, fn: className.toLowerCase() + '-regenerate-disassembly-tasks' }
+  const audit = { user, fn: 'regenerate-order-disassemblies' }
   return bc.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
