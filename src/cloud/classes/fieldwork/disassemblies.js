@@ -1,5 +1,8 @@
+const { intersection } = require('lodash')
+
 // const Disassembly = Parse.Object.extend('Disassembly')
 const TaskList = Parse.Object.extend('TaskList')
+const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
 // Parse.Cloud.beforeSave(Disassembly, ({ object: disassembly }) => {
 //   !disassembly.get('status') && disassembly.set('status', 0)
@@ -25,18 +28,6 @@ const TaskList = Parse.Object.extend('TaskList')
 // })
 
 async function upsertTaskList (attrs) {
-  // get admin approved cubes in each area to carry the information if the date has changed, and apply to each list. The list before save triggers will clear any non-listed cubes.
-  const adminApprovedCubeIds = await $query('TaskList')
-    .equalTo('type', 'disassembly')
-    .equalTo('booking', attrs.booking)
-    .equalTo('contract', attrs.contract)
-    .equalTo('ort', attrs.ort)
-    .equalTo('state', attrs.state)
-    .notEqualTo('adminApprovedCubeIds', null)
-    .notEqualTo('adminApprovedCubeIds', [])
-    .distinct('adminApprovedCubeIds', { useMasterKey: true })
-    .then(response => response.flat())
-
   // first check if a departure list with the same unique attrs exists
   // uniqueTogether = { type, booking, contract, ort, state, date }
   const existing = await $query('TaskList')
@@ -58,18 +49,18 @@ async function upsertTaskList (attrs) {
     const audit = { fn: 'task-list-update', data: { cubeChanges } }
     return exists
       .set('cubeIds', attrs.cubeIds)
-      .set('adminApprovedCubeIds', adminApprovedCubeIds)
+      .set('adminApprovedCubeIds', [...(exists.get('adminApprovedCubeIds') || []), ...attrs.adminApprovedCubeIds])
       .save(null, { useMasterKey: true, context: { audit } })
   }
   const TaskList = Parse.Object.extend('TaskList')
-  const taskList = new TaskList({ ...attrs, adminApprovedCubeIds })
+  const taskList = new TaskList(attrs)
   const audit = { fn: 'task-list-generate' }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }
 
 async function processOrder (className, objectId) {
   // Temporary start may 1
-  const periodStart = '2023-05-01'
+  const periodStart = '2023-04-20'
   const periodEnd = '2023-08-31'
   // const periodStart = moment(await $today()).startOf('month').subtract(1, 'week').format('YYYY-MM-DD')
   // const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
@@ -137,14 +128,32 @@ async function processOrder (className, objectId) {
     keys[uniqueKey].push(cubeId)
   }
 
-  // Remove all lists which no longer fit the criteria
+  // gather admin approved cubes in each area to carry the information if the date has changed, and apply to each list. The list before save triggers will clear any non-listed cubes.
+  const adminApprovedCubeIds = await $query('TaskList')
+    .equalTo('type', 'disassembly')
+    .equalTo(className.toLowerCase(), order)
+    .notEqualTo('adminApprovedCubeIds', null)
+    .notEqualTo('adminApprovedCubeIds', [])
+    .distinct('adminApprovedCubeIds', { useMasterKey: true })
+    .then(response => response.flat())
+
+  // Remove all lists which no longer fit the criteria, while checking to see if disassembly has started
+  const submissionAdjustments = {}
   await $query(TaskList)
     .equalTo(className.toLowerCase(), order)
     .eachBatch(async (lists) => {
       for (const list of lists) {
+        // if list has a submission carry it to new list
+        const statuses = list.get('statuses') || {}
+        if (Object.keys(statuses).length) {
+          await $query(DisassemblySubmission).equalTo('taskList', list).eachBatch((submissions) => {
+            for (const submission of submissions) {
+              submissionAdjustments[submission.get('cube').id] = submission
+            }
+          }, { useMasterKey: true })
+        }
         const uniqueKey = [list.get('ort'), list.get('state').id, list.get('date')].join('_')
         if (!keys[uniqueKey]) {
-          consola.warn('key removed', list)
           await list.destroy({ useMasterKey: true })
         }
       }
@@ -155,7 +164,7 @@ async function processOrder (className, objectId) {
     const [ort, stateId, date] = uniqueKey.split('_')
     const cubeIds = keys[uniqueKey]
     const state = $pointer('State', stateId)
-    await upsertTaskList({
+    const taskList = await upsertTaskList({
       type: 'disassembly',
       ort,
       state,
@@ -164,8 +173,17 @@ async function processOrder (className, objectId) {
       // disassembly,
       cubeIds,
       date,
-      dueDate: moment(date).add(2, 'weeks').format('YYYY-MM-DD')
+      dueDate: moment(date).add(2, 'weeks').format('YYYY-MM-DD'),
+      adminApprovedCubeIds
     })
+    const submissionCubeIds = intersection(Object.keys(submissionAdjustments), cubeIds)
+    if (submissionCubeIds.length) {
+      for (const submission of submissionCubeIds.map(id => submissionAdjustments[id])) {
+        await submission.set({ taskList }).save(null, { useMasterKey: true })
+      }
+      const audit = { fn: 'disassembly-submission-update', data: { cubeIds: submissionCubeIds } }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
     i++
   }
   return i
@@ -201,6 +219,5 @@ Parse.Cloud.define('disassembly-tasks-regenerate', async ({
 }, { requireUser: true })
 
 module.exports = {
-  upsertTaskList,
   processOrder
 }
