@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.33.0...1.34.0) (2023-05-11)
+
+
+### Features
+
+* cubeId and assemblyKey indexes on cube photos ([f19139b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f19139b8d4f7423e392fe4e102b3c90d692b62e3))
+
 # [1.33.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.32.1...1.33.0) (2023-05-09)
 
 
