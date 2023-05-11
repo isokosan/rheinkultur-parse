@@ -204,7 +204,6 @@ Parse.Cloud.define('search-fieldwork', async ({
     const gte = moment(start, 'MM-YYYY').startOf('month')
     const lte = moment(start, 'MM-YYYY').endOf('month')
     bool.filter.push({ range: { date: { gte, lte } } })
-    sort.unshift({ date: { order: 'asc' } })
   }
 
   stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
@@ -232,6 +231,8 @@ Parse.Cloud.define('search-fieldwork', async ({
         ignore_unmapped: true
       }
     })
+  } else {
+    sort.unshift({ date: { order: 'asc' } })
   }
 
   const searchResponse = await client.search({

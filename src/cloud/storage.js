@@ -68,7 +68,7 @@ Parse.Cloud.beforeSaveFile(async ({ file }) => {
 
 Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   const name = file._metadata.name
-  const { assetType, cubeId, klsId, originalId } = file.tags()
+  const { assetType, cubeId, klsId, originalId, assemblyKey } = file.tags()
   let thumb64
   try {
     thumb64 = await getThumbnailBase64(file)
@@ -86,7 +86,7 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   }
   if (cubeId) {
     const cubePhoto = new Parse.Object('CubePhoto')
-    cubePhoto.set({ cubeId, klsId, file, thumb, createdBy: user })
+    cubePhoto.set({ cubeId, klsId, file, thumb, createdBy: user, assemblyKey })
     return cubePhoto.save(null, { useMasterKey: true })
   }
   if (originalId) {
@@ -108,12 +108,12 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
 
 Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
   const isPublic = !user && !master
-  isPublic && query.equalTo('approved', true).equalTo('klsId', null) // temporary fix until KLS id is resolved
+  !query._where.assemblyKey && query.equalTo('assemblyKey', null) // show assembly photos only if specified
+  isPublic && query.equalTo('approved', true).equalTo('klsId', null).equalTo('assemblyKey', null) // temporary fix until KLS id is resolved
   // TODO: constrain photos to only those of the user's cubes if not approved
 })
 
 Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regenerateThumb, regenerateSize1000 } }) => {
-  console.log('saved cube photo', { regenerateThumb, regenerateSize1000 })
   if (regenerateThumb) {
     await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
     cubePhoto.unset('thumb')
@@ -136,9 +136,11 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
   }
 
   if (!cubePhoto.get('approved')) {
+    if (cubePhoto.get('assemblyKey')) { return }
     const user = cubePhoto.get('createdBy')
     if (!user) {
-      return cubePhoto.set('approved', true)
+      cubePhoto.set('approved', true)
+      return
     }
     await user.fetch({ useMasterKey: true })
     if (user.get('accType') !== 'scout') {

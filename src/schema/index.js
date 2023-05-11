@@ -298,7 +298,13 @@ const schemaDefinitions = {
       approved: { type: 'Boolean' },
       file: { type: 'File', required: true },
       thumb: { type: 'File', required: true },
-      size1000: { type: 'File' }
+      size1000: { type: 'File' },
+      original: { type: 'File' }, // carried from file if photo is edited
+      assemblyKey: { type: 'String' } // B:bookingId | C:contractId
+    },
+    indexes: {
+      cubeIdIndex: { cubeId: 1 },
+      assemblyKeyIndex: { assemblyKey: 1 }
     }
   },
   CreditNote: {
@@ -574,9 +580,11 @@ const schemaDefinitions = {
   // Disassembly: {
   //   CLP: { ...readAuthOnly, ...writeMasterOnly },
   //   fields: {
-  //     contract: { type: 'String', required: true },
-  //     booking: { type: 'String', required: true },
+  //     contract: { type: 'Pointer', targetClass: 'Contract' },
+  //     booking: { type: 'Pointer', targetClass: 'Booking' },
+
   //     status: { type: 'Number', required: true },
+
   //     responsibles: { type: 'Array' }
   //   }
   // },

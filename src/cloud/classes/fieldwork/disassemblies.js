@@ -1,11 +1,15 @@
 // const Disassembly = Parse.Object.extend('Disassembly')
-// const TaskList = Parse.Object.extend('TaskList')
+const TaskList = Parse.Object.extend('TaskList')
 
 // Parse.Cloud.beforeSave(Disassembly, ({ object: disassembly }) => {
 //   !disassembly.get('status') && disassembly.set('status', 0)
 // })
 
 // Parse.Cloud.afterSave(Disassembly, ({ object: Disassembly, context: { audit } }) => { $audit(disassembly, audit) })
+
+// Parse.Cloud.beforeFind(Disassembly, ({ query }) => {
+//   query.include(['contract', 'booking'])
+// })
 
 // Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => {
 //   // disassembly tasks
@@ -74,12 +78,21 @@ async function processOrder (className, objectId) {
   // abort if disassembly will not be done by RMV, or if done outside of WaWi
   if (!order.get('disassembly') || order.get('disassemblySkip')) {
     // clear all lists which are still in draft status
-    await $query('TaskList')
+    await $query(TaskList)
       .equalTo(className.toLowerCase(), order)
       .equalTo('status', 0)
       .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
     return
+    // $query(Disassembly)
+    //   .equalTo(className.toLowerCase(), order)
+    //   .equalTo('status', 0)
+    //   .each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
   }
+
+  // const disassembly = await $query(Disassembly)
+  //   .equalTo(className.toLowerCase(), order)
+  //   .first({ useMasterKey: true }) || new Disassembly({ [className.toLowerCase()]: order })
+  // await disassembly.save(null, { useMasterKey: true })
 
   const { cubeIds, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
 
@@ -125,7 +138,7 @@ async function processOrder (className, objectId) {
   }
 
   // Remove all lists which no longer fit the criteria
-  await $query('TaskList')
+  await $query(TaskList)
     .equalTo(className.toLowerCase(), order)
     .eachBatch(async (lists) => {
       for (const list of lists) {
@@ -148,6 +161,7 @@ async function processOrder (className, objectId) {
       state,
       contract: className === 'Contract' ? order : null,
       booking: className === 'Booking' ? order : null,
+      // disassembly,
       cubeIds,
       date,
       dueDate: moment(date).add(2, 'weeks').format('YYYY-MM-DD')
