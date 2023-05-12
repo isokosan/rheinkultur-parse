@@ -9,7 +9,8 @@ module.exports.ACC_TYPES = {
 
 module.exports.PERMISSIONS = {
   'manage-bookings': 'Manage Bookings',
-  'manage-scouts': 'Manage Scouts'
+  'manage-scouts': 'Manage Scouts',
+  'manage-fieldwork': 'Manage Fieldwork'
   /*
   cubes: 'CityCubes Public View', // verfügbar / nicht verfügbar
   'cubes-detail': 'CityCubes Detail View', // details like booked, not marketable etc

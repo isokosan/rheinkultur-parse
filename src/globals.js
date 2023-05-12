@@ -10,7 +10,7 @@ global.$cleanDict = (dict = {}) => {
       delete dict[key]
     }
   }
-  return Object.keys(dict).length > 0 ? dict : undefined
+  return Object.keys(dict).length > 0 ? dict : null
 }
 
 global.$parsify = (className, objectId) => {
