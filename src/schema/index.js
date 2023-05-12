@@ -577,26 +577,24 @@ const schemaDefinitions = {
       responsibles: { type: 'Array' }
     }
   },
-  // Disassembly: {
-  //   CLP: { ...readAuthOnly, ...writeMasterOnly },
-  //   fields: {
-  //     contract: { type: 'Pointer', targetClass: 'Contract' },
-  //     booking: { type: 'Pointer', targetClass: 'Booking' },
-
-  //     status: { type: 'Number', required: true },
-
-  //     responsibles: { type: 'Array' }
-  //   }
-  // },
+  Disassembly: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      contract: { type: 'Pointer', targetClass: 'Contract' },
+      booking: { type: 'Pointer', targetClass: 'Booking' },
+      status: { type: 'Number', required: true },
+      responsibles: { type: 'Array' }
+    }
+  },
   TaskList: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       type: { type: 'String', required: true }, // scout, control or disassembly
       briefing: { type: 'Pointer', targetClass: 'Briefing' },
       control: { type: 'Pointer', targetClass: 'Control' },
-      contract: { type: 'Pointer', targetClass: 'Contract' },
-      booking: { type: 'Pointer', targetClass: 'Booking' },
-      // disassembly: { type: 'Pointer', targetClass: 'Disassembly' },
+      // contract: { type: 'Pointer', targetClass: 'Contract' },
+      // booking: { type: 'Pointer', targetClass: 'Booking' },
+      disassembly: { type: 'Pointer', targetClass: 'Disassembly' },
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
       gp: { type: 'GeoPoint' }, // GeoPoint

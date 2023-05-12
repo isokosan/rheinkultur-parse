@@ -141,7 +141,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
-  query.include(['briefing', 'control', 'contract', 'booking'])
+  query.include(['briefing', 'control', 'disassembly'])
   query._include.includes('all') && query.include('submissions')
   if (master) { return }
   if (user.get('permissions')?.includes('manage-scouts')) {

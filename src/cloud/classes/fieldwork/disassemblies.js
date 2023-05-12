@@ -1,46 +1,90 @@
+const axios = require('axios')
 const { intersection } = require('lodash')
 
-// const Disassembly = Parse.Object.extend('Disassembly')
 const TaskList = Parse.Object.extend('TaskList')
+const Disassembly = Parse.Object.extend('Disassembly')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
-// Parse.Cloud.beforeSave(Disassembly, ({ object: disassembly }) => {
-//   !disassembly.get('status') && disassembly.set('status', 0)
-// })
+Parse.Cloud.beforeSave(Disassembly, ({ object: disassembly }) => {
+  if (disassembly.get('booking') && disassembly.get('contract')) {
+    throw new Error('Disassembly cannot be tied to a booking and a contract simultaneously')
+  }
+  // make sure the id matches the booking / contract
+  const [className, objectId] = disassembly.id.split('-')
+  if (disassembly.get(className.toLowerCase()).id !== objectId) {
+    throw new Error('Disassembly key does not match booking / contract')
+  }
 
-// Parse.Cloud.afterSave(Disassembly, ({ object: Disassembly, context: { audit } }) => { $audit(disassembly, audit) })
+  !disassembly.get('status') && disassembly.set('status', 0)
+  disassembly.unset('order')
+})
 
-// Parse.Cloud.beforeFind(Disassembly, ({ query }) => {
-//   query.include(['contract', 'booking'])
-// })
+Parse.Cloud.afterSave(Disassembly, ({ object: disassembly, context: { audit } }) => { $audit(disassembly, audit) })
 
-// Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => {
-//   // disassembly tasks
-//   const pipeline = [
-//     { $match: { _p_disassembly: { $in: disassemblies.map(c => 'Disassembly$' + c.id) } } },
-//     { $group: { _id: '$disassembly', taskListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
-//   ]
-//   const counts = await $query('TaskList').aggregate(pipeline)
-//     .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
-//   for (const disassembly of disassemblies) {
-//     disassembly.set(counts[disassembly.id])
-//   }
-// })
+Parse.Cloud.beforeFind(Disassembly, ({ query }) => {
+  query.include(['contract', 'booking'])
+})
+
+Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => {
+  // disassembly tasks
+  const pipeline = [
+    { $match: { _p_disassembly: { $in: disassemblies.map(c => 'Disassembly$' + c.id) } } },
+    { $group: { _id: '$disassembly', taskListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
+  ]
+  const counts = await $query(TaskList).aggregate(pipeline)
+    .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
+  for (const disassembly of disassemblies) {
+    disassembly.set(counts[disassembly.id])
+    disassembly.set('order', disassembly.get('booking') || disassembly.get('contract'))
+  }
+})
+
+Parse.Cloud.beforeDelete(Disassembly, async ({ object: disassembly }) => {
+  await $query(TaskList)
+    .equalTo('disassembly', disassembly)
+    .equalTo('status', 0)
+    .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
+  // TODO: Do not allow delete if task lists are in progress
+  // const remaining = await $query(TaskList)
+  //   .equalTo('disassembly', disassembly)
+  //   .notEqualTo('status', 0)
+})
+
+async function ensureDisassemblyExists (order) {
+  const disassemblyKey = order.className + '-' + order.id
+  const exists = await $query(Disassembly).equalTo('objectId', disassemblyKey).first({ useMasterKey: true })
+  if (!exists) {
+    await axios({
+      method: 'POST',
+      url: `${process.env.PUBLIC_SERVER_URL}/classes/Disassembly`,
+      headers: {
+        'Content-Type': 'application/json;charset=utf-8',
+        'X-Parse-Application-Id': process.env.APP_ID,
+        'X-Parse-Master-Key': process.env.MASTER_KEY
+      },
+      data: {
+        objectId: disassemblyKey,
+        booking: order.className === 'Booking' ? $pointer('Booking', order.id) : undefined,
+        contract: order.className === 'Contract' ? $pointer('Contract', order.id) : undefined
+      }
+    })
+  }
+  return $parsify(Disassembly, disassemblyKey)
+}
 
 async function upsertTaskList (attrs) {
   // first check if a departure list with the same unique attrs exists
   // uniqueTogether = { type, booking, contract, ort, state, date }
-  const existing = await $query('TaskList')
+  const existing = await $query(TaskList)
     .equalTo('type', 'disassembly')
-    .equalTo('booking', attrs.booking)
-    .equalTo('contract', attrs.contract)
+    .equalTo('disassembly', attrs.disassembly)
     .equalTo('ort', attrs.ort)
     .equalTo('state', attrs.state)
     .equalTo('date', attrs.date)
     .find({ useMasterKey: true })
   const [exists, ...duplicates] = existing
   duplicates.length && await Promise.all(duplicates.map((duplicate) => {
-    consola.warn('Removing duplicate disassembly', duplicate.attributes)
+    consola.warn('Removing duplicate disassembly tasklist', duplicate.attributes)
     return duplicate.destroy({ useMasterKey: true })
   }))
   if (exists) {
@@ -52,7 +96,6 @@ async function upsertTaskList (attrs) {
       .set('adminApprovedCubeIds', [...(exists.get('adminApprovedCubeIds') || []), ...attrs.adminApprovedCubeIds])
       .save(null, { useMasterKey: true, context: { audit } })
   }
-  const TaskList = Parse.Object.extend('TaskList')
   const taskList = new TaskList(attrs)
   const audit = { fn: 'task-list-generate' }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
@@ -69,21 +112,12 @@ async function processOrder (className, objectId) {
   // abort if disassembly will not be done by RMV, or if done outside of WaWi
   if (!order.get('disassembly') || order.get('disassemblySkip')) {
     // clear all lists which are still in draft status
-    await $query(TaskList)
-      .equalTo(className.toLowerCase(), order)
-      .equalTo('status', 0)
-      .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
+    const disassembly = await $query(Disassembly)
+      .equalTo('objectId', [order.className, order.id].join('-'))
+      .first({ useMasterKey: true })
+    disassembly && await disassembly.destroy({ useMasterKey: true })
     return
-    // $query(Disassembly)
-    //   .equalTo(className.toLowerCase(), order)
-    //   .equalTo('status', 0)
-    //   .each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
   }
-
-  // const disassembly = await $query(Disassembly)
-  //   .equalTo(className.toLowerCase(), order)
-  //   .first({ useMasterKey: true }) || new Disassembly({ [className.toLowerCase()]: order })
-  // await disassembly.save(null, { useMasterKey: true })
 
   const { cubeIds, earlyCancellations, endsAt, autoExtendsAt, canceledAt } = order.attributes
 
@@ -128,10 +162,13 @@ async function processOrder (className, objectId) {
     keys[uniqueKey].push(cubeId)
   }
 
+  // Make sure Disassembly is created if task lists exist
+  const disassembly = await ensureDisassemblyExists(order)
+
   // gather admin approved cubes in each area to carry the information if the date has changed, and apply to each list. The list before save triggers will clear any non-listed cubes.
-  const adminApprovedCubeIds = await $query('TaskList')
+  const adminApprovedCubeIds = await $query(TaskList)
     .equalTo('type', 'disassembly')
-    .equalTo(className.toLowerCase(), order)
+    .equalTo('disassembly', disassembly)
     .notEqualTo('adminApprovedCubeIds', null)
     .notEqualTo('adminApprovedCubeIds', [])
     .distinct('adminApprovedCubeIds', { useMasterKey: true })
@@ -140,7 +177,7 @@ async function processOrder (className, objectId) {
   // Remove all lists which no longer fit the criteria, while checking to see if disassembly has started
   const submissionAdjustments = {}
   await $query(TaskList)
-    .equalTo(className.toLowerCase(), order)
+    .equalTo('disassembly', disassembly)
     .eachBatch(async (lists) => {
       for (const list of lists) {
         // if list has a submission carry it to new list
@@ -168,9 +205,7 @@ async function processOrder (className, objectId) {
       type: 'disassembly',
       ort,
       state,
-      contract: className === 'Contract' ? order : null,
-      booking: className === 'Booking' ? order : null,
-      // disassembly,
+      disassembly,
       cubeIds,
       date,
       dueDate: moment(date).add(2, 'weeks').format('YYYY-MM-DD'),
@@ -185,6 +220,11 @@ async function processOrder (className, objectId) {
       await taskList.save(null, { useMasterKey: true, context: { audit } })
     }
     i++
+  }
+
+  // if there are no task lists remaining, remove the disassembly
+  if (!await $query(TaskList).equalTo('disassembly', disassembly).count({ useMasterKey: true })) {
+    await disassembly.destroy({ useMasterKey: true })
   }
   return i
 }
