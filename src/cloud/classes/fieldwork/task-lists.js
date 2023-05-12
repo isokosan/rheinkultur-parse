@@ -31,6 +31,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
 
   const cubeIds = [...new Set(taskList.get('cubeIds') || [])]
   cubeIds.sort()
+
   taskList.set('cubeIds', cubeIds)
   taskList.set('cubeCount', cubeIds.length)
   taskList.set('gp', await getCenterOfCubes(cubeIds))
@@ -83,7 +84,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   }
   counts.completed = parseInt(counts.pending + counts.approved)
 
-  if (taskType === 'scout') {
+  if (!taskList.isNew() && taskType === 'scout') {
     const quota = taskList.get('quota')
     const quotas = taskList.get('quotas')
     counts.total = quota || sum(Object.values(quotas || {}))
@@ -141,7 +142,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
-  query.include(['briefing', 'control', 'disassembly'])
+  query.include(['briefing', 'control', 'disassembly', 'disassembly.booking', 'disassembly.contract'])
   query._include.includes('all') && query.include('submissions')
   if (master) { return }
   if (user.get('permissions')?.includes('manage-scouts')) {
@@ -216,6 +217,10 @@ Parse.Cloud.define('task-list-locations', async ({ params: { parent: { className
 
 Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
+  if (taskList.get('status') > 0) {
+    // TOTRANSLATE
+    throw new Error('You cannot change an assigned manager. Please first retract.')
+  }
   const { managerId } = normalizeFields(params)
   if (managerId === taskList.get('manager')?.id) {
     throw new Error('Keine Änderungen')
@@ -234,6 +239,10 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
 
 Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
+  if (taskList.get('status') > 1) {
+    // TOTRANSLATE
+    throw new Error('You cannot change scouts in an assigned task list. Please first retract.')
+  }
   const { scoutIds } = normalizeFields(params)
   const currentScoutIds = (taskList.get('scouts') || []).map(s => s.id)
   if (scoutIds === currentScoutIds) {
@@ -292,7 +301,11 @@ Parse.Cloud.define('task-list-update-due-date', async ({ params: { id: taskListI
   }
 }, $adminOnly)
 
+// TOTRANSLATE
 async function validateAppointAssign (taskList) {
+  if (!taskList.get('cubeIds').length) {
+    throw new Error('This task list has no cubes!')
+  }
   if (!taskList.get('date') || !taskList.get('dueDate')) {
     throw new Error('Please set date and due date first.')
   }
@@ -357,18 +370,27 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
   }
 }, $scoutManagerOrAdmin)
 
-// check if location has tasks remaining
 Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (![2, 3].includes(taskList.get('status'))) {
-    throw new Error('Only lists that are in progress can be retracted.')
+  if (![1, 2, 3].includes(taskList.get('status'))) {
+    throw new Error('Only lists that are in progress or assigned to a scout can be retracted.')
   }
-  taskList.set({ status: 1 })
-  const audit = { user, fn: 'task-list-retract' }
+  const audit = { user }
+  let message
+  if (taskList.get('status') === 1) {
+    // make sure the user has "manage-fieldwork" permissions
+    taskList.set({ status: 0 })
+    audit.fn = 'task-list-retract-appoint'
+    message = 'Ernennung zurückgezogen.'
+  } else {
+    taskList.set({ status: 1 })
+    audit.fn = 'task-list-retract-assign'
+    message = 'Beauftragung zurückgezogen.'
+  }
   await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   return {
     data: taskList.get('status'),
-    message: 'Abfahrtslist zurückgezogen.'
+    message
   }
 }, $scoutManagerOrAdmin)
 
@@ -395,9 +417,8 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status')) { throw new Error('Only draft lists can be removed.') }
-  throw new Error('Task lists currently cannot be removed.')
-  // await taskList.destroy({ useMasterKey: true })
-  // return { message: 'Abfahrtsliste gelöscht.' }
+  await taskList.destroy({ useMasterKey: true })
+  return { message: 'Abfahrtsliste gelöscht.' }
 }, $internOrAdmin)
 
 // check if location has tasks remaining
@@ -417,7 +438,7 @@ Parse.Cloud.define('task-list-revert-complete', async ({ params: { id: taskListI
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status') !== 4) { throw new Error('Only completed can be reverted') }
   taskList.set({ status: 0 })
-  const audit = { user, fn: 'task-list-complete' }
+  const audit = { user, fn: 'task-list-revert-complete' }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
     data: taskList.get('status'),

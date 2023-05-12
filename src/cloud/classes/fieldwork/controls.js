@@ -183,7 +183,7 @@ Parse.Cloud.define('control-create', async ({
     name,
     date,
     dueDate,
-    status: 1
+    progress: 1
   })
 
   const audit = { user, fn: 'control-create' }
@@ -200,7 +200,7 @@ Parse.Cloud.define('control-update', async ({
 }) => {
   const control = await $getOrFail(Control, controlId)
   const changes = $changes(control, { name, date, dueDate })
-  control.set({ name, date, dueDate, status: 1 })
+  control.set({ name, date, dueDate, progress: 1 })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
@@ -225,7 +225,7 @@ Parse.Cloud.define('control-freeze-criteria', async ({
   const control = await $getOrFail(Control, controlId)
   const cubesQuery = getCubesQuery(control)
   const cubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
-  control.set({ cubeIds, status: 2 })
+  control.set({ cubeIds, progress: 2 })
   const audit = { user, fn: 'control-freeze-criteria' }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
@@ -284,7 +284,7 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
       await taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
-  return control.set('status', 3).save(null, { useMasterKey: true })
+  return control.set('progress', 3).save(null, { useMasterKey: true })
 }, { requireUser: true })
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {

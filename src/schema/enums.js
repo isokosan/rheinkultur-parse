@@ -113,10 +113,19 @@ module.exports.INTEREST_RATES = {
 }
 
 module.exports.TASK_LIST_STATUSES = {
-  0: 'Entwurf (Nicht ernannt)',
-  1: 'Ernannt (Nicht beauftragt)',
+  0: 'Entwurf',
+  1: 'Ernannt',
   2: 'Beauftragt',
   3: 'In Bearbeitung',
   4: 'Erledigt',
   5: 'Archiviert'
+}
+
+// Briefing, Control, Disassembly
+// These should be calculated from the task lists
+module.exports.FIELDWORK_PARENT_STATUSES = {
+  0: 'Entwurf',
+  1: 'Geplant',
+  2: 'In Bearbeitung',
+  3: 'Erledigt'
 }
