@@ -1,3 +1,10 @@
+## [1.36.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.0...1.36.1) (2023-05-14)
+
+
+### Bug Fixes
+
+* disassembly exports and fieldwork statuses ([0a75739](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0a757399f05e791ae16e1c52e757f6292c754893))
+
 # [1.36.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.35.1...1.36.0) (2023-05-14)
 
 
