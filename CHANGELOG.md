@@ -1,3 +1,10 @@
+# [1.36.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.35.1...1.36.0) (2023-05-14)
+
+
+### Features
+
+* introduce notifications app to redirect to the correct app. (scout-city-cubes-wawi) ([93fc460](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/93fc46096bc3aa0b459ccd21107b6ba5f1594ba2))
+
 ## [1.35.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.35.0...1.35.1) (2023-05-14)
 
 
