@@ -290,10 +290,21 @@ Parse.Cloud.define('search', async ({
     returnQuery
   }, user, master
 }) => {
+  let orderClass
   const isPublic = !master && !user
   if (isPublic && s !== '0' && s !== '') {
     s = ''
   }
+  const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
+  if (isPartner) {
+    !['0', 'my_bookings'].includes(s) && (s = '')
+    if (s === 'my_bookings') {
+      s = '5'
+      orderClass = 'Booking'
+      cId = user.get('company').id
+    }
+  }
+
   s = s ? s.split(',').filter(Boolean) : []
 
   // BUILD QUERY
@@ -392,6 +403,7 @@ Parse.Cloud.define('search', async ({
   if (s.includes('5')) {
     bool.must.push({ exists: { field: 'order' } })
     cId && bool.must.push({ match: { 'order.company.objectId': cId } })
+    orderClass && bool.must.push({ match: { 'order.className': orderClass } })
     motive && bool.must.push({ match_phrase_prefix: { 'order.motive': motive } })
   }
   // Nicht vermarktungsfähig

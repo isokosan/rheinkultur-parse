@@ -107,10 +107,34 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
 })
 
 Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
+  // if public, just return clean and approved photos.
   const isPublic = !user && !master
-  !query._where.assemblyKey && query.equalTo('assemblyKey', null) // show assembly photos only if specified
-  isPublic && query.equalTo('approved', true).equalTo('klsId', null).equalTo('assemblyKey', null) // temporary fix until KLS id is resolved
-  // TODO: constrain photos to only those of the user's cubes if not approved
+  if (isPublic) {
+    query
+      .equalTo('approved', true)
+      .equalTo('klsId', null) // temporary fix until KLS id is resolved
+      .equalTo('assemblyKey', null)
+    return
+  }
+
+  const isIntern = user && ['admin', 'intern'].includes(user.get('accType'))
+  if (isIntern) {
+    !query._where.assemblyKey && query.equalTo('assemblyKey', null) // show assembly photos only if specified
+    return
+  }
+
+  // if not intern constrain photos to only those of the scouts cubes
+  query.equalTo('klsId', null).equalTo('assemblyKey', null)
+  const userQuery = user.get('accType') === 'partner'
+    ? $query(Parse.User).equalTo('company', $pointer('Company', user.get('company').id))
+    : $query(Parse.User).equalTo('objectId', user.id)
+  return Parse.Query.and(
+    query,
+    Parse.Query.or(
+      $query('CubePhoto').equalTo('approved', true),
+      $query('CubePhoto').matchesQuery('createdBy', userQuery)
+    )
+  )
 })
 
 Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regenerateThumb, regenerateSize1000 } }) => {

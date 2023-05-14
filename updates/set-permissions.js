@@ -1,7 +1,7 @@
 require('dotenv').config()
 global.Parse = require('parse/node')
-// Parse.serverURL = process.env.PRODUCTION_SERVER_URL
-Parse.serverURL = process.env.PUBLIC_SERVER_URL
+Parse.serverURL = process.env.PRODUCTION_SERVER_URL
+// Parse.serverURL = process.env.PUBLIC_SERVER_URL
 console.log(Parse.serverURL)
 Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MASTER_KEY)
 require('./../src/globals')
@@ -48,6 +48,21 @@ async function setPermissions () {
     .each((user) => {
       const permissions = user.get('permissions') || []
       permissions.push('manage-bookings')
+      i++
+      return user.set({ permissions }).save(null, { useMasterKey: true })
+    }, { useMasterKey: true })
+
+  const scout = [
+    'rwe@rheinkultur-medien.de',
+    'sth@rheinkultur-medien.de',
+    'marc@asriel.de'
+  ]
+  await $query(Parse.User)
+    .containedIn('username', scout)
+    .notEqualTo('permissions', 'scout')
+    .each((user) => {
+      const permissions = user.get('permissions') || []
+      permissions.push('scout')
       i++
       return user.set({ permissions }).save(null, { useMasterKey: true })
     }, { useMasterKey: true })
