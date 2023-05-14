@@ -1,3 +1,10 @@
+## [1.35.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.35.0...1.35.1) (2023-05-14)
+
+
+### Bug Fixes
+
+* partner bookings search and visible cube photos ([a3da1c2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a3da1c2661fdf2133c3ac2b063cd77065e9db186))
+
 # [1.35.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.34.0...1.35.0) (2023-05-14)
 
 
