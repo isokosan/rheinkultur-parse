@@ -7,6 +7,7 @@ const NOTIFICATIONS = {
   'task-list-assigned': {
     mail: false,
     message: ({ placeKey }) => `You have been assigned to scout ${placeKey.split(':')[1]}.`,
+    app: 'scout',
     route: ({ placeKey }) => ({ name: 'location', params: { placeKey } }),
     related: notification => $query(Notification)
       .equalTo('user', notification.get('user'))
@@ -17,11 +18,13 @@ const NOTIFICATIONS = {
   'task-submission-rejected': {
     mail: false,
     message: ({ cubeId, rejectionReason }) => `Your submission for ${cubeId} was rejected. ${rejectionReason}`,
+    app: 'scout',
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
   }
 }
 
 const resolveMessage = (notification) => NOTIFICATIONS[notification.get('identifier')].message(notification.get('data'))
+const resolveApp = (notification) => NOTIFICATIONS[notification.get('identifier')].app
 const resolveRoute = (notification) => NOTIFICATIONS[notification.get('identifier')].route(notification.get('data'))
 const resolveRelated = (notification) => NOTIFICATIONS[notification.get('identifier')].related?.(notification)
 const resolveShouldSendPush = (notification, user) => {
@@ -75,7 +78,10 @@ Parse.Cloud.define('notification-see', async ({ params: { ids }, user }) => {
 Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
   const notification = await $query(Notification).get(id, { sessionToken: user.getSessionToken() })
   !notification.get('readAt') && await notification.set('readAt', new Date()).save(null, { useMasterKey: true })
-  return resolveRoute(notification)
+  return {
+    app: resolveApp(notification),
+    route: resolveRoute(notification)
+  }
 }, { requireUser: true })
 
 const notify = async ({ user, identifier, data }) => {
