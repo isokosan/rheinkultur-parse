@@ -1,3 +1,15 @@
+# [1.35.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.34.0...1.35.0) (2023-05-14)
+
+
+### Bug Fixes
+
+* scout data bug ([6681920](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/66819209f028183bf69a94dadee152d2fc5e80a7))
+
+
+### Features
+
+* clean fieldwork ([170f8f8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/170f8f881734936586e7560e706097d04a25fcd2))
+
 # [1.34.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.33.0...1.34.0) (2023-05-11)
 
 
