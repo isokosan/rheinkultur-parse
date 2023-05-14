@@ -1,3 +1,10 @@
+## [1.36.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.1...1.36.2) (2023-05-14)
+
+
+### Bug Fixes
+
+* allow ml in partner cube search and hide SGSW and TLK cubes ([a0c9dd3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a0c9dd3ab90acfe97f0fbbf7efc79b026f5b6cf0))
+
 ## [1.36.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.0...1.36.1) (2023-05-14)
 
 
