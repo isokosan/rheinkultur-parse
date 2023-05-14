@@ -297,12 +297,13 @@ Parse.Cloud.define('search', async ({
   }
   const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
   if (isPartner) {
-    !['0', 'my_bookings'].includes(s) && (s = '')
+    !['0', 'my_bookings', 'ml'].includes(s) && (s = '')
     if (s === 'my_bookings') {
       s = '5'
       orderClass = 'Booking'
       cId = user.get('company').id
     }
+    lc = 'TLK'
   }
 
   s = s ? s.split(',').filter(Boolean) : []
