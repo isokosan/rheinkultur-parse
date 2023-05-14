@@ -44,6 +44,4 @@ networks:
 
 volumes:
   elasticsearchdata:
-    driver: local
   kibanadata:
-    driver: local
