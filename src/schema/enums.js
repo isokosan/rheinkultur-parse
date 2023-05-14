@@ -124,9 +124,10 @@ module.exports.TASK_LIST_STATUSES = {
 
 // Briefing, Control, Disassembly
 // These should be calculated from the task lists
-module.exports.FIELDWORK_PARENT_STATUSES = {
+module.exports.FIELDWORK_STATUSES = {
   0: 'Entwurf',
   1: 'Geplant',
   2: 'In Bearbeitung',
-  3: 'Erledigt'
+  3: 'Erledigt',
+  4: 'Archiviert'
 }

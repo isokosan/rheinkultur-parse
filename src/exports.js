@@ -665,10 +665,10 @@ router.get('/disassemblies/:monthYear', handleErrorAsync(async (req, res) => {
     .equalTo('type', 'disassembly')
     .greaterThanOrEqualTo('date', from)
     .lessThanOrEqualTo('date', to)
-    .include(['booking', 'contract', 'booking.company', 'contract.company'])
     .each(async taskList => {
       const cubeIds = taskList.get('cubeIds') || []
-      const order = taskList.get('booking') || taskList.get('contract')
+      const order = taskList.get('disassembly').get('order')
+      await order.fetchWithInclude('company', { useMasterKey: true })
       const cubes = await (new Parse.Query('Cube'))
         .containedIn('objectId', cubeIds)
         .include(['ht', 'state'])

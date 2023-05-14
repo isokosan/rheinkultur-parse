@@ -14,7 +14,8 @@ const {
   PRINT_PACKAGE_FACES: printPackageFaces,
   PRINT_PACKAGE_FILES: printPackageFiles,
   INTEREST_RATES: interestRates,
-  TASK_LIST_STATUSES: taskListStatuses
+  TASK_LIST_STATUSES: taskListStatuses,
+  FIELDWORK_STATUSES: fieldworkStatuses
 } = require('@/schema/enums')
 
 const {
@@ -88,7 +89,8 @@ Parse.Cloud.define('enums', () => ({
   printPackageFaces,
   printPackageFiles,
   interestRates,
-  taskListStatuses
+  taskListStatuses,
+  fieldworkStatuses
 }), { requireUser: true })
 
 // temporary solution to PLZ's without redis
