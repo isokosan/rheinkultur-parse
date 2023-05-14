@@ -289,17 +289,11 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
   const control = await $getOrFail(Control, controlId)
-  if (await $query('TaskList').equalTo('control', control).greaterThan('status', 2).first({ useMasterKey: true })) {
-    throw new Error('Controls with appointed task lists cannot be deleted!')
+  if (await $query('TaskList').equalTo('control', control).greaterThan('status', 0).first({ useMasterKey: true })) {
+    throw new Error('Controls with task lists in progress cannot be deleted!')
   }
   await $query('TaskList')
     .equalTo('control', control)
     .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
   return control.destroy({ useMasterKey: true })
 }, { requireUser: true })
-
-// $query('TaskList')
-//   .equalTo('type', 'control')
-//   .equalTo('cubeCount', 0)
-//   .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
-//   .then(consola.success)

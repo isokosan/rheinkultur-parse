@@ -35,12 +35,11 @@ Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
 Parse.Cloud.beforeDelete(Briefing, async ({ object: briefing }) => {
   const wipListExists = await $query(TaskList)
     .equalTo('briefing', briefing)
-    .greaterThanOrEqualTo('status', 3)
     .find({ useMasterKey: true })
   if (wipListExists.length) {
     throw new Error('There are work in progress lists inside this briefing')
   }
-  throw new Error('Not working yet')
+  // TODO: Check statuses, to make sure really no wip exists
 })
 
 Parse.Cloud.afterDelete(Briefing, $deleteAudits)
