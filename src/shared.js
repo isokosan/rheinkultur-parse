@@ -129,6 +129,7 @@ async function setCubeOrderStatuses (bookingOrContract) {
     autoExtendsAt,
     canceledAt,
     earlyCancellations,
+    cubeCount,
     motive
   } = bookingOrContract.attributes
   const { className, id: objectId } = bookingOrContract
@@ -145,6 +146,7 @@ async function setCubeOrderStatuses (bookingOrContract) {
     autoExtendsBy,
     autoExtendsAt,
     canceledAt,
+    cubeCount,
     motive
   }
 
