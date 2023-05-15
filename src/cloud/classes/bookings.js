@@ -46,7 +46,11 @@ Parse.Cloud.beforeFind(Booking, ({ query }) => {
 })
 
 Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
+  const cubeIds = bookings.map(booking => booking.get('cubeIds') || []).flat()
+  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
   for (const booking of bookings) {
+    const cubeId = booking.get('cubeIds')?.[0]
+    booking.set('cube', cubes.find(cube => cube.id === cubeId))
     // get computed property willExtend
     const willExtend = booking.get('autoExtendsAt') && !booking.get('canceledAt')
     booking.set('willExtend', willExtend)
