@@ -1,3 +1,10 @@
+## [1.36.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.2...1.36.3) (2023-05-15)
+
+
+### Bug Fixes
+
+* add cube count to order summary ([1b70816](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1b708168f1a0ff3543709c7899f024dd6c9bb355))
+
 ## [1.36.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.1...1.36.2) (2023-05-14)
 
 
