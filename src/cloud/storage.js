@@ -107,9 +107,9 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
 })
 
 Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
+  if (master) { return }
   // if public, just return clean and approved photos.
-  const isPublic = !user && !master
-  if (isPublic) {
+  if (!user) {
     query
       .equalTo('approved', true)
       .equalTo('klsId', null) // temporary fix until KLS id is resolved
