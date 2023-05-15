@@ -1,3 +1,10 @@
+## [1.36.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.3...1.36.4) (2023-05-15)
+
+
+### Bug Fixes
+
+* photo master bug ([bf33ffa](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bf33ffa699931e7d6778068d74954cfa8647264e))
+
 ## [1.36.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.2...1.36.3) (2023-05-15)
 
 
