@@ -200,6 +200,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+  await submission.get('taskList').get('disassembly').save(null, { useMasterKey: true, context: { countStatuses: true } })
   // control-disassembled
   const controlSubmission = await $query(ControlSubmission)
     .equalTo('disassembly', submission)

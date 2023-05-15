@@ -5,7 +5,7 @@ const TaskList = Parse.Object.extend('TaskList')
 const Disassembly = Parse.Object.extend('Disassembly')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
-Parse.Cloud.beforeSave(Disassembly, ({ object: disassembly }) => {
+Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly, context: { countStatuses } }) => {
   if (disassembly.get('booking') && disassembly.get('contract')) {
     throw new Error('Disassembly cannot be tied to a booking and a contract simultaneously')
   }
@@ -17,6 +17,20 @@ Parse.Cloud.beforeSave(Disassembly, ({ object: disassembly }) => {
 
   !disassembly.get('status') && disassembly.set('status', 0)
   disassembly.unset('order')
+
+  if (countStatuses) {
+    const statuses = {}
+    await $query('DisassemblySubmission')
+      .matchesQuery('taskList', $query('TaskList').equalTo('disassembly', disassembly))
+      .equalTo('status', 'approved')
+      .select(['cube', 'condition'])
+      .eachBatch((submissions) => {
+        for (const submission of submissions) {
+          statuses[submission.get('cube').id] = submission.get('condition')
+        }
+      }, { useMasterKey: true })
+    disassembly.set('statuses', $cleanDict(statuses))
+  }
 })
 
 Parse.Cloud.afterSave(Disassembly, ({ object: disassembly, context: { audit } }) => { $audit(disassembly, audit) })

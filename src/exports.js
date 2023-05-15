@@ -609,7 +609,7 @@ const addTaskListSheet = async (workbook, taskList) => {
 
 router.get('/task-list', handleErrorAsync(async (req, res) => {
   const taskList = await (new Parse.Query('TaskList')).include('state').get(req.query.id, { useMasterKey: true })
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('booking') || taskList.get('contract')
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly').get('order')
   const name = getName(parent.toJSON())
   const workbook = new excel.Workbook()
   await addTaskListSheet(workbook, taskList)

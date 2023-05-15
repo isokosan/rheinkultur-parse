@@ -22,6 +22,9 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
   // cubes
   !booking.get('cubeIds') && booking.set('cubeIds', [])
   booking.set('cubeCount', (booking.get('cubeIds') || []).length)
+  if (booking.get('cubeCount') > 1) {
+    throw new Error('We changing bookings to only accept 1 cube. Please make multiple bookings instead.')
+  }
 })
 
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
@@ -37,6 +40,7 @@ Parse.Cloud.beforeFind(Booking, ({ query }) => {
     'company',
     'companyPerson',
     'production',
+    'disassemblyStatuses',
     'docs'
   ])
 })
@@ -49,6 +53,10 @@ Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
 
     if (query._include.includes('production')) {
       booking.set('production', await $query('Production').equalTo('booking', booking).first({ useMasterKey: true }))
+    }
+    if (query._include.includes('disassemblyStatuses')) {
+      const disassembly = await $query('Disassembly').equalTo('booking', booking).first({ useMasterKey: true })
+      disassembly && booking.set('disassemblyStatuses', disassembly.get('statuses'))
     }
   }
   return bookings
