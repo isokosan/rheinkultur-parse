@@ -211,8 +211,16 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, $adminOnly)
 
-Parse.Cloud.define('task-list-locations', async ({ params: { parent: { className, objectId } } }) => {
-  return $query('TaskList').equalTo(className.toLowerCase(), $parsify(className, objectId)).distinct('pk')
+Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, objectId } } }) => {
+  return $query('TaskList')
+    .aggregate([
+      { $match: { [`_p_${className.toLowerCase()}`]: className + '$' + objectId } },
+      { $group: { _id: '$pk', count: { $sum: 1 } } }
+    ], { useMasterKey: true })
+    .then(results => results.reduce((acc, { objectId, count }) => {
+      acc[objectId] = count
+      return acc
+    }, {}))
 }, $internOrAdmin)
 
 Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId, ...params }, user }) => {

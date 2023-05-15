@@ -104,8 +104,10 @@ const INDEXES = {
       mappings: {
         properties: {
           geo: { type: 'geo_point' },
-          status: {
-            type: 'byte'
+          status: { type: 'byte' },
+          date: {
+            type: 'date',
+            format: 'strict_date'
           }
         }
       }

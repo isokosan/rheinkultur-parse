@@ -40,14 +40,18 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
 })
 
 Parse.Cloud.beforeDelete(Disassembly, async ({ object: disassembly }) => {
+  // TODO: Allow deleting in a different way
+  const remaining = await $query(TaskList)
+    .equalTo('disassembly', disassembly)
+    .notEqualTo('status', 0)
+    .count({ useMasterKey: true })
+  if (remaining) {
+    throw new Error('Cannot delete disassembly with in progress tasks')
+  }
   await $query(TaskList)
     .equalTo('disassembly', disassembly)
     .equalTo('status', 0)
     .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
-  // TODO: Do not allow delete if task lists are in progress
-  // const remaining = await $query(TaskList)
-  //   .equalTo('disassembly', disassembly)
-  //   .notEqualTo('status', 0)
 })
 
 async function ensureDisassemblyExists (order) {
