@@ -1,3 +1,10 @@
+# [1.38.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.37.1...1.38.0) (2023-05-15)
+
+
+### Features
+
+* wip add booking cube ([178a84e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/178a84ec6d8e2463c3914716ff721de4f8e2ddac))
+
 ## [1.37.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.37.0...1.37.1) (2023-05-15)
 
 
