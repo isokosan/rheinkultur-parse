@@ -1,3 +1,10 @@
+# [1.37.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.4...1.37.0) (2023-05-15)
+
+
+### Features
+
+* add task list count to task list locations ([d803eea](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d803eeaf960433018ad7a6dcbdeefd2cdd1267b7))
+
 ## [1.36.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.36.3...1.36.4) (2023-05-15)
 
 
