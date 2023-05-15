@@ -1,3 +1,10 @@
+# [1.39.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.38.0...1.39.0) (2023-05-15)
+
+
+### Features
+
+* add cubeId to booking schema ([6ebb561](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6ebb56162e93402a2fa415eaa27546d17bcd087a))
+
 # [1.38.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.37.1...1.38.0) (2023-05-15)
 
 
