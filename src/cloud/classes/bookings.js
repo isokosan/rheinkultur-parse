@@ -25,6 +25,7 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
   if (booking.get('cubeCount') > 1) {
     throw new Error('We changing bookings to only accept 1 cube. Please make multiple bookings instead.')
   }
+  booking.set('cubeId', booking.get('cubeIds')?.[0])
 })
 
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
