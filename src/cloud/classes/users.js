@@ -23,6 +23,7 @@ Parse.Cloud.beforeSave(Parse.User, async ({ object: user, master }) => {
 }, {
   fields: {
     accType: { constant: true },
+    permissions: { constant: true },
     inviteToken: { constant: true },
     isBanned: { constant: true, default: false }
   }
