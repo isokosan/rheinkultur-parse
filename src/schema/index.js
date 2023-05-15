@@ -112,6 +112,7 @@ const schemaDefinitions = {
       earlyCancellations: { type: 'Object' },
 
       cubeIds: { type: 'Array', default: [] },
+      cubeId: { type: 'String' },
 
       disassembly: { type: 'Boolean' }, // demontage von Rheinkultur
 
