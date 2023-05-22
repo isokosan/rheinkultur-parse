@@ -14,7 +14,7 @@ COPY rk-lint ./rk-lint
 
 FROM base AS dependencies
 USER node
-RUN yarn install --frozen-lockfile --production --non-interactive --no-progress --prefer-offline
+RUN yarn install --frozen-lockfile --production --non-interactive --no-progress --prefer-offline --network-timeout 100000
 
 FROM base AS release
 COPY --from=dependencies --chown=node:node /usr/src/app/node_modules ./node_modules
