@@ -33,7 +33,11 @@ Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCu
   audit && $audit(booking, audit)
 })
 
-Parse.Cloud.beforeFind(Booking, ({ query }) => {
+Parse.Cloud.beforeFind(Booking, ({ query, user }) => {
+  // if partner, only self bookings
+  if (user?.get('accType') === 'partner' && user.get('company')) {
+    query.equalTo('company', user.get('company'))
+  }
   if (!('deletedAt' in query._where) && !query._include.includes('deleted')) {
     query.equalTo('deletedAt', null)
   }
