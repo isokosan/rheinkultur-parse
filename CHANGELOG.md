@@ -1,3 +1,10 @@
+## [1.39.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.39.1...1.39.2) (2023-05-22)
+
+
+### Bug Fixes
+
+* add arm64 support to build script ([03ddc38](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/03ddc38187c2d48b9ec048b0173f0c29c3562291))
+
 ## [1.39.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.39.0...1.39.1) (2023-05-22)
 
 
