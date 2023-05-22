@@ -1,3 +1,10 @@
+## [1.39.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.39.2...1.39.3) (2023-05-22)
+
+
+### Bug Fixes
+
+* add network timeout to yarn install ([d5b4b0e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d5b4b0e621746b26b15250cc0a698db9cb2c7505))
+
 ## [1.39.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.39.1...1.39.2) (2023-05-22)
 
 
