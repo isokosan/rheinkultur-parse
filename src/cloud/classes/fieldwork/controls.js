@@ -13,18 +13,17 @@ function getCubesQuery (control) {
   const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', dueDate)
 
   // order status is active, canceled or ended
-  let cubesQuery = Parse.Query.or(extendsDuringControlPeriod, endDateAfterControlPeriod)
+  let baseQuery = Parse.Query.or(extendsDuringControlPeriod, endDateAfterControlPeriod)
     .greaterThan('order.status', 2)
     .lessThan('order.startsAt', date)
-
-  // filter out cubes that were controlled in the last x months
+    // filter out cubes that were controlled in the last x months
   if (lastControlBefore) {
     const lastControlAt = moment(date).subtract(lastControlBefore, 'months').toDate()
     const lastControlQuery = Parse.Query.or(
       $query('Cube').doesNotExist('cAt'),
       $query('Cube').lessThan('cAt', lastControlAt)
     )
-    cubesQuery = Parse.Query.and(cubesQuery, lastControlQuery)
+    baseQuery = Parse.Query.and(baseQuery, lastControlQuery)
   }
 
   const filters = {
@@ -33,9 +32,11 @@ function getCubesQuery (control) {
     Tag: { include: [], exclude: [] },
     Company: { include: [], exclude: [] },
     Contract: { include: [], exclude: [] },
-    Booking: { include: [], exclude: [] }
+    Booking: { include: [], exclude: [] },
+    Cube: { include: [], exclude: [] }
   }
 
+  let cubesQuery = $query('Cube')
   for (const criterion of criteria || []) {
     filters[criterion.type][criterion.op].push(criterion.value)
   }
@@ -100,6 +101,15 @@ function getCubesQuery (control) {
     const companiesQuery = $query('Company').containedIn('objectId', filters.Company.exclude)
     cubesQuery.doesNotMatchKeyInQuery('order.company.objectId', 'objectId', companiesQuery)
   }
+  if (filters.Cube.include.length) {
+    cubesQuery = Parse.Query.or(
+      $query('Cube').containedIn('objectId', filters.Cube.include),
+      cubesQuery
+    )
+  }
+  if (filters.Cube.exclude.length) {
+    cubesQuery.notContainedIn('objectId', filters.Cube.exclude)
+  }
   const contractsQuery = $query('Cube')
   let contracts = false
   if (filters.Contract.include.length) {
@@ -126,7 +136,7 @@ function getCubesQuery (control) {
   }
   const ordersQuery = contracts && bookings ? Parse.Query.or(contractsQuery, bookingsQuery) : contracts ? contractsQuery : bookings ? bookingsQuery : null
   cubesQuery = ordersQuery ? Parse.Query.and(cubesQuery, ordersQuery) : cubesQuery
-  return cubesQuery
+  return Parse.Query.and(baseQuery, cubesQuery)
 }
 
 Parse.Cloud.beforeSave(Control, ({ object: control }) => {
@@ -150,7 +160,7 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
     for (const control of controls) {
       const criteria = control.get('criteria') || []
       for (const item of criteria) {
-        if (['State', 'Tag', 'Company', 'Contract', 'Booking'].includes(item.type)) {
+        if (['State', 'Tag', 'Company', 'Contract', 'Booking', 'Cube'].includes(item.type)) {
           item.item = await $getOrFail(item.type, item.value)
             .then(obj => ({ ...obj.toJSON(), className: item.type }))
         }
@@ -195,54 +205,51 @@ Parse.Cloud.define('control-update', async ({
     id: controlId,
     name,
     date,
-    dueDate
-  }, user
-}) => {
-  const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, dueDate })
-  control.set({ name, date, dueDate, progress: 1 })
-  const audit = { user, fn: 'control-update', data: { changes } }
-  return control.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
-
-Parse.Cloud.define('control-update-criteria', async ({
-  params: {
-    id: controlId,
+    dueDate,
     criteria
   }, user
 }) => {
   const control = await $getOrFail(Control, controlId)
-  control.set({ criteria })
-  const audit = { user, fn: 'control-update-criteria' }
+  const changes = $changes(control, { name, date, dueDate, criteria })
+  control.set({ name, date, dueDate, criteria })
+  const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('control-freeze-criteria', async ({
-  params: {
-    id: controlId
-  }, user
-}) => {
+// Parse.Cloud.define('control-update-criteria', async ({
+//   params: {
+//     id: controlId,
+//     criteria
+//   }, user
+// }) => {
+//   const control = await $getOrFail(Control, controlId)
+//   control.set({ criteria })
+//   const audit = { user, fn: 'control-update-criteria' }
+//   return control.save(null, { useMasterKey: true, context: { audit } })
+// }, { requireUser: true })
+
+// Parse.Cloud.define('control-freeze-criteria', async ({
+//   params: {
+//     id: controlId
+//   }, user
+// }) => {
+//   const control = await $getOrFail(Control, controlId)
+//   const cubesQuery = getCubesQuery(control)
+//   control.set({ cubeIds, progress: 2 })
+//   const audit = { user, fn: 'control-freeze-criteria' }
+//   return control.save(null, { useMasterKey: true, context: { audit } })
+// }, { requireUser: true })
+
+Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId, lists }, user }) => {
   const control = await $getOrFail(Control, controlId)
   const cubesQuery = getCubesQuery(control)
-  const cubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
-  control.set({ cubeIds, progress: 2 })
-  const audit = { user, fn: 'control-freeze-criteria' }
-  return control.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
-
-Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists }, user }) => {
-  const control = await $getOrFail(Control, controlId)
-  const cubeIds = control.get('cubeIds') || []
-  const addedCubeIds = control.get('addedCubeIds') || []
-  const skippedCubeIds = control.get('skippedCubeIds') || []
+  const matchingCubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
   const { date, dueDate } = control.attributes
 
-  const finalCubeIds = [...cubeIds, ...addedCubeIds].filter(id => !skippedCubeIds.includes(id))
-
   const cubes = await $query('Cube')
-    .containedIn('objectId', finalCubeIds)
+    .containedIn('objectId', matchingCubeIds)
     .select(['objectId', 'ort', 'state'])
-    .limit(finalCubeIds.length)
+    .limit(matchingCubeIds.length)
     .find({ useMasterKey: true })
   const locations = {}
   for (const cube of cubes) {
@@ -276,7 +283,10 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
       await taskList.save(null, { useMasterKey: true, context: { audit } })
       continue
     }
-    const cubeIds = [...new Set([...(taskList.get('cubeIds') || []), ...locations[stateId]])]
+    const cubeIds = locations[placeKey]
+    if (placeKey === 'NW:Hilden') {
+      consola.warn(cubeIds)
+    }
     const cubeChanges = $cubeChanges(taskList, cubeIds)
     if (cubeChanges) {
       taskList.set({ cubeIds })
@@ -284,7 +294,18 @@ Parse.Cloud.define('control-add-lists', async ({ params: { id: controlId, lists 
       await taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
-  return control.set('progress', 3).save(null, { useMasterKey: true })
+
+  // remove placeKeys not in list
+  consola.warn('removing missing')
+  await $query('TaskList')
+    .equalTo('control', control)
+    .notContainedIn('pk', Object.keys(locations))
+    .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
+
+  await control.set('cubeIds', matchingCubeIds).save(null, { useMasterKey: true })
+  return {
+    message: `${Object.keys(locations).length} lists generated`
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
