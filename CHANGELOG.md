@@ -1,3 +1,10 @@
+## [1.39.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.39.0...1.39.1) (2023-05-22)
+
+
+### Bug Fixes
+
+* make sure partners cannot see other bookings ([70adeff](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/70adeffdfd4446c0fa0f3a13f90f4ca48d945500))
+
 # [1.39.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.38.0...1.39.0) (2023-05-15)
 
 
