@@ -4,28 +4,46 @@ on:
   release:
     types: [published]
 
+env:
+  REGISTRY_IMAGE: mammuthosting/rheinkultur-wawi
+  NAMESPACE: rheinkultur-wawi
+  RELEASE_NAME: rheinkultur-wawi
+  HELM_CHART: mammut-helm/rheinkultur-wawi
+
 jobs:
-  build-image-push:
-    name: Build image and push to Docker Hub
+  build:
     runs-on: ubuntu-latest
-    concurrency: build
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux/amd64
+          - linux/arm64/v8
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
       - name: Prepare
         id: prep
         run: |
-          TAG=$(echo ${GITHUB_REF:10})
-          IMAGE="mammuthosting/rheinkultur-wawi"
           NODE_VERSION=$(cat .nvmrc | tr -cd [:digit:].)
-          echo "tagged_image=${IMAGE}:${TAG}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
           echo "node_version=${NODE_VERSION}" >> $GITHUB_OUTPUT
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: type=semver,pattern={{version}}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
       - name: Set up Docker Buildx
-        id: buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Login to DockerHub
+      - name: Login to Docker Hub
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -35,22 +53,22 @@ jobs:
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-single-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-single-buildx
+            ${{ runner.os }}-multi-buildx
 
-      - name: Build production image
+      - name: Build and push by digest
+        id: build
         uses: docker/build-push-action@v4
         with:
           context: .
-          builder: ${{ steps.buildx.outputs.name }}
-          file: Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             NODE_VERSION=${{ steps.prep.outputs.node_version }}
-          push: true
-          tags: ${{ steps.prep.outputs.tagged_image }}
+          outputs: type=image,name=${{ env.REGISTRY_IMAGE }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
           cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
 
       # Temp fix
       # https://github.com/docker/build-push-action/issues/252
@@ -59,6 +77,57 @@ jobs:
         run: |
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v3
+        with:
+          name: digests
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v3
+        with:
+          name: digests
+          path: /tmp/digests
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: type=semver,pattern={{version}}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY_IMAGE }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ steps.meta.outputs.version }}
 
   create-secrets:
     name: Create secrets
@@ -88,29 +157,28 @@ jobs:
         run: kubectl config use-context ac0
 
       - name: Ensure namespace exits
-        run: kubectl get namespace | grep -q "^rheinkultur-wawi " || kubectl create namespace rheinkultur-wawi
+        run: kubectl get namespace | grep -q "^${{ env.NAMESPACE }}" || kubectl create namespace ${{ env.NAMESPACE }}
 
       - name: Recreate secrets
         run: |
-          kubectl delete secret rheinkultur-wawi-env -n rheinkultur-wawi --ignore-not-found
-          kubectl create secret generic rheinkultur-wawi-env --from-env-file=./secrets/env -n rheinkultur-wawi
-          kubectl delete secret rheinkultur-wawi-googlekey -n rheinkultur-wawi --ignore-not-found
-          kubectl create secret generic rheinkultur-wawi-googlekey --from-file=./secrets/googlekey -n rheinkultur-wawi
+          kubectl delete secret ${{ env.RELEASE_NAME }}-env -n ${{ env.NAMESPACE }} --ignore-not-found
+          kubectl create secret generic ${{ env.RELEASE_NAME }}-env --from-env-file=./secrets/env -n ${{ env.NAMESPACE }}
+          kubectl delete secret ${{ env.RELEASE_NAME }}-googlekey -n ${{ env.NAMESPACE }} --ignore-not-found
+          kubectl create secret generic ${{ env.RELEASE_NAME }}-googlekey --from-file=./secrets/googlekey -n ${{ env.NAMESPACE }}
 
   deploy:
-    needs: [build-image-push, create-secrets]
+    needs: [build, merge, create-secrets]
     runs-on: ubuntu-latest
     concurrency: deploy
     steps:
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3
+      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
 
-      - name: Prepare
-        id: prep
-        run: |
-          TAG=$(echo ${GITHUB_REF:10})
-          IMAGE="mammuthosting/rheinkultur-wawi"
-          echo "tagged_image=${IMAGE}:${TAG}" >> $GITHUB_OUTPUT
-          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: type=semver,pattern={{version}}
 
       - name: Generate kubeconfig
         run: |
@@ -133,5 +201,5 @@ jobs:
           helm repo add mammut-helm https://mammutmedia.github.io/helm-charts/
           helm repo update
 
-      - name: Deploy rheinkultur-wawi
-        run: helm upgrade -f ./.github/values.yaml rheinkultur-wawi mammut-helm/rheinkultur-wawi -n rheinkultur-wawi --set image.tag="${{ steps.prep.outputs.tag }}" --create-namespace --install --atomic --wait --timeout=5m0s
+      - name: Deploy ${{ env.RELEASE_NAME }}
+        run: helm upgrade -f ./.github/values.yaml ${{ env.RELEASE_NAME }} ${{ env.HELM_CHART }} -n ${{ env.NAMESPACE }} --set image.tag="${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}" --create-namespace --install --atomic --wait --timeout=5m0s
