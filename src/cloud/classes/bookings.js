@@ -549,7 +549,7 @@ Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingI
 Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
-    throw new Error('Unauthorized')
+    throw new Error('Unbefugter Zugriff')
   }
   const cube = await $getOrFail('Cube', params.id.split('new-')[1])
   const {
@@ -579,13 +579,16 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     endPrices: params.endPrices,
     monthlyMedia: params.monthlyMedia
   })
-  return booking.save(null, { useMasterKey: true })
+  return {
+    booking: booking.save(null, { useMasterKey: true }),
+    message: 'Buchungsanfrage gesendet.'
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
-    throw new Error('Unauthorized')
+    throw new Error('Unbefugter Zugriff')
   }
   const booking = await $getOrFail(Booking, params.id)
   const {
@@ -618,20 +621,20 @@ Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
     endPrices
   })
   if (!Object.keys(changes).length) {
-    throw new Error('Keine Änderungen')
+    throw new Error('Keine Änderungen außer Bemerkung gefunden.')
   }
   await booking.set('request', { type: 'change', user, changes, comments: params.comments, requestedAt: new Date() }).save(null, { useMasterKey: true })
-  return 'Booking change request submitted.'
+  return 'Änderungsanfrage gesendet.'
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-request-update', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
-    throw new Error('Unauthorized')
+    throw new Error('Unbefugter Zugriff')
   }
   const booking = await $getOrFail(Booking, params.id)
   if (!booking.get('request')) {
-    throw new Error('Request not found')
+    throw new Error('Anfrage nicht gefunden.')
   }
 
   const {
@@ -667,8 +670,7 @@ Parse.Cloud.define('booking-request-update', async ({ params, user }) => {
       endPrices
     })
     if (!Object.keys(changes).length && params.comments === booking.get('request').comments) {
-      // TOTRANSLATE
-      throw new Error('Keine Änderungen. Please delete the request instead.')
+      throw new Error('Keine Änderungen außer Bemerkung gefunden.')
     }
     booking.set({
       request: { type: 'create', user: user.toPointer(), comments: params.comments, requestedAt: new Date() },
@@ -685,13 +687,13 @@ Parse.Cloud.define('booking-request-update', async ({ params, user }) => {
       monthlyMedia
     })
     await booking.save(null, { useMasterKey: true })
-    return 'Booking create request updated.'
+    return 'Buchungsanfrage aktualisiert.'
   }
   if (booking.get('request').type === 'change') {
     await Parse.Cloud.run('booking-change-request', params, { sessionToken: user.getSessionToken() })
-    return 'Booking change request updated.'
+    return 'Änderungsanfrage aktualisiert.'
   }
-  throw new Error('Request cannot be updated')
+  throw new Error('Anfrage kann nicht aktualisiert werden.')
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, user }) => {
@@ -707,19 +709,19 @@ Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, us
     identifier: 'booking-request-rejected',
     data: { id, no: booking.get('no'), cubeId: booking.get('cube').id, type: request.type, reason }
   })
-  return 'Request rejected'
+  return 'Anfrage abgelehnt.'
 }, $adminOnly)
 
 Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
-    throw new Error('Unauthorized')
+    throw new Error('Unbefugter Zugriff')
   }
   const booking = await $getOrFail(Booking, params.id)
   if (booking.get('status') < 2) {
     await booking.destroy({ useMasterKey: true })
-    return 'Booking create request removed'
+    return 'Buchungsanfrage gelöscht.'
   }
   await booking.unset('request').save(null, { useMasterKey: true })
-  return 'Booking change request removed'
+  return 'Änderungsanfrage gelöscht.'
 }, { requireUser: true })
