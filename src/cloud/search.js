@@ -286,6 +286,7 @@ Parse.Cloud.define('search', async ({
     sb,
     sd,
     verifiable,
+    availableFrom,
     isMap, // used to determine if query is coming from map and should only include limited fields
     from,
     pagination,
@@ -374,12 +375,24 @@ Parse.Cloud.define('search', async ({
   }
 
   if (s.includes('0')) {
+    const availableFromClause = availableFrom
+      ? {
+        bool: {
+          should: [
+            { bool: { must_not: { exists: { field: 'order.autoExtendsAt' } } } },
+            { bool: { must: { exists: { field: 'order.canceledAt' } } } }
+          ],
+          must: { range: { 'order.endsAt': { lt: availableFrom } } }
+        }
+      }
+      : null
     bool.must.push({
       bool: {
         should: [
           { bool: { must_not: { exists: { field: 's' } } } },
-          { range: { s: { lt: 5 } } }
-        ],
+          { range: { s: { lt: 5 } } },
+          availableFromClause
+        ].filter(Boolean),
         minimum_should_match: 1
       }
     })
