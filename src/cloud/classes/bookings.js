@@ -620,8 +620,78 @@ Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
   if (!Object.keys(changes).length) {
     throw new Error('Keine Änderungen')
   }
-  booking.set('request', { type: 'change', user, changes, comments: params.comments })
-  return booking.save(null, { useMasterKey: true })
+  await booking.set('request', { type: 'change', user, changes, comments: params.comments }).save(null, { useMasterKey: true })
+  return 'Booking change request submitted.'
+}, { requireUser: true })
+
+Parse.Cloud.define('booking-request-update', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unauthorized')
+  }
+  const booking = await $getOrFail(Booking, params.id)
+  if (!booking.get('request')) {
+    throw new Error('Request not found')
+  }
+
+  const {
+    // companyPersonId,
+    motive,
+    externalOrderNo,
+    campaignNo,
+    startsAt,
+    initialDuration,
+    endsAt,
+    autoExtendsAt,
+    autoExtendsBy
+  } = normalizeFields(params)
+
+  const company = await booking.get('company').fetch({ useMasterKey: true })
+  const pricingModel = company ? company.get('distributor').pricingModel : null
+  if (pricingModel !== 'commission') { params.endPrices = null }
+  if (pricingModel) { params.monthlyMedia = null }
+  const endPrices = $cleanDict(params.endPrices)
+  const monthlyMedia = $cleanDict(params.monthlyMedia)
+
+  // if changing create request, update everything
+  if (booking.get('request').type === 'create') {
+    const changes = $changes(booking, {
+      motive,
+      externalOrderNo,
+      campaignNo,
+      startsAt,
+      initialDuration,
+      endsAt,
+      autoExtendsBy,
+      monthlyMedia,
+      endPrices
+    })
+    if (!Object.keys(changes).length && params.comments === booking.get('request').comments) {
+      // TOTRANSLATE
+      throw new Error('Keine Änderungen. Please delete the request instead.')
+    }
+    booking.set({
+      request: { type: 'create', user: user.toPointer(), comments: params.comments },
+      status: 0,
+      motive,
+      externalOrderNo,
+      campaignNo,
+      startsAt,
+      initialDuration: parseInt(initialDuration),
+      endsAt,
+      autoExtendsAt,
+      autoExtendsBy,
+      endPrices,
+      monthlyMedia
+    })
+    await booking.save(null, { useMasterKey: true })
+    return 'Booking create request updated.'
+  }
+  if (booking.get('request').type === 'change') {
+    await Parse.Cloud.run('booking-change-request', params, { sessionToken: user.getSessionToken() })
+    return 'Booking change request updated.'
+  }
+  throw new Error('Request cannot be updated')
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
