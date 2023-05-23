@@ -564,7 +564,7 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     autoExtendsBy
   } = normalizeFields(params)
   const booking = new Booking({
-    request: { type: 'create', user: user.toPointer(), comments: params.comments },
+    request: { type: 'create', user: user.toPointer(), comments: params.comments, requestedAt: new Date() },
     status: 0,
     company: user.get('company'),
     cubeIds: [cube.id],
@@ -620,7 +620,7 @@ Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
   if (!Object.keys(changes).length) {
     throw new Error('Keine Änderungen')
   }
-  await booking.set('request', { type: 'change', user, changes, comments: params.comments }).save(null, { useMasterKey: true })
+  await booking.set('request', { type: 'change', user, changes, comments: params.comments, requestedAt: new Date() }).save(null, { useMasterKey: true })
   return 'Booking change request submitted.'
 }, { requireUser: true })
 
@@ -671,7 +671,7 @@ Parse.Cloud.define('booking-request-update', async ({ params, user }) => {
       throw new Error('Keine Änderungen. Please delete the request instead.')
     }
     booking.set({
-      request: { type: 'create', user: user.toPointer(), comments: params.comments },
+      request: { type: 'create', user: user.toPointer(), comments: params.comments, requestedAt: new Date() },
       status: 0,
       motive,
       externalOrderNo,
@@ -693,6 +693,22 @@ Parse.Cloud.define('booking-request-update', async ({ params, user }) => {
   }
   throw new Error('Request cannot be updated')
 }, { requireUser: true })
+
+Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, user }) => {
+  const booking = await $getOrFail(Booking, id)
+  const request = booking.get('request')
+  if (!request) { throw new Error('Request not found') }
+  if (request.status) { throw new Error('Request not rejectable') }
+  request.status = 2
+  request.rejection = { reason, user, rejectedAt: new Date() }
+  await booking.set({ request }).save(null, { useMasterKey: true })
+  await $notify({
+    user: request.user,
+    identifier: 'booking-request-rejected',
+    data: { id, no: booking.get('no'), cubeId: booking.get('cube').id, type: request.type, reason }
+  })
+  return 'Request rejected'
+}, $adminOnly)
 
 Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'

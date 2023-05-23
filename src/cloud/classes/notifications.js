@@ -20,6 +20,11 @@ const NOTIFICATIONS = {
     message: ({ cubeId, rejectionReason }) => `Your submission for ${cubeId} was rejected. ${rejectionReason}`,
     app: 'scout',
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
+  },
+  'booking-request-rejected': {
+    mail: false,
+    message: ({ no, cubeId, type, reason }) => `Your ${type} submission for booking ${no} for ${cubeId} was rejected. ${reason}`,
+    route: ({ id }) => ({ name: 'bookings', query: { request: true }, hash: '#booking=' + id })
   }
 }
 
