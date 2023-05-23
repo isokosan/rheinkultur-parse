@@ -1,3 +1,10 @@
+# [1.40.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.39.3...1.40.0) (2023-05-23)
+
+
+### Features
+
+* available from date in cube map & list ([adaa3d7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/adaa3d7a8224bac5490127b57fbbf8f2bc053060))
+
 ## [1.39.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.39.2...1.39.3) (2023-05-22)
 
 
