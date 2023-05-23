@@ -126,7 +126,9 @@ const schemaDefinitions = {
 
       // pricing comes from vertriebspartner
       endPrices: { type: 'Object' }, // Kunden-netto, only applies when company has commission pricing model
-      monthlyMedia: { type: 'Object' } // Monthly prices are set only when the company has no pricing model
+      monthlyMedia: { type: 'Object' }, // Monthly prices are set only when the company has no pricing model
+
+      request: { type: 'Object' } // VP requests
     }
   },
   Comment: {

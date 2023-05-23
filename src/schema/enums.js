@@ -34,9 +34,9 @@ module.exports.PERMISSIONS = {
 
 module.exports.BOOKING_STATUSES = {
   '-1': 'Gelöscht',
-  0.0: 'Entwurf', // distributors
-  0.1: 'Genehmigung ausstehend', // distributors
-  0.2: 'Abgelehnt', // distributors
+  0.0: 'Entwurf', // partners ??
+  0.1: 'Genehmigung ausstehend', // partners ??
+  0.2: 'Abgelehnt', // partners ??
   2: 'Entwurf',
   2.1: 'In Bearbeitung',
   3: 'Aktiv',

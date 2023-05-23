@@ -465,6 +465,13 @@ Parse.Cloud.define('booking-end', async ({ params: { id: bookingId }, user }) =>
 Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
 
+  // do not allow deleting if partner booking request (only partner can delete)
+  if (booking.get('request')) {
+    if (user.get('accType') !== 'partner' || user.get('company').id !== booking.get('company').id) {
+      throw new Error('Booking requests can only be deleted by partners.')
+    }
+  }
+
   // completely delete booking if in draft state
   if (booking.get('status') === 0 && booking.get('status') === 2) {
     return booking.destroy({ useMasterKey: true })
@@ -532,4 +539,101 @@ Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingI
   const message = invoice.id ? 'Invoice draft updated' : 'Invoice draft generated'
   await invoice.save(null, { useMasterKey: true })
   return message
+}, { requireUser: true })
+
+// Requests
+
+/**
+ * Process a booking submit
+ */
+Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unauthorized')
+  }
+  const cube = await $getOrFail('Cube', params.id.split('new-')[1])
+  const {
+    // companyPersonId,
+    motive,
+    externalOrderNo,
+    campaignNo,
+    startsAt,
+    initialDuration,
+    endsAt,
+    autoExtendsAt,
+    autoExtendsBy
+  } = normalizeFields(params)
+  const booking = new Booking({
+    request: { type: 'create', user: user.toPointer(), comments: params.comments },
+    status: 0,
+    company: user.get('company'),
+    cubeIds: [cube.id],
+    motive,
+    externalOrderNo,
+    campaignNo,
+    startsAt,
+    initialDuration: parseInt(initialDuration),
+    endsAt,
+    autoExtendsAt,
+    autoExtendsBy,
+    endPrices: params.endPrices,
+    monthlyMedia: params.monthlyMedia
+  })
+  return booking.save(null, { useMasterKey: true })
+}, { requireUser: true })
+
+Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unauthorized')
+  }
+  const booking = await $getOrFail(Booking, params.id)
+  const {
+    motive,
+    externalOrderNo,
+    campaignNo,
+    startsAt,
+    initialDuration,
+    endsAt,
+    // autoExtendsAt, // TODO: make sure the right value is infered after changes are accepted
+    autoExtendsBy
+  } = normalizeFields(params)
+
+  const company = await booking.get('company').fetch({ useMasterKey: true })
+  const pricingModel = company ? company.get('distributor').pricingModel : null
+  if (pricingModel !== 'commission') { params.endPrices = null }
+  if (pricingModel) { params.monthlyMedia = null }
+  const endPrices = $cleanDict(params.endPrices)
+  const monthlyMedia = $cleanDict(params.monthlyMedia)
+
+  const changes = $changes(booking, {
+    motive,
+    externalOrderNo,
+    campaignNo,
+    startsAt,
+    initialDuration,
+    endsAt,
+    autoExtendsBy,
+    monthlyMedia,
+    endPrices
+  })
+  if (!Object.keys(changes).length) {
+    throw new Error('Keine Änderungen')
+  }
+  booking.set('request', { type: 'change', user, changes, comments: params.comments })
+  return booking.save(null, { useMasterKey: true })
+}, { requireUser: true })
+
+Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unauthorized')
+  }
+  const booking = await $getOrFail(Booking, params.id)
+  if (booking.get('status') < 2) {
+    await booking.destroy({ useMasterKey: true })
+    return 'Booking create request removed'
+  }
+  await booking.unset('request').save(null, { useMasterKey: true })
+  return 'Booking change request removed'
 }, { requireUser: true })

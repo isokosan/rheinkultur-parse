@@ -4,7 +4,8 @@ global.consola = require('consola')
 global.moment = require('moment')
 moment.locale('de')
 
-global.$cleanDict = (dict = {}) => {
+global.$cleanDict = (dict) => {
+  if (!dict) { return null }
   for (const key in dict) {
     if (dict[key] === undefined) {
       delete dict[key]

@@ -48,7 +48,7 @@ elasticsearch
 .helm/secrets
 .github/secrets
 *.secret.yaml
-
+db-backups
 ### macOS ###
 # General
 .DS_Store
