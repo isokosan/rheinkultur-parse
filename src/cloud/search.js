@@ -134,6 +134,37 @@ const INDEXES = {
         dueDate: taskList.get('dueDate')
       }
     }))
+  },
+  // Keep booking requests to a bare minimum of request info. The cube and booking information will not be searchable.
+  'rheinkultur-booking-requests': {
+    config: {
+      mappings: {
+        properties: {
+          status: { type: 'byte' },
+          updatedAt: { type: 'date' }
+        }
+      }
+    },
+    parseQuery: Parse.Query.or(
+      $query('Booking').notEqualTo('request', null),
+      $query('Booking').notEqualTo('requestHistory', null)
+    ),
+    datasetMap: bookings => bookings.map(booking => {
+      return [booking.get('request'), booking.get('requestHistory') || []]
+        .flat()
+        .filter(Boolean)
+        .map((request) => ({
+          _id: booking.id + moment(request.requestedAt).toISOString(),
+          doc: {
+            bookingId: booking.id,
+            no: booking.get('no'),
+            cubeId: booking.get('cubeIds')[0],
+            companyId: booking.get('company').id,
+            ...request,
+            status: request.status || 0
+          }
+        }))
+    }).flat()
   }
 }
 
@@ -260,6 +291,55 @@ Parse.Cloud.define('search-fieldwork', async ({
     }
     c && obj.set('distance', hit.sort[0])
     return obj.toJSON()
+  })
+  return { results, count }
+}, { validateMasterKey: true })
+
+// runs only on booking-requests list view
+Parse.Cloud.define('search-booking-requests', async ({
+  params: {
+    cubeId,
+    no,
+    companyId,
+    type,
+    status,
+    from,
+    pagination
+  }, user, master
+}) => {
+  // BUILD QUERY
+  const bool = { should: [], must: [], must_not: [], filter: [] }
+  const sort = ['_score']
+  sort.unshift({ updatedAt: { order: 'asc' } })
+  if (user && user.get('accType') === 'partner') {
+    companyId = user.get('company').id
+  }
+  cubeId && bool.must.push({ wildcard: { 'cubeId.keyword': `*${cubeId}*` } })
+  no && bool.filter.push({ term: { 'no.keyword': no } })
+  companyId && bool.filter.push({ term: { 'companyId.keyword': companyId } })
+  type && bool.filter.push({ term: { 'type.keyword': type } })
+  status && bool.filter.push({ term: { status: parseInt(status) } })
+
+  const searchResponse = await client.search({
+    index: 'rheinkultur-booking-requests',
+    body: {
+      query: { bool },
+      sort,
+      track_total_hits: true
+    },
+    from,
+    size: pagination || 50
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
+  const bookings = await $query('Booking')
+    .containedIn('objectId', bookingIds)
+    .limit(bookingIds.length)
+    .find({ useMasterKey: true })
+  const results = hits.map(hit => {
+    const booking = bookings.find(obj => obj.id === hit._source.bookingId)
+    hit._source.booking = booking.toJSON()
+    return hit._source
   })
   return { results, count }
 }, { validateMasterKey: true })
@@ -602,6 +682,26 @@ const unindexCube = async (cube) => {
   }
 }
 
+const indexBookingRequests = async (booking) => {
+  await client.deleteByQuery({
+    index: 'rheinkultur-booking-requests',
+    body: {
+      query: {
+        term: {
+          'bookingId.keyword': booking.id
+        }
+      }
+    }
+  }).then(consola.success).catch(consola.error)
+  const dataset = INDEXES['rheinkultur-booking-requests'].datasetMap([booking])
+  if (!dataset.length) { return }
+  return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-booking-requests', _id } }, doc]) })
+}
+
+const unindexBookingRequests = (booking) => {
+  return client.delete({ index: 'rheinkultur-booking-requests', id: booking.id }).then(consola.success).catch(consola.error)
+}
+
 const indexTaskList = (taskList) => {
   const [{ _id: id, doc: body }] = INDEXES['rheinkultur-fieldwork'].datasetMap([taskList])
   return client.index({ index: 'rheinkultur-fieldwork', id, body })
@@ -643,6 +743,8 @@ module.exports = {
   purgeIndexes,
   indexCube,
   unindexCube,
+  indexBookingRequests,
+  unindexBookingRequests,
   indexTaskList,
   unindexTaskList
 }

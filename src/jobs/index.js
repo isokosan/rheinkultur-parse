@@ -60,6 +60,12 @@ const updateJobs = {
     // cron: '0 3 * * *', // nightly at 3 am
     notificationDuration: 48
   },
+  reindex_booking_requests: {
+    name: 'Suchindex von Buchungsanfragen aktualisieren',
+    timeoutMinutes: 60,
+    // cron: '0 3 * * *', // nightly at 3 am
+    notificationDuration: 48
+  },
   recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
     timeoutMinutes: 15,

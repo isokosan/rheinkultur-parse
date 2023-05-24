@@ -24,7 +24,7 @@ const NOTIFICATIONS = {
   'booking-request-rejected': {
     mail: false,
     message: ({ no, cubeId, type, reason }) => `Your ${type} submission for booking ${no} for ${cubeId} was rejected. ${reason}`,
-    route: ({ id }) => ({ name: 'bookings', query: { request: true }, hash: '#booking=' + id })
+    route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
   }
 }
 

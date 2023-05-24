@@ -33,4 +33,4 @@ Parse.Cloud.define('goto', async ({ params: { date } }) => {
 //   consola.success('set user passwords')
 // }
 // initializeForDevelopment()
-// Parse.Config.save({ today: '2023-05-02' })
+// Parse.Config.save({ today: '2023-05-24' })
