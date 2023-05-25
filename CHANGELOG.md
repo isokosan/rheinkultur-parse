@@ -1,3 +1,11 @@
+## [1.45.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.45.0...1.45.1) (2023-05-25)
+
+
+### Bug Fixes
+
+* booking create request accept activates booking ([8c273eb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8c273ebfbbc278a586d5bbfeacb435f2ec205bd7))
+* check self when checking if cubes are available ([04a85d2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/04a85d27a0b4440c69f79471793ffd1a9d49c25e))
+
 # [1.45.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.44.0...1.45.0) (2023-05-25)
 
 
