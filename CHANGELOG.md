@@ -1,3 +1,10 @@
+# [1.44.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.43.0...1.44.0) (2023-05-25)
+
+
+### Features
+
+* remove-booking requests ([60451e0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/60451e0d48d7959ee309b1c09ed9f762e410dfc0))
+
 # [1.43.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.42.0...1.43.0) (2023-05-25)
 
 
