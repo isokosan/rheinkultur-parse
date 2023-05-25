@@ -310,7 +310,7 @@ Parse.Cloud.define('search-booking-requests', async ({
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']
-  sort.unshift({ updatedAt: { order: 'asc' } })
+  sort.unshift({ updatedAt: { order: 'desc' } })
   if (user && user.get('accType') === 'partner') {
     companyId = user.get('company').id
   }
@@ -334,6 +334,7 @@ Parse.Cloud.define('search-booking-requests', async ({
   const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
   const bookings = await $query('Booking')
     .containedIn('objectId', bookingIds)
+    .include('deleted')
     .limit(bookingIds.length)
     .find({ useMasterKey: true })
   const results = hits.map(hit => {
@@ -682,8 +683,8 @@ const unindexCube = async (cube) => {
   }
 }
 
-const indexBookingRequests = async (booking) => {
-  await client.deleteByQuery({
+const unindexBookingRequests = (booking) => {
+  return client.deleteByQuery({
     index: 'rheinkultur-booking-requests',
     body: {
       query: {
@@ -692,14 +693,14 @@ const indexBookingRequests = async (booking) => {
         }
       }
     }
-  }).then(consola.success).catch(consola.error)
+  }).catch(consola.error)
+}
+
+const indexBookingRequests = async (booking) => {
+  await unindexBookingRequests(booking)
   const dataset = INDEXES['rheinkultur-booking-requests'].datasetMap([booking])
   if (!dataset.length) { return }
   return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-booking-requests', _id } }, doc]) })
-}
-
-const unindexBookingRequests = (booking) => {
-  return client.delete({ index: 'rheinkultur-booking-requests', id: booking.id }).then(consola.success).catch(consola.error)
 }
 
 const indexTaskList = (taskList) => {

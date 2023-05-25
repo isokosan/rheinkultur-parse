@@ -34,10 +34,10 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
     throw new Error('We changing bookings to only accept 1 cube. Please make multiple bookings instead.')
   }
   booking.set('cubeId', booking.get('cubeIds')?.[0])
-  await indexBookingRequests(booking)
 })
 
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
+  await indexBookingRequests(booking)
   setCubeStatuses && await setCubeOrderStatuses(booking)
   audit && $audit(booking, audit)
 })
@@ -86,6 +86,51 @@ Parse.Cloud.beforeDelete(Booking, async ({ object: booking }) => {
 
 Parse.Cloud.afterDelete(Booking, $deleteAudits)
 
+async function validatePricing ({ company, cubeIds, endPrices, monthlyMedia }) {
+  if (company) {
+    await company.fetch({ useMasterKey: true })
+    const pricingModel = company.get('distributor').pricingModel
+    if (pricingModel === 'commission') {
+      for (const cubeId of cubeIds) {
+        if (!endPrices?.[cubeId]) {
+          throw new Error('Sie müssen für alle Werbemedien ein Endkunde Preis auswählen.')
+        }
+      }
+    }
+    if (pricingModel === 'zero') {
+      for (const cubeId of cubeIds) {
+        if (monthlyMedia?.[cubeId]) {
+          throw new Error('Alle medien muss 0€ sein.')
+        }
+      }
+    }
+    // check if all cubes are media verified, if fixed pricing depends on media
+    if (pricingModel === 'fixed' && !company.get('distributor').fixedPrice) {
+      const noMediaCubes = await $query('Cube')
+        .containedIn('objectId', cubeIds)
+        .equalTo('media', null)
+        .find({ useMasterKey: true })
+      if (noMediaCubes.length > 0) {
+        throw new Error('Media kann nicht gesetzt werden, weil Gehäuse-Kategorie von einigen CityCubes unbekannt ist. Bitte wählen Sie eine Kategorie aus.')
+      }
+    }
+    if (!pricingModel) {
+      for (const cubeId of cubeIds) {
+        if (!monthlyMedia?.[cubeId]) {
+          throw new Error('Sie müssen für alle Werbemedien ein RK Netto Preis auswählen.')
+        }
+      }
+    }
+  }
+  if (!company) {
+    for (const cubeId of cubeIds) {
+      if (monthlyMedia?.[cubeId]) {
+        throw new Error('Alle medien muss 0€ sein.')
+      }
+    }
+  }
+}
+
 async function validateBookingActivate (booking) {
   if (booking.get('status') >= 3) {
     throw new Error('Buchung schon aktiv.')
@@ -111,54 +156,12 @@ async function validateBookingActivate (booking) {
     }
   }
 
-  // check pricing assignments if required
-  const company = booking.get('company')
-  if (company) {
-    await company.fetch({ useMasterKey: true })
-    const pricingModel = company.get('distributor').pricingModel
-    if (pricingModel === 'commission') {
-      const endPrices = booking.get('endPrices')
-      for (const cubeId of cubeIds) {
-        if (!endPrices?.[cubeId]) {
-          throw new Error('Sie müssen für alle Werbemedien ein Endkunde Preis auswählen.')
-        }
-      }
-    }
-    if (pricingModel === 'zero') {
-      const monthlyMedia = booking.get('monthlyMedia')
-      for (const cubeId of cubeIds) {
-        if (monthlyMedia?.[cubeId]) {
-          throw new Error('Alle medien muss 0€ sein.')
-        }
-      }
-    }
-    // check if all cubes are media verified, if fixed pricing depends on media
-    if (pricingModel === 'fixed' && !company.get('distributor').fixedPrice) {
-      const noMediaCubes = await $query('Cube')
-        .containedIn('objectId', cubeIds)
-        .equalTo('media', null)
-        .find({ useMasterKey: true })
-      if (noMediaCubes.length > 0) {
-        throw new Error('Media kann nicht gesetzt werden, weil Gehäuse-Kategorie von einigen CityCubes unbekannt ist. Bitte wählen Sie eine Kategorie aus.')
-      }
-    }
-    if (!pricingModel) {
-      const monthlyMedia = booking.get('monthlyMedia')
-      for (const cubeId of cubeIds) {
-        if (!monthlyMedia?.[cubeId]) {
-          throw new Error('Sie müssen für alle Werbemedien ein RK Netto Preis auswählen.')
-        }
-      }
-    }
-  }
-  if (!company) {
-    const monthlyMedia = booking.get('monthlyMedia')
-    for (const cubeId of cubeIds) {
-      if (monthlyMedia?.[cubeId]) {
-        throw new Error('Alle medien muss 0€ sein.')
-      }
-    }
-  }
+  await validatePricing({
+    company: booking.get('company'),
+    cubeIds: booking.get('cubeIds'),
+    endPrices: booking.get('endPrices'),
+    monthlyMedia: booking.get('monthlyMedia')
+  })
 }
 
 /**
@@ -279,14 +282,10 @@ Parse.Cloud.define('booking-update', async ({
 
   const company = companyId ? await $getOrFail('Company', companyId) : null
   const pricingModel = company ? company.get('distributor').pricingModel : null
-  if (pricingModel !== 'commission') {
-    endPrices = null
-  }
-  if (pricingModel) {
-    monthlyMedia = null
-  }
-  endPrices = endPrices && Object.keys(endPrices).length ? endPrices : null
-  monthlyMedia = monthlyMedia && Object.keys(monthlyMedia).length ? monthlyMedia : null
+  if (pricingModel !== 'commission') { endPrices = null }
+  if (pricingModel) { monthlyMedia = null }
+  endPrices = $cleanDict(endPrices)
+  monthlyMedia = $cleanDict(monthlyMedia)
 
   const changes = $changes(booking, {
     motive,
@@ -481,7 +480,7 @@ Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId }, user })
   // do not allow deleting if partner booking request (only partner can delete)
   if (booking.get('request')) {
     if (user.get('accType') !== 'partner' || user.get('company').id !== booking.get('company').id) {
-      throw new Error('Booking requests can only be deleted by partners.')
+      throw new Error('To remove booking requests please reject the request instead.')
     }
   }
 
@@ -576,11 +575,19 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     autoExtendsAt,
     autoExtendsBy
   } = normalizeFields(params)
+
+  const company = await user.get('company').fetch({ useMasterKey: true })
+  const pricingModel = company ? company.get('distributor').pricingModel : null
+  if (pricingModel !== 'commission') { params.endPrices = null }
+  if (pricingModel) { params.monthlyMedia = null }
+  const endPrices = $cleanDict(params.endPrices)
+  const monthlyMedia = $cleanDict(params.monthlyMedia)
+
   const booking = new Booking({
     request: {
       type: 'create',
       user: user.toPointer(),
-      comments: params.comments,
+      comments: normalizeString(params.comments) || undefined,
       createdAt: new Date(),
       updatedAt: new Date()
     },
@@ -595,9 +602,17 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     endsAt,
     autoExtendsAt,
     autoExtendsBy,
-    endPrices: params.endPrices,
-    monthlyMedia: params.monthlyMedia
+    endPrices,
+    monthlyMedia
   })
+
+  await validatePricing({
+    company: booking.get('company'),
+    cubeIds: booking.get('cubeIds'),
+    endPrices: booking.get('endPrices'),
+    monthlyMedia: booking.get('monthlyMedia')
+  })
+
   return {
     booking: await booking.save(null, { useMasterKey: true }),
     message: 'Buchungsanfrage gesendet.'
@@ -642,15 +657,26 @@ Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
   if (!Object.keys(changes).length) {
     throw new Error('Keine Änderungen außer Bemerkung gefunden.')
   }
-  await booking.set('request', {
+
+  await validatePricing({
+    company: booking.get('company'),
+    cubeIds: booking.get('cubeIds'),
+    endPrices,
+    monthlyMedia
+  })
+
+  booking.set('request', {
     type: 'change',
     user: user.toPointer(),
     changes,
-    comments: params.comments,
+    comments: normalizeString(params.comments) || undefined,
     createdAt: new Date(),
     updatedAt: new Date()
-  }).save(null, { useMasterKey: true })
-  return 'Änderungsanfrage gesendet.'
+  })
+  return {
+    booking: await booking.save(null, { useMasterKey: true }),
+    message: 'Änderungsanfrage gesendet.'
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
@@ -667,12 +693,13 @@ Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
   }
 
   const changes = $cleanDict($changes(booking, { endsAt }))
-  // const wasCanceled = Boolean(booking.get('canceledAt'))
+  const wasCanceled = Boolean(booking.get('canceledAt'))
+  if (wasCanceled && !changes) { throw new Error('Keine Änderungen') }
   const request = {
     type: 'cancel',
     user: user.toPointer(),
-    changes,
-    comments,
+    changes: changes || undefined,
+    comments: comments || undefined,
     createdAt: new Date(),
     updatedAt: new Date()
   }
@@ -680,79 +707,24 @@ Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
   return booking.get('canceledAt') ? 'Kündigungsänderunganfrage gesendet.' : 'Kündigungsanfrage gesendet.'
 }, { requireUser: true })
 
-Parse.Cloud.define('booking-request-update', async ({ params, user }) => {
+Parse.Cloud.define('booking-remove-request', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
     throw new Error('Unbefugter Zugriff')
   }
   const booking = await $getOrFail(Booking, params.id)
-  if (!booking.get('request')) {
-    throw new Error('Anfrage nicht gefunden.')
-  }
 
-  const {
-    // companyPersonId,
-    motive,
-    externalOrderNo,
-    campaignNo,
-    startsAt,
-    initialDuration,
-    endsAt,
-    autoExtendsAt,
-    autoExtendsBy
-  } = normalizeFields(params)
-
-  const company = await booking.get('company').fetch({ useMasterKey: true })
-  const pricingModel = company ? company.get('distributor').pricingModel : null
-  if (pricingModel !== 'commission') { params.endPrices = null }
-  if (pricingModel) { params.monthlyMedia = null }
-  const endPrices = $cleanDict(params.endPrices)
-  const monthlyMedia = $cleanDict(params.monthlyMedia)
-
-  // if changing create request, update everything
-  if (booking.get('request').type === 'create') {
-    const changes = $changes(booking, {
-      motive,
-      externalOrderNo,
-      campaignNo,
-      startsAt,
-      initialDuration,
-      endsAt,
-      autoExtendsBy,
-      monthlyMedia,
-      endPrices
-    })
-    if (!Object.keys(changes).length && params.comments === booking.get('request').comments) {
-      throw new Error('Keine Änderungen außer Bemerkung gefunden.')
-    }
-    booking.set({
-      request: {
-        type: 'create',
-        user: user.toPointer(),
-        comments: params.comments,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      },
-      status: 0,
-      motive,
-      externalOrderNo,
-      campaignNo,
-      startsAt,
-      initialDuration: parseInt(initialDuration),
-      endsAt,
-      autoExtendsAt,
-      autoExtendsBy,
-      endPrices,
-      monthlyMedia
-    })
-    await booking.save(null, { useMasterKey: true })
-    return 'Buchungsanfrage aktualisiert.'
+  const request = {
+    type: 'remove',
+    user: user.toPointer(),
+    comments: normalizeString(params.comments) || undefined,
+    createdAt: new Date(),
+    updatedAt: new Date()
   }
-  if (booking.get('request').type === 'change') {
-    await Parse.Cloud.run('booking-change-request', params, { sessionToken: user.getSessionToken() })
-    return 'Änderungsanfrage aktualisiert.'
-  }
-  throw new Error('Anfrage kann nicht aktualisiert werden.')
+  await booking.set({ request }).save(null, { useMasterKey: true })
+  const willBeVoided = ![0, 2].includes(booking.get('status'))
+  // TOTRANSLATE
+  return willBeVoided ? 'Annullierungsanfrage gesendet' : 'Löschungsanfrage gesendet'
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, user }) => {
@@ -824,6 +796,14 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     }
   }
 
+  if (request.type === 'remove') {
+    // soft delete otherwise
+    booking.set('deletedAt', new Date())
+    booking.set('status', -1)
+    setCubeStatuses = true
+    audit = { user, fn: 'booking-remove-request-accept' }
+  }
+
   await booking.unset('request').set({ requestHistory }).save(null, { useMasterKey: true, context: { audit, setCubeStatuses } })
   endBooking && await Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
   return 'Anfrage akzeptiert.'
@@ -835,7 +815,7 @@ Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
     throw new Error('Unbefugter Zugriff')
   }
   const booking = await $getOrFail(Booking, params.id)
-  if (booking.get('status') < 2) {
+  if (booking.get('status') === 0) {
     await booking.destroy({ useMasterKey: true })
     return 'Buchungsanfrage gelöscht.'
   }
