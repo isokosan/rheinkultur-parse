@@ -767,7 +767,10 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   let endBooking
   if (request.type === 'create') {
     // create and activate booking
-    await checkIfCubesAreAvailable(booking.get('cubeIds'), booking.get('startsAt'), booking.get('no'))
+    await validateBookingActivate(booking)
+    booking.set({ status: 3 })
+    setCubeStatuses = true
+    audit = { user, fn: 'booking-create-request-accept' }
   }
 
   if (request.type === 'change') {
