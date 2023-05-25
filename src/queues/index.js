@@ -573,6 +573,11 @@ module.exports = async function (job) {
   const { id } = job.data
   const quarterlyReport = await $getOrFail('QuarterlyReport', id)
   const quarter = quarterlyReport.get('quarter')
+
+  if (quarter.get('status') === 'finalized') {
+    throw new Error('This report has been finalized.')
+  }
+
   consola.warn('STARTING JOB', id, quarter)
 
   await getOrCacheRegionalCommissions()

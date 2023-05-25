@@ -154,7 +154,7 @@ const INDEXES = {
         .flat()
         .filter(Boolean)
         .map((request) => ({
-          _id: booking.id + moment(request.requestedAt).toISOString(),
+          _id: request.id,
           doc: {
             bookingId: booking.id,
             no: booking.get('no'),

@@ -88,6 +88,18 @@ Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) 
   return newJobId
 }, $adminOnly)
 
+Parse.Cloud.define('quarterly-report-finalize', async ({ params: { quarter } }) => {
+  const report = await $query(QuarterlyReport)
+    .equalTo('quarter', quarter)
+    .descending('createdAt')
+    .first({ useMasterKey: true })
+  if (!report) { throw new Error('Report not found') }
+  if (report.get('status') !== 'draft') {
+    throw new Error('Cannot finalize report in non-draft status')
+  }
+  return report.set('status', 'finalized').save(null, { useMasterKey: true })
+}, $adminOnly)
+
 Parse.Cloud.define('job-start', ({ params: { id } }) => reportQueue.add({ id }).then(job => job.id), $adminOnly)
 
 Parse.Cloud.define('job-status', async ({ params: { jobId } }) => {
