@@ -1,3 +1,10 @@
+# [1.42.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.41.0...1.42.0) (2023-05-25)
+
+
+### Features
+
+* booking cancel request accept ([d0b5641](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d0b564107b23a3dbd3c176d5e42ef2e7232eb3fb))
+
 # [1.41.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.40.0...1.41.0) (2023-05-23)
 
 
