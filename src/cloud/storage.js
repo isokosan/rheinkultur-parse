@@ -167,20 +167,22 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
       return
     }
     await user.fetch({ useMasterKey: true })
-    if (user.get('accType') !== 'scout') {
+    if (['admin', 'intern'].includes(user.get('accType'))) {
       cubePhoto.set('approved', true)
     }
   }
 })
 
 // The CubePhoto will not be deleted unless the file associated with it is successfuly deleted, or is already not found
-Parse.Cloud.beforeDelete('CubePhoto', async ({ object }) => {
+Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user }) => {
   const cube = await $getOrFail('Cube', object.get('cubeId'))
+  if (!user) { throw new Error('Unerlaubte Aktion') }
+  if (!['intern', 'admin'].includes(user.get('accType')) && user.id !== object.get('createdBy').id) { throw new Error('Unerlaubte Aktion') }
   if (cube.get('p1')?.id === object.id) {
-    throw new Error('Als Front verwendetes Foto kann nicht gelöscht werden.')
+    await cube.unset('p1').save(null, { useMasterKey: true })
   }
-  if (cube.get('p2')?.id === object.id || cube.get('p3')?.id === object.id) {
-    throw new Error('Als Umfeldfoto verwendetes Foto kann nicht gelöscht werden.')
+  if (cube.get('p2')?.id === object.id) {
+    await cube.unset('p2').save(null, { useMasterKey: true })
   }
   return Promise.all([
     object.get('file')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError), // deletes file if exists
@@ -208,7 +210,10 @@ Parse.Cloud.afterFind(FileObject, ({ objects }) => {
 })
 
 // The FileObject will not be deleted unless the file associated with it is successfuly deleted, or is already not found
-Parse.Cloud.beforeDelete(FileObject, async ({ object }) => {
+Parse.Cloud.beforeDelete(FileObject, async ({ object, user }) => {
+  if (!user) { throw new Error('Unauthorized') }
+  if (!['intern', 'admin'].includes(user.get('accType'))) { throw new Error('Unauthorized') }
+
   // check for references of this FileObject
   const references = await Promise.all(Object.keys(FILE_OBJECT_REFERENCES).map((className) => {
     return Parse.Query.or(...FILE_OBJECT_REFERENCES[className].map((field) => {
@@ -244,12 +249,12 @@ Parse.Cloud.define('storage-update-name', async ({ params: { id, name } }) => {
   const fileObject = await (new Parse.Query(FileObject)).get(id, { useMasterKey: true })
   fileObject.set({ name })
   return fileObject.save(null, { useMasterKey: true })
-})
+}, $internOrAdmin)
 
 Parse.Cloud.define('storage-delete', async ({ params: { id } }) => {
   const fileObject = await (new Parse.Query(FileObject)).get(id, { useMasterKey: true })
   return fileObject.destroy({ useMasterKey: true })
-})
+}, $internOrAdmin)
 
 Parse.Cloud.define('item-docs', async ({ params: { itemId, itemClass, docIds }, user }) => {
   const item = await $getOrFail(itemClass, itemId, ['docs'])
@@ -277,16 +282,4 @@ Parse.Cloud.define('item-docs', async ({ params: { itemId, itemClass, docIds }, 
   const audit = { user, fn: 'update-docs', data }
   await item.save(null, { useMasterKey: true, context: { audit } })
   return data.added ? 'Hinzugefügt.' : 'Entfernt.'
-}, {
-  requireUser: true,
-  fields: {
-    itemClass: {
-      type: String,
-      required: true
-    },
-    itemId: {
-      type: String,
-      required: true
-    }
-  }
-})
+}, $internOrAdmin)
