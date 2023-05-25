@@ -1,3 +1,10 @@
+# [1.46.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.45.1...1.46.0) (2023-05-25)
+
+
+### Features
+
+* agwb revert ([e173574](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e1735744d4ef9f03cf8d98becaa9565c38615756))
+
 ## [1.45.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.45.0...1.45.1) (2023-05-25)
 
 
