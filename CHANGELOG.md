@@ -1,3 +1,10 @@
+# [1.43.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.42.0...1.43.0) (2023-05-25)
+
+
+### Features
+
+* dummy ([2301f5f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2301f5f226537f856404a04671d1d3666cc87615))
+
 # [1.42.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.41.0...1.42.0) (2023-05-25)
 
 
