@@ -83,7 +83,7 @@ const getCubeSummaries = function (cubeIds) {
     }, {}))
 }
 
-async function checkIfCubesAreAvailable (cubeIds, date) {
+async function checkIfCubesAreAvailable (cubeIds, date, selfNo) {
   if (!date) { date = await $today() }
   for (const cubeId of cubeIds) {
     const contracts = await $query('Contract')
@@ -92,11 +92,12 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
       .greaterThanOrEqualTo('endsAt', date) // didn't yet end
       .find({ useMasterKey: true })
     for (const contract of contracts) {
-      if (contract) {
+      if (contract && contract.get('no') !== selfNo) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = contract.toJSON()
         if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
-          throw new Error(`CityCube ${cubeId} ist bereits in Vertrag ${contract.get('no')} gebucht.`)
+          throw new Error(`CityCube ${cubeId} istist zu diesem Startdatum bereits gebucht. (${contract.get('no')})`)
+          // throw new Error(`CityCube ${cubeId} ist bereits in Vertrag ${contract.get('no')} gebucht.`)
         }
       }
     }
@@ -106,11 +107,12 @@ async function checkIfCubesAreAvailable (cubeIds, date) {
       .greaterThanOrEqualTo('endsAt', date) // didn't yet end
       .find({ useMasterKey: true })
     for (const booking of bookings) {
-      if (booking) {
+      if (booking && booking.get('no') !== selfNo) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = booking.toJSON()
         if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
-          throw new Error(`CityCube ${cubeId} ist bereits in Buchung ${booking.get('no')} gebucht.`)
+          throw new Error(`CityCube ${cubeId} istist zu diesem Startdatum bereits gebucht. (${booking.get('no')})`)
+          // throw new Error(`CityCube ${cubeId} ist bereits in Buchung ${booking.get('no')} gebucht.`)
         }
       }
     }

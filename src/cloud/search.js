@@ -315,7 +315,7 @@ Parse.Cloud.define('search-booking-requests', async ({
     companyId = user.get('company').id
   }
   cubeId && bool.must.push({ wildcard: { 'cubeId.keyword': `*${cubeId}*` } })
-  no && bool.filter.push({ term: { 'no.keyword': no } })
+  no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
   companyId && bool.filter.push({ term: { 'companyId.keyword': companyId } })
   type && bool.filter.push({ term: { 'type.keyword': type } })
   status && bool.filter.push({ term: { status: parseInt(status) } })
