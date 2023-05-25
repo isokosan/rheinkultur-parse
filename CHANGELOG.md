@@ -1,3 +1,10 @@
+# [1.45.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.44.0...1.45.0) (2023-05-25)
+
+
+### Features
+
+* update storage permissions ([20390f8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/20390f8387cda055ef84522441c1fc8d926c8d4e))
+
 # [1.44.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.43.0...1.44.0) (2023-05-25)
 
 
