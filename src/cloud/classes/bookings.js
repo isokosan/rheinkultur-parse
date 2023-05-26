@@ -3,7 +3,7 @@ const { normalizeDateString, normalizeString, bookings: { UNSET_NULL_FIELDS, nor
 const { indexBookingRequests, unindexBookingRequests } = require('@/cloud/search')
 
 const { round2 } = require('@/utils')
-const { getNewNo, checkIfCubesAreAvailable, setCubeOrderStatuses } = require('@/shared')
+const { getNewNo, checkIfCubesAreAvailable, setBookingCubeStatus } = require('@/shared')
 
 const Booking = Parse.Object.extend('Booking')
 
@@ -31,14 +31,16 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
   !booking.get('cubeIds') && booking.set('cubeIds', [])
   booking.set('cubeCount', (booking.get('cubeIds') || []).length)
   if (booking.get('cubeCount') > 1) {
-    throw new Error('We changing bookings to only accept 1 cube. Please make multiple bookings instead.')
+    throw new Error('Bookings can only include one cube. Please make multiple bookings instead.')
   }
-  booking.set('cubeId', booking.get('cubeIds')?.[0])
+  const cubeId = booking.get('cubeIds')?.[0]
+  booking.unset('cubeId')
+  cubeId ? booking.set('cube', $pointer('Cube', cubeId)) : booking.unset('cube')
 })
 
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
   await indexBookingRequests(booking)
-  setCubeStatuses && await setCubeOrderStatuses(booking)
+  setCubeStatuses && await setBookingCubeStatus(booking)
   audit && $audit(booking, audit)
 })
 
@@ -60,11 +62,7 @@ Parse.Cloud.beforeFind(Booking, ({ query, user }) => {
 })
 
 Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
-  const cubeIds = bookings.map(booking => booking.get('cubeIds') || []).flat()
-  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
   for (const booking of bookings) {
-    const cubeId = booking.get('cubeIds')?.[0]
-    booking.set('cube', cubes.find(cube => cube.id === cubeId))
     // get computed property willExtend
     const willExtend = booking.get('autoExtendsAt') && !booking.get('canceledAt')
     booking.set('willExtend', willExtend)

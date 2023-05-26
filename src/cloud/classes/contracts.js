@@ -1,7 +1,7 @@
 const { sum } = require('lodash')
 const { normalizeDateString, normalizeString, contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const { round2, round5, priceString } = require('@/utils')
-const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setCubeOrderStatuses } = require('@/shared')
+const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setContractCubeStatuses } = require('@/shared')
 const { generateContract } = require('@/docs')
 const sendMail = require('@/services/email')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
@@ -42,7 +42,7 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
 })
 
 Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculatePlannedInvoices } }) => {
-  setCubeStatuses && await setCubeOrderStatuses(contract)
+  setCubeStatuses && await setContractCubeStatuses(contract)
   if (recalculatePlannedInvoices) {
     Parse.Cloud.run(
       'contract-update-planned-invoices',

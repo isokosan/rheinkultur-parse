@@ -1,4 +1,4 @@
-const { getNewNo } = require('@/shared')
+const { getNewNo, getActiveCubeOrder } = require('@/shared')
 const { indexCube, unindexCube } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
@@ -17,7 +17,7 @@ const Cube = Parse.Object.extend('Cube', {
   }
 })
 
-Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating } }) => {
+Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating, orderStatusCheck } }) => {
   if (!(/^[A-Za-z0-9ÄÖÜäöüß*_/()-]+$/.test(cube.id))) {
     throw new Error('CityCube ID sollte nicht die folgende Zeichen behalten: ".", "$", "%", "?", "+", " ", "Ãœ"')
   }
@@ -45,6 +45,15 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating 
   }
 
   if (updating === true) { return }
+
+  if (orderStatusCheck && !cube.get('order')) {
+    const order = await getActiveCubeOrder(cube.id)
+    order && cube.set('order', order)
+  }
+  // caok: current order key
+  cube.get('order')
+    ? cube.set('caok', cube.get('order').className + '$' + cube.get('order').objectId)
+    : cube.unset('caok')
 
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
@@ -99,7 +108,7 @@ async function checkARPair (cube) {
   await setPair(cube, pair)
 }
 
-Parse.Cloud.afterSave(Cube, ({ object: cube, context: { audit, updating } }) => {
+Parse.Cloud.afterSave(Cube, async ({ object: cube, context: { audit, updating } }) => {
   if (updating === true) { return }
   audit && $audit(cube, audit)
   // check cube pairs, if the save was not initiated by pair function

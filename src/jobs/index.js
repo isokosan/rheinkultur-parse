@@ -78,7 +78,7 @@ const updateJobs = {
   },
   sync_cube_statuses: {
     name: 'Sync Cube Statuses',
-    timeoutMinutes: 120
+    timeoutMinutes: 150
   },
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',

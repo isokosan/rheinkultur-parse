@@ -258,7 +258,8 @@ const schemaDefinitions = {
       ort: { type: 'String', required: true }, // city - required was added later so not taking effect here
       state: { type: 'Pointer', targetClass: 'State', required: true }, // State - required was added later so not taking effect here
 
-      order: { type: 'Object' }, // current active order
+      caok: { type: 'String' }, // current active order key
+      order: { type: 'Object' }, // current order
       vAt: { type: 'Date' }, // verifiedAt Date
       cAt: { type: 'Date' }, // lastControlledAt Date
       sAt: { type: 'Date' }, // lastScoutedAt Date
@@ -284,6 +285,9 @@ const schemaDefinitions = {
       hti: { type: 'String' }, // housing type string from import
       importData: { type: 'Object' }, // Object
       legacyScoutResults: { type: 'Object' } // temporary scouting app results
+    },
+    indexes: {
+      orderKeyIndex: { caok: 1 }
     }
   },
   CubePhoto: {
