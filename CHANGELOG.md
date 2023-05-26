@@ -1,3 +1,10 @@
+# [1.47.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.46.0...1.47.0) (2023-05-26)
+
+
+### Features
+
+* cube statuses, cube active order key with index, fix sync cube status bug and slowness ([52f7933](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/52f79330bc7035dbc4ff3ea11075d778b28793bb))
+
 # [1.46.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.45.1...1.46.0) (2023-05-25)
 
 
