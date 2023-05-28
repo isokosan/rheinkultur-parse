@@ -373,12 +373,25 @@ Parse.Cloud.define('cube-restore', async ({ params: { id }, user }) => {
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
+// KNOWN BUGS: If an internal user changes around Front and Umfeld while a scout form is awaiting approval, the Front and Umfeld selections of the scout will be lost.
 Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId }, user }) => {
-  const cube = await $getOrFail(Cube, id)
+  const cube = await $getOrFail(Cube, id, ['p1', 'p2'])
   const photo = await $getOrFail('CubePhoto', photoId)
   const photoNames = {
     p1: 'Front',
     p2: 'Umfeld'
+  }
+  const isIntern = ['admin', 'intern'].includes(user.get('accType'))
+  const isOwnPhoto = user.id === photo.get('createdBy')?.id
+  // TOTRANSLATE
+  if (!isIntern) {
+    if (!isOwnPhoto) { throw new Error('Unauthorized.') }
+    if (place === 'p1' && cube.get('p1') && cube.get('p1').get('createdBy').id !== user.id) {
+      throw new Error('Front foto schon von RMV festgelegt.')
+    }
+    if (place === 'p2' && cube.get('p2') && cube.get('p2').get('createdBy').id !== user.id) {
+      throw new Error('Umfeld foto schon von RMV festgelegt.')
+    }
   }
   let message
   if (cube.get(place)?.id === photoId) {
@@ -391,7 +404,11 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
     message = `Festgelegt als ${photoNames[place]}-Foto.`
     const otherPlace = place === 'p1' ? 'p2' : 'p1'
     if (!cube.get(otherPlace)) {
-      const otherCubePhotos = await $query('CubePhoto').equalTo('cubeId', cube.id).notEqualTo('objectId', photoId).find({ useMasterKey: true })
+      const otherPhotosQuery = $query('CubePhoto').equalTo('cubeId', cube.id).notEqualTo('objectId', photoId)
+      isIntern
+        ? otherPhotosQuery.equalTo('approved', true)
+        : otherPhotosQuery.equalTo('createdBy', user)
+      const otherCubePhotos = await otherPhotosQuery.find({ useMasterKey: true })
       if (otherCubePhotos.length === 1) {
         cube.set(otherPlace, otherCubePhotos[0])
         message = 'Front und Umfeld Fotos festgelegt.'
