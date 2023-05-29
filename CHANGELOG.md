@@ -1,3 +1,10 @@
+## [1.47.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.1...1.47.2) (2023-05-29)
+
+
+### Bug Fixes
+
+* photo ids and comments inside form for scout submissions ([f03ae39](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f03ae3968b71e6070f900de69f62b3fdc1bdaf53))
+
 ## [1.47.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.0...1.47.1) (2023-05-29)
 
 
