@@ -1,3 +1,10 @@
+## [1.47.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.0...1.47.1) (2023-05-29)
+
+
+### Bug Fixes
+
+* cube photo select permissions ([6789aeb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6789aeb76f90f321a438b64d89501355cfdd61ee))
+
 # [1.47.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.46.0...1.47.0) (2023-05-26)
 
 
