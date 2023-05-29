@@ -1,3 +1,10 @@
+# [1.48.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.3...1.48.0) (2023-05-29)
+
+
+### Features
+
+* cube search index ([803d788](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/803d788be59666630ceeece8d1bc800e793b5eda))
+
 ## [1.47.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.2...1.47.3) (2023-05-29)
 
 
