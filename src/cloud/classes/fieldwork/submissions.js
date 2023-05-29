@@ -15,7 +15,7 @@ async function fetchSubmission (taskListId, cubeId, SubmissionClass, submissionI
   return { taskList, cube, submission }
 }
 
-Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, photoIds, comments }, user }) => {
+Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ScoutSubmission, submissionId)
   submission.set({ scout: user, status: 'pending' })
 
@@ -32,8 +32,9 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
   let changes
   if (submissionId) {
     changes = $changes(submission.get('form'), form, true)
+    delete changes.photoIds
   }
-  const photos = await $query('CubePhoto').containedIn('objectId', photoIds).find({ useMasterKey: true })
+  const photos = await $query('CubePhoto').containedIn('objectId', form.photoIds).find({ useMasterKey: true })
   submission.set({ form, photos })
 
   await submission.save(null, { useMasterKey: true })
