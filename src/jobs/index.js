@@ -38,32 +38,32 @@ const updateJobs = {
   },
   reindex_cubes: {
     name: 'Suchindex von CityCubes aktualisieren',
-    timeoutMinutes: 60,
-    // cron: '0 0 * * *', // nightly at midnight
+    timeoutMinutes: 120,
+    cron: '0 0 * * *', // nightly at midnight
     notificationDuration: 48
   },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
-    timeoutMinutes: 60,
-    // cron: '0 1 * * *', // nightly at 1 am
+    timeoutMinutes: 120,
+    cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
     timeoutMinutes: 15,
-    // cron: '0 2 * * *', // nightly at 2 am
+    cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
   reindex_fieldwork: {
     name: 'Suchindex von Feldarbeit aktualisieren',
     timeoutMinutes: 60,
-    // cron: '0 3 * * *', // nightly at 3 am
+    cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
   reindex_booking_requests: {
     name: 'Suchindex von Buchungsanfragen aktualisieren',
     timeoutMinutes: 60,
-    // cron: '0 3 * * *', // nightly at 3 am
+    cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
   recalculate_aldi_prices: {

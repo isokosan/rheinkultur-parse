@@ -47,6 +47,7 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
   if (updating === true) { return }
 
   if (orderStatusCheck && !cube.get('order')) {
+    consola.warn('checking active order')
     const order = await getActiveCubeOrder(cube.id)
     order && cube.set('order', order)
   }
@@ -159,13 +160,11 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
     if (query._include.includes('orders')) {
       const contracts = await $query('Contract')
         .equalTo('cubeIds', cube.id)
-        .notEqualTo(`earlyCancellations.${cube.id}`, true)
         .find({ useMasterKey: true })
         .then(contracts => contracts.map(contract => ({
           className: 'Contract',
           ...contract.toJSON(),
-          earlyCanceledAt: contract.get('earlyCancellations')?.[cube.id],
-          endsAt: contract.get('earlyCancellations')?.[cube.id] || contract.get('endsAt')
+          earlyCanceledAt: contract.get('earlyCancellations')?.[cube.id]
         })))
       const bookings = await $query('Booking')
         .equalTo('cubeIds', cube.id)
@@ -174,8 +173,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
         .then(bookings => bookings.map(booking => ({
           className: 'Booking',
           ...booking.toJSON(),
-          earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id],
-          endsAt: booking.get('earlyCancellations')?.[cube.id] || booking.get('endsAt')
+          earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id]
         })))
       cube.set('orders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
     }
