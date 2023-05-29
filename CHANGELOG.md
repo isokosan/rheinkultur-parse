@@ -1,3 +1,10 @@
+## [1.47.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.2...1.47.3) (2023-05-29)
+
+
+### Bug Fixes
+
+* re-introduce crons for reindexes with large timeouts ([c64b0a8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c64b0a8ef4dd9d95df3ec5ae0da5d50810651ebd))
+
 ## [1.47.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.1...1.47.2) (2023-05-29)
 
 
