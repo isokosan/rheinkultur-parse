@@ -60,6 +60,12 @@ const updateJobs = {
     cron: '0 1 * * *', // nightly at 1 am
     notificationDuration: 48
   },
+  reindex_bookings: {
+    name: 'Suchindex von Buchungen aktualisieren',
+    timeoutMinutes: 60,
+    cron: '0 1 * * *', // nightly at 1 am
+    notificationDuration: 48
+  },
   reindex_booking_requests: {
     name: 'Suchindex von Buchungsanfragen aktualisieren',
     timeoutMinutes: 60,

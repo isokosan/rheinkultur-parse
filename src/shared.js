@@ -111,7 +111,7 @@ async function checkIfCubesAreAvailable (cubeIds, date, selfNo) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = booking.toJSON()
         if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
-          throw new Error(`CityCube ${cubeId} istist zu diesem Startdatum bereits gebucht. (${booking.get('no')})`)
+          throw new Error(`CityCube ${cubeId} ist zu diesem Startdatum bereits gebucht. (${booking.get('no')})`)
           // throw new Error(`CityCube ${cubeId} ist bereits in Buchung ${booking.get('no')} gebucht.`)
         }
       }

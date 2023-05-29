@@ -135,6 +135,42 @@ const INDEXES = {
       }
     }))
   },
+  // bookings with cubes
+  'rheinkultur-bookings': {
+    config: {
+      mappings: {
+        properties: {
+          status: { type: 'byte' }
+        }
+      }
+    },
+    parseQuery: $query('Booking'),
+    datasetMap: bookings => bookings.map(booking => {
+      const cube = booking.get('cube')
+      return {
+        _id: booking.id,
+        doc: {
+          bookingId: booking.id,
+          no: booking.get('no'),
+          status: booking.get('status'),
+          motive: booking.get('motive'),
+          externalOrderNo: booking.get('externalOrderNo'),
+          companyId: booking.get('company').id,
+          disassembly: booking.get('disassembly'),
+          // responsibleIds: booking.get('responsibles')
+          cube: {
+            objectId: cube?.id,
+            str: cube?.get('str'),
+            hsnr: cube?.get('hsnr'),
+            hsnr_numeric: isNaN(parseInt(cube?.get('hsnr'))) ? undefined : parseInt(cube.get('hsnr')),
+            plz: cube?.get('plz'),
+            ort: cube?.get('ort'),
+            stateId: cube?.get('state')?.id
+          }
+        }
+      }
+    })
+  },
   // Keep booking requests to a bare minimum of request info. The cube and booking information will not be searchable.
   'rheinkultur-booking-requests': {
     config: {
@@ -207,143 +243,6 @@ Parse.Cloud.define(
     .then(hits => hits.map(hit => hit._source)),
   { validateMasterKey: true }
 )
-
-// runs only on fieldwork list view
-Parse.Cloud.define('search-fieldwork', async ({
-  params: {
-    // pk, // placeKey (stateId:ort)
-    c,
-    state: stateId,
-    type,
-    start,
-    managerId,
-    scoutId,
-    status,
-    from,
-    pagination
-  }, user, master
-}) => {
-  // BUILD QUERY
-  const bool = { should: [], must: [], must_not: [], filter: [] }
-  const sort = ['_score']
-  if (user && user.get('accType') === 'partner') {
-    managerId = user.id
-    bool.must.push({ range: { status: { gt: 0 } } })
-  }
-
-  type && bool.filter.push({ term: { 'type.keyword': type } })
-
-  if (start) {
-    const gte = moment(start, 'MM-YYYY').startOf('month')
-    const lte = moment(start, 'MM-YYYY').endOf('month')
-    bool.filter.push({ range: { date: { gte, lte } } })
-  }
-
-  stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
-  managerId && bool.filter.push({ term: { 'managerId.keyword': managerId } })
-  scoutId && bool.filter.push({ match: { scoutIds: scoutId } })
-  if (status === 'must_appoint') {
-    bool.filter.push({ term: { status: 0 } })
-  } else if (status === 'must_assign') {
-    bool.filter.push({ terms: { status: [0, 1] } })
-  } else if (status === 'wip') {
-    bool.filter.push({ terms: { status: [2, 3] } })
-  } else if (status === 'done') {
-    bool.filter.push({ term: { status: 4 } })
-  }
-
-  if (c) {
-    const [lon, lat] = c.split(',').map(parseFloat)
-    sort.unshift({
-      _geo_distance: {
-        geo: { lat, lon },
-        order: 'asc',
-        unit: 'km',
-        mode: 'min',
-        distance_type: 'plane',
-        ignore_unmapped: true
-      }
-    })
-  } else {
-    sort.unshift({ date: { order: 'asc' } })
-  }
-
-  const searchResponse = await client.search({
-    index: 'rheinkultur-fieldwork',
-    body: {
-      query: { bool },
-      sort,
-      track_total_hits: true
-    },
-    from,
-    size: pagination || 50
-  })
-  const { hits: { hits, total: { value: count } } } = searchResponse
-  const taskLists = await $query('TaskList')
-    .containedIn('objectId', hits.map(hit => hit._id))
-    .limit(hits.length)
-    .find({ useMasterKey: true })
-  const results = hits.map(hit => {
-    const obj = taskLists.find(obj => obj.id === hit._id)
-    if (!obj) {
-      Parse.Cloud.run('triggerScheduledJob', { job: 'reindex_fieldwork' }, { useMasterKey: true })
-      throw new Error('The search index is being re-synced, please try again in a minute.')
-    }
-    c && obj.set('distance', hit.sort[0])
-    return obj.toJSON()
-  })
-  return { results, count }
-}, { validateMasterKey: true })
-
-// runs only on booking-requests list view
-Parse.Cloud.define('search-booking-requests', async ({
-  params: {
-    cubeId,
-    no,
-    companyId,
-    type,
-    status,
-    from,
-    pagination
-  }, user, master
-}) => {
-  // BUILD QUERY
-  const bool = { should: [], must: [], must_not: [], filter: [] }
-  const sort = ['_score']
-  sort.unshift({ updatedAt: { order: 'desc' } })
-  if (user && user.get('accType') === 'partner') {
-    companyId = user.get('company').id
-  }
-  cubeId && bool.must.push({ wildcard: { 'cubeId.keyword': `*${cubeId}*` } })
-  no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
-  companyId && bool.filter.push({ term: { 'companyId.keyword': companyId } })
-  type && bool.filter.push({ term: { 'type.keyword': type } })
-  status && bool.filter.push({ term: { status: parseInt(status) } })
-
-  const searchResponse = await client.search({
-    index: 'rheinkultur-booking-requests',
-    body: {
-      query: { bool },
-      sort,
-      track_total_hits: true
-    },
-    from,
-    size: pagination || 50
-  })
-  const { hits: { hits, total: { value: count } } } = searchResponse
-  const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
-  const bookings = await $query('Booking')
-    .containedIn('objectId', bookingIds)
-    .include('deleted')
-    .limit(bookingIds.length)
-    .find({ useMasterKey: true })
-  const results = hits.map(hit => {
-    const booking = bookings.find(obj => obj.id === hit._source.bookingId)
-    hit._source.booking = booking.toJSON()
-    return hit._source
-  })
-  return { results, count }
-}, { validateMasterKey: true })
 
 Parse.Cloud.define('search', async ({
   params: {
@@ -606,6 +505,209 @@ Parse.Cloud.define('search', async ({
   return { results, count }
 }, { validateMasterKey: true })
 
+// runs only on fieldwork list view
+Parse.Cloud.define('search-fieldwork', async ({
+  params: {
+    // pk, // placeKey (stateId:ort)
+    c,
+    state: stateId,
+    type,
+    start,
+    managerId,
+    scoutId,
+    status,
+    from,
+    pagination
+  }, user, master
+}) => {
+  // BUILD QUERY
+  const bool = { should: [], must: [], must_not: [], filter: [] }
+  const sort = ['_score']
+  if (user && user.get('accType') === 'partner') {
+    managerId = user.id
+    bool.must.push({ range: { status: { gt: 0 } } })
+  }
+
+  type && bool.filter.push({ term: { 'type.keyword': type } })
+
+  if (start) {
+    const gte = moment(start, 'MM-YYYY').startOf('month')
+    const lte = moment(start, 'MM-YYYY').endOf('month')
+    bool.filter.push({ range: { date: { gte, lte } } })
+  }
+
+  stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
+  managerId && bool.filter.push({ term: { 'managerId.keyword': managerId } })
+  scoutId && bool.filter.push({ match: { scoutIds: scoutId } })
+  if (status === 'must_appoint') {
+    bool.filter.push({ term: { status: 0 } })
+  } else if (status === 'must_assign') {
+    bool.filter.push({ terms: { status: [0, 1] } })
+  } else if (status === 'wip') {
+    bool.filter.push({ terms: { status: [2, 3] } })
+  } else if (status === 'done') {
+    bool.filter.push({ term: { status: 4 } })
+  }
+
+  if (c) {
+    const [lon, lat] = c.split(',').map(parseFloat)
+    sort.unshift({
+      _geo_distance: {
+        geo: { lat, lon },
+        order: 'asc',
+        unit: 'km',
+        mode: 'min',
+        distance_type: 'plane',
+        ignore_unmapped: true
+      }
+    })
+  } else {
+    sort.unshift({ date: { order: 'asc' } })
+  }
+
+  const searchResponse = await client.search({
+    index: 'rheinkultur-fieldwork',
+    body: {
+      query: { bool },
+      sort,
+      track_total_hits: true
+    },
+    from,
+    size: pagination || 50
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  const taskLists = await $query('TaskList')
+    .containedIn('objectId', hits.map(hit => hit._id))
+    .limit(hits.length)
+    .find({ useMasterKey: true })
+  const results = hits.map(hit => {
+    const obj = taskLists.find(obj => obj.id === hit._id)
+    if (!obj) {
+      Parse.Cloud.run('triggerScheduledJob', { job: 'reindex_fieldwork' }, { useMasterKey: true })
+      throw new Error('The search index is being re-synced, please try again in a minute.')
+    }
+    c && obj.set('distance', hit.sort[0])
+    return obj.toJSON()
+  })
+  return { results, count }
+}, { validateMasterKey: true })
+
+Parse.Cloud.define('search-bookings', async ({
+  params: {
+    no,
+    motive,
+    externalOrderNo,
+    status,
+    companyId,
+    disassembly,
+    cubeId,
+    str,
+    hsnr,
+    plz,
+    ort,
+    state: stateId,
+    sb,
+    sd,
+    from,
+    pagination
+  }, user, master
+}) => {
+  // BUILD QUERY
+  const bool = { should: [], must: [], must_not: [], filter: [] }
+  const sort = ['_score']
+  if (sb === 'no') {
+    sort.unshift({ 'no.keyword': sd })
+  }
+
+  // booking
+  no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
+  status ? bool.filter.push({ term: { status: parseInt(status) } }) : bool.must_not.push({ term: { status: -1 } })
+  companyId && bool.must.push({ match: { companyId } })
+  motive && bool.must.push({ match_phrase_prefix: { motive } })
+  externalOrderNo && bool.must.push({ match_phrase_prefix: { externalOrderNo } })
+  disassembly && bool.must.push({ exists: { field: 'disassembly' } })
+
+  cubeId && bool.must.push({ wildcard: { 'cube.objectId.keyword': `*${cubeId}*` } })
+  str && bool.filter.push({ term: { 'cube.str.keyword': str } })
+  hsnr && bool.filter.push({ match_phrase_prefix: { 'cube.hsnr': hsnr } })
+  plz && bool.filter.push({ match_phrase_prefix: { 'cube.plz': plz } })
+  ort && bool.filter.push({ term: { 'cube.ort.keyword': ort } })
+  stateId && bool.filter.push({ term: { 'cube.stateId.keyword': stateId } })
+
+  const searchResponse = await client.search({
+    index: 'rheinkultur-bookings',
+    body: {
+      query: { bool },
+      sort,
+      track_total_hits: true
+    },
+    from,
+    size: pagination || 50
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
+  const bookings = await $query('Booking')
+    .containedIn('objectId', bookingIds)
+    .include('deleted')
+    .limit(bookingIds.length)
+    .find({ useMasterKey: true })
+  const results = hits.map(hit => {
+    const booking = bookings.find(obj => obj.id === hit._source.bookingId)
+    return booking.toJSON()
+  })
+  return { results, count }
+}, { validateMasterKey: true })
+
+// runs only on booking-requests list view
+Parse.Cloud.define('search-booking-requests', async ({
+  params: {
+    cubeId,
+    no,
+    companyId,
+    type,
+    status,
+    from,
+    pagination
+  }, user, master
+}) => {
+  // BUILD QUERY
+  const bool = { should: [], must: [], must_not: [], filter: [] }
+  const sort = ['_score']
+  sort.unshift({ updatedAt: { order: 'desc' } })
+  if (user && user.get('accType') === 'partner') {
+    companyId = user.get('company').id
+  }
+  cubeId && bool.must.push({ wildcard: { 'cubeId.keyword': `*${cubeId}*` } })
+  no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
+  companyId && bool.filter.push({ term: { 'companyId.keyword': companyId } })
+  type && bool.filter.push({ term: { 'type.keyword': type } })
+  status && bool.filter.push({ term: { status: parseInt(status) } })
+
+  const searchResponse = await client.search({
+    index: 'rheinkultur-booking-requests',
+    body: {
+      query: { bool },
+      sort,
+      track_total_hits: true
+    },
+    from,
+    size: pagination || 50
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
+  const bookings = await $query('Booking')
+    .containedIn('objectId', bookingIds)
+    .include('deleted')
+    .limit(bookingIds.length)
+    .find({ useMasterKey: true })
+  const results = hits.map(hit => {
+    const booking = bookings.find(obj => obj.id === hit._source.bookingId)
+    hit._source.booking = booking.toJSON()
+    return hit._source
+  })
+  return { results, count }
+}, { validateMasterKey: true })
+
 Parse.Cloud.define('booked-cubes', async () => {
   const keepAlive = '1m'
   const size = 5000
@@ -683,6 +785,23 @@ const unindexCube = async (cube) => {
   }
 }
 
+const indexCubeBookings = async (cube) => {
+  return $query('Booking').equalTo('cube', cube).each(indexBooking, { useMasterKey: true })
+}
+
+const indexBooking = async (booking) => {
+  if (booking.get('cube') && !booking.get('cube')?.get?.('str')) {
+    consola.info('refetching cube', booking.get('cube'))
+    await booking.get('cube').fetch({ useMasterKey: true })
+  }
+  const [{ _id: id, doc: body }] = INDEXES['rheinkultur-bookings'].datasetMap([booking])
+  return client.index({ index: 'rheinkultur-bookings', id, body })
+}
+
+const unindexBooking = (booking) => {
+  return client.delete({ index: 'rheinkultur-bookings', id: booking.id }).then(consola.success).catch(consola.error)
+}
+
 const unindexBookingRequests = (booking) => {
   return client.deleteByQuery({
     index: 'rheinkultur-booking-requests',
@@ -744,6 +863,9 @@ module.exports = {
   purgeIndexes,
   indexCube,
   unindexCube,
+  indexCubeBookings,
+  indexBooking,
+  unindexBooking,
   indexBookingRequests,
   unindexBookingRequests,
   indexTaskList,

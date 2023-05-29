@@ -1,5 +1,5 @@
 const { getNewNo, getActiveCubeOrder } = require('@/shared')
-const { indexCube, unindexCube } = require('@/cloud/search')
+const { indexCube, unindexCube, indexCubeBookings } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
     // available, booked, not available, not found
@@ -58,7 +58,7 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
 
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
-
+  await indexCubeBookings(cube)
   // make sure computed values are unset and not persisted in DB
   cube.unset('s').unset('bPLZ').unset('PDGA').unset('klsId')
 })

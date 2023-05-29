@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid')
 const { normalizeDateString, normalizeString, bookings: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
-const { indexBookingRequests, unindexBookingRequests } = require('@/cloud/search')
+const { indexBooking, unindexBooking, indexBookingRequests, unindexBookingRequests } = require('@/cloud/search')
 
 const { round2 } = require('@/utils')
 const { getNewNo, checkIfCubesAreAvailable, setBookingCubeStatus } = require('@/shared')
@@ -34,17 +34,24 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
     throw new Error('Bookings can only include one cube. Please make multiple bookings instead.')
   }
   const cubeId = booking.get('cubeIds')?.[0]
-  booking.unset('cubeId')
-  cubeId ? booking.set('cube', $pointer('Cube', cubeId)) : booking.unset('cube')
+  if (!cubeId) {
+    booking.unset('cube')
+  } else if (booking.get('cube')?.id !== cubeId) {
+    const cube = await $getOrFail('Cube', cubeId)
+    booking.set('cube', cube)
+  }
 })
 
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
+  await indexBooking(booking)
   await indexBookingRequests(booking)
   setCubeStatuses && await setBookingCubeStatus(booking)
   audit && $audit(booking, audit)
 })
 
 Parse.Cloud.beforeFind(Booking, ({ query, user }) => {
+  // always attach cube
+  query.include('cube')
   // if partner, only self bookings
   if (user?.get('accType') === 'partner' && user.get('company')) {
     query.equalTo('company', user.get('company'))
@@ -79,6 +86,7 @@ Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
 })
 
 Parse.Cloud.beforeDelete(Booking, async ({ object: booking }) => {
+  await unindexBooking(booking)
   await unindexBookingRequests(booking)
 })
 
