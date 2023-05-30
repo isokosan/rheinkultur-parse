@@ -41,9 +41,6 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
   taskList.set({ status: 3 })
   const audit = { user, fn: 'scout-submission-submit', data: { cubeId, changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
-  if (user.get('accType') === 'admin') {
-    return Parse.Cloud.run('scout-submission-approve', { id: submission.id }, { sessionToken: user.get('sessionToken') })
-  }
   return { message: 'Scouting erfolgreich.', data: submission }
 }, { requireUser: true })
 

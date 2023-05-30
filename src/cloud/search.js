@@ -618,6 +618,9 @@ Parse.Cloud.define('search-bookings', async ({
   if (sb === 'no') {
     sort.unshift({ 'no.keyword': sd })
   }
+  if (user?.get('accType') === 'partner' && user.get('company')) {
+    companyId = user.get('company').id
+  }
 
   // booking
   no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })

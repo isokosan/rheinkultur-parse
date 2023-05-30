@@ -402,11 +402,13 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
     message = `Festgelegt als ${photoNames[place]}-Foto.`
     const otherPlace = place === 'p1' ? 'p2' : 'p1'
     if (!cube.get(otherPlace)) {
-      const otherPhotosQuery = $query('CubePhoto').equalTo('cubeId', cube.id).notEqualTo('objectId', photoId)
-      isIntern
-        ? otherPhotosQuery.equalTo('approved', true)
-        : otherPhotosQuery.equalTo('createdBy', user)
-      const otherCubePhotos = await otherPhotosQuery.find({ useMasterKey: true })
+      const otherPhotosQuery = isIntern
+        ? Parse.Query.or($query('CubePhoto').equalTo('approved', true), $query('CubePhoto').equalTo('createdBy', user))
+        : $query('CubePhoto').equalTo('createdBy', user)
+      const otherCubePhotos = await otherPhotosQuery
+        .equalTo('cubeId', cube.id)
+        .notEqualTo('objectId', photoId)
+        .find({ useMasterKey: true })
       if (otherCubePhotos.length === 1) {
         cube.set(otherPlace, otherCubePhotos[0])
         message = 'Front und Umfeld Fotos festgelegt.'
