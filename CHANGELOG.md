@@ -1,3 +1,15 @@
+# [1.49.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.48.0...1.49.0) (2023-05-30)
+
+
+### Bug Fixes
+
+* partner booking search scope ([74dc8f6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/74dc8f68f206d90a2cf1b7e6fd32f0f9ff954f1e))
+
+
+### Features
+
+* photo and media setting inside booking requests ([28932c1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/28932c15f4b4990cc65951591eeb00867caf5f13))
+
 # [1.48.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.47.3...1.48.0) (2023-05-29)
 
 
