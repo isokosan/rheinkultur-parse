@@ -397,7 +397,7 @@ Parse.Cloud.define('contract-invoices-preview', async ({ params: { id: contractI
     return []
   }
   return getInvoicesPreview(contract)
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * Generates a contract with cubeids
@@ -425,7 +425,7 @@ Parse.Cloud.define('contract-generate', async ({ params, user }) => {
   contract.set({ billingCycle: contract.get('company')?.get('billingCycle') || 12 })
   const audit = { user, fn: 'contract-generate' }
   return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * Creates a contract with the basic settings.
@@ -491,7 +491,7 @@ Parse.Cloud.define('contract-create', async ({ params, user, master, context: { 
 
   const audit = { user, fn: 'contract-create' }
   return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, ...params }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
@@ -544,7 +544,7 @@ Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, .
 
   const audit = { user, fn: 'contract-update', data: { cubeChanges } }
   return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthlyMedia, production, ...params }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
@@ -727,7 +727,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
 
   const audit = { user, fn: 'contract-update', data: { changes, cubeChanges, productionChanges } }
   return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
@@ -761,7 +761,7 @@ Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractI
   }
 
   return { otherOrders: Object.values(otherOrders) }
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, user, context: { seedAsId, skipCubeValidations } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
@@ -781,12 +781,12 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   contract.set({ status: 3 })
   const audit = { user, fn: 'contract-finalize' }
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-set-cube-statuses', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
   return contract.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // TOTRANSLATE
 async function checkIfContractRevertible (contract) {
@@ -822,7 +822,7 @@ Parse.Cloud.define('contract-check-revertable', async ({ params: { id: contractI
   const contract = await $getOrFail(Contract, contractId, 'company')
   return checkIfContractRevertible(contract)
     .catch((error) => ({ error: error.message }))
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
@@ -837,7 +837,7 @@ Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }
       return invoice.destroy({ useMasterKey: true })
     }, { useMasterKey: true })
   return 'Finalisierung zurückgezogen.'
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // Updates all planned and discarded invoices of contract
 // Updates gradual prices, periodEnd and early canceled cubes
@@ -943,7 +943,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     updated && (u++)
   }
   return u
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // recreates canceled invoice
 Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id: invoiceId }, user }) => {
@@ -978,7 +978,7 @@ Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id
     : invoice.unset('commissionRate')
   const audit = { user, fn: 'invoice-regenerate-from-canceled', data: { invoiceNo: canceledInvoice.get('lexNo') } }
   return invoice.save(null, { useMasterKey: true, context: { audit, rewriteIntroduction: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params: { id: contractId, cancellations }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
@@ -1240,7 +1240,7 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email, 
     message += ` ${newInvoices.length} neue Rechnungen generiert.`
   }
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractId, email }, user }) => {
   if (!email) {
@@ -1267,7 +1267,7 @@ Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractI
   })
   const audit = { fn: 'send-email', user, data: { template, mailStatus } }
   return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * When a contract is canceled on a given date
@@ -1313,19 +1313,15 @@ Parse.Cloud.define('contract-cancel', async ({
   )
   message += ` ${updatedInvoices} Rechnungen aktualisiert.`
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
-/**
- * When a contract is canceled on a given date
- *   the cubes will become available when endsAt date is reached
- */
 Parse.Cloud.define('contract-cancel-cancel', async ({
   params: {
     id: contractId,
     endsAt
   }, user
 }) => {
-  const contract = await $getOrFail(Contract, contractId, ['production'])
+  const contract = await $getOrFail(Contract, contractId)
   endsAt = normalizeDateString(endsAt)
   const changes = $changes(contract, { endsAt })
   const audit = { user, fn: 'contract-cancel-cancel', data: { changes } }
@@ -1344,7 +1340,7 @@ Parse.Cloud.define('contract-cancel-cancel', async ({
   )
   message += ` ${updatedInvoices} Rechnungen aktualisiert.`
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * When a contract is ended
@@ -1362,7 +1358,7 @@ Parse.Cloud.define('contract-end', async ({ params: { id: contractId }, user }) 
   contract.set({ status: contract.get('canceledAt') ? 4 : 5 })
   const audit = { user, fn: 'contract-end' }
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * When a contract invoice address is changed, the specified planned invoices are updated
@@ -1412,7 +1408,7 @@ Parse.Cloud.define('contract-change-invoice-address', async ({
   }
   const audit = { user, fn: 'contract-update', data: { changes } }
   return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * Change contract infos and update all planned invoices
@@ -1444,7 +1440,7 @@ Parse.Cloud.define('contract-change-infos', async ({
     .containedIn('status', [1, 4])
     .each(async invoice => invoice.save(null, { useMasterKey: true, context: { rewriteIntroduction: true } }), { useMasterKey: true })
   return contract
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * When a contract commission is changed, the specified planned invoices are updated
@@ -1508,7 +1504,7 @@ Parse.Cloud.define('contract-change-commission', async ({
   }
   const audit = { user, fn: 'contract-update', data: { changes } }
   return contract.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-toggle-auto-invoice-emails', async ({ params: { id: contractId }, user }) => {
   const contract = await $query(Contract).get(contractId, { useMasterKey: true })
@@ -1519,7 +1515,7 @@ Parse.Cloud.define('contract-toggle-auto-invoice-emails', async ({ params: { id:
   return contract.get('skipInvoiceEmails')
     ? 'Belege werden nicht automatisch per E-Mail verschickt.'
     : 'Belege werden automatisch per E-Mail verschickt.'
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-generate-doc', async ({ params: { id: contractId }, user }) => {
   const contract = await $query(Contract).get(contractId, { useMasterKey: true })
@@ -1530,7 +1526,7 @@ Parse.Cloud.define('contract-generate-doc', async ({ params: { id: contractId },
   const audit = { user, fn: 'contract-generate-doc', data: { wasGenerated } }
   await contract.save(null, { useMasterKey: true, context: { audit } })
   return contract.get('driveFileId')
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
@@ -1544,4 +1540,4 @@ Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user 
   contract.set('status', -1)
   const audit = { user, fn: 'contract-remove' }
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)

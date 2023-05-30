@@ -438,7 +438,7 @@ Parse.Cloud.define('booking-cancel', async ({
   params: {
     id: bookingId,
     endsAt,
-    notes: cancelNotes
+    comments: cancelNotes
   }, user
 }) => {
   endsAt = normalizeDateString(endsAt)
@@ -458,8 +458,30 @@ Parse.Cloud.define('booking-cancel', async ({
   }
   await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   if (moment(endsAt).isBefore(await $today(), 'day')) {
-    return Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
+    await Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
   }
+  return wasCanceled ? 'Kündigung geändert.' : 'Buchung gekündigt.'
+}, { requireUser: true })
+
+Parse.Cloud.define('booking-cancel-cancel', async ({
+  params: {
+    id: bookingId,
+    endsAt
+  }, user
+}) => {
+  const booking = await $getOrFail(Booking, bookingId)
+  endsAt = normalizeDateString(endsAt)
+  const changes = $changes(booking, { endsAt })
+  const audit = { user, fn: 'booking-cancel-cancel', data: { changes } }
+  booking.set({ endsAt, canceledAt: null, cancelNotes: null })
+  let message = 'Kündigung zurückgerufen.'
+  if (booking.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+    booking.set('status', 3)
+    booking.set('canceledAt', null)
+    message += ' Buchung status auf Aktiv gestellt.'
+  }
+  await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  return message
 }, { requireUser: true })
 
 /**
@@ -696,7 +718,7 @@ Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
   }
   const booking = await $getOrFail(Booking, params.id)
   const endsAt = normalizeDateString(params.endsAt)
-  const comments = normalizeString(params.notes)
+  const comments = normalizeString(params.comments)
 
   if (booking.get('status') !== 3) {
     throw new Error('Nur laufende Buchungen können gekündigt werden.')
@@ -706,7 +728,7 @@ Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
   const wasCanceled = Boolean(booking.get('canceledAt'))
   if (wasCanceled && !changes) { throw new Error('Keine Änderungen') }
   const request = {
-    type: 'cancel',
+    type: wasCanceled ? 'cancel-change' : 'cancel',
     user: user.toPointer(),
     changes: changes || undefined,
     comments: comments || undefined,
@@ -714,7 +736,28 @@ Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
     updatedAt: new Date()
   }
   await booking.set({ request }).save(null, { useMasterKey: true })
-  return booking.get('canceledAt') ? 'Kündigungsänderunganfrage gesendet.' : 'Kündigungsanfrage gesendet.'
+  return booking.get('canceledAt') ? 'Kündigungs Korrekturanfrage gesendet.' : 'Kündigungsanfrage gesendet.'
+}, { requireUser: true })
+
+Parse.Cloud.define('booking-cancel-cancel-request', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unbefugter Zugriff')
+  }
+  const booking = await $getOrFail(Booking, params.id)
+  const endsAt = normalizeDateString(params.endsAt)
+  const comments = normalizeString(params.comments)
+  const changes = $cleanDict($changes(booking, { endsAt }))
+  const request = {
+    type: 'cancel-cancel',
+    user: user.toPointer(),
+    changes: changes || undefined,
+    comments: comments || undefined,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+  await booking.set({ request }).save(null, { useMasterKey: true })
+  return 'Anfrage gesendet.'
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-remove-request', async ({ params, user }) => {
@@ -786,6 +829,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   const requestHistory = booking.get('requestHistory') || []
   requestHistory.push(request)
 
+  let message = 'Anfrage akzeptiert.'
   let audit
   let setCubeStatuses
   let endBooking
@@ -806,7 +850,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     audit = { fn: 'booking-change-request-accept', user, data: { requestedBy: request.user, changes: request.changes } }
   }
 
-  if (request.type === 'cancel') {
+  if (request.type === 'cancel' || request.type === 'cancel-change') {
     const endsAt = request.changes?.endsAt?.[1] || booking.get('endsAt')
     const cancelNotes = request.comments
 
@@ -827,6 +871,20 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     }
   }
 
+  if (request.type === 'cancel-cancel') {
+    const endsAt = request.changes?.endsAt[1]
+    const changes = $changes(booking, { endsAt })
+    booking.set({ endsAt, canceledAt: null, cancelNotes: null })
+    setCubeStatuses = true
+    audit = { user, fn: 'booking-cancel-cancel-request-accept', data: { changes } }
+    message += 'Kündigung zurückgerufen.'
+    if (booking.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+      booking.set('status', 3)
+      booking.set('canceledAt', null)
+      message += ' Buchung status auf Aktiv gestellt.'
+    }
+  }
+
   if (request.type === 'remove') {
     // soft delete otherwise
     booking.set('deletedAt', new Date())
@@ -837,7 +895,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
 
   await booking.unset('request').set({ requestHistory }).save(null, { useMasterKey: true, context: { audit, setCubeStatuses } })
   endBooking && await Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
-  return 'Anfrage akzeptiert.'
+  return message
 }, $adminOnly)
 
 Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
