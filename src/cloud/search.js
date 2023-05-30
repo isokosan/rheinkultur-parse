@@ -590,7 +590,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     return obj.toJSON()
   })
   return { results, count }
-}, { validateMasterKey: true })
+}, { requireUser: true, validateMasterKey: true })
 
 Parse.Cloud.define('search-bookings', async ({
   params: {
@@ -659,11 +659,12 @@ Parse.Cloud.define('search-bookings', async ({
     return booking.toJSON()
   })
   return { results, count }
-}, { validateMasterKey: true })
+}, { requireUser: true, validateMasterKey: true })
 
 // runs only on booking-requests list view
 Parse.Cloud.define('search-booking-requests', async ({
   params: {
+    requestId,
     cubeId,
     no,
     companyId,
@@ -680,6 +681,7 @@ Parse.Cloud.define('search-booking-requests', async ({
   if (user && user.get('accType') === 'partner') {
     companyId = user.get('company').id
   }
+  requestId && bool.filter.push({ term: { _id: requestId } })
   cubeId && bool.must.push({ wildcard: { 'cubeId.keyword': `*${cubeId}*` } })
   no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
   companyId && bool.filter.push({ term: { 'companyId.keyword': companyId } })
@@ -709,7 +711,7 @@ Parse.Cloud.define('search-booking-requests', async ({
     return hit._source
   })
   return { results, count }
-}, { validateMasterKey: true })
+}, { requireUser: true, validateMasterKey: true })
 
 Parse.Cloud.define('booked-cubes', async () => {
   const keepAlive = '1m'
@@ -794,7 +796,6 @@ const indexCubeBookings = async (cube) => {
 
 const indexBooking = async (booking) => {
   if (booking.get('cube') && !booking.get('cube')?.get?.('str')) {
-    consola.info('refetching cube', booking.get('cube'))
     await booking.get('cube').fetch({ useMasterKey: true })
   }
   const [{ _id: id, doc: body }] = INDEXES['rheinkultur-bookings'].datasetMap([booking])

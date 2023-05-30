@@ -388,7 +388,6 @@ const schemaDefinitions = {
       companyPerson: { type: 'Pointer', targetClass: 'Person' },
       contract: { type: 'Pointer', targetClass: 'Contract' }, // filled only when a contract is invoiced
       booking: { type: 'Pointer', targetClass: 'Booking' }, // filled only when a single booking is invoiced for production
-      bookings: { type: 'Array' }, // filled only when a collection of bookings are invoiced in distributor quarterly bookings
       introduction: { type: 'String' }, // introduction that will appear on lex office
 
       // LEX
@@ -451,6 +450,10 @@ const schemaDefinitions = {
       // cubeCount
 
       lineItems: { type: 'Array', required: true }, // required for lex office
+
+      netTotal: { type: 'Number' },
+      taxTotal: { type: 'Number' },
+      total: { type: 'Number' },
 
       // for pacht exports
       extraCols: { type: 'Object' },

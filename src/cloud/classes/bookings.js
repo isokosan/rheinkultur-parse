@@ -593,6 +593,8 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     request: {
       type: 'create',
       user: user.toPointer(),
+      photoIds: params.photoIds,
+      media: params.media,
       comments: normalizeString(params.comments) || undefined,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -761,6 +763,22 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   const request = booking.get('request')
   if (!request) { throw new Error('Request not found') }
   if (request.status) { throw new Error('Request already accepted or rejected') }
+
+  // accept the cube changes
+  request.photoIds?.length && await $query('CubePhoto')
+    .containedIn('objectId', request.photoIds)
+    .notEqualTo('approved', true)
+    .each(photo => photo.set('approved', true).save(null, { useMasterKey: true }), { useMasterKey: true })
+  const cube = booking.get('cube')
+  if (request.media && !cube.get('vAt') && cube.get('media') !== request.media) {
+    const ht = null
+    const media = request.media
+    const changes = $changes(cube, { media, ht })
+    cube.set({ ht, media })
+    const audit = { user, fn: 'cube-update', data: { changes } }
+    await $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
+  }
+
   request.status = 1
   request.acceptedBy = user
   request.acceptedAt = new Date()
@@ -829,6 +847,12 @@ Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
   }
   const booking = await $getOrFail(Booking, params.id)
   if (booking.get('status') === 0) {
+    // delete request photos that were not approved
+    const requestPhotoIds = booking.get('request')?.photoIds || []
+    requestPhotoIds.length && await $query('CubePhoto')
+      .containedIn('objectId', requestPhotoIds)
+      .notEqualTo('approved', true)
+      .each(photo => photo.destroy({ useMasterKey: true }), { useMasterKey: true })
     await booking.destroy({ useMasterKey: true })
     return 'Buchungsanfrage gelöscht.'
   }

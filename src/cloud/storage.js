@@ -176,10 +176,12 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
 })
 
 // The CubePhoto will not be deleted unless the file associated with it is successfuly deleted, or is already not found
-Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user }) => {
+Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user, master }) => {
   const cube = await $getOrFail('Cube', object.get('cubeId'))
-  if (!user) { throw new Error('Unerlaubte Aktion') }
-  if (!['intern', 'admin'].includes(user.get('accType')) && user.id !== object.get('createdBy').id) { throw new Error('Unerlaubte Aktion') }
+  if (!master) {
+    if (!user) { throw new Error('Unerlaubte Aktion') }
+    if (!['intern', 'admin'].includes(user.get('accType')) && user.id !== object.get('createdBy').id) { throw new Error('Unerlaubte Aktion') }
+  }
   if (cube.get('p1')?.id === object.id) {
     await cube.unset('p1').save(null, { useMasterKey: true })
   }
@@ -192,6 +194,17 @@ Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user }) => {
     object.get('size1000')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError), // deletes size1000 if exists
     object.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError) // deletes thumb if exists
   ])
+})
+
+// Run another p1 & p2 cleanup check after deletion
+Parse.Cloud.beforeDelete('CubePhoto', async ({ object }) => {
+  const cube = await $getOrFail('Cube', object.get('cubeId'))
+  if (cube.get('p1')?.id === object.id) {
+    await cube.unset('p1').save(null, { useMasterKey: true })
+  }
+  if (cube.get('p2')?.id === object.id) {
+    await cube.unset('p2').save(null, { useMasterKey: true })
+  }
 })
 
 // TODO: change this to asset type map
