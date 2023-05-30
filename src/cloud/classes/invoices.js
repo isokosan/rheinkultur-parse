@@ -288,7 +288,7 @@ Parse.Cloud.define('invoice-create', async ({ params, user, context: { seedAsId 
 
   const audit = { user, fn: 'invoice-create' }
   return invoice.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-update', async ({ params: { id: invoiceId, ...params }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
@@ -371,7 +371,7 @@ Parse.Cloud.define('invoice-update', async ({ params: { id: invoiceId, ...params
   }
   const audit = { user, fn: 'invoice-update', data: { changes } }
   return invoice.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-update-extra-cols', async ({ params: { id: invoiceId, ...params }, user }) => {
   const { extraCols } = normalizeFields(params)
@@ -380,7 +380,7 @@ Parse.Cloud.define('invoice-update-extra-cols', async ({ params: { id: invoiceId
   invoice.set({ extraCols })
   const audit = { user, fn: 'invoice-update', data: { changes } }
   return invoice.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-remove', async ({ params: { id: invoiceId } }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
@@ -388,7 +388,7 @@ Parse.Cloud.define('invoice-remove', async ({ params: { id: invoiceId } }) => {
     throw new Error('Auto-generated invoices cannot be deleted')
   }
   return invoice.destroy({ useMasterKey: true })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // email: true (the email defined in invoice address will be used) | string (the custom email will be used) | false (no email will be send)
 Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, user, context: { seedAsId } }) => {
@@ -470,7 +470,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
     .then((emailMessage) => { message += (' ' + emailMessage) })
     .catch(consola.error)
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email }, user }) => {
   if (!email) {
@@ -517,7 +517,7 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
   const audit = { fn: 'send-email', user, data: { mailStatus } }
   await invoice.save(null, { useMasterKey: true, context: { audit } })
   return `E-mail an ${email} gesendet.`
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-toggle-post', async ({ params: { id: invoiceId }, user }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
@@ -530,7 +530,7 @@ Parse.Cloud.define('invoice-toggle-post', async ({ params: { id: invoiceId }, us
   const audit = { user, fn: 'toggle-post', data: { postStatus } }
   await invoice.save(null, { useMasterKey: true, context: { audit } })
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-discard', async ({ params: { id: invoiceId }, user, context: { audit: predefinedAudit } }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
@@ -540,7 +540,7 @@ Parse.Cloud.define('invoice-discard', async ({ params: { id: invoiceId }, user, 
   const audit = predefinedAudit || { user, fn: 'invoice-discard' }
   invoice.set({ status: 4 })
   return invoice.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-reset-introduction', async ({ params: { id: invoiceId }, user }) => {
   const invoice = await $getOrFail(Invoice, invoiceId, ['contract', 'booking'])
@@ -555,7 +555,7 @@ Parse.Cloud.define('invoice-reset-introduction', async ({ params: { id: invoiceI
   introduction ? invoice.set('introduction', introduction) : invoice.unset('introduction')
   const audit = { user, fn: 'invoice-update', data: { changes } }
   return invoice.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourceId: lexId } }) => {
   if (!invoiceId && !lexId) {
@@ -586,7 +586,7 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
     await invoice.save(null, { useMasterKey: true, context: { audit } })
   }
   return invoice
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('invoice-recalculate-gradual-prices', async ({
   params: {
@@ -602,7 +602,7 @@ Parse.Cloud.define('invoice-recalculate-gradual-prices', async ({
   }
   const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(invoice.get('contract'), invoice.get('periodStart'))
   return updateGradualInvoice(invoice, gradualCount, gradualPrice)
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('recalculate-gradual-invoices', async ({ params: { id: gradualId } }) => {
   consola.info(`Recalculating gradual invoices for ${gradualId}`)

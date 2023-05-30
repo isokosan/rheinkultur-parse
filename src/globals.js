@@ -52,6 +52,15 @@ global.$internOrAdmin = function ({ user, master }) {
   if (['intern', 'admin'].includes(user?.get('accType'))) { return true }
   throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
 }
+global.$internBookingManager = function ({ user, master }) {
+  if (master) { return true }
+  if (['intern', 'admin'].includes(user?.get('accType'))) {
+    if (user.get('permissions').includes('manage-bookings')) {
+      return true
+    }
+  }
+  throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
+}
 global.$scoutManagerOrAdmin = function ({ user, master }) {
   if (master) { return true }
   if (user?.get('accType') === 'admin') { return true }

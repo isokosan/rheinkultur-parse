@@ -244,7 +244,7 @@ Parse.Cloud.define('cube-create', async ({
     }
     throw new Error(error.data.error)
   }
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) => {
   const cube = await $getOrFail(Cube, id)
@@ -255,7 +255,7 @@ Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) 
   cube.set({ media })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, user }) => {
   const cube = await $getOrFail(Cube, id)
@@ -266,7 +266,7 @@ Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, use
     : cube.unset('ht')
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-update-address', async ({ params: { id, address: { str, hsnr, plz, ort }, stateId }, user }) => {
   const cube = await $getOrFail(Cube, id)
@@ -284,7 +284,7 @@ Parse.Cloud.define('cube-update-address', async ({ params: { id, address: { str,
   })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) => {
   const cube = await $getOrFail(Cube, id)
@@ -292,7 +292,7 @@ Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) 
   cube.set({ gp })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
   const cube = await $getOrFail(Cube, id)
@@ -311,7 +311,7 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
   }
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id)
@@ -360,7 +360,7 @@ Parse.Cloud.define('cube-hide', async ({ params: { id }, user }) => {
   cube.set({ dAt: new Date() })
   const audit = { user, fn: 'cube-hide' }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cube-restore', async ({ params: { id }, user }) => {
   const cube = await $query(Cube)
@@ -369,7 +369,7 @@ Parse.Cloud.define('cube-restore', async ({ params: { id }, user }) => {
   cube.set('dAt', null)
   const audit = { user, fn: 'cube-restore' }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // KNOWN BUGS: If an internal user changes around Front and Umfeld while a scout form is awaiting approval, the Front and Umfeld selections of the scout will be lost.
 Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId }, user }) => {
@@ -444,7 +444,7 @@ Parse.Cloud.define('cube-photo-remove-kls-id', async ({ params: { photoId }, use
     }
   }
   return { message: 'Photo marked as belonging to cube.' }
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, cancellations, generateCreditNote }, user }) => {
   const item = await $getOrFail(itemClass, itemId)
@@ -488,4 +488,4 @@ Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, c
     }
   }
   return message
-}, { requireUser: true })
+}, $internOrAdmin)

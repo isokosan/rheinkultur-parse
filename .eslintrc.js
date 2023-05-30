@@ -21,6 +21,7 @@ module.exports = {
     $cleanDict: true,
     $adminOnly: true,
     $internOrAdmin: true,
+    $internBookingManager: true,
     $scoutManagerOrAdmin: true,
     $today: true,
     $wawiStart: true,

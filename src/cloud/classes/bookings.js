@@ -195,7 +195,7 @@ Parse.Cloud.define('booking-generate', async ({ params, user }) => {
   booking.get('company') && booking.set({ tags: booking.get('company').get('tags') })
   const audit = { user, fn: 'booking-generate' }
   return booking.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * Creates a booking with the basic settings.
@@ -237,7 +237,7 @@ Parse.Cloud.define('booking-create', async ({ params, user, master, context: { s
 
   const audit = { user, fn: 'booking-create' }
   return booking.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-update-cubes', async ({ params: { id: bookingId, ...params }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
@@ -253,7 +253,7 @@ Parse.Cloud.define('booking-update-cubes', async ({ params: { id: bookingId, ...
 
   const audit = { user, fn: 'booking-update', data: { cubeChanges } }
   return booking.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-update', async ({
   params: {
@@ -377,7 +377,7 @@ Parse.Cloud.define('booking-update', async ({
 
   const audit = { user, fn: 'booking-update', data: { changes, cubeChanges, productionChanges } }
   return booking.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
@@ -386,19 +386,19 @@ Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user,
   booking.set({ status: 3 })
   const audit = { user, fn: 'booking-activate' }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-set-cube-statuses', async ({ params: { id: bookingId } }) => {
   const booking = await $getOrFail(Booking, bookingId)
   return booking.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
   booking.set({ status: 2.1 })
   const audit = { user, fn: 'booking-deactivate' }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * Bookings are extended by auto extend duration
@@ -428,7 +428,7 @@ Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy 
   })
   const audit = { user, fn: 'booking-extend', data: { extendBy, endsAt: [endsAt, booking.get('endsAt')] } }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * When a booking is canceled on a given date
@@ -461,7 +461,7 @@ Parse.Cloud.define('booking-cancel', async ({
     await Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
   }
   return wasCanceled ? 'Kündigung geändert.' : 'Buchung gekündigt.'
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-cancel-cancel', async ({
   params: {
@@ -482,7 +482,7 @@ Parse.Cloud.define('booking-cancel-cancel', async ({
   }
   await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 /**
  * When a booking is ended
@@ -500,7 +500,7 @@ Parse.Cloud.define('booking-end', async ({ params: { id: bookingId }, user }) =>
   booking.set({ status: booking.get('canceledAt') ? 4 : 5 })
   const audit = { user, fn: 'booking-end' }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
@@ -522,7 +522,7 @@ Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId }, user })
   booking.set('status', -1)
   const audit = { user, fn: 'booking-remove' }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingId } }) => {
   const booking = await $query(Booking).include(['company', 'production']).get(bookingId, { useMasterKey: true })
@@ -579,7 +579,7 @@ Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingI
   const message = invoice.id ? 'Invoice draft updated' : 'Invoice draft generated'
   await invoice.save(null, { useMasterKey: true })
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // Requests
 
@@ -780,6 +780,26 @@ Parse.Cloud.define('booking-remove-request', async ({ params, user }) => {
   return willBeVoided ? 'Annullierungsanfrage gesendet' : 'Löschungsanfrage gesendet'
 }, { requireUser: true })
 
+Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unbefugter Zugriff')
+  }
+  const booking = await $getOrFail(Booking, params.id)
+  if (booking.get('status') === 0) {
+    // delete request photos that were not approved
+    const requestPhotoIds = booking.get('request')?.photoIds || []
+    requestPhotoIds.length && await $query('CubePhoto')
+      .containedIn('objectId', requestPhotoIds)
+      .notEqualTo('approved', true)
+      .each(photo => photo.destroy({ useMasterKey: true }), { useMasterKey: true })
+    await booking.destroy({ useMasterKey: true })
+    return 'Buchungsanfrage gelöscht.'
+  }
+  await booking.unset('request').save(null, { useMasterKey: true })
+  return 'Änderungsanfrage gelöscht.'
+}, { requireUser: true })
+
 Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, user }) => {
   const booking = await $getOrFail(Booking, id)
   const request = booking.get('request')
@@ -799,7 +819,7 @@ Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, us
     data: { bookingId: id, requestId: request.id, no: booking.get('no'), cubeId: booking.get('cube').id, type: request.type, reason }
   })
   return 'Anfrage abgelehnt.'
-}, $adminOnly)
+}, $internBookingManager)
 
 Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) => {
   const booking = await $getOrFail(Booking, id)
@@ -896,24 +916,4 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   await booking.unset('request').set({ requestHistory }).save(null, { useMasterKey: true, context: { audit, setCubeStatuses } })
   endBooking && await Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
   return message
-}, $adminOnly)
-
-Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
-  const isPartner = user.get('accType') === 'partner'
-  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
-    throw new Error('Unbefugter Zugriff')
-  }
-  const booking = await $getOrFail(Booking, params.id)
-  if (booking.get('status') === 0) {
-    // delete request photos that were not approved
-    const requestPhotoIds = booking.get('request')?.photoIds || []
-    requestPhotoIds.length && await $query('CubePhoto')
-      .containedIn('objectId', requestPhotoIds)
-      .notEqualTo('approved', true)
-      .each(photo => photo.destroy({ useMasterKey: true }), { useMasterKey: true })
-    await booking.destroy({ useMasterKey: true })
-    return 'Buchungsanfrage gelöscht.'
-  }
-  await booking.unset('request').save(null, { useMasterKey: true })
-  return 'Änderungsanfrage gelöscht.'
-}, { requireUser: true })
+}, $internBookingManager)

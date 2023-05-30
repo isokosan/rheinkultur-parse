@@ -137,7 +137,7 @@ Parse.Cloud.define('production-add-assembly', async ({ params: { productionId } 
   const production = await $getOrFail(Production, productionId)
   production.set({ assembly: true })
   return production.save(null, { useMasterKey: true })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('production-update-assembly', async ({
   params: {
@@ -187,7 +187,7 @@ Parse.Cloud.define('production-update-assembly', async ({
   production.set({ printFiles, printNotes })
 
   return production.save(null, { useMasterKey: true })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // TODO: remove unused files every night?
 Parse.Cloud.define('production-delete-unused-files', async ({ params: { productionId } }) => {

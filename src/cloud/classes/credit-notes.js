@@ -213,7 +213,7 @@ Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedA
 
   const audit = { user, fn: 'credit-note-create' }
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ...params }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
@@ -264,7 +264,7 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
   }
   const audit = { user, fn: 'credit-note-update', data: { changes } }
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-reset-introduction', async ({ params: { id: creditNoteId }, user }) => {
   const creditNote = await $getOrFail(CreditNote, creditNoteId, ['contract', 'booking'])
@@ -279,7 +279,7 @@ Parse.Cloud.define('credit-note-reset-introduction', async ({ params: { id: cred
   introduction ? creditNote.set('introduction', introduction) : creditNote.unset('introduction')
   const audit = { user, fn: 'credit-note-update', data: { changes } }
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-remove', async ({ params: { id: creditNoteId } }) => {
   const creditNote = await $getOrFail(CreditNote, creditNoteId)
@@ -290,7 +290,7 @@ Parse.Cloud.define('credit-note-remove', async ({ params: { id: creditNoteId } }
     throw new Error('CreditNotes synced to lexoffice cannot be deleted')
   }
   return creditNote.destroy({ useMasterKey: true })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, email }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
@@ -365,7 +365,7 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
     .then((emailMessage) => { message += (' ' + emailMessage) })
     .catch(consola.error)
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId, email }, user }) => {
   if (!email) {
@@ -405,7 +405,7 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
   const audit = { fn: 'send-email', user, data: { mailStatus } }
   await creditNote.save(null, { useMasterKey: true, context: { audit } })
   return `E-mail an ${email} gesendet.`
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-toggle-post', async ({ params: { id: creditNoteId }, user }) => {
   const creditNote = await $getOrFail(CreditNote, creditNoteId)
@@ -418,7 +418,7 @@ Parse.Cloud.define('credit-note-toggle-post', async ({ params: { id: creditNoteI
   const audit = { user, fn: 'toggle-post', data: { postStatus } }
   await creditNote.save(null, { useMasterKey: true, context: { audit } })
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, resourceId: lexId } }) => {
   if (!creditNoteId && !lexId) {
@@ -446,4 +446,4 @@ Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, 
     await creditNote.save(null, { useMasterKey: true, context: { audit } })
   }
   return creditNote
-}, { requireUser: true })
+}, $internOrAdmin)

@@ -115,7 +115,7 @@ Parse.Cloud.define('company-create', async ({
 
   const audit = { user, fn: 'company-create' }
   return company.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('company-update-info', async ({
   params: {
@@ -149,7 +149,7 @@ Parse.Cloud.define('company-update-info', async ({
 
   const audit = { user, fn: 'company-update-info', data: { changes } }
   return company.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('company-update-distributor', async ({
   params: {
@@ -318,7 +318,7 @@ Parse.Cloud.define('company-remove', async ({ params: { id: companyId }, user })
   company.set({ deletedAt: new Date() })
   const audit = { user, fn: 'company-remove' }
   return company.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('company-restore', async ({ params: { id: companyId }, user }) => {
   const company = await $query(Company)
@@ -328,7 +328,7 @@ Parse.Cloud.define('company-restore', async ({ params: { id: companyId }, user }
   company.unset('deletedAt')
   const audit = { user, fn: 'company-restore' }
   return company.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 // TODO: watch for limit
 const fetchCompanies = () => $query(Company)

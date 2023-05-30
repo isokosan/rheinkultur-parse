@@ -98,7 +98,7 @@ Parse.Cloud.define('address-save', async ({ params: { id: addressId, ...params }
   })
   const audit = { user, fn: 'address-update', data: { name, changes } }
   return address.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('address-set-primary', async ({ params: { id: addressId, invoice }, user }) => {
   const address = await $getOrFail(Address, addressId, ['company'])
@@ -119,14 +119,14 @@ Parse.Cloud.define('address-set-primary', async ({ params: { id: addressId, invo
   const audit = { user, fn, data: { name } }
   await company.save(null, { useMasterKey: true, context: { audit } })
   return message
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('address-delete', async ({ params: { id: addressId }, user }) => {
   const address = await $getOrFail(Address, addressId)
   const { name } = address.toJSON()
   const audit = { user, fn: 'address-delete', data: { name } }
   return address.destroy({ useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId, force } }) => {
   if (!resourceId) {

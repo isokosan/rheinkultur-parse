@@ -79,24 +79,12 @@ Parse.Cloud.define('housing-type-save', async ({
     ? { user, fn: 'housing-type-update', data: { changes } }
     : { user, fn: 'housing-type-create' }
   return housingType.save(null, { useMasterKey: true, context: { audit } })
-}, {
-  requireUser: true,
-  fields: {
-    code: {
-      type: String,
-      required: true
-    },
-    media: {
-      type: String,
-      required: true
-    }
-  }
-})
+}, $internOrAdmin)
 
 Parse.Cloud.define('housing-type-remove', async ({ params: { id: housingTypeId } }) => {
   const housingType = await $getOrFail(HousingType, housingTypeId)
   return housingType.destroy({ useMasterKey: true })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 module.exports = {
   fetchHousingTypes

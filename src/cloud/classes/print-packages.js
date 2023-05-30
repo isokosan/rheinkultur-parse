@@ -76,23 +76,7 @@ Parse.Cloud.define('print-package-save', async ({
     ? { user, fn: 'print-package-update', data: { changes } }
     : { user, fn: 'print-package-create' }
   return printPackage.save(null, { useMasterKey: true, context: { audit } })
-}, {
-  requireUser: true,
-  fields: {
-    no: {
-      type: String,
-      required: true
-    },
-    media: {
-      type: String,
-      required: true
-    },
-    price: {
-      type: Number,
-      required: true
-    }
-  }
-})
+}, $internOrAdmin)
 
 module.exports = {
   fetchPrintPackages
