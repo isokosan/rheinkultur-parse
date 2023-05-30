@@ -1,3 +1,11 @@
+# [1.50.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.49.0...1.50.0) (2023-05-30)
+
+
+### Features
+
+* add booking cancel-change and cancel-cancel requests ([35e201f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/35e201ff97e65db909e2133fb278069f6c9be1ae))
+* permissions for cloud functions ([944c98d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/944c98dc6ce0a3f7974bc1b7d961585811333c34))
+
 # [1.49.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.48.0...1.49.0) (2023-05-30)
 
 
