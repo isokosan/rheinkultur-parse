@@ -1,3 +1,10 @@
+# [1.51.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.50.0...1.51.0) (2023-05-31)
+
+
+### Features
+
+* extend-requests ([09dbf2e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/09dbf2ecb34b258f3d92c3d10063b8031055804a))
+
 # [1.50.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.49.0...1.50.0) (2023-05-30)
 
 
