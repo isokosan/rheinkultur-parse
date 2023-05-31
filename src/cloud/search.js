@@ -140,7 +140,8 @@ const INDEXES = {
     config: {
       mappings: {
         properties: {
-          status: { type: 'byte' }
+          status: { type: 'byte' },
+          autoExtends: { type: 'boolean' }
         }
       }
     },
@@ -156,6 +157,7 @@ const INDEXES = {
           motive: booking.get('motive'),
           externalOrderNo: booking.get('externalOrderNo'),
           companyId: booking.get('company').id,
+          autoExtends: Boolean(booking.get('autoExtendsBy')),
           disassembly: booking.get('disassembly'),
           // responsibleIds: booking.get('responsibles')
           cube: {
@@ -599,6 +601,7 @@ Parse.Cloud.define('search-bookings', async ({
     externalOrderNo,
     status,
     companyId,
+    autoExtends,
     disassembly,
     cubeId,
     str,
@@ -628,6 +631,7 @@ Parse.Cloud.define('search-bookings', async ({
   companyId && bool.must.push({ match: { companyId } })
   motive && bool.must.push({ match_phrase_prefix: { motive } })
   externalOrderNo && bool.must.push({ match_phrase_prefix: { externalOrderNo } })
+  autoExtends && bool.must.push({ term: { autoExtends: autoExtends === 'true' } })
   disassembly && bool.must.push({ exists: { field: 'disassembly' } })
 
   cubeId && bool.must.push({ wildcard: { 'cube.objectId.keyword': `*${cubeId}*` } })

@@ -423,9 +423,10 @@ Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy 
   const newEndsAt = moment(endsAt).add(extendBy, 'months')
   booking.set({
     endsAt: newEndsAt.format('YYYY-MM-DD'),
-    autoExtendsAt: newEndsAt.clone().format('YYYY-MM-DD'),
     extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
   })
+  booking.get('autoExtendsBy') && booking.get('autoExtendsAt') && booking.set('autoExtendsAt', newEndsAt.clone().format('YYYY-MM-DD'))
+
   const audit = { user, fn: 'booking-extend', data: { extendBy, endsAt: [endsAt, booking.get('endsAt')] } }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
@@ -739,6 +740,39 @@ Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
   return booking.get('canceledAt') ? 'Kündigungs Korrekturanfrage gesendet.' : 'Kündigungsanfrage gesendet.'
 }, { requireUser: true })
 
+Parse.Cloud.define('booking-extend-request', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unbefugter Zugriff')
+  }
+  const booking = await $getOrFail(Booking, params.id)
+
+  let extendBy = params.extendBy || booking.get('autoExtendsBy')
+  if (!extendBy || ![3, 6, 12].includes(parseInt(extendBy))) {
+    throw new Error('Verlängerungsanzahl nicht gesetzt.')
+  }
+  extendBy = parseInt(extendBy)
+
+  const endsAt = booking.get('endsAt')
+  const newEndsAt = moment(endsAt).add(extendBy, 'months')
+  booking.set({
+    endsAt: newEndsAt.format('YYYY-MM-DD'),
+    autoExtendsAt: booking.get('autoExtendsAt') ? newEndsAt.clone().format('YYYY-MM-DD') : undefined,
+    extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
+  })
+  const changes = { extendBy, endsAt: [endsAt, booking.get('endsAt')] }
+  const request = {
+    type: 'extend',
+    user: user.toPointer(),
+    changes,
+    comments: params.comments || undefined,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+  await booking.set({ request }).save(null, { useMasterKey: true })
+  return 'Verlängerungsanfrage gesendet.'
+}, { requireUser: true })
+
 Parse.Cloud.define('booking-cancel-cancel-request', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
@@ -870,6 +904,22 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     audit = { fn: 'booking-change-request-accept', user, data: { requestedBy: request.user, changes: request.changes } }
   }
 
+  if (request.type === 'extend') {
+    const newEndsAt = request.changes?.endsAt?.[1]
+    const extendBy = request.changes.extendBy
+
+    if (booking.get('status') !== 3) {
+      throw new Error('Nur laufende Buchungen können verlängert werden.')
+    }
+
+    booking.set({
+      endsAt: newEndsAt,
+      extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
+    })
+    booking.get('autoExtendsBy') && booking.get('autoExtendsAt') && booking.set('autoExtendsAt', newEndsAt)
+    setCubeStatuses = true
+    audit = { user, fn: 'booking-extend-request-accept', data: request.changes }
+  }
   if (request.type === 'cancel' || request.type === 'cancel-change') {
     const endsAt = request.changes?.endsAt?.[1] || booking.get('endsAt')
     const cancelNotes = request.comments
