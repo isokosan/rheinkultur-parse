@@ -73,7 +73,7 @@ const generateContract = async (contract) => {
 
     let autoExtends = 'verlängert sich nicht automatisch'
     let autoExtendDetails = '.'
-    if (contract.get('autoExtendsAt')) {
+    if (contract.get('autoExtendsBy')) {
       autoExtends = 'verlängert sich automatisch'
       autoExtendDetails = ` um jeweils weitere ${contract.get('autoExtendsBy') || 12} Monate, wenn er nicht ${contract.get('noticePeriod')} Monate vor Vertragsablauf schriftlich gekündigt wird.`
     }

@@ -119,6 +119,7 @@ async function checkIfCubesAreAvailable (cubeIds, date, selfNo) {
   }
 }
 
+// TODO: Find a more performant way to store this data
 function getOrderSummary (bookingOrContract) {
   const { className, id: objectId } = bookingOrContract
   const {
@@ -127,12 +128,15 @@ function getOrderSummary (bookingOrContract) {
     status,
     startsAt,
     endsAt,
+    willExtend,
     autoExtendsBy,
     autoExtendsAt,
+    initialDuration,
+    extendedDuration,
     canceledAt,
     cubeCount,
     motive,
-    willExtend
+    externalOrderNo
   } = bookingOrContract.attributes
   return {
     className,
@@ -144,12 +148,15 @@ function getOrderSummary (bookingOrContract) {
     status,
     startsAt,
     endsAt,
+    willExtend,
     autoExtendsBy,
     autoExtendsAt,
+    initialDuration,
+    extendedDuration,
     canceledAt,
     cubeCount,
     motive,
-    willExtend
+    externalOrderNo
   }
 }
 
@@ -212,8 +219,8 @@ async function setBookingCubeStatus (booking) {
   }
   if (!runningOrder && cubeOrder) {
     if (cubeOrder.className === 'Booking' && cubeOrder.objectId === order.objectId) {
-      cube.unset('unsetting order')
-      consola.info('saving order', cube.id)
+      cube.unset('order')
+      consola.info('unsetting order', cube.id)
       return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }
   }
@@ -249,9 +256,7 @@ async function setContractCubeStatuses (contract) {
     // set the status of those cubes that were early canceled
     for (const earlyCanceledCubeId of earlyCanceledCubeIds) {
       const date = earlyCancellations[earlyCanceledCubeId]
-      consola.info(earlyCanceledCubeId)
       const cube = await $getOrFail('Cube', earlyCanceledCubeId)
-      consola.success('ok')
       date === true || today.isAfter(date, 'day')
         ? cube.unset('order')
         : cube.set('order', {

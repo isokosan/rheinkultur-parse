@@ -13,7 +13,7 @@
 
 
 mongo rheinkultur-wawi --eval "db.dropDatabase()"
-mongorestore --host localhost:27017 --gzip --db rheinkultur-wawi --archive=mongodump_latest.gz 
+mongorestore --host localhost:27017 --gzip --db rheinkultur-wawi --archive=db-backups/mongodump_latest.gz 
 
 then go to development.js and uncomment sync
 
