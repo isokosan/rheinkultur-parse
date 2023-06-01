@@ -71,7 +71,7 @@ Parse.Cloud.beforeFind(Booking, ({ query, user }) => {
 Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
   for (const booking of bookings) {
     // get computed property willExtend
-    const willExtend = booking.get('autoExtendsAt') && !booking.get('canceledAt')
+    const willExtend = booking.get('autoExtendsBy') && !booking.get('canceledAt')
     booking.set('willExtend', willExtend)
 
     if (query._include.includes('production')) {
@@ -754,13 +754,8 @@ Parse.Cloud.define('booking-extend-request', async ({ params, user }) => {
   extendBy = parseInt(extendBy)
 
   const endsAt = booking.get('endsAt')
-  const newEndsAt = moment(endsAt).add(extendBy, 'months')
-  booking.set({
-    endsAt: newEndsAt.format('YYYY-MM-DD'),
-    autoExtendsAt: booking.get('autoExtendsAt') ? newEndsAt.clone().format('YYYY-MM-DD') : undefined,
-    extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
-  })
-  const changes = { extendBy, endsAt: [endsAt, booking.get('endsAt')] }
+  const newEndsAt = moment(endsAt).add(extendBy, 'months').format('YYYY-MM-DD')
+  const changes = { extendBy, endsAt: [endsAt, newEndsAt] }
   const request = {
     type: 'extend',
     user: user.toPointer(),
@@ -771,6 +766,28 @@ Parse.Cloud.define('booking-extend-request', async ({ params, user }) => {
   }
   await booking.set({ request }).save(null, { useMasterKey: true })
   return 'Verlängerungsanfrage gesendet.'
+}, { requireUser: true })
+
+Parse.Cloud.define('booking-end-request', async ({ params, user }) => {
+  const isPartner = user.get('accType') === 'partner'
+  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
+    throw new Error('Unbefugter Zugriff')
+  }
+  const booking = await $getOrFail(Booking, params.id)
+  if (booking.get('status') !== 3) {
+    throw new Error('Nur laufende Buchungen können beendet werden.')
+  }
+  if (moment(booking.get('endsAt')).isSameOrAfter(await $today(), 'day')) {
+    throw new Error('Nur beendete Buchungen können als beendet markiert werden.')
+  }
+  const request = {
+    type: 'end',
+    user: user.toPointer(),
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+  await booking.set({ request }).save(null, { useMasterKey: true })
+  return 'Beendigungsanfrage gesendet.'
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-cancel-cancel-request', async ({ params, user }) => {
@@ -920,6 +937,19 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     setCubeStatuses = true
     audit = { user, fn: 'booking-extend-request-accept', data: request.changes }
   }
+  if (request.type === 'end') {
+    if (booking.get('status') !== 3) {
+      throw new Error('Nur laufende Buchungen können beendet werden.')
+    }
+    if (moment(booking.get('endsAt')).isSameOrAfter(await $today(), 'day')) {
+      throw new Error('Nur beendete Buchungen können als beendet markiert werden.')
+    }
+
+    booking.set({ status: booking.get('canceledAt') ? 4 : 5 })
+    audit = { user, fn: 'booking-end-request-accept' }
+    setCubeStatuses = true
+  }
+
   if (request.type === 'cancel' || request.type === 'cancel-change') {
     const endsAt = request.changes?.endsAt?.[1] || booking.get('endsAt')
     const cancelNotes = request.comments

@@ -120,11 +120,8 @@ async function upsertTaskList (attrs) {
 }
 
 async function processOrder (className, objectId) {
-  // Temporary start may 1
-  const periodStart = '2023-04-20'
-  const periodEnd = '2023-08-31'
-  // const periodStart = moment(await $today()).startOf('month').subtract(1, 'week').format('YYYY-MM-DD')
-  // const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
+  const periodStart = '2023-05-01'
+  const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
   const order = await $getOrFail(className, objectId)
 
   // abort if disassembly will not be done by RMV, or if done outside of WaWi
