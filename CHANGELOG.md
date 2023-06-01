@@ -1,3 +1,10 @@
+## [1.51.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.51.1...1.51.2) (2023-06-01)
+
+
+### Bug Fixes
+
+* extend-request bug ([41fa9bb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/41fa9bb2494b8249de926120fb2544c8fb7278b4))
+
 ## [1.51.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.51.0...1.51.1) (2023-06-01)
 
 
