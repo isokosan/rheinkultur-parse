@@ -47,7 +47,6 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
   if (updating === true) { return }
 
   if (orderStatusCheck && !cube.get('order')) {
-    consola.warn('checking active order')
     const order = await getActiveCubeOrder(cube.id)
     order && cube.set('order', order)
   }
