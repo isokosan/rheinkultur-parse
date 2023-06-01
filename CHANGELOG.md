@@ -1,3 +1,10 @@
+## [1.51.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.51.0...1.51.1) (2023-06-01)
+
+
+### Bug Fixes
+
+* booking aftersave bug ([cdae96c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cdae96c79076277c730753e9b7a4e32ec91597f4))
+
 # [1.51.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.50.0...1.51.0) (2023-05-31)
 
 
