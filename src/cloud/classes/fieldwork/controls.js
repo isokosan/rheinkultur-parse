@@ -1,3 +1,4 @@
+const { isEqual } = require('lodash')
 const Control = Parse.Object.extend('Control')
 const TaskList = Parse.Object.extend('TaskList')
 
@@ -141,6 +142,15 @@ function getCubesQuery (control) {
 
 Parse.Cloud.beforeSave(Control, ({ object: control }) => {
   !control.get('status') && control.set('status', 0)
+
+  // make sure criteria items are cleaned
+  if (control.get('criteria')) {
+    const criteria = control.get('criteria') || []
+    for (const criterium of criteria) {
+      delete criterium.item
+    }
+    control.set({ criteria })
+  }
 })
 
 Parse.Cloud.afterSave(Control, ({ object: control, context: { audit } }) => { $audit(control, audit) })
@@ -200,6 +210,20 @@ Parse.Cloud.define('control-create', async ({
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
+function getCriteriaChanges (before, after) {
+  const beforeKeys = []
+  const afterKeys = []
+  for (const { type, value, op } of before || []) {
+    beforeKeys.push([type, value, op].join(':'))
+  }
+  for (const { type, value, op } of after || []) {
+    afterKeys.push([type, value, op].join(':'))
+  }
+  return isEqual(beforeKeys, afterKeys)
+    ? undefined
+    : [beforeKeys.length ? beforeKeys : null, afterKeys.length ? afterKeys : null]
+}
+
 Parse.Cloud.define('control-update', async ({
   params: {
     id: controlId,
@@ -210,35 +234,12 @@ Parse.Cloud.define('control-update', async ({
   }, user
 }) => {
   const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, dueDate, criteria })
+  const changes = $changes(control, { name, date, dueDate })
+  changes.criteria = getCriteriaChanges(control.get('criteria'), criteria)
   control.set({ name, date, dueDate, criteria })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
-
-// Parse.Cloud.define('control-update-criteria', async ({
-//   params: {
-//     id: controlId,
-//     criteria
-//   }, user
-// }) => {
-//   const control = await $getOrFail(Control, controlId)
-//   control.set({ criteria })
-//   const audit = { user, fn: 'control-update-criteria' }
-//   return control.save(null, { useMasterKey: true, context: { audit } })
-// }, { requireUser: true })
-
-// Parse.Cloud.define('control-freeze-criteria', async ({
-//   params: {
-//     id: controlId
-//   }, user
-// }) => {
-//   const control = await $getOrFail(Control, controlId)
-//   const cubesQuery = getCubesQuery(control)
-//   control.set({ cubeIds, progress: 2 })
-//   const audit = { user, fn: 'control-freeze-criteria' }
-//   return control.save(null, { useMasterKey: true, context: { audit } })
-// }, { requireUser: true })
 
 Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId, lists }, user }) => {
   const control = await $getOrFail(Control, controlId)
