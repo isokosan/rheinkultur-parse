@@ -32,3 +32,9 @@ Example with photos with same id
 96221R600
 96221V1021
 dummy
+
+## DEVELOPMENT
+`docker compose up -d`
+- this will create the db-backups folder with root permissions
+`./retrieve_backup.sh`
+- this will give the ownership of the db-backups to your user so aws cli can write to it

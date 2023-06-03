@@ -12,9 +12,15 @@ if ! command -v aws &> /dev/null; then
 	aws configure
 fi
 
+# Set the desired folder name
+foldername="db-backups"
+# Create the folder with the current user
+mkdir -p "$foldername"
+# Set the owner and group of the folder
+sudo chown "$USER:$USER" "$foldername"
 
 filename=$(date +'%d-%m-%Y').gz
-aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./db-backups/"$filename"
+aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./"$foldername"/"$filename"
 
 # with the --drop option this line might be unnecessary
 # docker compose exec mongo bash -c 'mongosh rheinklultur-wawi --eval "db.dropDatabase()"'
