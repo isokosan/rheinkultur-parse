@@ -1,3 +1,10 @@
+## [1.52.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.52.0...1.52.1) (2023-06-05)
+
+
+### Bug Fixes
+
+* development infer from 'development' instead of missing 'production' ([be85336](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/be853368ce2a279ac338eee5b9bc297b7f67316e))
+
 # [1.52.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.51.2...1.52.0) (2023-06-05)
 
 
