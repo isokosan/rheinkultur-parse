@@ -875,8 +875,8 @@ Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, us
 Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) => {
   const booking = await $getOrFail(Booking, id)
   const request = booking.get('request')
-  if (!request) { throw new Error('Request not found') }
-  if (request.status) { throw new Error('Request already accepted or rejected') }
+  if (!request) { throw new Error('Anfrage nicht gefunden.') }
+  if (request.status) { throw new Error('Diese Anfrage wurde bereits akzeptiert oder abgelehnt.') }
 
   // accept the cube changes
   request.photoIds?.length && await $query('CubePhoto')
