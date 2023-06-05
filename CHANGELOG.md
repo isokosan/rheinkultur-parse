@@ -1,3 +1,10 @@
+# [1.52.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.51.2...1.52.0) (2023-06-05)
+
+
+### Features
+
+* add ht deletion audit code changes ([50f1b49](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/50f1b491d0f97c94246c9e7dee707e8bff8a8dfd))
+
 ## [1.51.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.51.1...1.51.2) (2023-06-01)
 
 
