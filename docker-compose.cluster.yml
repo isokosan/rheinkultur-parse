@@ -1,0 +1,92 @@
+version: '3.8'
+services:
+  parse:
+    container_name: wawi-dev-parse
+    build:
+      dockerfile: dev.Dockerfile
+      args:
+        NODE_VERSION: 18
+    env_file:
+      - .env
+    expose:
+      - 1337
+    ports:
+      - "127.0.0.1:1337:1337"
+    depends_on:
+      - mongo
+      - redis
+      - elastic
+      - kibana
+    volumes:
+     - ./:/app
+    command: yarn dev
+  # https://github.com/UpSync-Dev/docker-compose-mongo-replica-set/blob/main/docker-compose.yml
+  mongo1:
+    image: mongo
+    container_name: wawi-dev-mongo1
+    command: ["--replSet", "wawi-dev-replica-set", "--bind_ip_all", "--port", "30001"]
+    volumes:
+      - mongodata1:/data/db
+      - ./db-backups:/db-backups
+    ports:
+      - 30001:30001
+    healthcheck:
+      test: test $$(echo "rs.initiate({_id:'wawi-dev-replica-set',members:[{_id:0,host:\"mongo1:30001\"},{_id:1,host:\"mongo2:30002\"},{_id:2,host:\"mongo3:30003\"}]}).ok || rs.status().ok" | mongo --port 30001 --quiet) -eq 1
+      interval: 10s
+      start_period: 30s
+  mongo2:
+    image: mongo
+    container_name: wawi-dev-mongo2
+    command: ["--replSet", "wawi-dev-replica-set", "--bind_ip_all", "--port", "30002"]
+    volumes:
+      - mongodata2:/data/db
+    ports:
+      - 30002:30002
+  mongo3:
+    image: mongo
+    container_name: wawi-dev-mongo3
+    command: ["--replSet", "wawi-dev-replica-set", "--bind_ip_all", "--port", "30003"]
+    volumes:
+      - mongodata3:/data/db
+    ports:
+      - 30003:30003
+  redis:
+    image: redis
+    container_name: wawi-dev-redis
+    command: redis-server --bind redis --requirepass passwordtest --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+        - redisdata:/data
+  elastic:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    container_name: wawi-dev-elastic
+    environment:
+      - node.name=elastic
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - bootstrap.memory_lock=true
+      - http.max_content_length=400mb
+      - "ES_JAVA_OPTS=-Xms256M -Xmx256M"
+    volumes:
+      - elasticsearchdata:/elasticsearch/data
+    command: >
+      bash -c "bin/elasticsearch-plugin install analysis-icu;
+      bin/elasticsearch"
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.6.2
+    container_name: wawi-dev-kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    volumes:
+      - kibanadata:/elasticsearch/kibana
+    depends_on:
+      - elastic
+networks:
+  default:
+    name: wawi-dev-network
+volumes:
+  elasticsearchdata:
+  kibanadata:
+  mongodata1:
+  mongodata2:
+  mongodata3:
+  redisdata:

@@ -1,8 +1,9 @@
 global.BASE_DIR = __dirname
-global.DEVELOPMENT = process.env.NODE_ENV === 'development'
+global.DEVELOPMENT = process.env.NODE_ENV !== 'production'
 global.consola = require('consola')
 global.moment = require('moment')
 moment.locale('de')
+const { difference, isEqual } = require('lodash')
 
 global.$cleanDict = (dict) => {
   if (!dict) { return null }
@@ -90,4 +91,60 @@ global.$saveWithEncode = function (object, ...args) {
     object.id = encodeURIComponent(object.id)
   }
   return object.save(...args)
+}
+
+function normalizeAuditValue (value) {
+  if (value === undefined || value === null) {
+    return null
+  }
+  if (value?.toJSON) {
+    value = value.toJSON()
+  }
+  if (value?.thumb && value.name) {
+    return {
+      name: value.name,
+      url: value.thumb._url || value.thumb.url
+    }
+  }
+  return value
+}
+
+global.$changes = function (item, fields, rawObject = false) {
+  const response = {}
+  for (const key of Object.keys(fields)) {
+    const oldValue = normalizeAuditValue(rawObject ? item[key] : item.get(key))
+    const newValue = normalizeAuditValue(fields[key])
+    if (!isEqual(oldValue, newValue)) {
+      if (key !== 'form') {
+        response[key] = [oldValue, newValue]
+        continue
+      }
+      // this is for nested forms in objects (scout submissions)
+      // when using the form the keys within the form should not exits in the fields
+      for (const formKey of Object.keys(newValue)) {
+        const oldFormValue = oldValue.form[formKey]
+        const newFormValue = newValue.form[formKey]
+        if (!isEqual(oldFormValue, newFormValue)) {
+          response[formKey] = [oldFormValue, newFormValue]
+        }
+      }
+    }
+  }
+  return response
+}
+
+global.$cubeChanges = function (item, cubeIds) {
+  let changed = false
+  const cubeChanges = {}
+  const added = difference(cubeIds, item.get('cubeIds'))
+  if (added.length) {
+    changed = true
+    cubeChanges.added = added
+  }
+  const removed = difference(item.get('cubeIds'), cubeIds)
+  if (removed.length) {
+    changed = true
+    cubeChanges.removed = removed
+  }
+  return changed ? cubeChanges : null
 }

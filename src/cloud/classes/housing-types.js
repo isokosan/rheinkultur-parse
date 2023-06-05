@@ -2,6 +2,10 @@ const HousingType = Parse.Object.extend('HousingType')
 const { PRINT_PACKAGE_FILES } = require('@/schema/enums')
 const { ensureUniqueField } = require('@/utils')
 
+Parse.Cloud.beforeFind(HousingType, ({ query }) => {
+  query._include.includes('files') && query.include(PRINT_PACKAGE_FILES)
+})
+
 Parse.Cloud.afterFind(HousingType, ({ objects }) => {
   for (const ht of objects) {
     ht.set('hasMissingTemplates', false)

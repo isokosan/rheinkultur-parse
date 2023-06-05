@@ -126,6 +126,7 @@ const initApp = async () => {
     consola.success(`${process.env.APP_NAME} Parse Server is running on ${serverURL}`)
     ParseServer.createLiveQueryServer(httpServer, { pubSubAdapter })
     consola.success(`${process.env.APP_NAME} Parse LiveQueryServer running on ws://localhost:${port}`)
+    DEVELOPMENT ? consola.warn('Running in DEVELOPMENT mode') : consola.success('Running in PRODUCTION mode')
     DEVELOPMENT && consola.success(`${process.env.APP_NAME} Parse Dashboard is running on http://localhost:${port}/dashboard`)
   })
 }
