@@ -32,6 +32,19 @@ Parse.Cloud.beforeDelete(HousingType, async ({ object: housingType }) => {
   if (cube) {
     throw new Error('Gehäusetyp kann nicht gelöscht werden, weil der Gehäusetyp einem CityCube zugeordnet ist.')
   }
+  const code = housingType.get('code')
+  await $query('Audit').equalTo('data.changes.htId', housingType.id).each((audit) => {
+    const data = audit.get('data')
+    // switch id with code
+    if (data.changes.htId[0] === housingType.id) {
+      data.changes.htId[0] = 'deleted:' + code
+    }
+    if (data.changes.htId[1] === housingType.id) {
+      data.changes.htId[1] = 'deleted:' + code
+    }
+    audit.set('data', data)
+    return audit.save(null, { useMasterKey: true })
+  }, { useMasterKey: true })
 })
 
 Parse.Cloud.afterDelete(HousingType, $deleteAudits)

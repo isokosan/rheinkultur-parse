@@ -21,6 +21,8 @@ async function combineHousingTypes (from, to) {
     const audit = { fn: 'cube-update', data: { changes } }
     await $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
   }, { useMasterKey: true })
+
+  return htFrom.destroy({ useMasterKey: true })
 }
 
 function combine () {

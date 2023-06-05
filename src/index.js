@@ -118,7 +118,7 @@ const initApp = async () => {
       masterKey: process.env.MASTER_KEY,
       appName: process.env.APP_NAME + ' (prod)'
     })
-    app.use('/dashboard', new Dashboard({ apps }))
+    app.use('/dashboard', new Dashboard({ apps }, { dev: true }))
   }
 
   const httpServer = require('http').createServer(app)
