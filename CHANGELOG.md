@@ -1,3 +1,10 @@
+## [1.52.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.52.1...1.52.2) (2023-06-06)
+
+
+### Bug Fixes
+
+* disallow creating duplicate lex contacts ([6cb77d3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6cb77d3cdd2a862eb272fee79a2de11b04b058ba))
+
 ## [1.52.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.52.0...1.52.1) (2023-06-05)
 
 
