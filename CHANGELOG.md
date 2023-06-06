@@ -1,3 +1,10 @@
+# [1.53.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.52.2...1.53.0) (2023-06-06)
+
+
+### Features
+
+* booking and contract voiding, wip with partner-quarter data ([46ca05f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/46ca05f387d726f271b13cfe84d62e0bc1e5583a))
+
 ## [1.52.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.52.1...1.52.2) (2023-06-06)
 
 
