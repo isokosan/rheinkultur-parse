@@ -33,10 +33,10 @@ module.exports.PERMISSIONS = {
 }
 
 module.exports.BOOKING_STATUSES = {
-  '-1': 'Gelöscht',
-  0.0: 'Entwurf', // partners ??
-  0.1: 'Genehmigung ausstehend', // partners ??
-  0.2: 'Abgelehnt', // partners ??
+  '-1': 'Storniert',
+  // 0.0: 'Entwurf', // partners ??
+  // 0.1: 'Genehmigung ausstehend', // partners ??
+  // 0.2: 'Abgelehnt', // partners ??
   2: 'Entwurf',
   2.1: 'In Bearbeitung',
   3: 'Aktiv',
@@ -44,11 +44,11 @@ module.exports.BOOKING_STATUSES = {
   5: 'Ausgelaufen'
 }
 module.exports.CONTRACT_STATUSES = {
-  '-1': 'Gelöscht',
-  0.0: 'Entwurf', // offers
-  0.1: 'Gesendet', // offers
-  0.2: 'Abgelehnt', // offers ????
-  0.3: 'Accepted', // offers ????
+  '-1': 'Storniert',
+  // 0.0: 'Entwurf', // offers
+  // 0.1: 'Gesendet', // offers
+  // 0.2: 'Abgelehnt', // offers ????
+  // 0.3: 'Accepted', // offers ????
   2: 'Entwurf',
   2.1: 'In Bearbeitung',
   3: 'Aktiv',

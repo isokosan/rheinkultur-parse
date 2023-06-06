@@ -56,9 +56,6 @@ Parse.Cloud.beforeFind(Booking, ({ query, user }) => {
   if (user?.get('accType') === 'partner' && user.get('company')) {
     query.equalTo('company', user.get('company'))
   }
-  if (!('deletedAt' in query._where) && !query._include.includes('deleted')) {
-    query.equalTo('deletedAt', null)
-  }
   query._include.includes('all') && query.include([
     'company',
     'companyPerson',
@@ -99,7 +96,7 @@ async function validatePricing ({ company, cubeIds, endPrices, monthlyMedia }) {
     if (pricingModel === 'commission') {
       for (const cubeId of cubeIds) {
         if (!endPrices?.[cubeId]) {
-          throw new Error('Sie müssen für alle Werbemedien ein Endkunde Preis auswählen.')
+          throw new Error('Sie müssen eine Monatsmiete eintragen.')
         }
       }
     }
@@ -123,7 +120,7 @@ async function validatePricing ({ company, cubeIds, endPrices, monthlyMedia }) {
     if (!pricingModel) {
       for (const cubeId of cubeIds) {
         if (!monthlyMedia?.[cubeId]) {
-          throw new Error('Sie müssen für alle Werbemedien ein RK Netto Preis auswählen.')
+          throw new Error('Sie müssen eine Monatsmiete eintragen.')
         }
       }
     }
@@ -503,6 +500,23 @@ Parse.Cloud.define('booking-end', async ({ params: { id: bookingId }, user }) =>
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
 
+Parse.Cloud.define('booking-void', async ({ params: { id: bookingId }, user }) => {
+  const booking = await $getOrFail(Booking, bookingId)
+  // do not allow deleting if partner booking request (only partner can delete)
+  if (booking.get('request')) {
+    if (user.get('accType') !== 'partner' || user.get('company').id !== booking.get('company').id) {
+      throw new Error('To void booking requests please reject the request instead.')
+    }
+  }
+  if (booking.get('status') <= 2) {
+    throw new Error('This is a draft booking. Please remove the booking instead.')
+  }
+  booking.set('status', -1)
+  const audit = { user, fn: 'booking-void' }
+  await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  return 'Buchung storniert.'
+}, $internOrAdmin)
+
 Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
 
@@ -512,17 +526,10 @@ Parse.Cloud.define('booking-remove', async ({ params: { id: bookingId }, user })
       throw new Error('To remove booking requests please reject the request instead.')
     }
   }
-
-  // completely delete booking if in draft state
-  if (booking.get('status') === 0 && booking.get('status') === 2) {
-    return booking.destroy({ useMasterKey: true })
+  if (booking.get('status') !== 0 && booking.get('status') !== 2) {
+    throw new Error('Nur Entwürfe können gelöscht werden.')
   }
-
-  // soft delete otherwise
-  booking.set('deletedAt', new Date())
-  booking.set('status', -1)
-  const audit = { user, fn: 'booking-remove' }
-  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  return booking.destroy({ useMasterKey: true })
 }, $internOrAdmin)
 
 Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingId } }) => {
@@ -768,28 +775,6 @@ Parse.Cloud.define('booking-extend-request', async ({ params, user }) => {
   return 'Verlängerungsanfrage gesendet.'
 }, { requireUser: true })
 
-Parse.Cloud.define('booking-end-request', async ({ params, user }) => {
-  const isPartner = user.get('accType') === 'partner'
-  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
-    throw new Error('Unbefugter Zugriff')
-  }
-  const booking = await $getOrFail(Booking, params.id)
-  if (booking.get('status') !== 3) {
-    throw new Error('Nur laufende Buchungen können beendet werden.')
-  }
-  if (moment(booking.get('endsAt')).isSameOrAfter(await $today(), 'day')) {
-    throw new Error('Nur beendete Buchungen können als beendet markiert werden.')
-  }
-  const request = {
-    type: 'end',
-    user: user.toPointer(),
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }
-  await booking.set({ request }).save(null, { useMasterKey: true })
-  return 'Beendigungsanfrage gesendet.'
-}, { requireUser: true })
-
 Parse.Cloud.define('booking-cancel-cancel-request', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
@@ -811,7 +796,7 @@ Parse.Cloud.define('booking-cancel-cancel-request', async ({ params, user }) => 
   return 'Anfrage gesendet.'
 }, { requireUser: true })
 
-Parse.Cloud.define('booking-remove-request', async ({ params, user }) => {
+Parse.Cloud.define('booking-void-request', async ({ params, user }) => {
   const isPartner = user.get('accType') === 'partner'
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
     throw new Error('Unbefugter Zugriff')
@@ -819,16 +804,14 @@ Parse.Cloud.define('booking-remove-request', async ({ params, user }) => {
   const booking = await $getOrFail(Booking, params.id)
 
   const request = {
-    type: 'remove',
+    type: 'void',
     user: user.toPointer(),
     comments: normalizeString(params.comments) || undefined,
     createdAt: new Date(),
     updatedAt: new Date()
   }
   await booking.set({ request }).save(null, { useMasterKey: true })
-  const willBeVoided = ![0, 2].includes(booking.get('status'))
-  // TOTRANSLATE
-  return willBeVoided ? 'Annullierungsanfrage gesendet' : 'Löschungsanfrage gesendet'
+  return 'Stornierungsanfrage gesendet'
 }, { requireUser: true })
 
 Parse.Cloud.define('booking-request-remove', async ({ params, user }) => {
@@ -863,7 +846,9 @@ Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, us
   request.updatedAt = new Date()
   const requestHistory = booking.get('requestHistory') || []
   requestHistory.push(request)
-  await booking.unset('request').set({ requestHistory }).save(null, { useMasterKey: true })
+  booking.set({ requestHistory }).unset('request')
+  request.type === 'create' && booking.set('status', -1)
+  await booking.save(null, { useMasterKey: true })
   await $notify({
     user: request.user,
     identifier: 'booking-request-rejected',
@@ -985,12 +970,10 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     }
   }
 
-  if (request.type === 'remove') {
-    // soft delete otherwise
-    booking.set('deletedAt', new Date())
+  if (request.type === 'void') {
     booking.set('status', -1)
     setCubeStatuses = true
-    audit = { user, fn: 'booking-remove-request-accept' }
+    audit = { user, fn: 'booking-void-request-accept' }
   }
 
   await booking.unset('request').set({ requestHistory }).save(null, { useMasterKey: true, context: { audit, setCubeStatuses } })

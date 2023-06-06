@@ -380,13 +380,12 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
   }
   const isIntern = ['admin', 'intern'].includes(user.get('accType'))
   const isOwnPhoto = user.id === photo.get('createdBy')?.id
-  // TOTRANSLATE
   if (!isIntern) {
     if (!isOwnPhoto) { throw new Error('Unauthorized.') }
-    if (place === 'p1' && cube.get('p1') && cube.get('p1').get('createdBy').id !== user.id) {
+    if (place === 'p1' && cube.get('p1') && cube.get('p1')?.get('createdBy')?.id !== user.id) {
       throw new Error('Front foto schon von RMV festgelegt.')
     }
-    if (place === 'p2' && cube.get('p2') && cube.get('p2').get('createdBy').id !== user.id) {
+    if (place === 'p2' && cube.get('p2') && cube.get('p2')?.get('createdBy')?.id !== user.id) {
       throw new Error('Umfeld foto schon von RMV festgelegt.')
     }
   }

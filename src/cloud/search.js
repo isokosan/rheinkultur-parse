@@ -141,7 +141,15 @@ const INDEXES = {
       mappings: {
         properties: {
           status: { type: 'byte' },
-          autoExtends: { type: 'boolean' }
+          autoExtends: { type: 'boolean' },
+          startsAt: {
+            type: 'date',
+            format: 'strict_date'
+          },
+          endsAt: {
+            type: 'date',
+            format: 'strict_date'
+          }
         }
       }
     },
@@ -159,6 +167,8 @@ const INDEXES = {
           companyId: booking.get('company').id,
           autoExtends: Boolean(booking.get('autoExtendsBy')),
           disassembly: booking.get('disassembly'),
+          startsAt: booking.get('startsAt'),
+          endsAt: booking.get('endsAt'),
           // responsibleIds: booking.get('responsibles')
           cube: {
             objectId: cube?.id,
@@ -609,6 +619,8 @@ Parse.Cloud.define('search-bookings', async ({
     plz,
     ort,
     state: stateId,
+    f,
+    t,
     sb,
     sd,
     from,
@@ -641,6 +653,8 @@ Parse.Cloud.define('search-bookings', async ({
   ort && bool.filter.push({ term: { 'cube.ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'cube.stateId.keyword': stateId } })
 
+  t && bool.must.push({ range: { startsAt: { lte: t } } })
+  f && bool.must.push({ range: { endsAt: { gt: f } } })
   const searchResponse = await client.search({
     index: 'rheinkultur-bookings',
     body: {

@@ -57,6 +57,23 @@ const getQuarterStartEnd = function (quarter) {
   return { start, end }
 }
 
+const getCubeSummary = function (cube) {
+  const summary = cube.toJSON()
+  delete summary.createdAt
+  delete summary.updatedAt
+  if (summary.ht) {
+    summary.htId = summary.ht.objectId
+    summary.htCode = summary.ht.code
+    delete summary.ht
+  }
+  if (summary.state) {
+    summary.stateId = summary.state.objectId
+    summary.stateName = summary.state.name
+    delete summary.state
+  }
+  return summary
+}
+
 const getCubeSummaries = function (cubeIds) {
   const query = new Parse.Query('Cube')
   return query.containedIn('objectId', cubeIds)
@@ -65,20 +82,7 @@ const getCubeSummaries = function (cubeIds) {
     .limit(cubeIds.length)
     .find({ useMasterKey: true })
     .then(cubes => cubes.reduce((acc, cube) => {
-      const summary = cube.toJSON()
-      delete summary.createdAt
-      delete summary.updatedAt
-      if (summary.ht) {
-        summary.htId = summary.ht.objectId
-        summary.htCode = summary.ht.code
-        delete summary.ht
-      }
-      if (summary.state) {
-        summary.stateId = summary.state.objectId
-        summary.stateName = summary.state.name
-        delete summary.state
-      }
-      acc[cube.id] = summary
+      acc[cube.id] = getCubeSummary(cube)
       return acc
     }, {}))
 }
@@ -283,6 +287,7 @@ async function setContractCubeStatuses (contract) {
 module.exports = {
   getDocumentTotals,
   getTaxRatePercentage,
+  getCubeSummary,
   getCubeSummaries,
   getQuarterStartEnd,
   getPeriodTotal,

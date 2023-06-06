@@ -54,9 +54,6 @@ Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, set
 })
 
 Parse.Cloud.beforeFind(Contract, ({ query }) => {
-  if (!('deletedAt' in query._where) && !query._include.includes('deleted')) {
-    query.equalTo('deletedAt', null)
-  }
   query._include.includes('all') && query.include([
     'company',
     'address',
@@ -1277,7 +1274,7 @@ Parse.Cloud.define('contract-cancel', async ({
   params: {
     id: contractId,
     endsAt,
-    notes: cancelNotes
+    comments: cancelNotes
   }, user
 }) => {
   const contract = await $getOrFail(Contract, contractId, ['production'])
@@ -1528,16 +1525,21 @@ Parse.Cloud.define('contract-generate-doc', async ({ params: { id: contractId },
   return contract.get('driveFileId')
 }, $internOrAdmin)
 
+Parse.Cloud.define('contract-void', async ({ params: { id: contractId }, user }) => {
+  const contract = await $getOrFail(Contract, contractId)
+  if (contract.get('status') <= 2) {
+    throw new Error('This is a draft contract. Please remove the contract instead.')
+  }
+  contract.set('status', -1)
+  const audit = { user, fn: 'contract-void' }
+  await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  return 'Vertrag storniert.'
+}, $internOrAdmin)
+
 Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
-  // completely delete contract if in draft state
-  if (contract.get('status') === 0 && contract.get('status') === 2) {
-    return contract.destroy({ useMasterKey: true })
+  if (contract.get('status') !== 0 && contract.get('status') !== 2) {
+    throw new Error('Nur Entwürfe können gelöscht werden.')
   }
-
-  // soft delete otherwise
-  contract.set('deletedAt', new Date())
-  contract.set('status', -1)
-  const audit = { user, fn: 'contract-remove' }
-  return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  return contract.destroy({ useMasterKey: true })
 }, $internOrAdmin)
