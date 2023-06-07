@@ -258,7 +258,7 @@ Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) 
 
 Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, user }) => {
   const cube = await $getOrFail(Cube, id)
-  const ht = await $getOrFail('HousingType', housingTypeId)
+  const ht = housingTypeId ? await $getOrFail('HousingType', housingTypeId) : null
   const changes = { htId: [cube.get('ht')?.id, housingTypeId] }
   housingTypeId
     ? cube.set({ ht, media: ht.get('media') })
