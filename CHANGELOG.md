@@ -1,3 +1,10 @@
+## [1.54.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.3...1.54.4) (2023-06-07)
+
+
+### Bug Fixes
+
+* remove ht ([31d6448](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/31d64489777fad046a3a3a94ba426d74c49f2bb3))
+
 ## [1.54.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.2...1.54.3) (2023-06-07)
 
 
