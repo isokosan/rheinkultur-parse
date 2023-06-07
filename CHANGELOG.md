@@ -1,3 +1,11 @@
+## [1.53.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.53.0...1.53.1) (2023-06-07)
+
+
+### Bug Fixes
+
+* booking search right after delete with filter. wip: booking photo pos ([b09b881](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b09b8814acdda8822225f451b3249ccf089dbbb8))
+* use count instead of exists in contract before delete check ([058abe6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/058abe663b13a77002d1c7720b4fe057b1eaee96))
+
 # [1.53.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.52.2...1.53.0) (2023-06-06)
 
 
