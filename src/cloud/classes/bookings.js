@@ -450,7 +450,7 @@ Parse.Cloud.define('booking-cancel', async ({
   const changes = $changes(booking, { endsAt, cancelNotes })
   const wasCanceled = Boolean(booking.get('canceledAt'))
   booking.set({ endsAt, canceledAt: new Date(), cancelNotes })
-  const audit = { user, fn: 'booking-cancel', data: { changes } }
+  const audit = { user, fn: 'booking-cancel', data: { changes, cancelNotes } }
   if (wasCanceled) {
     audit.data.wasCanceled = true
   }
@@ -500,7 +500,7 @@ Parse.Cloud.define('booking-end', async ({ params: { id: bookingId }, user }) =>
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('booking-void', async ({ params: { id: bookingId }, user }) => {
+Parse.Cloud.define('booking-void', async ({ params: { id: bookingId, comments: cancelNotes }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
   // do not allow deleting if partner booking request (only partner can delete)
   if (booking.get('request')) {
@@ -511,8 +511,14 @@ Parse.Cloud.define('booking-void', async ({ params: { id: bookingId }, user }) =
   if (booking.get('status') <= 2) {
     throw new Error('This is a draft booking. Please remove the booking instead.')
   }
-  booking.set('status', -1)
-  const audit = { user, fn: 'booking-void' }
+  cancelNotes = normalizeString(cancelNotes)
+  booking.set({
+    status: -1,
+    voidedAt: new Date(),
+    canceledAt: null,
+    cancelNotes
+  })
+  const audit = { user, fn: 'booking-void', data: { cancelNotes } }
   await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   return 'Buchung storniert.'
 }, $internOrAdmin)
@@ -945,7 +951,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
 
   if (request.type === 'cancel' || request.type === 'cancel-change') {
     const endsAt = request.changes?.endsAt?.[1] || booking.get('endsAt')
-    const cancelNotes = request.comments
+    const cancelNotes = normalizeString(request.comments)
 
     if (booking.get('status') !== 3) {
       throw new Error('Nur laufende Buchungen können gekündigt werden.')
@@ -955,7 +961,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     const wasCanceled = Boolean(booking.get('canceledAt'))
     booking.set({ endsAt, canceledAt: new Date(), cancelNotes })
     setCubeStatuses = true
-    audit = { user, fn: 'booking-cancel-request-accept', data: { changes } }
+    audit = { user, fn: 'booking-cancel-request-accept', data: { changes, cancelNotes } }
     if (wasCanceled) {
       audit.data.wasCanceled = true
     }
@@ -979,9 +985,15 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   }
 
   if (request.type === 'void') {
-    booking.set('status', -1)
+    const cancelNotes = normalizeString(request.comments)
+    booking.set({
+      status: -1,
+      voidedAt: new Date(),
+      canceledAt: null,
+      cancelNotes
+    })
     setCubeStatuses = true
-    audit = { user, fn: 'booking-void-request-accept' }
+    audit = { user, fn: 'booking-void-request-accept', data: { cancelNotes } }
   }
 
   await booking.unset('request').set({ requestHistory }).save(null, { useMasterKey: true, context: { audit, setCubeStatuses } })

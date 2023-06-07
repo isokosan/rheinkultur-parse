@@ -109,6 +109,10 @@ const schemaDefinitions = {
       extendedDuration: { type: 'Number' },
       earlyCancellations: { type: 'Object' },
 
+      voidedAt: { type: 'Date' },
+      canceledAt: { type: 'Date' },
+      cancelNotes: { type: 'String' },
+
       cubeIds: { type: 'Array', default: [] },
       cubeId: { type: 'String' },
 
@@ -204,14 +208,15 @@ const schemaDefinitions = {
       extendedDuration: { type: 'Number' },
       earlyCancellations: { type: 'Object' },
 
+      voidedAt: { type: 'Date' },
+      canceledAt: { type: 'Date' },
+      cancelNotes: { type: 'String' },
+
       cubeIds: { type: 'Array', default: [] },
 
       // contract specific
       address: { type: 'Pointer', targetClass: 'Address', required: true },
       driveFileId: { type: 'String' }, // google doc id
-      canceledAt: { type: 'Date' },
-      cancelNotes: { type: 'String' },
-
       // billing & pricing
       invoiceAddress: { type: 'Pointer', targetClass: 'Address' },
       invoicingAt: { type: 'String', default: 'start' }, // start or end (default: start)

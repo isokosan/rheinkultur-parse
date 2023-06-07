@@ -1286,7 +1286,7 @@ Parse.Cloud.define('contract-cancel', async ({
   }
 
   const changes = $changes(contract, { endsAt, cancelNotes })
-  const audit = { user, fn: 'contract-cancel', data: { changes } }
+  const audit = { user, fn: 'contract-cancel', data: { changes, cancelNotes } }
   let message = 'Vertrag gekündigt.'
   if (contract.get('canceledAt')) {
     audit.data.wasCanceled = true
@@ -1525,13 +1525,19 @@ Parse.Cloud.define('contract-generate-doc', async ({ params: { id: contractId },
   return contract.get('driveFileId')
 }, $internOrAdmin)
 
-Parse.Cloud.define('contract-void', async ({ params: { id: contractId }, user }) => {
+Parse.Cloud.define('contract-void', async ({ params: { id: contractId, comments: cancelNotes }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
   if (contract.get('status') <= 2) {
     throw new Error('This is a draft contract. Please remove the contract instead.')
   }
-  contract.set('status', -1)
-  const audit = { user, fn: 'contract-void' }
+  cancelNotes = normalizeString(cancelNotes)
+  contract.set({
+    status: -1,
+    voidedAt: new Date(),
+    canceledAt: null,
+    cancelNotes
+  })
+  const audit = { user, fn: 'contract-void', data: { cancelNotes } }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   return 'Vertrag storniert.'
 }, $internOrAdmin)
