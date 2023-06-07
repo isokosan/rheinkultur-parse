@@ -33,6 +33,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
   if (submissionId) {
     changes = $changes(submission.get('form'), form, true)
     delete changes.photoIds
+    delete changes.photoPos
   }
   const photos = await $query('CubePhoto').containedIn('objectId', form.photoIds).find({ useMasterKey: true })
   submission.set({ form, photos })
@@ -57,9 +58,11 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
     const photos = submission.get('photos')
     await Parse.Object.saveAll(photos.map(photo => photo.set('approved', true)), { useMasterKey: true })
     const form = submission.get('form')
-    const { str, hsnr, ort, plz } = form.address
+    const { photoPos, address, stateId, htId, media } = form
+    photoPos.p1 && !cube.get('p1') && cube.set('p1', photos.find(photo => photo.id === photoPos.p1))
+    photoPos.p2 && !cube.get('p2') && cube.set('p2', photos.find(photo => photo.id === photoPos.p2))
+    const { str, hsnr, ort, plz } = address
     cube.set({ str, hsnr, ort, plz })
-    const { stateId, htId, media } = form
     cube.set('state', $parsify('State', stateId))
     cube.set('media', media)
     cube.set('ht', $parsify('HousingType', htId))

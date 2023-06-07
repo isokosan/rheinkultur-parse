@@ -870,6 +870,13 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     .notEqualTo('approved', true)
     .each(photo => photo.set('approved', true).save(null, { useMasterKey: true }), { useMasterKey: true })
   const cube = booking.get('cube')
+
+  if (request.photoPos?.p1 || request.photoPos?.p2) {
+    request.photoPos.p1 && !cube.get('p1') && cube.set('p1', $parsify('CubePhoto', request.photoPos.p1))
+    request.photoPos.p2 && !cube.get('p2') && cube.set('p2', $parsify('CubePhoto', request.photoPos.p2))
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  }
+
   if (request.media && !cube.get('vAt') && cube.get('media') !== request.media) {
     const ht = null
     const media = request.media
