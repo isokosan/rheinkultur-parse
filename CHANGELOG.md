@@ -1,3 +1,10 @@
+## [1.54.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.1...1.54.2) (2023-06-07)
+
+
+### Bug Fixes
+
+* booking search when booking deleted (for development) ([b4ed59d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b4ed59d2567ab2c1e25579728669705441aa159c))
+
 ## [1.54.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.0...1.54.1) (2023-06-07)
 
 
