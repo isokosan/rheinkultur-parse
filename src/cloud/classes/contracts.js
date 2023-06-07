@@ -387,7 +387,7 @@ async function validateContractFinalize (contract, skipCubeValidations) {
 
 Parse.Cloud.define('contract-invoices-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
-  if (contract.get('status') >= 3) {
+  if (!(contract.get('status') >= 0 && contract.get('status')) < 3) {
     throw new Error('Can only preview unfinalized contract invoices.')
   }
   if (!contract.get('startsAt') || !contract.get('endsAt')) {
@@ -840,6 +840,23 @@ Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }
 // Updates gradual prices, periodEnd and early canceled cubes
 Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId)
+  // discard all planned invoices if contract is voided
+  if (contract.get('status') === -1) {
+    let u = 0
+    await $query('Invoice')
+      .equalTo('contract', contract)
+      .equalTo('status', 1)
+      .each(async (invoice) => {
+        const invoiceAudit = { user, fn: 'invoice-discard', data: { reason: 'Vertrag storniert.' } }
+        await Parse.Cloud.run(
+          'invoice-discard',
+          { id: invoice.id },
+          { useMasterKey: true, context: { audit: invoiceAudit } }
+        )
+        u++
+      }, { useMasterKey: true })
+    return u
+  }
   const invoices = await $query('Invoice')
     .equalTo('contract', contract)
     .containedIn('status', [1, 4])
@@ -1539,7 +1556,14 @@ Parse.Cloud.define('contract-void', async ({ params: { id: contractId, comments:
   })
   const audit = { user, fn: 'contract-void', data: { cancelNotes } }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-  return 'Vertrag storniert.'
+  let message = 'Vertrag storniert.'
+  const updatedInvoices = await Parse.Cloud.run(
+    'contract-update-planned-invoices',
+    { id: contract.id },
+    { useMasterKey: true }
+  )
+  message += ` ${updatedInvoices} Rechnungen aktualisiert.`
+  return message
 }, $internOrAdmin)
 
 Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user }) => {
