@@ -1,3 +1,10 @@
+## [1.54.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.2...1.54.3) (2023-06-07)
+
+
+### Bug Fixes
+
+* remove arm ([321b89a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/321b89a07d341fc41460602c51dd785dbf208a17))
+
 ## [1.54.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.1...1.54.2) (2023-06-07)
 
 
