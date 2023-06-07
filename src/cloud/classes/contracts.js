@@ -95,10 +95,10 @@ Parse.Cloud.beforeDelete(Contract, async ({ object: contract }) => {
   if (contract.get('status') !== 0 && contract.get('status') !== 2) {
     throw new Error('Nur Verträge im Entwurfsstatus können gelöscht werden!')
   }
-  if (await $query('Invoice').equalTo('contract', contract).exists({ useMasterKey: true })) {
+  if (await $query('Invoice').equalTo('contract', contract).count({ useMasterKey: true })) {
     throw new Error('Es existieren noch Rechnungen zu diesem Vertrag.')
   }
-  if (await $query('CreditNote').equalTo('contract', contract).exists({ useMasterKey: true })) {
+  if (await $query('CreditNote').equalTo('contract', contract).count({ useMasterKey: true })) {
     throw new Error('Es existieren noch Gutschriften zu diesem Vertrag.')
   }
 })
