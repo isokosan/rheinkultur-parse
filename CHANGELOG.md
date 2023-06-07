@@ -1,3 +1,10 @@
+## [1.53.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.53.1...1.53.2) (2023-06-07)
+
+
+### Bug Fixes
+
+* before after cube photo delete bugfix ([316f69f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/316f69f98d8d7ac44a076f536b7f8a4023c0ef6e))
+
 ## [1.53.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.53.0...1.53.1) (2023-06-07)
 
 
