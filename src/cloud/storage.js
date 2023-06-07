@@ -197,7 +197,7 @@ Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user, master }) => {
 })
 
 // Run another p1 & p2 cleanup check after deletion
-Parse.Cloud.beforeDelete('CubePhoto', async ({ object }) => {
+Parse.Cloud.afterDelete('CubePhoto', async ({ object }) => {
   const cube = await $getOrFail('Cube', object.get('cubeId'))
   if (cube.get('p1')?.id === object.id) {
     await cube.unset('p1').save(null, { useMasterKey: true })
