@@ -1,3 +1,10 @@
+# [1.54.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.53.2...1.54.0) (2023-06-07)
+
+
+### Features
+
+* add p1 and p2 from scout and booking forms, rather than saving to cube directly, only when p1 or p2 on cube is already undefined. ([62affe2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/62affe2884a2edd5f5262abfc1a6b949d5eb4d8e))
+
 ## [1.53.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.53.1...1.53.2) (2023-06-07)
 
 
