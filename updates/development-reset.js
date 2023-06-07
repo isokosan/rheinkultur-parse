@@ -8,7 +8,7 @@ async function initializeForDevelopment () {
   // sync lex accounts with dev lex
   await $query('Address').notEqualTo('lex', null).each(async (address) => {
     // check if address name exists on lexoffice
-    let [lex] = await Parse.Cloud.run('lex-contacts', { name: address.get('name') }, { useMasterKey: true })
+    let [lex] = await Parse.Cloud.run('lex-contacts', { name: address.get('name').trim() }, { useMasterKey: true })
     if (!lex) {
       lex = await Parse.Cloud.run('lex-contact-create', {
         name: address.get('name'),

@@ -624,6 +624,7 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
       type: 'create',
       user: user.toPointer(),
       photoIds: params.photoIds,
+      photoPos: params.photoPos,
       media: params.media,
       comments: normalizeString(params.comments) || undefined,
       createdAt: new Date(),
