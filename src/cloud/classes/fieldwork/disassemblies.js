@@ -120,7 +120,7 @@ async function upsertTaskList (attrs) {
 }
 
 async function processOrder (className, objectId) {
-  const periodStart = '2023-05-01'
+  const periodStart = '2023-04-01'
   const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
   const order = await $getOrFail(className, objectId)
 

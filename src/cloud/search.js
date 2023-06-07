@@ -674,8 +674,9 @@ Parse.Cloud.define('search-bookings', async ({
     .find({ useMasterKey: true })
   const results = hits.map(hit => {
     const booking = bookings.find(obj => obj.id === hit._source.bookingId)
+    if (!booking) { return null }
     return booking.toJSON()
-  })
+  }).filter(Boolean)
   return { results, count }
 }, { requireUser: true, validateMasterKey: true })
 
