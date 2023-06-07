@@ -1,3 +1,11 @@
+## [1.54.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.0...1.54.1) (2023-06-07)
+
+
+### Bug Fixes
+
+* cancel notes, voided at and canceled at ([98881f0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/98881f0b516a5733b367a38450a4dbbff8c45dfd))
+* contract dicard all planned invoices when voided ([71f4d8d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/71f4d8d501e564ecad88b71eb4c4e1e54717d772))
+
 # [1.54.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.53.2...1.54.0) (2023-06-07)
 
 
