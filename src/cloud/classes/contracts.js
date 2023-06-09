@@ -387,7 +387,7 @@ async function validateContractFinalize (contract, skipCubeValidations) {
 
 Parse.Cloud.define('contract-invoices-preview', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
-  if (!(contract.get('status') >= 0 && contract.get('status')) < 3) {
+  if (!(contract.get('status') >= 0 && contract.get('status') < 3)) {
     throw new Error('Can only preview unfinalized contract invoices.')
   }
   if (!contract.get('startsAt') || !contract.get('endsAt')) {
