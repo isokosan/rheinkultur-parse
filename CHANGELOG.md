@@ -1,3 +1,10 @@
+## [1.54.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.4...1.54.5) (2023-06-09)
+
+
+### Bug Fixes
+
+* contract preview invoices bug ([42c23fd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/42c23fdd6b6906f768bd67b4d587e14c52233dac))
+
 ## [1.54.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.3...1.54.4) (2023-06-07)
 
 
