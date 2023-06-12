@@ -1,3 +1,10 @@
+# [1.55.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.5...1.55.0) (2023-06-12)
+
+
+### Features
+
+* add invoice and credit note webhook by voucherDate sync ([301c9a5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/301c9a5d5e86513f92d481764bc7a2c455852afb))
+
 ## [1.54.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.4...1.54.5) (2023-06-09)
 
 
