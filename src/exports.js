@@ -501,7 +501,7 @@ function getName ({ className, name, no }) {
 const addTaskListSheet = async (workbook, taskList) => {
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('booking') || taskList.get('contract')
   const company = parent?.get('company') ? await parent.get('company').fetch({ useMasterKey: true }) : null
-  const worksheet = workbook.addWorksheet(safeName(`${taskList.get('ort')} (${taskList.get('state').id})`))
+  const worksheet = workbook.addWorksheet(safeName(`${taskList.get('ort')} (${taskList.get('state').id}) ${moment(taskList.get('dueDate')).format('DD.MM.YYYY')}`))
 
   const infos = [
     { label: 'Auftraggeber', content: company?.get('name') || '-' },
@@ -619,7 +619,9 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
 }))
 
 router.get('/task-lists', handleErrorAsync(async (req, res) => {
-  const [className, objectId] = req.query.parent.split('-')
+  // TODO: Fix bug when Disassembly has - inside the ID
+  const [className] = req.query.parent.split('-')
+  const objectId = req.query.parent.replace(`${className}-`, '')
   const parent = await $getOrFail(className, objectId)
   const name = getName(parent.toJSON())
   const workbook = new excel.Workbook()

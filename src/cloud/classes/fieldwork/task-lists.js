@@ -420,7 +420,7 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
     return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
   }
   return approved ? 'Marked as complete' : 'Cube unmarked as complete'
-}, $internOrAdmin)
+}, $scoutManagerOrAdmin)
 
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
