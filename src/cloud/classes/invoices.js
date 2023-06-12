@@ -413,6 +413,10 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
     await Parse.Cloud.run('invoice-recalculate-gradual-prices', { id: invoiceId }, { useMasterKey: true })
     invoice = await $getOrFail(Invoice, invoiceId, ['company', 'address', 'companyPerson'])
   }
+
+  // We send a request to lex-api at this point
+  // If the process is interrupted, the invoice might get generated in Lex but we won't have a reference to it
+  // This is not a problem because the invoice will search first and find the matching invoice first before generating a new one?
   const { id: lexId, resourceUri: lexUri } = await lexApi('/invoices?finalize=true', 'POST', {
     archived: false,
     voucherDate: moment(invoice.get('date'), 'YYYY-MM-DD').toDate(),
