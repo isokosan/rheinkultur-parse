@@ -13,13 +13,13 @@ router.post('/lex', async (req, res) => {
     return
   }
   if (eventType.startsWith('contact.')) {
-    Parse.Cloud.run('address-sync-lex', { resourceId }, { useMasterKey: true })
+    return Parse.Cloud.run('address-sync-lex', { resourceId }, { useMasterKey: true })
   }
   if (eventType.startsWith('invoice.')) {
-    Parse.Cloud.run('invoice-sync-lex', { resourceId }, { useMasterKey: true })
+    return Parse.Cloud.run('invoice-sync-lex', { resourceId }, { useMasterKey: true })
   }
   if (eventType.startsWith('credit-note.')) {
-    Parse.Cloud.run('credit-note-sync-lex', { resourceId }, { useMasterKey: true })
+    return Parse.Cloud.run('credit-note-sync-lex', { resourceId }, { useMasterKey: true })
   }
   return res.status(200).end()
 })

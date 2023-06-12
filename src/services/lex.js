@@ -96,14 +96,12 @@ const clearSubscriptions = async () => {
     return unsubscribe(subscriptionId)
   }))
 }
-
 const EVENTS = [
   'contact.changed',
   // 'contact.deleted', // TODO: add a deleted from lex office flag
-  'invoice.created',
-  'invoice.changed', // invoice.status.changed triggers this also
+  'invoice.changed', // created, status.changed triggers this also
   'invoice.deleted',
-  'credit-note.changed', // credit-note.status.changed triggers this also
+  'credit-note.changed', // created, status.changed triggers this also
   'credit-note.deleted'
 ]
 

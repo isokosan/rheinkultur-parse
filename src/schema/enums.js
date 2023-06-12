@@ -62,9 +62,18 @@ module.exports.CUBE_STATUSES = {
   8: 'Nicht gefunden',
   9: 'Ausgeblendet (A/R)'
 }
+module.exports.CREDIT_NOTE_STATUSES = {
+  0: 'Entwurf',
+  1: 'Geplant',
+  1.5: 'Wird ausgestellt',
+  2: 'Abgeschlossen',
+  3: 'Storniert',
+  4: 'Verworfen'
+}
 module.exports.INVOICE_STATUSES = {
   0: 'Entwurf',
   1: 'Geplant',
+  1.5: 'Wird ausgestellt',
   2: 'Abgeschlossen',
   3: 'Storniert',
   4: 'Verworfen'
@@ -78,13 +87,6 @@ module.exports.BILLING_CYCLES = {
   3: 'Quartal',
   6: 'Halbjährlich',
   12: 'Jahr'
-}
-module.exports.CREDIT_NOTE_STATUSES = {
-  0: 'Entwurf',
-  1: 'Geplant',
-  2: 'Abgeschlossen',
-  3: 'Storniert',
-  4: 'Verworfen'
 }
 
 const PRINT_PACKAGE_TYPES = {

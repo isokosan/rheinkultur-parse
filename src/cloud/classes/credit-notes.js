@@ -295,8 +295,9 @@ Parse.Cloud.define('credit-note-remove', async ({ params: { id: creditNoteId } }
 Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, email }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
   const creditNote = await $getOrFail(CreditNote, creditNoteId, ['company', 'address', 'companyPerson', 'invoices'])
-  if (creditNote.get('status') > 1) {
-    throw new Error('Can only issue draft or planned creditNotes')
+  if (creditNote.get('status') > 1 || creditNote.get('voucherDate')) {
+    // TO TRANSLATE
+    throw new Error('Diese Gutschrift wurde bereits ausgestellt.')
   }
 
   await validateCreditNoteDate(creditNote.get('date'))
@@ -310,9 +311,26 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
     throw new Error(`Die Abrechnungsaddresse ist noch nicht vollständig hinterlegt. Bitte überprüfen Sie die Stammdaten. (${creditNote.id})`)
   }
 
+  creditNote.set('status', 1.5)
+  const now = moment()
+  const voucherDate = moment(creditNote.get('date'), 'YYYY-MM-DD')
+    .set({
+      hour: now.get('hour'),
+      minute: now.get('minute'),
+      second: now.get('second'),
+      millisecond: now.get('millisecond')
+    })
+    .toDate()
+  creditNote.set('voucherDate', voucherDate)
+  email === true && (email = creditNote.get('address').email)
+  email ? creditNote.set('shouldMail', email) : creditNote.unset('shouldMail')
+  const audit = { user, fn: 'credit-note-issue-request' }
+  await creditNote.save(null, { useMasterKey: true, context: { audit } })
+
+  // HIT LEXOFFICE
   const { id: lexId, resourceUri: lexUri } = await lexApi('/credit-notes?finalize=true', 'POST', {
     archived: false,
-    voucherDate: moment(creditNote.get('date'), 'YYYY-MM-DD').toDate(),
+    voucherDate,
     address: {
       contactId: lex.id,
       name: lex.name,
@@ -322,21 +340,19 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
       city,
       countryCode
     },
-    lineItems: creditNote.get('lineItems').map((item) => {
-      return {
-        type: 'custom',
-        name: item.name,
-        description: item.description,
-        quantity: 1,
-        unitName: 'Stück',
-        unitPrice: {
-          currency: 'EUR',
-          netAmount: item.price,
-          taxRatePercentage: getTaxRatePercentage(lex.allowTaxFreeInvoices, creditNote.get('date'))
-        },
-        discountPercentage: 0
-      }
-    }),
+    lineItems: creditNote.get('lineItems').map(item => ({
+      type: 'custom',
+      name: item.name,
+      description: item.description,
+      quantity: 1,
+      unitName: 'Stück',
+      unitPrice: {
+        currency: 'EUR',
+        netAmount: item.price,
+        taxRatePercentage: getTaxRatePercentage(lex.allowTaxFreeInvoices, creditNote.get('date'))
+      },
+      discountPercentage: 0
+    })),
     totalPrice: { currency: 'EUR' },
     taxConditions: { taxType: 'net' },
     shippingConditions: {
@@ -351,19 +367,15 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
       ].join('\n\n')
       : 'Der Betrag wird Ihnen in den nächsten Tagen gutgeschrieben.'
   })
+
   creditNote.set({ lexId, lexUri })
-  creditNote.set('status', 2)
-  const audit = { user, fn: 'credit-note-issue' }
-  await creditNote.save(null, { useMasterKey: true, context: { audit } })
+  creditNote.set('status', 2).unset('shouldMail')
+  await creditNote.save(null, { useMasterKey: true, context: { audit: { user, fn: 'credit-note-issue' } } })
 
-  let message = 'Rechnung ausgestellt.'
-  if (email === true) {
-    email = creditNote.get('address').email
-  }
-
+  let message = 'Gutschrift ausgestellt.'
   email && await Parse.Cloud.run('credit-note-send-mail', { id: creditNote.id, email }, { useMasterKey: true })
     .then((emailMessage) => { message += (' ' + emailMessage) })
-    .catch(consola.error)
+    .catch((error) => creditNote.save(null, { useMasterKey: true, context: { audit: { fn: 'send-email-error', data: { email, error: error.message } } } }))
   return message
 }, $internOrAdmin)
 
@@ -400,6 +412,10 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
     },
     attachments
   })
+  if (mailStatus.accepted.length === 0) {
+    // TOTRANSLATE
+    throw new Error('E-Mail was not accepted')
+  }
   mailStatus.attachments = attachments.map(attachment => attachment.filename)
   creditNote.set({ mailStatus })
   const audit = { fn: 'send-email', user, data: { mailStatus } }
@@ -421,15 +437,35 @@ Parse.Cloud.define('credit-note-toggle-post', async ({ params: { id: creditNoteI
 }, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, resourceId: lexId } }) => {
-  if (!creditNoteId && !lexId) {
-    throw new Error('Either id or resourceId is required.')
-  }
+  if (!creditNoteId && !lexId) { throw new Error('Either id or resourceId is required.') }
   const query = $query(CreditNote)
   creditNoteId && query.equalTo('objectId', creditNoteId)
   lexId && query.equalTo('lexId', lexId)
-  const creditNote = await query.first({ useMasterKey: true })
+  let creditNote = await query.first({ useMasterKey: true })
+  // handle new credit note if not found
   if (!creditNote) {
-    throw new Error('CreditNote not found')
+    const resource = await lexApi('/credit-notes/' + lexId, 'GET')
+    creditNote = await $query(CreditNote)
+      .equalTo('voucherDate', moment(resource.voucherDate).toDate())
+      .first({ useMasterKey: true })
+    if (creditNote) {
+      if (creditNote.get('status') === 2) {
+        return 'Credit Note already issued and saved into WaWi'
+      }
+      creditNote.set({ lexId, lexUri: resource.resourceUri })
+      const email = creditNote.get('shouldMail')
+      creditNote.set('status', 2).unset('shouldMail')
+      const audit = { fn: 'credit-note-issue-lex' }
+      await creditNote.save(null, { useMasterKey: true, context: { audit } })
+      return email && Parse.Cloud.run('credit-note-send-mail', { id: creditNote.id, email }, { useMasterKey: true })
+        .catch((error) => creditNote.save(null, { useMasterKey: true, context: { audit: { fn: 'send-email-error', data: { email, error: error.message } } } }))
+    }
+    // otherwise save the credit note as UnsyncedLexDocument
+    const unsyncedLexDocument = new (Parse.Object.extend('UnsyncedLexDocument'))({
+      lexId,
+      type: 'credit-note'
+    })
+    return unsyncedLexDocument.save(null, { useMasterKey: true })
   }
   const {
     voucherStatus,

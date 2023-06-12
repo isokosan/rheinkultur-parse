@@ -1,9 +1,11 @@
 async function checkLexOfficeSkip () {
-  const year = 23
+  // const year = 23
   const missing = { Invoice: [], CreditNote: [] }
   for (const [className, classPrefix] of [['Invoice', 'RE'], ['CreditNote', 'GS']]) {
-    const prefix = classPrefix + year + '-'
+    // const prefix = classPrefix + year + '-'
+    const prefix = classPrefix + '0'
     const nos = await $query(className)
+      .startsWith('lexNo', prefix)
       .notEqualTo('lexNo', null)
       .distinct('lexNo', { useMasterKey: true })
     let carry

@@ -395,7 +395,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
   let invoice = await $getOrFail(Invoice, invoiceId, ['company', 'address', 'companyPerson'])
-  if (invoice.get('status') > 1) {
+  if (invoice.get('status') > 1 || invoice.get('voucherDate')) {
     throw new Error('Diese Rechnung wurde bereits ausgestellt.')
   }
 
@@ -414,12 +414,26 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
     invoice = await $getOrFail(Invoice, invoiceId, ['company', 'address', 'companyPerson'])
   }
 
-  // We send a request to lex-api at this point
-  // If the process is interrupted, the invoice might get generated in Lex but we won't have a reference to it
-  // This is not a problem because the invoice will search first and find the matching invoice first before generating a new one?
+  invoice.set('status', 1.5)
+  const now = moment()
+  const voucherDate = moment(invoice.get('date'), 'YYYY-MM-DD')
+    .set({
+      hour: now.get('hour'),
+      minute: now.get('minute'),
+      second: now.get('second'),
+      millisecond: now.get('millisecond')
+    })
+    .toDate()
+  invoice.set('voucherDate', voucherDate)
+  email === true && (email = invoice.get('address').get('email'))
+  email ? invoice.set('shouldMail', email) : invoice.unset('shouldMail')
+  const audit = { user, fn: 'invoice-issue-request' }
+  await invoice.save(null, { useMasterKey: true, context: { audit } })
+
+  // HIT LEXOFFICE
   const { id: lexId, resourceUri: lexUri } = await lexApi('/invoices?finalize=true', 'POST', {
     archived: false,
-    voucherDate: moment(invoice.get('date'), 'YYYY-MM-DD').toDate(),
+    voucherDate,
     address: {
       contactId: lex.id,
       name: lex.name,
@@ -429,21 +443,19 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
       city,
       countryCode
     },
-    lineItems: invoice.get('lineItems').map((item) => {
-      return {
-        type: 'custom',
-        name: item.name,
-        description: item.description,
-        quantity: 1,
-        unitName: 'Stück',
-        unitPrice: {
-          currency: 'EUR',
-          netAmount: item.price,
-          taxRatePercentage: getTaxRatePercentage(lex.allowTaxFreeInvoices, invoice.get('date'))
-        },
-        discountPercentage: 0
-      }
-    }),
+    lineItems: invoice.get('lineItems').map(item => ({
+      type: 'custom',
+      name: item.name,
+      description: item.description,
+      quantity: 1,
+      unitName: 'Stück',
+      unitPrice: {
+        currency: 'EUR',
+        netAmount: item.price,
+        taxRatePercentage: getTaxRatePercentage(lex.allowTaxFreeInvoices, invoice.get('date'))
+      },
+      discountPercentage: 0
+    })),
     totalPrice: { currency: 'EUR' },
     taxConditions: { taxType: 'net' },
     paymentConditions: {
@@ -461,18 +473,15 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
       ? ''
       : 'Bitte geben Sie bei der Überweisung die Rechnungsnummer an, nur so können wir ihre Zahlung korrekt zuordnen.'
   })
+
   invoice.set({ lexId, lexUri })
-  invoice.set('status', 2)
-  const audit = { user, fn: 'invoice-issue' }
-  await invoice.save(null, { useMasterKey: true, context: { audit } })
+  invoice.set('status', 2).unset('shouldMail')
+  await invoice.save(null, { useMasterKey: true, context: { audit: { user, fn: 'invoice-issue' } } })
 
   let message = 'Rechnung ausgestellt.'
-  if (email === true) {
-    email = invoice.get('address').get('email')
-  }
   email && await Parse.Cloud.run('invoice-send-mail', { id: invoice.id, email }, { useMasterKey: true })
     .then((emailMessage) => { message += (' ' + emailMessage) })
-    .catch(consola.error)
+    .catch((error) => invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'send-email-error', data: { email, error: error.message } } } }))
   return message
 }, $internOrAdmin)
 
@@ -516,6 +525,10 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
     },
     attachments
   })
+  if (mailStatus.accepted.length === 0) {
+    // TOTRANSLATE
+    throw new Error('E-Mail was not accepted')
+  }
   mailStatus.attachments = attachments.map(attachment => attachment.filename)
   invoice.set({ mailStatus })
   const audit = { fn: 'send-email', user, data: { mailStatus } }
@@ -562,15 +575,35 @@ Parse.Cloud.define('invoice-reset-introduction', async ({ params: { id: invoiceI
 }, $internOrAdmin)
 
 Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourceId: lexId } }) => {
-  if (!invoiceId && !lexId) {
-    throw new Error('Either id or resourceId is required.')
-  }
+  if (!invoiceId && !lexId) { throw new Error('Either id or resourceId is required.') }
   const query = $query(Invoice)
   invoiceId && query.equalTo('objectId', invoiceId)
   lexId && query.equalTo('lexId', lexId)
-  const invoice = await query.first({ useMasterKey: true })
+  let invoice = await query.first({ useMasterKey: true })
+  // handle new invoice if not found
   if (!invoice) {
-    throw new Error('Invoice not found')
+    const resource = await lexApi('/invoices/' + lexId, 'GET')
+    invoice = await $query(Invoice)
+      .equalTo('voucherDate', moment(resource.voucherDate).toDate())
+      .first({ useMasterKey: true })
+    if (invoice) {
+      if (invoice.get('status') === 2) {
+        return 'Invoice already issued and saved into WaWi'
+      }
+      invoice.set({ lexId, lexUri: resource.resourceUri })
+      const email = invoice.get('shouldMail')
+      invoice.set('status', 2).unset('shouldMail')
+      const audit = { fn: 'invoice-issue-lex' }
+      await invoice.save(null, { useMasterKey: true, context: { audit } })
+      return email && Parse.Cloud.run('invoice-send-mail', { id: invoice.id, email }, { useMasterKey: true })
+        .catch((error) => invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'send-email-error', data: { email, error: error.message } } } }))
+    }
+    // otherwise save the invoice as UnsyncedLexDocument
+    const unsyncedLexDocument = new (Parse.Object.extend('UnsyncedLexDocument'))({
+      lexId,
+      type: 'invoice'
+    })
+    return unsyncedLexDocument.save(null, { useMasterKey: true })
   }
   const {
     voucherStatus,
@@ -578,14 +611,14 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
       totalNetAmount: netTotal,
       totalTaxAmount: taxTotal,
       totalGrossAmount: total
-    },
-    dueDate: dueDateISO
+    }
+    // dueDate: dueDateISO
   } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
 
-  const dueDate = moment(dueDateISO).format('YYYY-MM-DD')
-  const changes = $changes(invoice, { voucherStatus, dueDate, netTotal, taxTotal, total })
+  // const dueDate = moment(dueDateISO).format('YYYY-MM-DD')
+  const changes = $changes(invoice, { voucherStatus, netTotal, taxTotal, total })
   if (Object.keys(changes).length) {
-    invoice.set({ voucherStatus, dueDate, netTotal, taxTotal, total })
+    invoice.set({ voucherStatus, netTotal, taxTotal, total })
     const audit = { fn: 'invoice-update-lex', data: { changes } }
     await invoice.save(null, { useMasterKey: true, context: { audit } })
   }
