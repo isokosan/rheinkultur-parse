@@ -1,3 +1,10 @@
+# [1.56.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.55.0...1.56.0) (2023-06-13)
+
+
+### Features
+
+* update invoice and credit note webhooks ([f3e992d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f3e992dea90a37ac1e417727c20c74f8315d885e))
+
 # [1.55.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.54.5...1.55.0) (2023-06-12)
 
 
