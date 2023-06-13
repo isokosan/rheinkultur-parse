@@ -5,6 +5,8 @@ const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
 const sendMail = require('@/services/email')
 
+const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
+
 const Invoice = Parse.Object.extend('Invoice', {
   getTotalText () {
     return priceString(this.get('total')) + '€'
@@ -576,13 +578,13 @@ Parse.Cloud.define('invoice-reset-introduction', async ({ params: { id: invoiceI
 
 Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourceId: lexId } }) => {
   if (!invoiceId && !lexId) { throw new Error('Either id or resourceId is required.') }
+  const resource = await lexApi('/invoices/' + lexId, 'GET')
   const query = $query(Invoice)
   invoiceId && query.equalTo('objectId', invoiceId)
   lexId && query.equalTo('lexId', lexId)
   let invoice = await query.first({ useMasterKey: true })
   // handle new invoice if not found
   if (!invoice) {
-    const resource = await lexApi('/invoices/' + lexId, 'GET')
     invoice = await $query(Invoice)
       .equalTo('voucherDate', moment(resource.voucherDate).toDate())
       .first({ useMasterKey: true })
@@ -599,11 +601,7 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
         .catch((error) => invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'send-email-error', data: { email, error: error.message } } } }))
     }
     // otherwise save the invoice as UnsyncedLexDocument
-    const unsyncedLexDocument = new (Parse.Object.extend('UnsyncedLexDocument'))({
-      lexId,
-      type: 'invoice'
-    })
-    return unsyncedLexDocument.save(null, { useMasterKey: true })
+    return updateUnsyncedLexDocument('Invoice', resource)
   }
   const {
     voucherStatus,
@@ -612,10 +610,7 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
       totalTaxAmount: taxTotal,
       totalGrossAmount: total
     }
-    // dueDate: dueDateISO
-  } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
-
-  // const dueDate = moment(dueDateISO).format('YYYY-MM-DD')
+  } = resource
   const changes = $changes(invoice, { voucherStatus, netTotal, taxTotal, total })
   if (Object.keys(changes).length) {
     invoice.set({ voucherStatus, netTotal, taxTotal, total })
@@ -624,6 +619,15 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
   }
   return invoice
 }, $internOrAdmin)
+
+Parse.Cloud.define('invoice-delete-lex', async ({ params: { resourceId: lexId } }) => {
+  if (!lexId) { throw new Error('resourceId is required.') }
+  // TODO: if invoice exists, set lexId to null
+  return $query('UnsyncedLexDocument')
+    .equalTo('type', 'Invoice')
+    .equalTo('lexId', lexId)
+    .each(doc => doc.destroy({ useMasterKey: true }), { useMasterKey: true })
+}, { requireMaster: true })
 
 Parse.Cloud.define('invoice-recalculate-gradual-prices', async ({
   params: {

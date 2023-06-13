@@ -10,6 +10,8 @@ const { durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const sendMail = require('@/services/email')
 
+const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
+
 const CreditNote = Parse.Object.extend('CreditNote', {
   async getCompanyPersonSupplement () {
     const companyPerson = this.get('companyPerson')
@@ -438,13 +440,13 @@ Parse.Cloud.define('credit-note-toggle-post', async ({ params: { id: creditNoteI
 
 Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, resourceId: lexId } }) => {
   if (!creditNoteId && !lexId) { throw new Error('Either id or resourceId is required.') }
+  const resource = await lexApi('/credit-notes/' + lexId, 'GET')
   const query = $query(CreditNote)
   creditNoteId && query.equalTo('objectId', creditNoteId)
   lexId && query.equalTo('lexId', lexId)
   let creditNote = await query.first({ useMasterKey: true })
   // handle new credit note if not found
   if (!creditNote) {
-    const resource = await lexApi('/credit-notes/' + lexId, 'GET')
     creditNote = await $query(CreditNote)
       .equalTo('voucherDate', moment(resource.voucherDate).toDate())
       .first({ useMasterKey: true })
@@ -461,11 +463,7 @@ Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, 
         .catch((error) => creditNote.save(null, { useMasterKey: true, context: { audit: { fn: 'send-email-error', data: { email, error: error.message } } } }))
     }
     // otherwise save the credit note as UnsyncedLexDocument
-    const unsyncedLexDocument = new (Parse.Object.extend('UnsyncedLexDocument'))({
-      lexId,
-      type: 'credit-note'
-    })
-    return unsyncedLexDocument.save(null, { useMasterKey: true })
+    return updateUnsyncedLexDocument('CreditNote', resource)
   }
   const {
     voucherStatus,
@@ -474,7 +472,7 @@ Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, 
       totalTaxAmount: taxTotal,
       totalGrossAmount: total
     }
-  } = await lexApi('/credit-notes/' + creditNote.get('lexId'), 'GET')
+  } = resource
   const changes = $changes(creditNote, { voucherStatus, netTotal, taxTotal, total })
   if (Object.keys(changes).length) {
     creditNote.set({ voucherStatus, netTotal, taxTotal, total })
@@ -483,3 +481,12 @@ Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, 
   }
   return creditNote
 }, $internOrAdmin)
+
+Parse.Cloud.define('credit-note-delete-lex', async ({ params: { resourceId: lexId } }) => {
+  if (!lexId) { throw new Error('resourceId is required.') }
+  // TODO: if credit note exists, set lexId to null
+  return $query('UnsyncedLexDocument')
+    .equalTo('type', 'CreditNote')
+    .equalTo('lexId', lexId)
+    .each(doc => doc.destroy({ useMasterKey: true }), { useMasterKey: true })
+}, { requireMaster: true })

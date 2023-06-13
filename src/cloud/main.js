@@ -70,7 +70,8 @@ Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
       : undefined,
     gradualPriceMaps: !keys.length || keys.includes('gradualPriceMaps')
       ? await fetchGradualPriceMaps() // .then(items => items.map(item => item.toJSON()))
-      : undefined
+      : undefined,
+    systemStatus: await Parse.Config.get().then(config => config.get('systemStatus'))
   }
   return dictionary
 })

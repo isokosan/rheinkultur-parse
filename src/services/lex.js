@@ -7,6 +7,7 @@ const headers = {
   Accept: 'application/json',
   'Content-Type': 'application/json'
 }
+const callbackUrl = process.env.WEBHOOKS_URL + '/lex'
 
 const htmlEncode = val => val.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
 
@@ -71,10 +72,7 @@ const subscribe = async eventType => Parse.Cloud.httpRequest({
   url: 'https://api.lexoffice.io/v1/event-subscriptions',
   method: 'POST',
   headers,
-  body: {
-    eventType,
-    callbackUrl: process.env.WEBHOOKS_URL + '/lex'
-  }
+  body: { eventType, callbackUrl }
 })
   .catch(response => ({ eventType, ...response }))
   .then(response => ({ eventType, ...response.data }))
@@ -107,7 +105,10 @@ const EVENTS = [
 
 const ensureSubscriptions = async () => {
   const subscriptions = await getSubscriptions()
-  const unsubscribedEvents = EVENTS.filter(eventType => !subscriptions.find(sub => sub.eventType === eventType))
+  const unsubscribedEvents = EVENTS.filter((eventType) => {
+    const subscribed = subscriptions.find(sub => sub.eventType === eventType)
+    return !subscribed || subscribed.callbackUrl !== callbackUrl
+  })
   return Promise.all(unsubscribedEvents.map(subscribe))
     .then(events => EVENTS.reduce((acc, eventType) => {
       acc[eventType] = events.find(event => event.eventType === eventType) || subscriptions.find(sub => sub.eventType === eventType)

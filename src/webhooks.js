@@ -12,14 +12,20 @@ router.post('/lex', async (req, res) => {
   if (!resourceId) {
     return
   }
-  if (eventType.startsWith('contact.')) {
+  if (eventType === 'contact.changed') {
     return Parse.Cloud.run('address-sync-lex', { resourceId }, { useMasterKey: true })
   }
-  if (eventType.startsWith('invoice.')) {
+  if (eventType === 'invoice.changed') {
     return Parse.Cloud.run('invoice-sync-lex', { resourceId }, { useMasterKey: true })
   }
-  if (eventType.startsWith('credit-note.')) {
+  if (eventType === 'invoice.deleted') {
+    return Parse.Cloud.run('invoice-delete-lex', { resourceId }, { useMasterKey: true })
+  }
+  if (eventType === 'credit-note.changed') {
     return Parse.Cloud.run('credit-note-sync-lex', { resourceId }, { useMasterKey: true })
+  }
+  if (eventType === 'credit-note.deleted') {
+    return Parse.Cloud.run('credit-note-delete-lex', { resourceId }, { useMasterKey: true })
   }
   return res.status(200).end()
 })

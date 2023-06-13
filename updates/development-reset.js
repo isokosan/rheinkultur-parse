@@ -5,6 +5,12 @@ Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MAS
 require('./../src/globals')
 
 async function initializeForDevelopment () {
+  const today = moment().format('YYYY-MM-DD')
+  await Parse.Config.save({ today })
+  consola.success('set today to', today)
+  // update user passwords
+  await $query(Parse.User).each(user => user.set('password', '123456').save(null, { useMasterKey: true }), { useMasterKey: true })
+  consola.success('set user passwords')
   // sync lex accounts with dev lex
   await $query('Address').notEqualTo('lex', null).each(async (address) => {
     // check if address name exists on lexoffice
@@ -20,11 +26,5 @@ async function initializeForDevelopment () {
     }
     return address.set({ lex }).save(null, { useMasterKey: true })
   }, { useMasterKey: true })
-  consola.success()
-
-  // update user passwords
-  await $query(Parse.User).each(user => user.set('password', '123456').save(null, { useMasterKey: true }), { useMasterKey: true })
-  consola.success('set user passwords')
 }
 initializeForDevelopment()
-Parse.Config.save({ today: moment().format('YYYY-MM-DD') })
