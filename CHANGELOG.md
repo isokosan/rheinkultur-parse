@@ -1,3 +1,10 @@
+## [1.56.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.1...1.56.2) (2023-06-14)
+
+
+### Bug Fixes
+
+* address audits ([75fd156](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/75fd156aefeb1989933dfbffc9a6c6a2cf278f94))
+
 ## [1.56.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.0...1.56.1) (2023-06-14)
 
 
