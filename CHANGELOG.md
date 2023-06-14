@@ -1,3 +1,10 @@
+# [1.57.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.5...1.57.0) (2023-06-14)
+
+
+### Features
+
+* add pagerduty tracking ([dbf3623](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dbf3623916c130e12d99dbf78a4f21d0c98f53b2))
+
 ## [1.56.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.4...1.56.5) (2023-06-14)
 
 
