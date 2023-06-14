@@ -1,3 +1,10 @@
+## [1.56.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.0...1.56.1) (2023-06-14)
+
+
+### Bug Fixes
+
+* add UnsyncedLexDocument to schema ([893e6a1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/893e6a11c43d93acb1d0298929f6dd44d3faea1b))
+
 # [1.56.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.55.0...1.56.0) (2023-06-13)
 
 
