@@ -52,6 +52,7 @@ module.exports = {
     'eol-last': ['error', 'always'],
     'comma-dangle': ['error', 'never'],
     indent: [2, 2],
+    'rk-lint/enforce-parse-class-naming': 'error',
     'rk-lint/no-duplicate-parse-triggers': 'error',
     'rk-lint/cube-must-encode': 'warn'
   }
