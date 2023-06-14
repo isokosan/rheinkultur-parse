@@ -5,7 +5,7 @@
  */
 
 const { normalizeString, creditNotes: { normalizeFields } } = require('@/schema/normalizers')
-const { getDocumentTotals, getTaxRatePercentage } = require('@/shared')
+const { validateSystemStatus, getDocumentTotals, getTaxRatePercentage } = require('@/shared')
 const { durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const sendMail = require('@/services/email')
@@ -304,6 +304,7 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
   }
 
   await validateCreditNoteDate(creditNote.get('date'))
+  await validateSystemStatus()
 
   if (creditNote.get('total') === 0) {
     throw new Error('Can\'t issue 0€ creditNote')

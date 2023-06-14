@@ -86,6 +86,12 @@ const updateJobs = {
     name: 'Sync Cube Statuses',
     timeoutMinutes: 150
   },
+  system_status_vouchers: {
+    name: 'Überprüfung von Nummernkreisen',
+    timeoutMinutes: 2,
+    cron: '*/5 * * * *', // every 5 minutes
+    notificationDuration: 2
+  },
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',
     timeoutMinutes: 15,

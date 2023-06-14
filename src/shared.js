@@ -284,6 +284,22 @@ async function setContractCubeStatuses (contract) {
   }, { useMasterKey: true })
 }
 
+// TOTRANSLATE
+async function validateSystemStatus () {
+  const errors = []
+  const systemStatus = await Parse.Config.get().then(config => config.get('systemStatus') || {})
+  const { skippedNumbers, unsyncedLexDocuments } = systemStatus
+  if (skippedNumbers?.length) {
+    errors.push(`Übersprungen Belegnummer: ${skippedNumbers.join(', ')}`)
+  }
+  if (unsyncedLexDocuments) {
+    errors.push(`There are ${unsyncedLexDocuments} vouchers in LexOffice that are not in WaWi`)
+  }
+  if (errors.length) {
+    throw new Error(errors.join(', '))
+  }
+}
+
 module.exports = {
   getDocumentTotals,
   getTaxRatePercentage,
@@ -295,5 +311,6 @@ module.exports = {
   checkIfCubesAreAvailable,
   getActiveCubeOrder,
   setContractCubeStatuses,
-  setBookingCubeStatus
+  setBookingCubeStatus,
+  validateSystemStatus
 }

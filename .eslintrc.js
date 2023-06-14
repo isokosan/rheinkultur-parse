@@ -22,7 +22,7 @@ module.exports = {
     $adminOnly: true,
     $internOrAdmin: true,
     $internBookingManager: true,
-    $scoutManagerOrAdmin: true,
+    $fieldworkManager: true,
     $today: true,
     $wawiStart: true,
     $cubeLimit: true,

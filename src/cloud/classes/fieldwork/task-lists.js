@@ -207,8 +207,9 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   taskList.set({ cubeIds })
   const audit = { user, fn: 'task-list-update', data: { cubeChanges } }
   return taskList.save(null, { useMasterKey: true, context: { audit } })
-}, $adminOnly)
+}, $fieldworkManager)
 
+// TODO: Check if used
 Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, objectId } } }) => {
   return $query('TaskList')
     .aggregate([
@@ -247,10 +248,11 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
     data: { manager: taskList.get('manager'), scouts: taskList.get('scouts') },
     message: 'Manager gespeichert.'
   }
-}, $adminOnly)
+}, $fieldworkManager)
 
 Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
+  await validateScoutManagerOrFieldworkManager(taskList, user)
   if (taskList.get('status') > 1) {
     // TOTRANSLATE
     throw new Error('You cannot change scouts in an assigned task list. Please first retract.')
@@ -272,7 +274,7 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
     data: taskList.get('scouts'),
     message: 'Abfahrtsliste gespeichert.'
   }
-}, $scoutManagerOrAdmin)
+}, { requireUser: true })
 
 Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -294,8 +296,9 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
     data: { quota: taskList.get('quota'), quotas: taskList.get('quotas'), counts: taskList.get('counts') },
     message: 'Anzahl gespeichert.'
   }
-}, $adminOnly)
+}, $fieldworkManager)
 
+// TODO: Check if used
 Parse.Cloud.define('task-list-update-due-date', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   const { dueDate } = normalizeFields({ ...params, type: taskList.get('type') })
@@ -311,7 +314,17 @@ Parse.Cloud.define('task-list-update-due-date', async ({ params: { id: taskListI
     data: taskList.get('dueDate'),
     message: 'Fälligkeitsdatum gespeichert.'
   }
-}, $adminOnly)
+}, $fieldworkManager)
+
+function validateScoutManagerOrFieldworkManager (taskList, user) {
+  if (user.get('permissions')?.includes('manage-fieldwork')) {
+    return
+  }
+  if (taskList.get('manager')?.id === user.id) {
+    return
+  }
+  throw new Error('Unbefugter Zugriff')
+}
 
 // TOTRANSLATE
 async function validateAppointAssign (taskList) {
@@ -359,10 +372,12 @@ Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, use
     data: taskList.get('status'),
     message: 'Abfahrtslist ernennt. Manager notified.'
   }
-}, $adminOnly)
+}, $fieldworkManager)
 
 Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
+  await validateScoutManagerOrFieldworkManager(taskList, user)
+
   if (!taskList.get('manager') || taskList.get('status') !== 1) {
     throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
   }
@@ -380,7 +395,7 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
     data: taskList.get('status'),
     message: 'Abfahrtslist beauftragt.'
   }
-}, $scoutManagerOrAdmin)
+}, { requireUser: true })
 
 Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -390,11 +405,14 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
   const audit = { user }
   let message
   if (taskList.get('status') === 1) {
-    // make sure the user has "manage-fieldwork" permissions
+    // Validate if the user is a fieldwork manager before retracting appoint
+    if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
     taskList.set({ status: 0 })
     audit.fn = 'task-list-retract-appoint'
     message = 'Ernennung zurückgezogen.'
   } else {
+    // Validate if the user is a fieldwork manager or the manager of the list before retracting assing
+    await validateScoutManagerOrFieldworkManager(taskList, user)
     taskList.set({ status: 1 })
     audit.fn = 'task-list-retract-assign'
     message = 'Beauftragung zurückgezogen.'
@@ -404,12 +422,15 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
     data: taskList.get('status'),
     message
   }
-}, $scoutManagerOrAdmin)
+}, { requireUser: true })
 
+// TODO: Is this only for fieldwork managers or also for scout managers?
 Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: taskListId, cubeId, approved }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
+  await validateScoutManagerOrFieldworkManager(taskList, user)
   const cube = await $getOrFail('Cube', cubeId)
   if (taskList.get('type') === 'scout' && !cube.get('vAt')) {
+    // TOTRANSLATE
     throw new Error('Only verified cubes can be approved')
   }
   let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
@@ -424,14 +445,14 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
     return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
   }
   return approved ? 'Marked as complete' : 'Cube unmarked as complete'
-}, $scoutManagerOrAdmin)
+}, { requireUser: true })
 
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status')) { throw new Error('Only draft lists can be removed.') }
   await taskList.destroy({ useMasterKey: true })
   return { message: 'Abfahrtsliste gelöscht.' }
-}, $internOrAdmin)
+}, $fieldworkManager)
 
 // check if location has tasks remaining
 Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, user }) => {
@@ -443,7 +464,7 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
     data: taskList.get('status'),
     message: 'Task list marked complete'
   }
-}, $internOrAdmin)
+}, $fieldworkManager)
 
 // revert complete mark
 Parse.Cloud.define('task-list-revert-complete', async ({ params: { id: taskListId }, user }) => {
@@ -456,7 +477,7 @@ Parse.Cloud.define('task-list-revert-complete', async ({ params: { id: taskListI
     data: taskList.get('status'),
     message: 'Task list reverted'
   }
-}, $internOrAdmin)
+}, $fieldworkManager)
 
 // async function massUpdateManager() {
 //   const query = $query('TaskList')

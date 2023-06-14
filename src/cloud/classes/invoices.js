@@ -1,5 +1,5 @@
 const { normalizeString, invoices: { normalizeFields } } = require('@/schema/normalizers')
-const { getDocumentTotals, getTaxRatePercentage, getPeriodTotal } = require('@/shared')
+const { validateSystemStatus, getDocumentTotals, getTaxRatePercentage, getPeriodTotal } = require('@/shared')
 const { round2, priceString, durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
@@ -403,6 +403,7 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
   }
 
   await validateInvoiceDate(invoice.get('date'))
+  await validateSystemStatus()
 
   if (invoice.get('total') === 0) {
     throw new Error('Rechnungen mit einem Gesamtbetrag von 0€ können nicht ausgestellt werden.')
