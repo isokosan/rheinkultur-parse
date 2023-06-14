@@ -1,3 +1,10 @@
+## [1.56.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.3...1.56.4) (2023-06-14)
+
+
+### Bug Fixes
+
+* revert changes audit causing bugs with null objects ([2b26125](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2b261256b47cb6f64a4f374c5bbd0408eec59aee))
+
 ## [1.56.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.2...1.56.3) (2023-06-14)
 
 
