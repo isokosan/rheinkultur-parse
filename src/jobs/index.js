@@ -20,7 +20,7 @@ const updateJobs = {
     // cron: '0 0 * * *' // nightly
   },
   generate_disassembly_tasks: {
-    name: 'Abbauliste generieren.',
+    name: 'Demontage synchronizieren.',
     timeoutMinutes: 60
     // cron: '0 0 * * *', // nightly
     // notificationDuration: 48

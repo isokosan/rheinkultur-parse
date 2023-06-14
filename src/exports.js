@@ -632,7 +632,7 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
       await addTaskListSheet(workbook, taskList)
     }, { useMasterKey: true })
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=Alle Abfahrtsliste ${name}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=Alle Demontage ${name}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -654,7 +654,7 @@ router.get('/disassemblies/:monthYear', handleErrorAsync(async (req, res) => {
     ort: { header: 'Ort', width: 15 },
     stateName: { header: 'Bundesland', width: 30 },
     motive: { header: 'Motiv', width: 20 },
-    from: { header: 'Abbau ab', width: 15, style: dateStyle },
+    from: { header: 'Demontage ab', width: 15, style: dateStyle },
     status: { header: 'Status', width: 15 }
   })
 
@@ -694,7 +694,7 @@ router.get('/disassemblies/:monthYear', handleErrorAsync(async (req, res) => {
 
   // add all to rows
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=Abbauliste ${req.params.monthYear}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=Demontage ${req.params.monthYear}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 

@@ -28,7 +28,7 @@ module.exports.PERMISSIONS = {
   'scout': 'Scout',
   'control': 'Kontrol',
   'assembly': 'Montage',
-  'disassembly': 'Abbau'
+  'disassembly': 'Demontage'
   */
 }
 

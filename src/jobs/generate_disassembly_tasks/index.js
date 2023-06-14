@@ -1,5 +1,5 @@
 // When canceling cubes, or canceling an order - we should have an easy way of generating the lists right away
-// TODO: This should also remember cases where user wants to remove an abbau, or mark an abbau as abgebaut - this info should persist.
+// TODO: This should also remember cases where user wants to remove a disassembly, or mark one as done - this info should persist.
 
 const { processOrder } = require('@/cloud/classes/fieldwork/disassemblies')
 

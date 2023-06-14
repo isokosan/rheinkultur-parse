@@ -191,7 +191,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
     condition: 'disassembled',
     disassemblyId: submission.id
   }, { sessionToken: user.getSessionToken() })
-  return { message: 'Abbau erfolgreich.', data: submission }
+  return { message: 'Demontage erfolgreich.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: submissionId }, user }) => {
@@ -209,7 +209,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   controlSubmission && await Parse.Cloud.run('control-submission-approve', {
     id: controlSubmission.id
   }, { sessionToken: user.getSessionToken() })
-  return { message: 'Abbau genehmigt.', data: submission }
+  return { message: 'Demontage genehmigt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
@@ -225,5 +225,5 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
     identifier: 'task-submission-rejected',
     data: { type: 'disassembly', cubeId: cube.id, placeKey, rejectionReason }
   })
-  return { message: 'Abbau abgelehnt.', data: submission }
+  return { message: 'Demontage abgelehnt.', data: submission }
 }, { requireUser: true })

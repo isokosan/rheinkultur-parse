@@ -50,6 +50,7 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
   for (const disassembly of disassemblies) {
     disassembly.set(counts[disassembly.id])
     disassembly.set('order', disassembly.get('booking') || disassembly.get('contract'))
+    disassembly.set('company', disassembly.get('order').get('company'))
   }
 })
 
