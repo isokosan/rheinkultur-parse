@@ -1,3 +1,10 @@
+## [1.56.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.4...1.56.5) (2023-06-14)
+
+
+### Bug Fixes
+
+* scoutManager - fieldworkManager permissions in task lists ([c38e8ba](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c38e8baf9b897f396142ed4a43c045df542929b1))
+
 ## [1.56.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.3...1.56.4) (2023-06-14)
 
 
