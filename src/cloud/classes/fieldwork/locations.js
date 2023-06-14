@@ -1,6 +1,8 @@
+// LOCATIONS INDEX ON SCOUT APP
 Parse.Cloud.define('tasks-locations', async ({ user }) => {
   const taskLists = await $query('TaskList')
     .equalTo('scouts', user)
+    .containedIn('status', [2, 3])
     .find({ sessionToken: user.get('sessionToken') })
   const locations = {}
   for (const taskList of taskLists) {
@@ -27,6 +29,7 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
   return Object.values(locations)
 })
 
+// LOCATION VIEW ON SCOUT APP
 Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
   const city = await $getOrFail('City', placeKey)
   const [stateId, ort] = placeKey.split(':')
@@ -35,14 +38,15 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
   const taskLists = await $query('TaskList')
     .equalTo('ort', ort)
     .equalTo('state', state)
+    .equalTo('scouts', user)
+    .containedIn('status', [2, 3])
     .find({ sessionToken: user.get('sessionToken') })
 
   const STATUS_MAP = {
     undefined: 0,
     pending: 1,
     approved: 1,
-    rejected: 2,
-    not_found: 3
+    rejected: 2
   }
 
   for (const taskList of taskLists) {

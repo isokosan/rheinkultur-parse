@@ -105,10 +105,10 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     taskList.set({ quotasCompleted })
   }
   taskList.set({ statuses, counts })
-  await indexTaskList(taskList)
 })
 
 Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts, locationCleanup } }) => {
+  await indexTaskList(taskList)
   $audit(taskList, audit)
   const placeKey = [taskList.get('state').id, taskList.get('ort')].join(':')
   for (const scout of taskList.get('scouts') || []) {

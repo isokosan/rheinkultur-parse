@@ -543,8 +543,8 @@ Parse.Cloud.define('search-fieldwork', async ({
   type && bool.filter.push({ term: { 'type.keyword': type } })
 
   if (start) {
-    const gte = moment(start, 'MM-YYYY').startOf('month')
-    const lte = moment(start, 'MM-YYYY').endOf('month')
+    const gte = moment(start, 'MM-YYYY').startOf('month').format('YYYY-MM-DD')
+    const lte = moment(start, 'MM-YYYY').endOf('month').format('YYYY-MM-DD')
     bool.filter.push({ range: { date: { gte, lte } } })
   }
 

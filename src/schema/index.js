@@ -640,6 +640,7 @@ const schemaDefinitions = {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       ...taskSubmissionFields,
+      condition: { type: 'String' },
       form: { type: 'Object' },
       photos: { type: 'Array' }
     }

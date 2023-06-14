@@ -29,6 +29,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
   }
 
   form.notFound = Boolean(form.notFound)
+  const condition = form.notFound ? 'nf' : 'true'
   let changes
   if (submissionId) {
     changes = $changes(submission.get('form'), form, true)
@@ -36,7 +37,7 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
     delete changes.photoPos
   }
   const photos = await $query('CubePhoto').containedIn('objectId', form.photoIds).find({ useMasterKey: true })
-  submission.set({ form, photos })
+  submission.set({ form, condition, photos })
 
   await submission.save(null, { useMasterKey: true })
   taskList.set({ status: 3 })
