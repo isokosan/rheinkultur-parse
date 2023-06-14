@@ -1,5 +1,4 @@
 const triggers = ['beforeSave', 'afterSave', 'beforeFind', 'afterFind', 'beforeDelete', 'afterDelete']
-const registeredTriggers = {}
 module.exports = {
   meta: {
     type: 'problem',
@@ -11,6 +10,7 @@ module.exports = {
     schema: [] // no options needed for this rule
   },
   create: function (context) {
+    const registeredTriggers = {}
     return {
       CallExpression: function (node) {
         if (
