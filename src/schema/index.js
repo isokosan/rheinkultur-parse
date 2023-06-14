@@ -682,6 +682,14 @@ const schemaDefinitions = {
     fields: {
       name: { type: 'String', required: true } // required was added later so not taking effect here
     }
+  },
+  UnsyncedLexDocument: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      type: { type: 'String', required: true },
+      lexId: { type: 'String', required: true },
+      resource: { type: 'Object' }
+    }
   }
 }
 
