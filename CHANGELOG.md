@@ -1,3 +1,10 @@
+## [1.56.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.2...1.56.3) (2023-06-14)
+
+
+### Bug Fixes
+
+* scout location view context ([92bb37c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/92bb37cf3e2334f0e3f36360624e7213982bdcac))
+
 ## [1.56.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.1...1.56.2) (2023-06-14)
 
 
