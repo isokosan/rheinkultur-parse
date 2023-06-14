@@ -1,4 +1,3 @@
-
 const Audit = Parse.Object.extend('Audit')
 
 Parse.Cloud.beforeFind(Audit, ({ query, user }) => {

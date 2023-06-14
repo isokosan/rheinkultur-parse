@@ -63,34 +63,6 @@ Parse.Cloud.define('system-status-vouchers', async () => {
 module.exports.updateUnsyncedLexDocument = updateUnsyncedLexDocument
 
 // TODO: Move to updates folder
-// Parse.Cloud.define('manual-updates-clean-audits', async ({ params: { preview } }) => {
-//   let i = 0
-//   await $query('Audit').notEqualTo('data.changes', null).select(['fn', 'data']).each(async (audit) => {
-//     const data = audit.get('data')
-//     let changed = false
-//     for (const key of Object.keys(data.changes)) {
-//       const [before, after] = data.changes[key]
-//       if (before === after) {
-//         delete data.changes[key]
-//         changed = true
-//       }
-//     }
-//     if (changed) {
-//       if (!Object.keys(data.changes).length) {
-//         delete data.changes
-//       }
-//       if (preview) {
-//         consola.info(audit.get('fn'), audit.get('data'), data)
-//       } else {
-//         Object.keys(data).length
-//           ? await audit.set({ data }).save(null, { useMasterKey: true })
-//           : await audit.destroy({ useMasterKey: true })
-//       }
-//       i++
-//     }
-//   }, { useMasterKey: true })
-//   return i
-// }, { requireMaster: true })
 
 // // CHECK OVERLAPPING PLANNED INVOICES OF CONTRACTS
 // Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {

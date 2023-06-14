@@ -106,7 +106,7 @@ volumes:
   elasticsearchdata:
   kibanadata:
   mongodata:
+  redisdata:
   # mongodata1:
   # mongodata2:
   # mongodata3:
-  redisdata:

@@ -4,6 +4,7 @@ const { round2, priceString, durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
 const sendMail = require('@/services/email')
+const { addressAudit } = require('@/cloud/classes/addresses')
 
 const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
 
@@ -342,7 +343,7 @@ Parse.Cloud.define('invoice-update', async ({ params: { id: invoiceId, ...params
   }
   if (addressId !== invoice.get('address')?.id) {
     const address = addressId ? await $getOrFail('Address', addressId) : null
-    changes.address = [invoice.get('address')?.get('name'), address?.get('name')]
+    changes.address = [invoice.get('address'), address].map(addressAudit)
     address ? invoice.set({ address }) : invoice.unset('address')
   }
 

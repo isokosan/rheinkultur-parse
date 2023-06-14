@@ -9,6 +9,7 @@ const { getDocumentTotals, getTaxRatePercentage } = require('@/shared')
 const { durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const sendMail = require('@/services/email')
+const { addressAudit } = require('@/cloud/classes/addresses')
 
 const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
 
@@ -256,7 +257,7 @@ Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ..
   }
   if (addressId !== creditNote.get('address')?.id) {
     const address = addressId ? await $getOrFail('Address', addressId) : null
-    changes.address = [creditNote.get('address')?.get('name'), address?.get('name')]
+    changes.address = [creditNote.get('address'), address].map(addressAudit)
     address ? creditNote.set({ address }) : creditNote.unset('address')
   }
   if (companyPersonId !== creditNote.get('companyPerson')?.id) {

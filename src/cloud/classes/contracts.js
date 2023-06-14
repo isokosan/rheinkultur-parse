@@ -5,6 +5,7 @@ const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, s
 const { generateContract } = require('@/docs')
 const sendMail = require('@/services/email')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
+const { addressAudit } = require('@/cloud/classes/addresses')
 
 const Contract = Parse.Object.extend('Contract')
 
@@ -646,7 +647,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   }
   if (addressId !== contract.get('address')?.id) {
     const address = addressId ? await $getOrFail('Address', addressId) : null
-    changes.address = [contract.get('address')?.get('name'), address?.get('name')]
+    changes.address = [contract.get('address'), address].map(addressAudit)
     contract.set({ address })
   }
   if (companyPersonId !== contract.get('companyPerson')?.id) {
@@ -657,7 +658,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
 
   if (invoiceAddressId !== contract.get('invoiceAddress')?.id) {
     const invoiceAddress = invoiceAddressId ? await $getOrFail('Address', invoiceAddressId) : null
-    changes.invoiceAddress = [contract.get('invoiceAddress')?.get('name'), invoiceAddress?.get('name')]
+    changes.invoiceAddress = [contract.get('invoiceAddress'), invoiceAddress].map(addressAudit)
     contract.set({ invoiceAddress })
   }
 
@@ -1397,7 +1398,7 @@ Parse.Cloud.define('contract-change-invoice-address', async ({
     throw new Error('Keine Änderungen')
   }
   const invoiceAddress = invoiceAddressId ? await $getOrFail('Address', invoiceAddressId) : null
-  changes.invoiceAddress = [currentInvoiceAddress.get('name'), invoiceAddress?.get('name')]
+  changes.invoiceAddress = [currentInvoiceAddress, invoiceAddress].map(addressAudit)
   contract.set({ invoiceAddress })
 
   const invoices = await $query('Invoice')

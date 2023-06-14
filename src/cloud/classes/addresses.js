@@ -129,34 +129,27 @@ Parse.Cloud.define('address-delete', async ({ params: { id: addressId }, user })
 }, $internOrAdmin)
 
 Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId, force } }) => {
-  if (!resourceId) {
-    throw new Error('resourceId is required.')
-  }
+  if (!resourceId) { throw new Error('resourceId is required.') }
   const lexContact = await lexApi('/contacts/' + resourceId, 'GET')
-  const { name, allowTaxFreeInvoices } = lexContact.company
+  const { name } = lexContact.company
+  const allowTaxFreeInvoices = lexContact.company.allowTaxFreeInvoices ? true : null
   let i = 0
-  while (true) {
-    const query = $query(Address).equalTo('lex.id', resourceId)
-    !force && query.notEqualTo('lex.version', lexContact.version)
-    const addresses = await query.skip(i).find({ useMasterKey: true })
-    if (!addresses.length) {
-      break
-    }
-    for (const address of addresses) {
-      const changes = $changes(address, { name, allowTaxFreeInvoices })
-      const audit = { fn: 'address-update-lex', data: { name, allowTaxFreeInvoices, changes } }
-      address.set('name', name)
-      address.set('lex', {
-        id: resourceId,
-        name,
-        allowTaxFreeInvoices,
-        customerNo: lexContact.roles.customer.number,
-        version: lexContact.version
-      })
-      await address.save(null, { useMasterKey: true, context: { audit } })
-    }
-    i += addresses.length
-  }
+  const query = $query(Address).equalTo('lex.id', resourceId)
+  !force && query.notEqualTo('lex.version', lexContact.version)
+  await query.each(async address => {
+    const changes = $changes(address, { name, allowTaxFreeInvoices })
+    const audit = { fn: 'address-update-lex', data: { name, changes } }
+    address.set('name', name)
+    address.set('lex', {
+      id: resourceId,
+      name,
+      allowTaxFreeInvoices,
+      customerNo: lexContact.roles.customer.number,
+      version: lexContact.version
+    })
+    await address.save(null, { useMasterKey: true, context: { audit } })
+    i++
+  }, { useMasterKey: true })
   return i
 }, {
   requireMaster: true,
@@ -167,3 +160,8 @@ Parse.Cloud.define('address-sync-lex', async ({ params: { resourceId, force } })
     }
   }
 })
+
+module.exports.addressAudit = (address) => {
+  if (!address) { return null }
+  return [address.get('name'), address.get('street'), address.get('zip'), address.get('city')].filter(Boolean).join(' ')
+}

@@ -115,6 +115,10 @@ global.$changes = function (item, fields, rawObject = false) {
     const oldValue = normalizeAuditValue(rawObject ? item[key] : item.get(key))
     const newValue = normalizeAuditValue(fields[key])
     if (!isEqual(oldValue, newValue)) {
+      if (oldValue?.constructor === Object || newValue?.constructor === Object) {
+        const diff = $cleanDict($changes(oldValue, newValue, true))
+        if (!diff) { continue }
+      }
       if (key !== 'form') {
         response[key] = [oldValue, newValue]
         continue
