@@ -3,8 +3,6 @@ const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const TaskList = Parse.Object.extend('TaskList')
 
-// $query('TaskList').each(tl => tl.save(null, { useMasterKey: true }), { useMasterKey: true }).then(consola.success)
-
 async function getCenterOfCubes (cubeIds) {
   if (!cubeIds.length) {
     return null
@@ -235,12 +233,18 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
   }
   const changes = { managerId: [taskList.get('manager')?.id, managerId] }
   taskList.set('manager', managerId ? await $getOrFail(Parse.User, managerId) : null)
+
+  const currentScoutIds = (taskList.get('scouts') || []).map(s => s.id)
+  if (currentScoutIds.length) {
+    changes.scoutIds = [currentScoutIds, []]
+  }
+  taskList.unset('scouts')
   const manager = managerId ? $parsify(Parse.User, managerId) : null
   taskList.set({ manager })
   const audit = { user, fn: 'task-list-update', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
-    data: taskList.get('manager'),
+    data: { manager: taskList.get('manager'), scouts: taskList.get('scouts') },
     message: 'Manager gespeichert.'
   }
 }, $adminOnly)
