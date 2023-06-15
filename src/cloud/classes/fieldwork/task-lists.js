@@ -1,4 +1,4 @@
-const { capitalize, sum, intersection } = require('lodash')
+const { capitalize, sum, intersection, isArray } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const TaskList = Parse.Object.extend('TaskList')
@@ -156,10 +156,13 @@ Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
 Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
   const today = await $today()
   for (const taskList of taskLists) {
+    taskList.set('parent', taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly'))
+    taskList.set('dueDays', moment(taskList.get('dueDate')).diff(today, 'days'))
+    if (query._include.includes('submissions')) {
+      const submissionClass = capitalize(taskList.get('type')) + 'Submission'
+      taskList.set('submissions', await $query(submissionClass).equalTo('taskList', taskList).find({ useMasterKey: true }))
+    }
     if (taskList.get('type') === 'scout') {
-      if (!taskList.get('dueDate')) {
-        taskList.set('dueDate', taskList.get('briefing')?.get('dueDate'))
-      }
       if (taskList.get('quotas')) {
         const quotaStatus = []
         const quotas = taskList.get('quotas')
@@ -175,11 +178,6 @@ Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
         taskList.set('quotaStatus', sum(Object.values(quotasCompleted)) + '/' + quota)
       }
     }
-    taskList.set('dueDays', moment(taskList.get('dueDate')).diff(today, 'days'))
-    if (query._include.includes('submissions')) {
-      const submissionClass = capitalize(taskList.get('type')) + 'Submission'
-      taskList.set('submissions', await $query(submissionClass).equalTo('taskList', taskList).find({ useMasterKey: true }))
-    }
   }
   return taskLists
 })
@@ -190,6 +188,7 @@ Parse.Cloud.beforeDelete(TaskList, async ({ object: taskList }) => {
 
 Parse.Cloud.afterDelete(TaskList, $deleteAudits)
 
+// Used in marklist store component to save manual cube changes
 // TOTRANSLATE
 Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, cubeIds }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
@@ -209,7 +208,7 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
-// TODO: Check if used
+// Used in RkFieldworkTable to display counts
 Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, objectId } } }) => {
   return $query('TaskList')
     .aggregate([
@@ -295,24 +294,6 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
   return {
     data: { quota: taskList.get('quota'), quotas: taskList.get('quotas'), counts: taskList.get('counts') },
     message: 'Anzahl gespeichert.'
-  }
-}, $fieldworkManager)
-
-// TODO: Check if used
-Parse.Cloud.define('task-list-update-due-date', async ({ params: { id: taskListId, ...params }, user }) => {
-  const taskList = await $getOrFail(TaskList, taskListId)
-  const { dueDate } = normalizeFields({ ...params, type: taskList.get('type') })
-
-  const changes = $changes(taskList, { dueDate })
-  if (!changes.dueDate) {
-    throw new Error('Keine Änderungen')
-  }
-  taskList.set({ dueDate })
-  const audit = { user, fn: 'task-list-update', data: { changes } }
-  await taskList.save(null, { useMasterKey: true, context: { audit } })
-  return {
-    data: taskList.get('dueDate'),
-    message: 'Fälligkeitsdatum gespeichert.'
   }
 }, $fieldworkManager)
 
@@ -478,6 +459,47 @@ Parse.Cloud.define('task-list-revert-complete', async ({ params: { id: taskListI
     message: 'Task list reverted'
   }
 }, $fieldworkManager)
+
+Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { fn, selection, count } }) => {
+  const query = $query(TaskList)
+  if (isArray(selection)) {
+    query.containedIn('objectId', selection)
+    // do a quick check to see if count matches
+    if (count !== await query.count({ useMasterKey: true })) {
+      throw new Error('Count mismatch')
+    }
+  } else {
+    selection.state && query.equalTo('state', $parsify('State', selection.state))
+    selection.type && query.equalTo('type', selection.type)
+    // TODO
+    // selection.start && query.equalTo('type', type)
+    selection.managerId && query.equalTo('manager', $parsify(Parse.User, selection.managerId))
+    selection.scoutId && query.equalTo('scouts', $parsify(Parse.User, selection.scoutId))
+    selection.status && query.equalTo('status', selection.status)
+  }
+
+  // how many will be ernannt?
+  const preview = {
+    statuses: {}
+  }
+  // how many will be beauftragt?
+  // how many will be retracted?
+  // how many managers will be removed?
+  // how many scouts will be removed?
+
+  function managerAppoint (taskList) {
+    if (taskList.get('status') >= 1) {
+      preview.statuses[taskList.get('status')] = (preview.statuses[taskList.get('status')] || 0) + 1
+    }
+  }
+
+  await query.eachBatch((taskLists) => {
+    for (const taskList of taskLists) {
+      managerAppoint(taskList)
+    }
+  }, { useMasterKey: true })
+  return preview
+})
 
 // async function massUpdateManager() {
 //   const query = $query('TaskList')
