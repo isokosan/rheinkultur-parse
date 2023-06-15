@@ -27,36 +27,6 @@ services:
     volumes:
         - mongodata:/data/db
         - ./db-backups:/db-backups
-  # https://github.com/UpSync-Dev/docker-compose-mongo-replica-set/blob/main/docker-compose.yml
-  # mongo1:
-  #   image: mongo
-  #   container_name: wawi-dev-mongo1
-  #   command: ["--replSet", "wawi-dev-replica-set", "--bind_ip_all", "--port", "30001"]
-  #   volumes:
-  #     - mongodata1:/data/db
-  #     - ./db-backups:/db-backups
-  #   ports:
-  #     - 30001:30001
-  #   healthcheck:
-  #     test: test $$(echo "rs.initiate({_id:'wawi-dev-replica-set',members:[{_id:0,host:\"mongo1:30001\"},{_id:1,host:\"mongo2:30002\"},{_id:2,host:\"mongo3:30003\"}]}).ok || rs.status().ok" | mongo --port 30001 --quiet) -eq 1
-  #     interval: 10s
-  #     start_period: 30s
-  # mongo2:
-  #   image: mongo
-  #   container_name: wawi-dev-mongo2
-  #   command: ["--replSet", "wawi-dev-replica-set", "--bind_ip_all", "--port", "30002"]
-  #   volumes:
-  #     - mongodata2:/data/db
-  #   ports:
-  #     - 30002:30002
-  # mongo3:
-  #   image: mongo
-  #   container_name: wawi-dev-mongo3
-  #   command: ["--replSet", "wawi-dev-replica-set", "--bind_ip_all", "--port", "30003"]
-  #   volumes:
-  #     - mongodata3:/data/db
-  #   ports:
-  #     - 30003:30003
   redis:
     image: redis
     container_name: wawi-dev-redis
@@ -74,7 +44,7 @@ services:
       - http.max_content_length=400mb
       - "ES_JAVA_OPTS=-Xms256M -Xmx256M"
     volumes:
-      - elasticsearchdata:/elasticsearch/data
+      - elasticsearchdata:/usr/share/elasticsearch/data
     # ports:
     #   - 127.0.0.1:9200:9200
     command: >
@@ -88,7 +58,7 @@ services:
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     volumes:
-      - kibanadata:/elasticsearch/kibana
+      - kibanadata:/usr/share/kibana/data
     # ports:
     #   - 127.0.0.1:5601:5601
     # networks:
@@ -107,6 +77,3 @@ volumes:
   kibanadata:
   mongodata:
   redisdata:
-  # mongodata1:
-  # mongodata2:
-  # mongodata3:

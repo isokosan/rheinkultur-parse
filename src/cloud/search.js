@@ -551,15 +551,7 @@ Parse.Cloud.define('search-fieldwork', async ({
   stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
   managerId && bool.filter.push({ term: { 'managerId.keyword': managerId } })
   scoutId && bool.filter.push({ match: { scoutIds: scoutId } })
-  if (status === 'must_appoint') {
-    bool.filter.push({ term: { status: 0 } })
-  } else if (status === 'must_assign') {
-    bool.filter.push({ terms: { status: [0, 1] } })
-  } else if (status === 'wip') {
-    bool.filter.push({ terms: { status: [2, 3] } })
-  } else if (status === 'done') {
-    bool.filter.push({ term: { status: 4 } })
-  }
+  status && bool.filter.push({ term: { status: parseFloat(status) } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
