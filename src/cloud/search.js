@@ -532,6 +532,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     pagination
   }, user, master
 }) => {
+  status = status?.split(',').filter(Boolean).map(parseFloat)
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']
@@ -549,9 +550,19 @@ Parse.Cloud.define('search-fieldwork', async ({
   }
 
   stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
-  managerId && bool.filter.push({ term: { 'managerId.keyword': managerId } })
-  scoutId && bool.filter.push({ match: { scoutIds: scoutId } })
-  status && bool.filter.push({ term: { status: parseFloat(status) } })
+
+  if (managerId) {
+    managerId === 'none' && bool.must_not.push({ exists: { field: 'managerId' } })
+    managerId === 'any' && bool.must.push({ exists: { field: 'managerId' } })
+    managerId !== 'any' && managerId !== 'none' && bool.filter.push({ term: { 'managerId.keyword': managerId } })
+  }
+
+  if (scoutId) {
+    scoutId === 'none' && bool.must_not.push({ exists: { field: 'scoutIds' } })
+    scoutId === 'any' && bool.must.push({ exists: { field: 'scoutIds' } })
+    scoutId !== 'any' && scoutId !== 'none' && bool.filter.push({ match: { 'scoutIds.keyword': scoutId } })
+  }
+  status?.length && bool.must.push({ terms: { status } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
@@ -566,7 +577,9 @@ Parse.Cloud.define('search-fieldwork', async ({
       }
     })
   } else {
-    sort.unshift({ date: { order: 'asc' } })
+    sort.unshift({ 'ort.keyword': { order: 'asc' } })
+    sort.unshift({ 'stateId.keyword': { order: 'asc' } })
+    sort.unshift({ dueDate: { order: 'asc' } })
   }
 
   const searchResponse = await client.search({
@@ -631,7 +644,7 @@ Parse.Cloud.define('search-bookings', async ({
 
   // booking
   no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
-  status ? bool.filter.push({ term: { status: parseInt(status) } }) : bool.must_not.push({ term: { status: -1 } })
+  status ? bool.filter.push({ term: { status: parseFloat(status) } }) : bool.must_not.push({ term: { status: -1 } })
   companyId && bool.must.push({ match: { companyId } })
   motive && bool.must.push({ match_phrase_prefix: { motive } })
   externalOrderNo && bool.must.push({ match_phrase_prefix: { externalOrderNo } })
@@ -697,7 +710,7 @@ Parse.Cloud.define('search-booking-requests', async ({
   no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
   companyId && bool.filter.push({ term: { 'companyId.keyword': companyId } })
   type && bool.filter.push({ term: { 'type.keyword': type } })
-  status && bool.filter.push({ term: { status: parseInt(status) } })
+  status && bool.filter.push({ term: { status: parseFloat(status) } })
 
   const searchResponse = await client.search({
     index: 'rheinkultur-booking-requests',

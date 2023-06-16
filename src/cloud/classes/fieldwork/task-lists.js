@@ -208,6 +208,23 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
+Parse.Cloud.define('scout-list-remove-booked-cubes', async ({ params: { id: taskListId }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (taskList.get('type') !== 'scout') { throw new Error('This is only for scout lists') }
+  const bookedCubeIds = await $query('Cube')
+    .containedIn('objectId', taskList.get('cubeIds'))
+    .notEqualTo('order', null)
+    .distinct('objectId', { useMasterKey: true })
+  if (!bookedCubeIds.length) { return }
+  // return the difference between the current cubeIds and the booked ones
+  const cubeIds = taskList.get('cubeIds').filter(id => !bookedCubeIds.includes(id))
+  const cubeChanges = $cubeChanges(taskList, cubeIds)
+  if (!cubeChanges) { throw new Error('Keine Änderungen') }
+  taskList.set({ cubeIds })
+  const audit = { user, fn: 'task-list-update', data: { cubeChanges, reason: 'CityCubes schon vermarktet.' } }
+  return taskList.save(null, { useMasterKey: true, context: { audit } })
+})
+
 // Used in RkFieldworkTable to display counts
 Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, objectId } } }) => {
   return $query('TaskList')
@@ -458,77 +475,68 @@ Parse.Cloud.define('task-list-revert-complete', async ({ params: { id: taskListI
   }
 }, $fieldworkManager)
 
-Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { action, selection, count, ...form } }) => {
+async function getQueryFromSelection (selection, count) {
   const query = $query(TaskList)
   if (isArray(selection)) {
     query.containedIn('objectId', selection)
-  } else {
-    selection.state && query.equalTo('state', $parsify('State', selection.state))
-    selection.type && query.equalTo('type', selection.type)
-    // TODO
-    // selection.start && query.equalTo('type', type)
-    selection.managerId && query.equalTo('manager', $parsify(Parse.User, selection.managerId))
-    selection.scoutId && query.equalTo('scouts', $parsify(Parse.User, selection.scoutId))
-    selection.status && query.equalTo('status', parseFloat(selection.status))
+    return query
   }
-  // do a quick check to see if count matches
-  if (count !== await query.count({ useMasterKey: true })) {
-    throw new Error('Count mismatch')
+  selection.state && query.equalTo('state', $parsify('State', selection.state))
+  selection.type && query.equalTo('type', selection.type)
+  // TODO
+  // selection.start && query.equalTo('type', type)
+  selection.managerId && query.equalTo('manager', $parsify(Parse.User, selection.managerId))
+  selection.scoutId && query.equalTo('scouts', $parsify(Parse.User, selection.scoutId))
+  selection.status && query.containedIn('status', selection.status.split(',').filter(Boolean).map(parseFloat))
+  const queryCount = await query.count({ useMasterKey: true })
+  if (count !== queryCount) {
+    throw new Error(`Count mismatch should ${count} !== was ${queryCount}`)
   }
+  return query
+}
 
-  const response = { statuses: {}, invalids: [], unsetManagers: 0 }
-  let previewFn
-  // how many will be beauftragt?
-  // how many will be retracted?
-  // how many managers will be removed?
-  // how many scouts will be removed?
+// mass updates
+Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { action, selection, count } }) => {
+  const query = await getQueryFromSelection(selection, count)
+  // return different previews based on action
+  const response = {
+    statuses: {},
+    managers: {},
+    scouts: {}
+  }
+  // TODO: Add no-quota and has-booked-cube checks
+  await query
+    .select('manager', 'scouts', 'status', 'statuses')
+    .eachBatch((taskLists) => {
+      for (const taskList of taskLists) {
+        response.statuses[taskList.get('status') || 0] = (response.statuses[taskList.get('status')] || 0) + 1
+        response.managers[taskList.get('manager')?.id || 'none'] = (response.managers[taskList.get('manager')?.id || 'none'] || 0) + 1
+        const scouts = taskList.get('scouts') || []
+        if (!scouts.length) {
+          response.scouts.none = (response.scouts.none || 0) + 1
+        }
+        for (const scout of scouts) {
+          response.scouts[scout.id] = (response.scouts[scout.id] || 0) + 1
+        }
+      }
+    }, { useMasterKey: true })
 
-  // appoint manager
-  if (action === 'appoint-manager') {
-    const manager = await $getOrFail(Parse.User, form.managerId)
-    previewFn = async (taskList) => {
-      try {
-        await validateAppointAssign(taskList)
-      } catch (error) {
-        response.invalids.push({ taskList, error: error.message })
-      }
-      if (taskList.get('status') >= 1) {
-        response.statuses[taskList.get('status')] = (response.statuses[taskList.get('status')] || 0) + 1
-      }
-      if (taskList.get('manager') && taskList.get('manager').id !== manager.id) {
-        response.unsetManagers++
-      }
+  if (action === 'manager') {
+    // If any list is assigned to scouts, in progress, or completed throw an error
+    if (Object.keys(response.statuses).filter(x => x > 1).length) {
+      response.error = 'You have lists that are not in an assignable state.'
     }
   }
-  await query.eachBatch(async (taskLists) => {
-    for (const taskList of taskLists) {
-      await previewFn(taskList)
-    }
-  }, { useMasterKey: true })
   return response
 }, { requireUser: true })
 
-Parse.Cloud.define('task-list-mass-update', async ({ params: { action, selection, count, ...form }, user }) => {
-  const query = $query(TaskList)
-  if (isArray(selection)) {
-    query.containedIn('objectId', selection)
-  } else {
-    selection.state && query.equalTo('state', $parsify('State', selection.state))
-    selection.type && query.equalTo('type', selection.type)
-    // TODO
-    // selection.start && query.equalTo('type', type)
-    selection.managerId && query.equalTo('manager', $parsify(Parse.User, selection.managerId))
-    selection.scoutId && query.equalTo('scouts', $parsify(Parse.User, selection.scoutId))
-    selection.status && query.equalTo('status', parseFloat(selection.status))
-  }
-  // do a quick check to see if count matches
-  if (count !== await query.count({ useMasterKey: true })) {
-    throw new Error('Count mismatch')
-  }
+Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selection, count, ...form }, user }) => {
+  const query = await getQueryFromSelection(selection, count)
 
   let runFn
   // appoint manager
-  if (action === 'appoint-manager') {
+  // TODO: remove scouts with locationcleanup in case we allow this for retract as well
+  if (action === 'manager') {
     const manager = await $getOrFail(Parse.User, form.managerId)
     runFn = async (taskList) => {
       try {
@@ -543,12 +551,49 @@ Parse.Cloud.define('task-list-mass-update', async ({ params: { action, selection
         taskList.set({ manager })
         taskList.unset('scouts')
       }
-      taskList.set({ status: 1 })
-      const audit = { user, fn: 'task-list-appoint' }
-      if ($cleanDict(changes)) {
-        audit.data = { changes }
+      if (form.setStatus !== undefined && form.setStatus !== null) {
+        changes.taskStatus = [taskList.get('status'), form.setStatus]
+        taskList.set({ status: form.setStatus })
       }
-      await taskList.save(null, { useMasterKey: true, context: { audit } })
+      const audit = { user, fn: 'task-list-update' }
+      if (!$cleanDict(changes)) { return }
+      audit.data = { changes }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+  }
+  // retract (appoint / assign)
+  if (action === 'retract') {
+    if (form.setStatus === 0) {
+      runFn = async (taskList) => {
+        // Validate if the user is a fieldwork manager before retracting appoint
+        if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
+        const changes = { taskStatus: [taskList.get('status'), 0] }
+        taskList.set({ status: 0 })
+        if (form.unsetManager && taskList.get('manager')) {
+          changes.managerId = [taskList.get('manager').id, null]
+          taskList.unset('manager')
+          if ((taskList.get('scouts') || []).length) {
+            changes.scoutIds = [taskList.get('scouts').map(x => x.id), []]
+            taskList.unset('scouts')
+          }
+        }
+        const audit = { user, fn: 'task-list-update', data: { changes } }
+        return taskList.save(null, { useMasterKey: true, context: { audit } })
+      }
+    }
+    if (form.setStatus === 1) {
+      runFn = async (taskList) => {
+        // Validate if the user is a fieldwork manager or the manager of the list before retracting assing
+        await validateScoutManagerOrFieldworkManager(taskList, user)
+        const changes = { taskStatus: [taskList.get('status'), 1] }
+        taskList.set({ status: 1 })
+        if (form.unsetScouts && (taskList.get('scouts') || []).length) {
+          changes.scoutIds = [taskList.get('scouts').map(x => x.id), []]
+          taskList.unset('scouts')
+        }
+        const audit = { user, fn: 'task-list-update', data: { changes } }
+        return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+      }
     }
   }
   let i = 0
@@ -560,28 +605,3 @@ Parse.Cloud.define('task-list-mass-update', async ({ params: { action, selection
   }, { useMasterKey: true })
   return `${i} items updated.`
 }, { requireUser: true })
-
-// async function massUpdateManager() {
-//   const query = $query('TaskList')
-//     .equalTo('state', $parsify('State', 'BY'))
-//     .equalTo('status', 0)
-//     .equalTo('manager', null)
-//   const taskListIds = await query.distinct('objectId', { useMasterKey: true })
-//   for (const id of taskListIds) {
-//     consola.info('manager set')
-//   }
-// }
-// massUpdateManager()
-
-// async function massAppoint() {
-//   const query = $query('TaskList')
-//     .equalTo('status', 0)
-//     .notEqualTo('manager', null)
-//   const taskListIds = await query.distinct('objectId', { useMasterKey: true })
-//   for (const id of taskListIds) {
-//     await Parse.Cloud.run('task-list-appoint', { id }, { useMasterKey: true })
-//       .then(() => consola.success('appointed'))
-//       .catch(consola.error)
-//   }
-// }
-// massAppoint()
