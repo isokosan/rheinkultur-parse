@@ -94,14 +94,14 @@ async function checkIfCubesAreAvailable (cubeIds, date, selfNo) {
       .equalTo('cubeIds', cubeId)
       .greaterThanOrEqualTo('status', 3)
       .greaterThanOrEqualTo('endsAt', date) // didn't yet end
+      .notEqualTo(`earlyCancellations.${cubeId}`, true) // wasn't taken completely out of the contract
       .find({ useMasterKey: true })
     for (const contract of contracts) {
       if (contract && contract.get('no') !== selfNo) {
         const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = contract.toJSON()
-        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
+        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
           consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
           throw new Error(`CityCube ${cubeId} istist zu diesem Startdatum bereits gebucht. (${contract.get('no')})`)
-          // throw new Error(`CityCube ${cubeId} ist bereits in Vertrag ${contract.get('no')} gebucht.`)
         }
       }
     }
