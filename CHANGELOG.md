@@ -1,3 +1,10 @@
+## [1.57.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.57.0...1.57.1) (2023-06-16)
+
+
+### Bug Fixes
+
+* booking early cancelation true checkIfAvailable bug ([0d6c39f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0d6c39f66baa056bf637e93a5874009bac3dd0c1))
+
 # [1.57.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.56.5...1.57.0) (2023-06-14)
 
 
