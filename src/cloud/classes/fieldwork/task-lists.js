@@ -1,4 +1,4 @@
-const { capitalize, sum, intersection, isArray } = require('lodash')
+const { capitalize, sum, intersection, isArray, difference } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const TaskList = Parse.Object.extend('TaskList')
@@ -537,7 +537,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
   // appoint manager
   // TODO: remove scouts with locationcleanup in case we allow this for retract as well
   if (action === 'manager') {
-    const manager = await $getOrFail(Parse.User, form.managerId)
+    const manager = form.managerId ? $parsify(Parse.User, form.managerId) : null
     runFn = async (taskList) => {
       try {
         await validateAppointAssign(taskList)
@@ -546,8 +546,16 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
         return
       }
       const changes = {}
-      if (manager.id !== taskList.get('manager')?.id) {
-        changes.managerId = [taskList.get('manager')?.id, manager.id]
+      if (form.unsetManager && taskList.get('manager')) {
+        changes.managerId = [taskList.get('manager').id, null]
+        taskList.unset('manager')
+        if ((taskList.get('scouts') || []).length) {
+          changes.scoutIds = [taskList.get('scouts').map(x => x.id), []]
+          taskList.unset('scouts')
+        }
+      }
+      if (!form.unsetManager && form.managerId !== taskList.get('manager')?.id) {
+        changes.managerId = [taskList.get('manager')?.id, form.managerId]
         taskList.set({ manager })
         taskList.unset('scouts')
       }
@@ -555,12 +563,48 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
         changes.taskStatus = [taskList.get('status'), form.setStatus]
         taskList.set({ status: form.setStatus })
       }
-      const audit = { user, fn: 'task-list-update' }
       if (!$cleanDict(changes)) { return }
-      audit.data = { changes }
+      const audit = { user, fn: 'task-list-update', data: { changes } }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
+
+  if (action === 'scouts') {
+    const scouts = form.scoutIds ? form.scoutIds.map(id => $parsify(Parse.User, id)) : null
+    runFn = async (taskList) => {
+      await validateScoutManagerOrFieldworkManager(taskList, user)
+      if (taskList.get('status') > 1) {
+        // TOTRANSLATE
+        throw new Error('You cannot change scouts in an assigned task list. Please first retract.')
+      }
+      const currentScoutIds = (taskList.get('scouts') || []).map(s => s.id)
+
+      const changes = {}
+      if (form.unsetScouts && currentScoutIds.length) {
+        changes.scoutIds = [currentScoutIds, []]
+        taskList.unset('scouts')
+      }
+      if (!form.unsetScouts && (difference(form.scoutIds, currentScoutIds).length || difference(currentScoutIds, form.scoutIds).length)) {
+        changes.scoutIds = [currentScoutIds, form.scoutIds]
+        taskList.set({ scouts })
+      }
+      let notifyScouts
+      if (taskList.get('status') > 1) {
+        notifyScouts = form.scoutIds.filter(scoutId => !currentScoutIds.includes(scoutId))
+      }
+      if (form.setStatus !== undefined && form.setStatus !== null) {
+        changes.taskStatus = [taskList.get('status'), form.setStatus]
+        taskList.set({ status: form.setStatus })
+        if (form.setStatus === 2) {
+          notifyScouts = true
+        }
+      }
+      if (!$cleanDict(changes)) { return }
+      const audit = { user, fn: 'task-list-update', data: { changes } }
+      return taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts } })
+    }
+  }
+
   // retract (appoint / assign)
   if (action === 'retract') {
     if (form.setStatus === 0) {
