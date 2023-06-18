@@ -1,3 +1,10 @@
+## [1.58.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.1...1.58.2) (2023-06-18)
+
+
+### Bug Fixes
+
+* change context for deployment ([a70fab0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a70fab05128b15ccc5bd5fd8f38ce64441d80a51))
+
 ## [1.58.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.0...1.58.1) (2023-06-18)
 
 
