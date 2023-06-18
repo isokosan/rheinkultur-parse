@@ -148,13 +148,13 @@ jobs:
           mkdir $HOME/.kube
           echo "$KUBECONFIG" > $HOME/.kube/config
         env:
-          KUBECONFIG: ${{ secrets.KUBECONFIG_AC0 }}
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@901a10e89ea615cf61f57ac05cecdf23e7de06d8 # v3
 
       - name: Use context
-        run: kubectl config use-context ac0
+        run: kubectl config use-context rk0
 
       - name: Ensure namespace exits
         run: kubectl get namespace | grep -q "^${{ env.NAMESPACE }}" || kubectl create namespace ${{ env.NAMESPACE }}
@@ -185,13 +185,13 @@ jobs:
           mkdir $HOME/.kube
           echo "$KUBECONFIG" > $HOME/.kube/config
         env:
-          KUBECONFIG: ${{ secrets.KUBECONFIG_AC0 }}
+          KUBECONFIG: ${{ secrets.KUBECONFIG }}
 
       - name: Install kubectl
         uses: azure/setup-kubectl@901a10e89ea615cf61f57ac05cecdf23e7de06d8 # v3
 
       - name: Use context
-        run: kubectl config use-context ac0
+        run: kubectl config use-context rk0
 
       - name: Install Helm
         uses: azure/setup-helm@5119fcb9089d432beecbf79bb2c7915207344b78 # v3
