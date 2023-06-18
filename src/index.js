@@ -7,13 +7,17 @@ const express = require('express')
 const { default: ParseServer } = require('parse-server')
 const S3Adapter = require('@parse/s3-files-adapter')
 const { awaitConnection, pubSubAdapter } = require('@/services/redis')
+const expressLogger = require('./logger')
+const loggerAdapter = require('@/services/winston')
 
 function replaceLocalIp (url) {
   if (!url.includes('0.0.0.0')) {
     return url
   }
-  const localIp = Object.values(require('os').networkInterfaces()).flat()
-    .find(network => network?.address.startsWith('192.168.'))?.address || '0.0.0.0'
+  const localIp =
+    Object.values(require('os').networkInterfaces())
+      .flat()
+      .find((network) => network?.address.startsWith('192.168.'))?.address || '0.0.0.0'
   return url.replace('0.0.0.0', localIp)
 }
 
@@ -39,6 +43,7 @@ const initApp = async () => {
     cloud: path.join(__dirname, '/cloud/main.js'),
     maxUploadSize: '100mb',
     sessionLength: 60 * 60 * 24 * 90, // 90 days
+    loggerAdapter,
     emailAdapter: {
       module: 'parse-smtp-template',
       options: {
@@ -82,12 +87,7 @@ const initApp = async () => {
     verbose: false,
     schema: require('./schema'),
     liveQuery: {
-      classNames: [
-        'Audit',
-        'Comment',
-        'TaskList',
-        'Notification'
-      ],
+      classNames: ['Audit', 'Comment', 'TaskList', 'Notification'],
       pubSubAdapter
     },
     filesAdapter: process.env.AWS_S3_BUCKET
@@ -99,6 +99,8 @@ const initApp = async () => {
   })
 
   const app = express()
+  app.disable('x-powered-by')
+  app.use(expressLogger)
   app.use('/parse', parseServer.app)
   app.use('/exports', require('./exports'))
   app.use('/webhooks', require('./webhooks'))
@@ -106,18 +108,21 @@ const initApp = async () => {
 
   if (DEVELOPMENT) {
     const Dashboard = require('parse-dashboard')
-    const apps = [{
-      serverURL,
-      appId: process.env.APP_ID,
-      masterKey: process.env.MASTER_KEY,
-      appName: process.env.APP_NAME + ' (dev)'
-    }]
-    process.env.PRODUCTION_SERVER_URL && apps.push({
-      serverURL: process.env.PRODUCTION_SERVER_URL,
-      appId: process.env.APP_ID,
-      masterKey: process.env.MASTER_KEY,
-      appName: process.env.APP_NAME + ' (prod)'
-    })
+    const apps = [
+      {
+        serverURL,
+        appId: process.env.APP_ID,
+        masterKey: process.env.MASTER_KEY,
+        appName: process.env.APP_NAME + ' (dev)'
+      }
+    ]
+    process.env.PRODUCTION_SERVER_URL &&
+      apps.push({
+        serverURL: process.env.PRODUCTION_SERVER_URL,
+        appId: process.env.APP_ID,
+        masterKey: process.env.MASTER_KEY,
+        appName: process.env.APP_NAME + ' (prod)'
+      })
     app.use('/dashboard', new Dashboard({ apps }, { dev: true }))
   }
 
@@ -127,7 +132,8 @@ const initApp = async () => {
     ParseServer.createLiveQueryServer(httpServer, { pubSubAdapter })
     consola.success(`${process.env.APP_NAME} Parse LiveQueryServer running on ws://localhost:${port}`)
     DEVELOPMENT ? consola.warn('Running in DEVELOPMENT mode') : consola.success('Running in PRODUCTION mode')
-    DEVELOPMENT && consola.success(`${process.env.APP_NAME} Parse Dashboard is running on http://localhost:${port}/dashboard`)
+    DEVELOPMENT &&
+      consola.success(`${process.env.APP_NAME} Parse Dashboard is running on http://localhost:${port}/dashboard`)
   })
 }
 initApp()
