@@ -1,4 +1,5 @@
-const LogAdapter = require('./LogAdapter')
-const winstonLogger = require('./parseLogger')
+const Adapter = require('./adapter')
+const logger = require('./logger')
 
-module.exports = new LogAdapter({ logger: winstonLogger })
+module.exports = logger
+module.exports.adapter = new Adapter({ logger })

@@ -30,7 +30,6 @@
     "@googlemaps/google-maps-services-js": "3.3.27",
     "@parse/s3-files-adapter": "2.2.0",
     "bull": "4.10.4",
-    "consola": "3.1.0",
     "csvtojson": "2.0.10",
     "dotenv": "16.0.3",
     "exceljs": "4.3.0",

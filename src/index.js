@@ -8,7 +8,7 @@ const { default: ParseServer } = require('parse-server')
 const S3Adapter = require('@parse/s3-files-adapter')
 const { awaitConnection, pubSubAdapter } = require('@/services/redis')
 const expressLogger = require('./logger')
-const loggerAdapter = require('@/services/winston')
+const { adapter: loggerAdapter } = require('@/services/winston')
 
 function replaceLocalIp (url) {
   if (!url.includes('0.0.0.0')) {

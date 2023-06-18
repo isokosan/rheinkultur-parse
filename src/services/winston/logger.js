@@ -1,8 +1,32 @@
-const { createLogger, format, transports } = require('winston')
+const { createLogger, format, transports, addColors } = require('winston')
+
+const levels = {
+  error: 0,
+  warn: 1,
+  success: 2,
+  info: 3,
+  http: 4,
+  verbose: 5,
+  debug: 6,
+  silly: 7
+}
+
+const colors = {
+  error: 'red',
+  warn: 'orange',
+  success: 'green',
+  info: 'blue',
+  http: 'magenta',
+  verbose: 'cyan',
+  debug: 'yellow',
+  silly: 'white'
+}
+
 function getLogger () {
   if (DEVELOPMENT) {
     return createLogger({
       level: process.env.LOG_LEVEL || 'info',
+      levels,
       format: format.combine(
         format.errors({ stack: true }),
         format.colorize({ all: true }),
@@ -21,9 +45,12 @@ function getLogger () {
   }
   return createLogger({
     level: process.env.LOG_LEVEL || 'info',
+    levels,
     format: format.combine(format.errors({ stack: true }), format.timestamp(), format.json()),
     transports: [new transports.Console(), new transports.File({ filename: 'logs/combined.log' })]
   })
 }
 
-module.exports = getLogger()
+const logger = getLogger()
+addColors(colors)
+module.exports = logger
