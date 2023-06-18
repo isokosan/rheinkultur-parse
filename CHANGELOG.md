@@ -1,3 +1,10 @@
+## [1.58.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.0...1.58.1) (2023-06-18)
+
+
+### Bug Fixes
+
+* move job hours to 3-6 am window ([05cc15c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/05cc15cb392489833845d278cae4a171e232b809))
+
 # [1.58.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.57.1...1.58.0) (2023-06-18)
 
 
