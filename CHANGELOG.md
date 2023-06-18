@@ -1,3 +1,10 @@
+# [1.58.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.57.1...1.58.0) (2023-06-18)
+
+
+### Features
+
+* add monitoring for prometheus and loki ([ee0c805](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ee0c8056f0fa267cb82ffac10fb53c17d7727bb4))
+
 ## [1.57.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.57.0...1.57.1) (2023-06-16)
 
 
