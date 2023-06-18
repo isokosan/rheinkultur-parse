@@ -4,78 +4,73 @@ const createQueue = require('@/services/bull')
 const sendMail = require('@/services/email')
 const tz = 'Europe/Berlin'
 
+// IMPORTANT: Pods might be killed between 10:00PM and 03:00AM. Make sure jobs run between 03-06 AM
+
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
   free_early_canceled_cubes: {
     name: 'Frühzeitig stornierte CityCubes sync.',
     description: 'Frees city cubes that have been early canceled and the date is now past',
-    timeoutMinutes: 30,
-    // cron: '0 1 * * *', // nightly at 01:00
-    notificationDuration: 48
+    timeoutMinutes: 30
   },
   end_extend: {
     name: 'Verträge/Buchungen beenden/verlängern (außer Kinetic).',
     description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
     timeoutMinutes: 120
-    // cron: '0 0 * * *' // nightly
   },
   generate_disassembly_tasks: {
     name: 'Demontage synchronizieren.',
     timeoutMinutes: 60
-    // cron: '0 0 * * *', // nightly
-    // notificationDuration: 48
   },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
     timeoutMinutes: 120
-    // cron: '0 * * * *' // hourly
   },
   send_issued_invoice_emails: {
     name: 'Versenden von E-Mails mit ausgestellten Rechnungen.',
     description: 'Sends emails with issued invoices, that have an email but none were sent. (Past 3 days)',
     timeoutMinutes: 120
-    // cron: '0 * * * *' // hourly
   },
   reindex_cubes: {
     name: 'Suchindex von CityCubes aktualisieren',
     timeoutMinutes: 120,
-    cron: '0 0 * * *', // nightly at midnight
+    cron: '0 3 * * *', // at 03:00 AM
     notificationDuration: 48
   },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
     timeoutMinutes: 120,
-    cron: '0 1 * * *', // nightly at 1 am
+    cron: '45 3 * * *', // nightly at 03:45
     notificationDuration: 48
   },
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
     timeoutMinutes: 15,
-    cron: '0 1 * * *', // nightly at 1 am
+    cron: '0 4 * * *', // nightly at 04:00
     notificationDuration: 48
   },
   reindex_fieldwork: {
     name: 'Suchindex von Feldarbeit aktualisieren',
-    timeoutMinutes: 60,
-    cron: '0 1 * * *', // nightly at 1 am
+    timeoutMinutes: 30,
+    cron: '0 4 * * *', // nightly at 04:00
     notificationDuration: 48
   },
   reindex_bookings: {
     name: 'Suchindex von Buchungen aktualisieren',
-    timeoutMinutes: 60,
-    cron: '0 1 * * *', // nightly at 1 am
+    timeoutMinutes: 30,
+    cron: '0 4 * * *', // nightly at 04:00
     notificationDuration: 48
   },
   reindex_booking_requests: {
     name: 'Suchindex von Buchungsanfragen aktualisieren',
-    timeoutMinutes: 60,
-    cron: '0 1 * * *', // nightly at 1 am
+    timeoutMinutes: 30,
+    cron: '0 4 * * *', // nightly at 04:00
     notificationDuration: 48
   },
   recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
-    timeoutMinutes: 15,
-    // cron: '15 2 * * *', // nightly at 2:15 am
+    timeoutMinutes: 30,
+    cron: '0 5 * * *', // nightly at 05:00,
     notificationDuration: 48
   },
   recalculate_future_contract_invoices: {
