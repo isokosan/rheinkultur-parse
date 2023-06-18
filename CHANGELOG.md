@@ -1,3 +1,10 @@
+# [1.59.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.3...1.59.0) (2023-06-18)
+
+
+### Features
+
+* use winston over consola ([760dde8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/760dde8d5144a54e35517154a8536624226db9c5))
+
 ## [1.58.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.2...1.58.3) (2023-06-18)
 
 
