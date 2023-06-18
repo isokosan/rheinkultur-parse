@@ -1,3 +1,10 @@
+## [1.58.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.2...1.58.3) (2023-06-18)
+
+
+### Bug Fixes
+
+* remove affinity ([851e20a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/851e20a6005a932cac2084f3310435e48b37663c))
+
 ## [1.58.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.1...1.58.2) (2023-06-18)
 
 
