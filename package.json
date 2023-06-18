@@ -9,7 +9,7 @@
     "url": "https://github.com/mammutmedia/rheinkultur-wawi-parse.git"
   },
   "engines": {
-    "node": ">= 14.20.1 < 19"
+    "node": ">= 18 < 19"
   },
   "os": [
     "darwin",
