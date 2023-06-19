@@ -1,3 +1,10 @@
+## [1.59.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.59.0...1.59.1) (2023-06-19)
+
+
+### Bug Fixes
+
+* remove seenAt from notifications in favor of using only readAt ([697b80d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/697b80de0299291afcc9a05c179ebc5973fe4a96))
+
 # [1.59.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.58.3...1.59.0) (2023-06-18)
 
 
