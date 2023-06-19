@@ -789,29 +789,29 @@ const indexCube = async (cube, before) => {
   // const city = cube.get('ort')
   // if (beforeCity !== city) {
   //   if (beforeCity && !await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', beforeCity).first({ useMasterKey: true })) {
-  //     await client.delete({ index: 'rheinkultur-cities-autocomplete', id: beforeCity }).then(consola.success).catch(consola.error)
+  //     await client.delete({ index: 'rheinkultur-cities-autocomplete', id: beforeCity }).catch(consola.error)
   //   }
-  //   await client.index({ index: 'rheinkultur-cities-autocomplete', id: city, body: { city } }).then(consola.success)
+  //   await client.index({ index: 'rheinkultur-cities-autocomplete', id: city, body: { city } })
   // }
   const beforeStreet = before?.str
   const street = cube.get('str')
   if (beforeStreet !== street) {
     if (beforeStreet && !await $query('Cube').notEqualTo('objectId', cube.id).equalTo('str', beforeStreet).first({ useMasterKey: true })) {
-      await client.delete({ index: 'rheinkultur-streets-autocomplete', id: beforeStreet }).then(consola.success).catch(consola.error)
+      await client.delete({ index: 'rheinkultur-streets-autocomplete', id: beforeStreet }).catch(consola.error)
     }
     await client.index({ index: 'rheinkultur-streets-autocomplete', id: street, body: { street } })
   }
 }
 
 const unindexCube = async (cube) => {
-  await client.delete({ index: 'rheinkultur-cubes', id: cube.id }).then(consola.success).catch(consola.error)
+  await client.delete({ index: 'rheinkultur-cubes', id: cube.id }).catch(consola.error)
   // const city = cube.get('ort')
   // if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('ort', city).first({ useMasterKey: true })) {
-  //   await client.delete({ index: 'rheinkultur-cities-autocomplete', id: city }).then(consola.success).catch(consola.error)
+  //   await client.delete({ index: 'rheinkultur-cities-autocomplete', id: city }).catch(consola.error)
   // }
   const street = cube.get('str')
   if (!await $query('Cube').notEqualTo('objectId', cube.id).equalTo('str', street).first({ useMasterKey: true })) {
-    await client.delete({ index: 'rheinkultur-streets-autocomplete', id: street }).then(consola.success).catch(consola.error)
+    await client.delete({ index: 'rheinkultur-streets-autocomplete', id: street }).catch(consola.error)
   }
 }
 
@@ -828,7 +828,7 @@ const indexBooking = async (booking) => {
 }
 
 const unindexBooking = (booking) => {
-  return client.delete({ index: 'rheinkultur-bookings', id: booking.id }).then(consola.success).catch(consola.error)
+  return client.delete({ index: 'rheinkultur-bookings', id: booking.id }).catch(consola.error)
 }
 
 const unindexBookingRequests = (booking) => {
@@ -857,7 +857,7 @@ const indexTaskList = (taskList) => {
 }
 
 const unindexTaskList = (taskList) => {
-  return client.delete({ index: 'rheinkultur-fieldwork', id: taskList.id }).then(consola.success).catch(consola.error)
+  return client.delete({ index: 'rheinkultur-fieldwork', id: taskList.id }).catch(consola.error)
 }
 
 const purgeIndexes = async function () {
