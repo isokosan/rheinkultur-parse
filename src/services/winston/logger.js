@@ -75,7 +75,6 @@ const expressLogger = expressWinston.logger({
     if (response.statusCode >= 500) {
       return 'error'
     }
-    return
   }
 })
 
