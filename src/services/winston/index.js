@@ -1,5 +1,6 @@
+const { logger, expressLogger } = require('./logger')
 const Adapter = require('./adapter')
-const logger = require('./logger')
 
 module.exports = logger
+module.exports.expressLogger = expressLogger
 module.exports.adapter = new Adapter({ logger })

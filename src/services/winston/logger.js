@@ -1,4 +1,5 @@
 const { createLogger, format, transports, addColors } = require('winston')
+const expressWinston = require('express-winston')
 
 const levels = {
   error: 0,
@@ -52,5 +53,34 @@ function getLogger () {
 }
 
 const logger = getLogger()
+const expressLogger = expressWinston.logger({
+  transports: [new transports.Console({ json: true, colorize: true })],
+  levels,
+  format: format.combine(format.timestamp(), format.json()),
+  ignoreRoute: function (request, response) {
+    if (request.url.startsWith('/healthz') || request.url.startsWith('/metrics')) {
+      return true
+    }
+
+    return false
+  },
+  statusLevels: false,
+  level: function (request, response) {
+    if (response.statusCode >= 100) {
+      return 'http'
+    }
+    if (response.statusCode >= 400) {
+      return 'warn'
+    }
+    if (response.statusCode >= 500) {
+      return 'error'
+    }
+    return
+  }
+})
+
 addColors(colors)
-module.exports = logger
+module.exports = {
+  logger,
+  expressLogger
+}

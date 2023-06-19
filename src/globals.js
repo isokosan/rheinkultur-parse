@@ -1,6 +1,6 @@
 global.BASE_DIR = __dirname
 global.DEVELOPMENT = process.env.NODE_ENV === 'development'
-global.consola = require('@/services/winston/logger')
+global.consola = require('@/services/winston/logger').logger
 global.moment = require('moment')
 moment.locale('de')
 const { difference, isEqual } = require('lodash')
