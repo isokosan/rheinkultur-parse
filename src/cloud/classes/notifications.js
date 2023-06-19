@@ -58,10 +58,6 @@ Parse.Cloud.beforeSubscribe(Notification, async ({ query, user, master }) => {
 })
 
 Parse.Cloud.afterFind(Notification, async ({ objects: notifications, user }) => {
-  const see = user && notifications
-    .filter(notification => !notification.get('seenAt') && notification.get('user').id === user.id)
-    .map(notification => notification.set('seenAt', new Date()))
-  see?.length && await Parse.Object.saveAll(see, { useMasterKey: true })
   for (const notification of notifications) {
     notification.set('message', resolveMessage(notification))
     notification.set('url', `${process.env.WEBAPP_URL}/n/${notification.id}`)
@@ -74,11 +70,6 @@ Parse.Cloud.afterLiveQueryEvent(Notification, async ({ object: notification, eve
     notification.set('url', `${process.env.WEBAPP_URL}/n/${notification.id}`)
   }
 })
-
-Parse.Cloud.define('notification-see', async ({ params: { ids }, user }) => {
-  const notifications = await $query(Notification).containedIn('objectId', ids).equalTo('seenAt', null).find({ sessionToken: user.getSessionToken() })
-  return Parse.Object.saveAll(notifications.map(notification => notification.set('seenAt', new Date())), { useMasterKey: true })
-}, { requireUser: true })
 
 Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
   const notification = await $query(Notification).get(id, { sessionToken: user.getSessionToken() })
@@ -93,7 +84,7 @@ const notify = async ({ user, identifier, data }) => {
   const notification = new Notification({ user, identifier, data })
   const related = await resolveRelated(notification)
   if (related) {
-    return related.set({ readAt: null, seenAt: null }).save(null, { useMasterKey: true })
+    return related.set({ readAt: null }).save(null, { useMasterKey: true })
   }
   return notification.save(null, { useMasterKey: true })
 }
