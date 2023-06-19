@@ -347,7 +347,8 @@ async function validateAppointAssign (taskList) {
   // reject booked cubes
   if (taskList.get('type') === 'scout') {
     for (const cube of cubes) {
-      if (cube.get('order')) { throw new Error('Cannot finalize a scout list with booked cubes!') }
+      // TOTRANSLATE
+      if (cube.get('order')) { throw new Error('List has booked cubes!') }
     }
   }
 }
@@ -355,9 +356,11 @@ async function validateAppointAssign (taskList) {
 Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status')) {
+    // TOTRANSLATE
     throw new Error('Only draft Abfahrtsliste can be appointed.')
   }
   if (!taskList.get('manager')) {
+    // TOTRANSLATE
     throw new Error('Need a manager to appoint to')
   }
   await validateAppointAssign(taskList)
@@ -375,6 +378,7 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
   await validateScoutManagerOrFieldworkManager(taskList, user)
 
   if (!taskList.get('manager') || taskList.get('status') !== 1) {
+    // TOTRANSLATE
     throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
   }
   if (!(taskList.get('scouts') || []).length) {
@@ -492,8 +496,24 @@ async function getQueryFromSelection (selection, count) {
   selection.type && query.equalTo('type', selection.type)
   // TODO
   // selection.start && query.equalTo('type', type)
-  selection.managerId && query.equalTo('manager', $parsify(Parse.User, selection.managerId))
-  selection.scoutId && query.equalTo('scouts', $parsify(Parse.User, selection.scoutId))
+  if (selection.managerId) {
+    if (selection.managerId === 'none') {
+      query.equalTo('manager', null)
+    } else if (selection.managerId === 'any') {
+      query.notEqualTo('manager', null)
+    } else {
+      query.equalTo('manager', $parsify(Parse.User, selection.managerId))
+    }
+  }
+  if (selection.scoutId) {
+    if (selection.scoutId === 'none') {
+      query.equalTo('scouts', null)
+    } else if (selection.scoutId === 'any') {
+      query.notEqualTo('scouts', null)
+    } else {
+      query.equalTo('scouts', $parsify(Parse.User, selection.scoutId))
+    }
+  }
   selection.status && query.containedIn('status', selection.status.split(',').filter(Boolean).map(parseFloat))
   const queryCount = await query.count({ useMasterKey: true })
   if (count !== queryCount) {
@@ -509,11 +529,12 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
   const response = {
     statuses: {},
     managers: {},
-    scouts: {}
+    scouts: {},
+    quotasIncomplete: 0
   }
   // TODO: Add no-quota and has-booked-cube checks
   await query
-    .select('manager', 'scouts', 'status', 'statuses')
+    .select('type', 'manager', 'scouts', 'status', 'statuses', 'quota', 'quotas')
     .eachBatch((taskLists) => {
       for (const taskList of taskLists) {
         response.statuses[taskList.get('status') || 0] = (response.statuses[taskList.get('status')] || 0) + 1
@@ -524,6 +545,9 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
         }
         for (const scout of scouts) {
           response.scouts[scout.id] = (response.scouts[scout.id] || 0) + 1
+        }
+        if (taskList.get('type') === 'scout' && !taskList.get('quotas') && !taskList.get('quota')) {
+          response.quotasIncomplete++
         }
       }
     }, { useMasterKey: true })
@@ -539,12 +563,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
   if (action === 'manager') {
     const manager = form.managerId ? $parsify(Parse.User, form.managerId) : null
     runFn = async (taskList) => {
-      try {
-        await validateAppointAssign(taskList)
-      } catch (error) {
-        consola.error(error)
-        return
-      }
+      await validateAppointAssign(taskList)
       const changes = {}
       if (form.unsetManager && taskList.get('manager')) {
         changes.managerId = [taskList.get('manager').id, null]
@@ -559,7 +578,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
         taskList.set({ manager })
         taskList.unset('scouts')
       }
-      if (form.setStatus !== undefined && form.setStatus !== null) {
+      if (form.setStatus !== undefined && form.setStatus !== null && taskList.get('status') !== form.setStatus) {
         changes.taskStatus = [taskList.get('status'), form.setStatus]
         taskList.set({ status: form.setStatus })
       }
@@ -592,7 +611,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       if (taskList.get('status') > 1) {
         notifyScouts = form.scoutIds.filter(scoutId => !currentScoutIds.includes(scoutId))
       }
-      if (form.setStatus !== undefined && form.setStatus !== null) {
+      if (form.setStatus !== undefined && form.setStatus !== null && taskList.get('status') !== form.setStatus) {
         changes.taskStatus = [taskList.get('status'), form.setStatus]
         taskList.set({ status: form.setStatus })
         if (form.setStatus === 2) {
@@ -605,12 +624,14 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
     }
   }
 
-  // retract (appoint / assign)
   if (action === 'retract-appoint') {
     runFn = async (taskList) => {
       // Validate if the user is a fieldwork manager before retracting appoint
       if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
-      const changes = { taskStatus: [taskList.get('status'), 0] }
+      const changes = {}
+      if (taskList.get('status') !== 0) {
+        changes.taskStatus = [taskList.get('status'), 0]
+      }
       taskList.set({ status: 0 })
       if (form.unsetManager && taskList.get('manager')) {
         changes.managerId = [taskList.get('manager').id, null]
@@ -620,6 +641,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
           taskList.unset('scouts')
         }
       }
+      if (!$cleanDict(changes)) { return }
       const audit = { user, fn: 'task-list-update', data: { changes } }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
@@ -628,12 +650,16 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
     runFn = async (taskList) => {
       // Validate if the user is a fieldwork manager or the manager of the list before retracting assign
       await validateScoutManagerOrFieldworkManager(taskList, user)
-      const changes = { taskStatus: [taskList.get('status'), 1] }
+      const changes = {}
+      if (taskList.get('status') !== 1) {
+        changes.taskStatus = [taskList.get('status'), 1]
+      }
       taskList.set({ status: 1 })
       if (form.unsetScouts && (taskList.get('scouts') || []).length) {
         changes.scoutIds = [taskList.get('scouts').map(x => x.id), []]
         taskList.unset('scouts')
       }
+      if (!$cleanDict(changes)) { return }
       const audit = { user, fn: 'task-list-update', data: { changes } }
       return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
     }
@@ -641,28 +667,33 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
   if (action === 'complete') {
     runFn = async (taskList) => {
       if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
+      if (taskList.get('status') === 4) { return }
       taskList.set({ status: 4 })
       const audit = { user, fn: 'task-list-complete' }
       return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
     }
   }
-
   if (action === 'retract-complete') {
     runFn = async (taskList) => {
       // Validate if the user is a fieldwork manager or the manager of the list before retracting assign
       await validateScoutManagerOrFieldworkManager(taskList, user)
+      if (taskList.get('status') === 0) { return }
       taskList.set({ status: 0 })
       const audit = { user, fn: 'task-list-retract-complete' }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
 
-  let i = 0
+  let updated = 0
+  const errors = {}
   await query.eachBatch(async (taskLists) => {
     for (const taskList of taskLists) {
-      await runFn(taskList)
-      i++
+      try {
+        Boolean(await runFn(taskList)) && updated++
+      } catch (error) {
+        errors[error.message] = (errors[error.message] || 0) + 1
+      }
     }
   }, { useMasterKey: true })
-  return `${i} items updated.`
+  return { updated, errors }
 }, { requireUser: true })
