@@ -121,7 +121,7 @@ async function upsertTaskList (attrs) {
 }
 
 async function processOrder (className, objectId) {
-  const periodStart = '2023-04-01'
+  const periodStart = '2023-06-01'
   const periodEnd = moment(await $today()).endOf('month').add(2, 'months').format('YYYY-MM-DD')
   const order = await $getOrFail(className, objectId)
 
@@ -171,7 +171,11 @@ async function processOrder (className, objectId) {
       continue
     }
     // accumulate all cubes that have to be disassembled within the period, dividing into dates
-    const uniqueKey = [cubeLocations[cubeId].ort, cubeLocations[cubeId].stateId, disassemblyStartDate.format('YYYY-MM-DD')].join('_')
+    const uniqueKey = [
+      cubeLocations[cubeId].ort,
+      cubeLocations[cubeId].stateId,
+      disassemblyStartDate.format('YYYY-MM-DD')
+    ].join('_')
     if (!(uniqueKey in keys)) {
       keys[uniqueKey] = []
     }

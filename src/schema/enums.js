@@ -121,7 +121,6 @@ module.exports.TASK_LIST_STATUSES = {
   2: 'Beauftragt',
   3: 'In Bearbeitung',
   4: 'Erledigt'
-  // 5: 'Archiviert'
 }
 
 // Briefing, Control, Disassembly
@@ -130,6 +129,5 @@ module.exports.FIELDWORK_STATUSES = {
   0: 'Entwurf',
   1: 'Geplant',
   2: 'In Bearbeitung',
-  3: 'Erledigt',
-  4: 'Archiviert'
+  3: 'Erledigt'
 }
