@@ -33,19 +33,19 @@ const updateJobs = {
   },
   reindex_cubes: {
     name: 'Suchindex von CityCubes aktualisieren',
-    timeoutMinutes: 120,
+    timeoutMinutes: 30,
     cron: '0 3 * * *', // at 03:00 AM
     notificationDuration: 48
   },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
-    timeoutMinutes: 120,
-    cron: '45 3 * * *', // nightly at 03:45
+    timeoutMinutes: 30,
+    cron: '30 3 * * *', // nightly at 03:45
     notificationDuration: 48
   },
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
-    timeoutMinutes: 15,
+    timeoutMinutes: 30,
     cron: '0 4 * * *', // nightly at 04:00
     notificationDuration: 48
   },
@@ -70,7 +70,7 @@ const updateJobs = {
   recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
     timeoutMinutes: 30,
-    cron: '0 5 * * *', // nightly at 05:00,
+    cron: '30 4 * * *', // nightly at 04:30,
     notificationDuration: 48
   },
   recalculate_future_contract_invoices: {

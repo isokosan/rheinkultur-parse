@@ -462,16 +462,16 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
   }
 }, $fieldworkManager)
 
-// revert complete mark
-Parse.Cloud.define('task-list-revert-complete', async ({ params: { id: taskListId }, user }) => {
+// retract complete mark
+Parse.Cloud.define('task-list-retract-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status') !== 4) { throw new Error('Only completed can be reverted') }
+  if (taskList.get('status') !== 4) { throw new Error('Only completed can be retracted') }
   taskList.set({ status: 0 })
-  const audit = { user, fn: 'task-list-revert-complete' }
+  const audit = { user, fn: 'task-list-retract-complete' }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
     data: taskList.get('status'),
-    message: 'Task list reverted'
+    message: 'Task list retracted'
   }
 }, $fieldworkManager)
 
@@ -481,6 +481,13 @@ async function getQueryFromSelection (selection, count) {
     query.containedIn('objectId', selection)
     return query
   }
+
+  // parent
+  selection.briefing && query.equalTo('briefing', $parsify('Briefing', selection.briefing))
+  selection.control && query.equalTo('control', $parsify('Control', selection.control))
+  // selection.assembly && query.equalTo('assembly', $parsify('Assembly', selection.assembly))
+  selection.disassembly && query.equalTo('disassembly', $parsify('Disassembly', selection.disassembly))
+
   selection.state && query.equalTo('state', $parsify('State', selection.state))
   selection.type && query.equalTo('type', selection.type)
   // TODO
@@ -496,7 +503,7 @@ async function getQueryFromSelection (selection, count) {
 }
 
 // mass updates
-Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { action, selection, count } }) => {
+Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection, count } }) => {
   const query = await getQueryFromSelection(selection, count)
   // return different previews based on action
   const response = {
@@ -520,13 +527,6 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { action, s
         }
       }
     }, { useMasterKey: true })
-
-  if (action === 'manager') {
-    // If any list is assigned to scouts, in progress, or completed throw an error
-    if (Object.keys(response.statuses).filter(x => x > 1).length) {
-      response.error = 'You have lists that are not in an assignable state.'
-    }
-  }
   return response
 }, { requireUser: true })
 
@@ -606,40 +606,57 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
   }
 
   // retract (appoint / assign)
-  if (action === 'retract') {
-    if (form.setStatus === 0) {
-      runFn = async (taskList) => {
-        // Validate if the user is a fieldwork manager before retracting appoint
-        if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
-        const changes = { taskStatus: [taskList.get('status'), 0] }
-        taskList.set({ status: 0 })
-        if (form.unsetManager && taskList.get('manager')) {
-          changes.managerId = [taskList.get('manager').id, null]
-          taskList.unset('manager')
-          if ((taskList.get('scouts') || []).length) {
-            changes.scoutIds = [taskList.get('scouts').map(x => x.id), []]
-            taskList.unset('scouts')
-          }
-        }
-        const audit = { user, fn: 'task-list-update', data: { changes } }
-        return taskList.save(null, { useMasterKey: true, context: { audit } })
-      }
-    }
-    if (form.setStatus === 1) {
-      runFn = async (taskList) => {
-        // Validate if the user is a fieldwork manager or the manager of the list before retracting assing
-        await validateScoutManagerOrFieldworkManager(taskList, user)
-        const changes = { taskStatus: [taskList.get('status'), 1] }
-        taskList.set({ status: 1 })
-        if (form.unsetScouts && (taskList.get('scouts') || []).length) {
+  if (action === 'retract-appoint') {
+    runFn = async (taskList) => {
+      // Validate if the user is a fieldwork manager before retracting appoint
+      if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
+      const changes = { taskStatus: [taskList.get('status'), 0] }
+      taskList.set({ status: 0 })
+      if (form.unsetManager && taskList.get('manager')) {
+        changes.managerId = [taskList.get('manager').id, null]
+        taskList.unset('manager')
+        if ((taskList.get('scouts') || []).length) {
           changes.scoutIds = [taskList.get('scouts').map(x => x.id), []]
           taskList.unset('scouts')
         }
-        const audit = { user, fn: 'task-list-update', data: { changes } }
-        return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
       }
+      const audit = { user, fn: 'task-list-update', data: { changes } }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
+  if (action === 'retract-assign') {
+    runFn = async (taskList) => {
+      // Validate if the user is a fieldwork manager or the manager of the list before retracting assign
+      await validateScoutManagerOrFieldworkManager(taskList, user)
+      const changes = { taskStatus: [taskList.get('status'), 1] }
+      taskList.set({ status: 1 })
+      if (form.unsetScouts && (taskList.get('scouts') || []).length) {
+        changes.scoutIds = [taskList.get('scouts').map(x => x.id), []]
+        taskList.unset('scouts')
+      }
+      const audit = { user, fn: 'task-list-update', data: { changes } }
+      return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+    }
+  }
+  if (action === 'complete') {
+    runFn = async (taskList) => {
+      if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
+      taskList.set({ status: 4 })
+      const audit = { user, fn: 'task-list-complete' }
+      return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+    }
+  }
+
+  if (action === 'retract-complete') {
+    runFn = async (taskList) => {
+      // Validate if the user is a fieldwork manager or the manager of the list before retracting assign
+      await validateScoutManagerOrFieldworkManager(taskList, user)
+      taskList.set({ status: 0 })
+      const audit = { user, fn: 'task-list-retract-complete' }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+  }
+
   let i = 0
   await query.eachBatch(async (taskLists) => {
     for (const taskList of taskLists) {
