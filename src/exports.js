@@ -186,12 +186,13 @@ function getCubeMonthlyMedia (cube, order) {
   return monthlyMedia[cube.id]
 }
 
-async function getContractRows (contract, { housingTypes, states }) {
+async function getContractRows (contract, { housingTypes, states }, exportCubeIds) {
   const rows = []
   const { motive, externalOrderNo, campaignNo, cubeIds } = contract.attributes
   const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
   const printPackages = production?.get('printPackages') || {}
-  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
+  exportCubeIds = exportCubeIds ? exportCubeIds.filter(id => cubeIds.includes(id)) : cubeIds
+  const cubes = await $query('Cube').containedIn('objectId', exportCubeIds).limit(exportCubeIds.length).find({ useMasterKey: true })
   for (const cube of cubes) {
     const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract)
     const monthly = getCubeMonthlyMedia(cube, contract)
@@ -248,13 +249,14 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
   })
 
   const contract = await $getOrFail('Contract', req.params.contractId)
+  const cubeIds = req.query.cubeIds ? decodeURIComponent(req.query.cubeIds || '').split(',') : null
   const worksheet = workbook.addWorksheet(safeName(contract.get('no')))
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
   headerRow.height = 24
 
-  const rows = await getContractRows(contract, { housingTypes, states })
+  const rows = await getContractRows(contract, { housingTypes, states }, cubeIds)
   for (const item of rows) {
     const row = worksheet.addRow(item)
     item.canceledEarly && (row.getCell(12).font = { name: 'Calibri', color: { argb: 'ff2222' } })
