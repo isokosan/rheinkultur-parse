@@ -5,8 +5,9 @@ const { processOrder } = require('@/cloud/classes/fieldwork/disassemblies')
 
 module.exports = async function (job) {
   // get all disassembly RMV orders
-  const contractsQuery = $query('Contract').equalTo('disassembly', true)
-  const bookingsQuery = $query('Booking').equalTo('disassembly', true)
+  // TODO: Remove disassemblies no longer set as fromRMV
+  const contractsQuery = $query('Contract').equalTo('disassembly.fromRMV', true)
+  const bookingsQuery = $query('Booking').equalTo('disassembly.fromRMV', true)
 
   const total = (await contractsQuery.count({ useMasterKey: true })) + (await bookingsQuery.count({ useMasterKey: true }))
   let orders = 0

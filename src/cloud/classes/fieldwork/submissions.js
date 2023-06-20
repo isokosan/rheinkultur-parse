@@ -3,6 +3,18 @@ const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
+Parse.Cloud.afterSave(DisassemblySubmission, async ({ object: submission }) => {
+  await submission.fetchWithInclude(['taskList.disassembly.booking', 'taskList.disassembly.contract'], { useMasterKey: true })
+  const order = await submission.get('taskList').get('disassembly').get('order').fetch({ useMasterKey: true })
+  const disassembly = order.get('disassembly')
+  if (!disassembly.submissions) {
+    disassembly.submissions = {}
+  }
+  disassembly.submissions[submission.get('cube').id] = submission.id
+  order.set({ disassembly })
+  order.save(null, { useMasterKey: true })
+})
+
 async function fetchSubmission (taskListId, cubeId, SubmissionClass, submissionId) {
   const taskList = await $getOrFail(TaskList, taskListId)
   const cube = await $getOrFail('Cube', cubeId)
@@ -196,13 +208,12 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: submissionId }, user }) => {
-  const submission = await $getOrFail(DisassemblySubmission, submissionId, ['taskList', 'cube'])
+  const submission = await $getOrFail(DisassemblySubmission, submissionId, ['taskList', 'cube', 'disassembly.contract', 'disassembly.booking'])
   submission.set({ status: 'approved' })
   const cubeId = submission.get('cube').id
   const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
-  await submission.get('taskList').get('disassembly').save(null, { useMasterKey: true, context: { countStatuses: true } })
   // control-disassembled
   const controlSubmission = await $query(ControlSubmission)
     .equalTo('disassembly', submission)

@@ -188,6 +188,47 @@ Parse.Cloud.beforeDelete(TaskList, async ({ object: taskList }) => {
 
 Parse.Cloud.afterDelete(TaskList, $deleteAudits)
 
+function validateScoutManagerOrFieldworkManager (taskList, user) {
+  if (user.get('permissions')?.includes('manage-fieldwork')) {
+    return
+  }
+  if (taskList.get('manager')?.id === user.id) {
+    return
+  }
+  throw new Error('Unbefugter Zugriff')
+}
+
+// TOTRANSLATE
+async function validateAppointAssign (taskList) {
+  if (!taskList.get('cubeIds').length) {
+    throw new Error('This task list has no cubes!')
+  }
+  if (!taskList.get('date') || !taskList.get('dueDate')) {
+    throw new Error('Please set date and due date first.')
+  }
+  if (taskList.get('type') === 'scout') {
+    if (!taskList.get('quotas') && !taskList.get('quota')) {
+      throw new Error('Please set quotas.')
+    }
+  }
+  const { ort, state: { id: stateId } } = taskList.attributes
+  // validate cubes
+  const cubeIds = taskList.get('cubeIds') || []
+  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
+  if (!cubes.length) { throw new Error('No cubes found') }
+  if (cubes.some(cube => cube.get('ort') !== ort || cube.get('state').id !== stateId)) {
+    throw new Error('There are cubes outside of the location of this list')
+  }
+
+  // reject booked cubes
+  if (taskList.get('type') === 'scout') {
+    for (const cube of cubes) {
+      // TOTRANSLATE
+      if (cube.get('order')) { throw new Error('List has booked cubes!') }
+    }
+  }
+}
+
 // Used in marklist store component to save manual cube changes
 // TOTRANSLATE
 Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, cubeIds }, user }) => {
@@ -312,47 +353,6 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
   }
 }, $fieldworkManager)
 
-function validateScoutManagerOrFieldworkManager (taskList, user) {
-  if (user.get('permissions')?.includes('manage-fieldwork')) {
-    return
-  }
-  if (taskList.get('manager')?.id === user.id) {
-    return
-  }
-  throw new Error('Unbefugter Zugriff')
-}
-
-// TOTRANSLATE
-async function validateAppointAssign (taskList) {
-  if (!taskList.get('cubeIds').length) {
-    throw new Error('This task list has no cubes!')
-  }
-  if (!taskList.get('date') || !taskList.get('dueDate')) {
-    throw new Error('Please set date and due date first.')
-  }
-  if (taskList.get('type') === 'scout') {
-    if (!taskList.get('quotas') && !taskList.get('quota')) {
-      throw new Error('Please set quotas.')
-    }
-  }
-  const { ort, state: { id: stateId } } = taskList.attributes
-  // validate cubes
-  const cubeIds = taskList.get('cubeIds') || []
-  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
-  if (!cubes.length) { throw new Error('No cubes found') }
-  if (cubes.some(cube => cube.get('ort') !== ort || cube.get('state').id !== stateId)) {
-    throw new Error('There are cubes outside of the location of this list')
-  }
-
-  // reject booked cubes
-  if (taskList.get('type') === 'scout') {
-    for (const cube of cubes) {
-      // TOTRANSLATE
-      if (cube.get('order')) { throw new Error('List has booked cubes!') }
-    }
-  }
-}
-
 Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status')) {
@@ -424,14 +424,12 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
   }
 }, { requireUser: true })
 
-// TODO: Is this only for fieldwork managers or also for scout managers?
-Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: taskListId, cubeId, approved }, user }) => {
+Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: taskListId, cubeId, approved }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   await validateScoutManagerOrFieldworkManager(taskList, user)
   const cube = await $getOrFail('Cube', cubeId)
   if (taskList.get('type') === 'scout' && !cube.get('vAt')) {
-    // TOTRANSLATE
-    throw new Error('Only verified cubes can be approved')
+    throw new Error('Nur verifizierte CityCubes können als gescouted markiert werden.')
   }
   let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
   adminApprovedCubeIds = approved
@@ -439,12 +437,8 @@ Parse.Cloud.define('task-list-approve-verified-cube', async ({ params: { id: tas
     : adminApprovedCubeIds.filter(id => id !== cubeId)
 
   taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
-  const audit = { user, fn: 'scout-submission-preapprove', data: { cubeId, approved } }
-  await taskList.save(null, { useMasterKey: true, context: { audit } })
-  if (taskList.get('type') === 'scout') {
-    return approved ? 'Verified cube marked as approved' : 'Cube unmarked as approved'
-  }
-  return approved ? 'Marked as complete' : 'Cube unmarked as complete'
+  const audit = { user, fn: taskList.get('type') + '-submission-preapprove', data: { cubeId, approved } }
+  return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {

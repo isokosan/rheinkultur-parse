@@ -60,7 +60,6 @@ Parse.Cloud.beforeFind(Booking, ({ query, user }) => {
     'company',
     'companyPerson',
     'production',
-    'disassemblyStatuses',
     'docs'
   ])
 })
@@ -73,10 +72,6 @@ Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
 
     if (query._include.includes('production')) {
       booking.set('production', await $query('Production').equalTo('booking', booking).first({ useMasterKey: true }))
-    }
-    if (query._include.includes('disassemblyStatuses')) {
-      const disassembly = await $query('Disassembly').equalTo('booking', booking).first({ useMasterKey: true })
-      disassembly && booking.set('disassemblyStatuses', disassembly.get('statuses'))
     }
   }
   return bookings

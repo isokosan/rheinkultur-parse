@@ -116,7 +116,7 @@ const schemaDefinitions = {
       cubeIds: { type: 'Array', default: [] },
       cubeId: { type: 'String' },
 
-      disassembly: { type: 'Boolean' }, // demontage von Rheinkultur
+      disassembly: { type: 'Object' }, // disassembly info
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
@@ -235,7 +235,7 @@ const schemaDefinitions = {
       commissions: { type: 'Object' },
       commission: { type: 'Number' },
 
-      disassembly: { type: 'Boolean' }, // demontage von Rheinkultur
+      disassembly: { type: 'Object' }, // disassembly info
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
@@ -575,8 +575,7 @@ const schemaDefinitions = {
       dueDate: { type: 'String', required: true },
       status: { type: 'Number', required: true },
 
-      docs: { type: 'Array' },
-      responsibles: { type: 'Array' }
+      docs: { type: 'Array' }
     }
   },
   Control: {
@@ -590,7 +589,7 @@ const schemaDefinitions = {
       lastControlBefore: { type: 'Number' },
       criteria: { type: 'Array' },
 
-      responsibles: { type: 'Array' }
+      docs: { type: 'Array' }
     }
   },
   Disassembly: {
@@ -598,8 +597,10 @@ const schemaDefinitions = {
     fields: {
       contract: { type: 'Pointer', targetClass: 'Contract' },
       booking: { type: 'Pointer', targetClass: 'Booking' },
-      status: { type: 'Number', required: true },
-      responsibles: { type: 'Array' }
+      type: { type: 'String', required: true },
+      date: { type: 'String', required: true },
+      dueDate: { type: 'String', required: true },
+      status: { type: 'Number', required: true }
     }
   },
   TaskList: {

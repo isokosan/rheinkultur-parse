@@ -166,7 +166,7 @@ const INDEXES = {
           externalOrderNo: booking.get('externalOrderNo'),
           companyId: booking.get('company').id,
           autoExtends: Boolean(booking.get('autoExtendsBy')),
-          disassembly: booking.get('disassembly'),
+          disassemblyFromRMV: booking.get('disassembly')?.fromRMV,
           startsAt: booking.get('startsAt'),
           endsAt: booking.get('endsAt'),
           // responsibleIds: booking.get('responsibles')
@@ -617,7 +617,7 @@ Parse.Cloud.define('search-bookings', async ({
     status,
     companyId,
     autoExtends,
-    disassembly,
+    disassemblyFromRMV,
     cubeId,
     str,
     hsnr,
@@ -649,7 +649,7 @@ Parse.Cloud.define('search-bookings', async ({
   motive && bool.must.push({ match_phrase_prefix: { motive } })
   externalOrderNo && bool.must.push({ match_phrase_prefix: { externalOrderNo } })
   autoExtends && bool.must.push({ term: { autoExtends: autoExtends === 'true' } })
-  disassembly && bool.must.push({ exists: { field: 'disassembly' } })
+  disassemblyFromRMV && bool.must.push({ exists: { field: 'disassemblyFromRMV' } })
 
   cubeId && bool.must.push({ wildcard: { 'cube.objectId.keyword': `*${cubeId}*` } })
   str && bool.filter.push({ term: { 'cube.str.keyword': str } })

@@ -63,7 +63,6 @@ Parse.Cloud.beforeFind(Contract, ({ query }) => {
     'agency',
     'agencyPerson',
     'production',
-    'disassemblyStatuses',
     'docs',
     'tags',
     'gradual'
@@ -82,10 +81,6 @@ Parse.Cloud.afterFind(Contract, async ({ objects: contracts, query }) => {
     }
     if (query._include.includes('production')) {
       contract.set('production', await $query('Production').equalTo('contract', contract).first({ useMasterKey: true }))
-    }
-    if (query._include.includes('disassemblyStatuses')) {
-      const disassembly = await $query('Disassembly').equalTo('contract', contract).first({ useMasterKey: true })
-      disassembly && contract.set('disassemblyStatuses', disassembly.get('statuses'))
     }
     contract.set('commissionRate', getContractCommissionForYear(contract, year))
   }

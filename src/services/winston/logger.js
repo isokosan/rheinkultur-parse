@@ -1,5 +1,6 @@
-const { createLogger, format, transports, addColors } = require('winston')
+const { createLogger, format, transports } = require('winston')
 const expressWinston = require('express-winston')
+const { inspect } = require('util')
 
 const levels = {
   error: 0,
@@ -13,10 +14,7 @@ const levels = {
 }
 
 const colors = {
-  error: 'red',
-  warn: 'orange',
   success: 'green',
-  info: 'blue',
   http: 'magenta',
   verbose: 'cyan',
   debug: 'yellow',
@@ -26,11 +24,11 @@ const colors = {
 function getLogger () {
   if (DEVELOPMENT) {
     return createLogger({
-      level: process.env.LOG_LEVEL || 'info',
+      level: process.env.LOG_LEVEL || 'silly',
       levels,
       format: format.combine(
         format.errors({ stack: true }),
-        format.colorize({ all: true }),
+        format.colorize({ all: true, colors }),
         format.align(),
         format.splat(),
         format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
@@ -78,8 +76,15 @@ const expressLogger = expressWinston.logger({
   }
 })
 
-addColors(colors)
+const consola = Object.keys(levels).reduce((acc, level) => {
+  acc[level] = function (...messages) {
+    logger[level](messages.map(msg => ['string', 'number'].includes(typeof msg) ? msg : inspect(msg, false, 3, true)).join(' '))
+  }
+  return acc
+}, {})
+
 module.exports = {
   logger,
+  consola,
   expressLogger
 }
