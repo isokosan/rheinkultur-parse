@@ -1,3 +1,10 @@
+# [1.60.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.59.1...1.60.0) (2023-06-20)
+
+
+### Features
+
+* add cubeIds selection to contract export ([1213f03](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1213f03c753061639084b3afa285b7ad612a0a8e))
+
 ## [1.59.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.59.0...1.59.1) (2023-06-19)
 
 
