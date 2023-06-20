@@ -1,3 +1,10 @@
+# [1.61.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.60.0...1.61.0) (2023-06-20)
+
+
+### Features
+
+* disassembly object changes ([e467ccb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e467ccb71372057f84c6fd17d4a223b6f7e7fee8))
+
 # [1.60.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.59.1...1.60.0) (2023-06-20)
 
 
