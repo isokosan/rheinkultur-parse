@@ -1,3 +1,10 @@
+# [1.62.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.61.0...1.62.0) (2023-06-21)
+
+
+### Features
+
+* add disassembly audits and lexoffice error handling ([a47fc90](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a47fc906ab8d9fe52c5c6e4f4ba10bc8de345ed3))
+
 # [1.61.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.60.0...1.61.0) (2023-06-20)
 
 
