@@ -41,6 +41,7 @@ module.exports = {
     $states: true,
     $saveWithEncode: true,
     $pk: true,
+    $parsePk: true,
     $bPLZ: true,
     $PDGA: true
   },

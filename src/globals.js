@@ -42,6 +42,11 @@ global.$pk = (obj) => {
   const ort = obj.get?.('ort') || obj.ort
   return [stateId, ort].join(':')
 }
+global.$parsePk = (pk) => {
+  const [stateId, ort] = pk.split(':')
+  const state = $pointer('State', stateId)
+  return { stateId, state, ort }
+}
 
 global.$adminOnly = function ({ user, master }) {
   if (master) { return true }

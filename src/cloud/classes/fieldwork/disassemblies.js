@@ -1,13 +1,13 @@
 const axios = require('axios')
-const {
-  intersection
-  // sortBy,
-  // isEqual
-} = require('lodash')
+const { intersection } = require('lodash')
 
 const TaskList = Parse.Object.extend('TaskList')
 const Disassembly = Parse.Object.extend('Disassembly')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
+
+// const DISCARD_BEFORE = '2023-04-01'
+const getDisassemblyStartDate = endDate => endDate ? moment(endDate).add(1, 'day').format('YYYY-MM-DD') : null
+const getDueDate = date => moment(date).add(2, 'weeks').format('YYYY-MM-DD')
 
 Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly }) => {
   if (disassembly.get('booking') && disassembly.get('contract')) {
@@ -20,6 +20,7 @@ Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly }) => {
   }
 
   !disassembly.get('status') && disassembly.set('status', 1)
+  !disassembly.get('dueDate') && disassembly.set('dueDate', getDueDate(disassembly.get('date')))
   disassembly.unset('order')
 })
 
@@ -77,12 +78,13 @@ Parse.Cloud.beforeDelete(Disassembly, async ({ object: disassembly }) => {
   }
   await $query(TaskList)
     .equalTo('disassembly', disassembly)
-    .equalTo('status', 0)
+    .lessThanOrEqualTo('status', 1)
     .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
 })
 
 async function ensureDisassemblyExists (order, date, dueDate, type) {
   const disassemblyKey = order.className + '-' + order.id + '-' + date
+  !dueDate && (dueDate = getDueDate(date))
   const exists = await $query(Disassembly)
     .equalTo('objectId', disassemblyKey)
     .first({ useMasterKey: true })
@@ -106,204 +108,6 @@ async function ensureDisassemblyExists (order, date, dueDate, type) {
     })
   }
   return $parsify(Disassembly, disassemblyKey)
-}
-
-async function upsertTaskList (attrs) {
-  // first check if a departure list with the same unique attrs exists
-  // uniqueTogether = { type, booking, contract, ort, state, date }
-  const existing = await $query(TaskList)
-    .equalTo('type', 'disassembly')
-    .equalTo('disassembly', attrs.disassembly)
-    .equalTo('ort', attrs.ort)
-    .equalTo('state', attrs.state)
-    .equalTo('date', attrs.date)
-    .find({ useMasterKey: true })
-  const [exists, ...duplicates] = existing
-  duplicates.length && await Promise.all(duplicates.map((duplicate) => {
-    consola.warn('Removing duplicate disassembly tasklist', duplicate.attributes)
-    return duplicate.destroy({ useMasterKey: true })
-  }))
-  if (exists) {
-    const cubeChanges = $cubeChanges(exists, attrs.cubeIds)
-    if (!cubeChanges) { return exists }
-    const audit = { fn: 'task-list-update', data: { cubeChanges } }
-    return exists
-      .set('cubeIds', attrs.cubeIds)
-      .set('adminApprovedCubeIds', [...(exists.get('adminApprovedCubeIds') || []), ...attrs.adminApprovedCubeIds])
-      .save(null, { useMasterKey: true, context: { audit } })
-  }
-  const taskList = new TaskList(attrs)
-  const audit = { fn: 'task-list-generate' }
-  return taskList.save(null, { useMasterKey: true, context: { audit } })
-}
-
-async function processOrder (className, objectId) {
-  const periodStart = '2023-04-01'
-  const order = await $getOrFail(className, objectId)
-  const contract = className === 'Contract' ? order : null
-  const booking = className === 'Booking' ? order : null
-  const disassembliesQuery = $query('Disassembly').equalTo('contract', contract).equalTo('booking', booking)
-  // abort and clear lists if disassembly will not be done by RMV
-  if (!order.get('disassembly')?.fromRMV) {
-    return $query(Disassembly)
-      .equalTo('contract', contract)
-      .equalTo('booking', booking)
-      .lessThan('status', 2) // planned
-      .each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
-  }
-
-  const plannedDisassemblies = {}
-  for (const cubeId of order.get('cubeIds')) {
-    const earlyCanceledAt = order.get('earlyCancellations')?.[cubeId]
-    if (earlyCanceledAt === true) { continue }
-    if (earlyCanceledAt) {
-      const date = moment(earlyCanceledAt).add(1, 'day').format('YYYY-MM-DD')
-      if (!plannedDisassemblies[date]) {
-        plannedDisassemblies[date] = { type: 'early', cubeIds: [] }
-      }
-      plannedDisassemblies[date].cubeIds.push(cubeId)
-      continue
-    }
-    if (!order.get('willExtend')) {
-      // TODO: Test later ending cubes
-      const cubeExtendedUntil = order.get('cubeExtensions')?.[cubeId]
-      if (cubeExtendedUntil) {
-        const date = moment(cubeExtendedUntil).add(1, 'day').format('YYYY-MM-DD')
-        if (!plannedDisassemblies[date]) {
-          plannedDisassemblies[date] = { type: 'late', cubeIds: [] }
-        }
-        plannedDisassemblies[date].cubeIds.push(cubeId)
-        continue
-      }
-      const date = moment(order.get('endsAt')).add(1, 'day').format('YYYY-MM-DD')
-      if (!plannedDisassemblies[date]) {
-        plannedDisassemblies[date] = { type: 'end', cubeIds: [] }
-      }
-      plannedDisassemblies[date].cubeIds.push(cubeId)
-    }
-  }
-
-  const uniqueDatePlaceKeys = {}
-  for (const [date, { cubeIds }] of Object.entries(plannedDisassemblies)) {
-    // remove dates before periodStart
-    if (moment(date).isBefore(periodStart)) {
-      delete plannedDisassemblies[date]
-      continue
-    }
-    plannedDisassemblies[date].dueDate = moment(date).add(2, 'weeks').format('YYYY-MM-DD')
-    // separate by placekey
-    plannedDisassemblies[date].datePlaceCubes = await $query('Cube')
-      .containedIn('objectId', cubeIds)
-      .select(['ort', 'state'])
-      .limit(cubeIds.length)
-      .find({ useMasterKey: true })
-      .then(cubes => cubes.reduce((acc, cube) => {
-        const key = [cube.get('ort'), cube.get('state').id, date].join('_')
-        uniqueDatePlaceKeys[key] = true
-        if (!acc[key]) { acc[key] = [] }
-        acc[key].push(cube.id)
-        return acc
-      }, {}))
-  }
-
-  // First check if we have task lists that have the same cubes in the some locations, but only the date has changed, to easily shift the dates
-  // NOTE: not working because we disassembly remains with date
-  // await $query(TaskList)
-  //   .equalTo('type', 'disassembly')
-  //   .matchesQuery('disassembly', disassembliesQuery)
-  //   .select('date', 'ort', 'state', 'cubeIds')
-  //   .eachBatch(async (batch) => {
-  //     for (const taskList of batch) {
-  //       for (const [date, { datePlaceCubes, dueDate }] of Object.entries(plannedDisassemblies)) {
-  //         for (const [key, cubeIds] of Object.entries(datePlaceCubes)) {
-  //           const [ort, stateId, date] = key.split('_')
-  //           if (taskList.get('ort') === ort && taskList.get('state')?.id === stateId && taskList.get('date') !== date) {
-  //             if (isEqual(sortBy(cubeIds), sortBy(taskList.get('cubeIds')))) {
-  //               // this is the same list but date has changed
-  //               consola.success('FOUND DATE CHANGE')
-  //               const changes = $changes(taskList, { date, dueDate })
-  //               taskList.set({ status: 0, date, dueDate })
-  //               const audit = { fn: 'task-list-update-date', data: { changes } }
-  //               await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }, { useMasterKey: true })
-
-  // Gather admin approved cubes in each area to carry the information if the date has changed, and apply to each list.
-  // The list before save triggers will clear any non-listed cubes.
-  // Todo: Carry the audits?
-  const adminApprovedCubeIds = await $query(TaskList)
-    .equalTo('type', 'disassembly')
-    .matchesQuery('disassembly', disassembliesQuery)
-    .notEqualTo('adminApprovedCubeIds', null)
-    .notEqualTo('adminApprovedCubeIds', [])
-    .distinct('adminApprovedCubeIds', { useMasterKey: true })
-    .then(response => response.flat())
-
-  const submissions = order.get('disassembly')?.submissions || {}
-
-  // need a single source of truth for admin approved cube ids, statuses and managers and need to keep protocol
-  let i = 0
-  for (const [date, { type, dueDate, datePlaceCubes }] of Object.entries(plannedDisassemblies)) {
-    const disassembly = await ensureDisassemblyExists(order, date, dueDate, type)
-
-    for (const uniqueKey of Object.keys(datePlaceCubes)) {
-      const [ort, stateId] = uniqueKey.split('_')
-      const cubeIds = datePlaceCubes[uniqueKey]
-      const state = $pointer('State', stateId)
-      const taskList = await upsertTaskList({
-        type: 'disassembly',
-        ort,
-        state,
-        disassembly,
-        cubeIds,
-        date,
-        dueDate,
-        adminApprovedCubeIds
-      })
-      const submissionCubeIds = intersection(Object.keys(submissions), cubeIds)
-      if (submissionCubeIds.length) {
-        for (const submissionId of submissionCubeIds.map(id => submissions[id])) {
-          const submission = await $getOrFail(DisassemblySubmission, submissionId)
-          await submission.set({ taskList }).save(null, { useMasterKey: true })
-        }
-        const audit = { fn: 'disassembly-submission-update', data: { cubeIds: submissionCubeIds } }
-        await taskList.save(null, { useMasterKey: true, context: { audit } })
-      }
-      i++
-    }
-  }
-
-  // Remove all lists which no longer fit the criteria
-  await $query(TaskList)
-    .equalTo('type', 'disassembly')
-    .matchesQuery('disassembly', disassembliesQuery)
-    .eachBatch(async (lists) => {
-      for (const list of lists) {
-        const uniqueKey = [list.get('ort'), list.get('state').id, list.get('date')].join('_')
-        if (!uniqueDatePlaceKeys[uniqueKey]) {
-          await list.destroy({ useMasterKey: true })
-        }
-      }
-    }, { useMasterKey: true })
-
-  // Remove all disassemblies (parents) that are no longer planned (which removes lists within)
-  // Note: this will fail if the disassembly has task lists that are "in progress"
-  const ids = Object.keys(plannedDisassemblies).map(date => order.className + '-' + order.id + '-' + date)
-  await $query(Disassembly)
-    .startsWith('objectId', order.className + '-' + order.id)
-    .notContainedIn('objectId', ids)
-    .each((disassembly) => {
-      consola.warn('Removing disassembly', disassembly)
-      return disassembly.destroy({ useMasterKey: true })
-    }, { useMasterKey: true })
-  consola.debug('ids', ids)
-  consola.debug(plannedDisassemblies)
-
-  return i
 }
 
 // Update booking or contract disassembly from RMV
@@ -332,10 +136,307 @@ Parse.Cloud.define('disassembly-order-update', async ({
   return order.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id }, user }) => {
-  return processOrder(className, id)
-}, { requireUser: true })
+Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: orderId, force }, user }) => {
+  const today = await $today()
+  const order = await $getOrFail(className, orderId)
+  const orderEndDate = order.get('willExtend') ? null : order.get('endsAt')
+  const contract = className === 'Contract' ? order : null
+  const booking = className === 'Booking' ? order : null
+  const getDisassembliesQuery = () => $query(Disassembly).equalTo('contract', contract).equalTo('booking', booking)
 
-module.exports = {
-  processOrder
-}
+  async function updateTaskListDates (taskList, date, dueDate, type) {
+    const disassembly = await ensureDisassemblyExists(order, date, dueDate, type)
+    const changes = $changes(taskList, { date, dueDate })
+    if (!changes) { return }
+    let locationCleanup
+    if ([2, 3].includes(taskList.get('status')) && date > today) {
+      changes.status = [taskList.get('status', 1)]
+      taskList.set('status', 1)
+      locationCleanup = true
+    }
+    const audit = { fn: 'task-list-update', data: { changes } }
+    taskList.set({ disassembly, date, dueDate })
+    // notify manager that dates have changed
+    // set status to ernannt if beauftragt or in progress
+    await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup } })
+  }
+
+  async function moveCubesFromTo (from, to, cubeIds) {
+    const toCubeIds = [...to.get('cubeIds'), ...cubeIds]
+    const cubeChanges = $cubeChanges(to, toCubeIds)
+    if (cubeChanges) {
+      const audit = { fn: 'task-list-update', data: { cubeChanges } }
+      const adminApprovedCubeIds = [...(from.get('adminApprovedCubeIds') || []), ...(to.get('adminApprovedCubeIds') || [])]
+      to.set({ cubeIds: toCubeIds, adminApprovedCubeIds })
+      await to.save(null, { useMasterKey: true, context: { audit } })
+      consola.success('to saved with', audit, to.id)
+    }
+    // Make sure submissions are moved
+    const submissions = order.get('disassembly')?.submissions || {}
+    const submissionCubeIds = intersection(Object.keys(submissions), cubeIds)
+    const updatedIds = []
+    if (submissionCubeIds.length) {
+      for (const submissionId of submissionCubeIds.map(id => submissions[id])) {
+        try {
+          const submission = await $getOrFail(DisassemblySubmission, submissionId)
+          if (submission.get('taskList').id !== to.id) {
+            await submission.set({ taskList: to }).save(null, { useMasterKey: true })
+            updatedIds.push(submissionId)
+          }
+        } catch (error) {
+          consola.error('disassembly sync error', error)
+        }
+      }
+      const audit = { fn: 'disassembly-submission-update', data: { cubeIds: updatedIds } }
+      await to.save(null, { useMasterKey: true, context: { audit } })
+    }
+
+    const fromRemainingCubes = from.get('cubeIds').filter(id => !to.get('cubeIds').includes(id))
+    console.info(from.id, fromRemainingCubes)
+    if (!fromRemainingCubes.length) {
+      return from.destroy({ useMasterKey: true })
+    }
+    const fromCubeChanges = $cubeChanges(from, fromRemainingCubes)
+    if (!fromCubeChanges) { return }
+    from.set('cubeIds', fromRemainingCubes)
+    const fromAudit = { fn: 'task-list-update', data: { cubeChanges: fromCubeChanges } }
+    return from.save(null, { useMasterKey: true, context: { audit: fromAudit } })
+  }
+
+  // force delete all disassemblies
+  force && await getDisassembliesQuery().each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
+
+  const extraCubeIds = ['earlyCancellations', 'cubeExtensions'].map(key => Object.keys((order.get(key) || {}))).flat()
+
+  // first get the main disassembly, and check if the date is matching the current main end date
+  const mainDisassembly = await getDisassembliesQuery().equalTo('type', 'main').first({ useMasterKey: true })
+  if (mainDisassembly) {
+    const date = getDisassemblyStartDate(orderEndDate)
+    const dueDate = getDueDate(date)
+    if (mainDisassembly.get('date') !== date) {
+      if (orderEndDate) {
+        await $query(TaskList).equalTo('disassembly', mainDisassembly).eachBatch(async (taskLists) => {
+          for (const taskList of taskLists) {
+            await updateTaskListDates(taskList, date, dueDate, 'main')
+          }
+        }, { useMasterKey: true })
+      }
+      await mainDisassembly.destroy({ useMasterKey: true })
+    }
+  } else if (orderEndDate) {
+    const date = getDisassemblyStartDate(orderEndDate)
+    const dueDate = getDueDate(date)
+    const newMainAssembly = await ensureDisassemblyExists(order, date, dueDate, 'main')
+    // get all cubes that were not early canceled or have extensions
+    const mainCubeIds = order.get('cubeIds').filter(cubeId => !extraCubeIds.includes(cubeId))
+    const mainLists = await $query('Cube')
+      .containedIn('objectId', mainCubeIds)
+      .select('pk')
+      .limit(mainCubeIds.length)
+      .find({ useMasterKey: true })
+      .then(cubes => cubes.reduce((acc, cube) => {
+        const pk = cube.get('pk')
+        if (!acc[pk]) { acc[pk] = [] }
+        acc[pk].push(cube.id)
+        return acc
+      }, {}))
+    for (const [pk, cubeIds] of Object.entries(mainLists)) {
+      const { ort, state } = $parsePk(pk)
+      const taskList = new TaskList({
+        type: 'disassembly',
+        disassembly: newMainAssembly,
+        ort,
+        state,
+        cubeIds,
+        date,
+        dueDate
+      })
+      const audit = { fn: 'task-list-generate' }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+  }
+
+  function getCubeEndDate (cubeId) {
+    const earlyCanceledAt = order.get('earlyCancellations')?.[cubeId]
+    if (earlyCanceledAt === true) { return null }
+    if (earlyCanceledAt) { return earlyCanceledAt }
+    if (orderEndDate) {
+      const cubeExtension = order.get('cubeExtensions')?.[cubeId]
+      return cubeExtension
+        ? moment(orderEndDate).add(cubeExtension, 'days').format('YYYY-MM-DD')
+        : orderEndDate
+    }
+    return null
+  }
+
+  function getCubeDisassemblyDate (cubeId) {
+    const endDate = getCubeEndDate(cubeId)
+    return getDisassemblyStartDate(endDate)
+  }
+
+  // Get a list of all locations with the end date. null if not ending.
+  // Make sure that previously 'extra' listed cube disassemblies are included for removal
+  await $query(TaskList)
+    .matchesQuery('disassembly', getDisassembliesQuery().equalTo('type', 'extra'))
+    .select('cubeIds')
+    .eachBatch((lists) => {
+      for (const list of lists) {
+        const cubeIds = list.get('cubeIds')
+        for (const cubeId of cubeIds) {
+          if (!extraCubeIds.includes(cubeId)) {
+            extraCubeIds.push(cubeId)
+          }
+        }
+      }
+    }, { useMasterKey: true })
+
+  const targetDates = await $query('Cube')
+    .containedIn('objectId', extraCubeIds)
+    .select('pk')
+    .limit(extraCubeIds.length)
+    .find({ useMasterKey: true })
+    .then(cubes => cubes.reduce((acc, cube) => {
+      const pk = cube.get('pk')
+      if (!acc[pk]) { acc[pk] = {} }
+      acc[pk][cube.id] = getCubeDisassemblyDate(cube.id)
+      return acc
+    }, {}))
+
+  // Get all current list and dates per cube
+  const CURRENT = {}
+  const EXISTING_LISTS = {}
+  await $query(TaskList)
+    .equalTo('type', 'disassembly')
+    .matchesQuery('disassembly', getDisassembliesQuery())
+    .select(['cubeIds', 'date', 'pk'])
+    .eachBatch((lists) => {
+      for (const list of lists) {
+        const pk = list.get('pk')
+        if (!EXISTING_LISTS[pk]) { EXISTING_LISTS[pk] = {} }
+        EXISTING_LISTS[pk][list.get('date')] = list
+        if (!CURRENT[pk]) { CURRENT[pk] = {} }
+        for (const cubeId of list.get('cubeIds')) {
+          CURRENT[pk][cubeId] = { date: list.get('date'), list }
+        }
+      }
+    }, { useMasterKey: true })
+
+  // Process each place key for operations
+  for (const pk of Object.keys(targetDates)) {
+    const ops = { create: {}, move: {}, remove: {} }
+    // Accumulate change operations in a new location
+    for (const cubeId of Object.keys(targetDates[pk])) {
+      const targetDate = targetDates[pk][cubeId] || undefined
+      const { date: currentDate, list: currentList } = CURRENT[pk]?.[cubeId] || {}
+      if (targetDate === currentDate) { continue }
+      if (!targetDate && currentDate) {
+        !ops.remove[currentList.id] && (ops.remove[currentList.id] = [])
+        ops.remove[currentList.id].push(cubeId)
+        continue
+      }
+      if (targetDate) {
+        if (currentDate) {
+          !ops.move[currentList.id] && (ops.move[currentList.id] = {})
+          ops.move[currentList.id][cubeId] = targetDate
+          continue
+        }
+        !ops.create[targetDate] && (ops.create[targetDate] = [])
+        ops.create[targetDate].push(cubeId)
+      }
+    }
+
+    // Carry out operations
+    !Object.values(ops).every(op => Object.keys(op).length === 0) && consola.debug('carrying out changes in', pk, ops)
+    for (const [date, cubeIds] of Object.entries(ops.create)) {
+      const dueDate = getDueDate(date)
+      const disassembly = await ensureDisassemblyExists(order, date, dueDate, 'extra')
+      const { state, ort } = $parsePk(pk)
+      const taskList = new TaskList({
+        type: 'disassembly',
+        disassembly,
+        ort,
+        state,
+        cubeIds,
+        date,
+        dueDate
+      })
+      const audit = { fn: 'task-list-generate' }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+    for (const [listId, movements] of Object.entries(ops.move)) {
+      const taskList = await $getOrFail(TaskList, listId)
+      const cubeIds = Object.keys(movements)
+      const dates = [...new Set(Object.values(movements))]
+      // if all cubes will be moved, and to the same date
+      if (cubeIds.length === taskList.get('cubeIds').length && dates.length === 1) {
+        // check if there is an existing list with the same date
+        const existingList = EXISTING_LISTS[pk]?.[dates[0]]
+        if (existingList) {
+          await existingList.fetch({ useMasterKey: true })
+          await moveCubesFromTo(taskList, existingList, cubeIds)
+          continue
+        }
+        // move this list to the new date otherwise
+        const date = dates[0]
+        const dueDate = getDueDate(date)
+        await updateTaskListDates(taskList, date, dueDate, 'extra')
+      }
+      // if some cubes will be remaining in this list, we will not touch it and only move the necessary ones
+      for (const date of dates) {
+        const dateCubes = cubeIds.filter(cubeId => movements[cubeId] === date)
+        // check if there is an existing list with the same date
+        const existingList = EXISTING_LISTS[pk]?.[date]
+        if (existingList) {
+          await existingList.fetch({ useMasterKey: true })
+          await moveCubesFromTo(taskList, existingList, cubeIds)
+          continue
+        }
+        // otherwise clone this list
+        const dueDate = getDueDate(date)
+        const disassembly = await ensureDisassemblyExists(order, date, dueDate, 'extra')
+        const { state, ort } = $parsePk(pk)
+        const newTaskList = new TaskList({
+          type: 'disassembly',
+          disassembly,
+          ort,
+          state,
+          date,
+          manager: taskList.get('manager'),
+          scouts: taskList.get('scouts'),
+          dueDate
+        })
+        const audit = { fn: 'task-list-generate' }
+        await newTaskList.save(null, { useMasterKey: true, context: { audit } })
+        await moveCubesFromTo(taskList, newTaskList, dateCubes)
+      }
+    }
+    for (const [listId, removeCubeIds] of Object.entries(ops.remove)) {
+      const taskList = await $getOrFail(TaskList, listId)
+      // if all cubes will be moved, and to the same date
+      consola.warn(taskList.get('cubeIds'))
+      if (removeCubeIds.length === taskList.get('cubeIds').length) {
+        consola.info('DESTROYING')
+        await taskList.destroy({ useMasterKey: true })
+        consola.info('DESTROYED')
+        continue
+      }
+      // if some cubes will be remaining in this list, we will not touch it and only move the necessary ones
+      const remainingCubeIds = taskList.get('cubeIds').filter(cubeId => !removeCubeIds.includes(cubeId))
+      const cubeChanges = $cubeChanges(taskList, remainingCubeIds)
+      if (!cubeChanges) { continue }
+      taskList.set('cubeIds', remainingCubeIds)
+      const audit = { fn: 'task-list-update', data: { cubeChanges } }
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+  }
+
+  // remove disassemblies that do not have task lists anymore
+  await getDisassembliesQuery().eachBatch(async (disassemblies) => {
+    for (const disassembly of disassemblies) {
+      if (!await $query(TaskList).equalTo('disassembly', disassembly).count({ useMasterKey: true })) {
+        consola.debug('removing empty disassemblies')
+        await disassembly.destroy({ useMasterKey: true })
+      }
+    }
+  }, { useMasterKey: true })
+}, $fieldworkManager)
