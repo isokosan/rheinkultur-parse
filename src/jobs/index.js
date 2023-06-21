@@ -18,10 +18,6 @@ const updateJobs = {
     description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
     timeoutMinutes: 120
   },
-  generate_disassembly_tasks: {
-    name: 'Demontage synchronizieren.',
-    timeoutMinutes: 60
-  },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
     timeoutMinutes: 120
@@ -80,6 +76,10 @@ const updateJobs = {
   sync_cube_statuses: {
     name: 'Sync Cube Statuses',
     timeoutMinutes: 150
+  },
+  sync_disassemblies: {
+    name: 'Demontage synchronizieren.',
+    timeoutMinutes: 60
   },
   system_status_vouchers: {
     name: 'Überprüfung von Nummernkreisen',

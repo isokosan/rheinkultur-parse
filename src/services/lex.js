@@ -29,6 +29,9 @@ const lexApi = async (resourceurl, method = 'GET', body = {}) => {
         return reject(new Error('LexApi error: ' + error.message))
       }
       return resolve(body)
+    }).catch(error => {
+      consola.error(error)
+      return reject(new Error('Lexoffice unreachable'))
     })
   })
 }
@@ -66,7 +69,10 @@ const getSubscriptions = async () => Parse.Cloud.httpRequest({
   url: 'https://api.lexoffice.io/v1/event-subscriptions',
   method: 'GET',
   headers
-}).then(response => response.data?.content)
+}).then(response => response.data?.content).catch(error => {
+  consola.error(error)
+  throw new Error('Lexoffice unreachable')
+})
 
 const subscribe = async eventType => Parse.Cloud.httpRequest({
   url: 'https://api.lexoffice.io/v1/event-subscriptions',
@@ -127,7 +133,10 @@ const getCountries = async () => {
     headers
   }).then(response => response.data.filter((country) => {
     return country.taxClassification !== 'thirdPartyCountry'
-  }))
+  })).catch(error => {
+    consola.error(error)
+    throw new Error('Lexoffice unreachable')
+  })
   const items = {}
   for (const { countryCode, countryNameDE } of countries) {
     items[countryCode] = countryNameDE
@@ -152,7 +161,10 @@ const getContacts = ({ params: { name, number } } = { name: {} }) => {
     name: item.company.name,
     allowTaxFreeInvoices: item.company.allowTaxFreeInvoices,
     version: item.version
-  })))
+  }))).catch(error => {
+    consola.error(error)
+    throw new Error('Lexoffice unreachable')
+  })
 }
 
 Parse.Cloud.define('lex-contacts', getContacts, { requireUser: true })

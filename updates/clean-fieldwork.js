@@ -35,6 +35,14 @@ const cleanFieldwork = async () => {
       consola.info('Disassembly submissions cache removed from ' + className + ' ' + record.id)
     }, { useMasterKey: true })
   }
+  let r = 0
+  await $query('Audit').equalTo('fn', 'disassembly-sync').eachBatch(async (records) => {
+    for (const record of records) {
+      await record.destroy({ useMasterKey: true })
+      r++
+    }
+  }, { useMasterKey: true })
+  consola.info(`${r} Audit object(s) removed`)
 }
 
 require('./run')(cleanFieldwork)
