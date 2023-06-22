@@ -644,7 +644,7 @@ router.get('/disassemblies/:monthYear', handleErrorAsync(async (req, res) => {
   const to = moment(month).endOf('month').format('YYYY-MM-DD')
 
   const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet(safeName(`Abbauliste ${req.params.monthYear}`))
+  const worksheet = workbook.addWorksheet(safeName(`Demontageliste ${req.params.monthYear}`))
 
   const { columns, headerRowValues } = getColumnHeaders({
     orderNo: { header: 'Auftragsnr.', width: 20 },

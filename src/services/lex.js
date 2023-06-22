@@ -124,9 +124,7 @@ const ensureSubscriptions = async () => {
 
 const getCountries = async () => {
   const cached = await redis.hgetall('countries')
-  if (cached.length) {
-    return cached
-  }
+  if (cached) { return cached }
   const countries = await Parse.Cloud.httpRequest({
     url: 'https://api.lexoffice.io/v1/countries',
     method: 'GET',
