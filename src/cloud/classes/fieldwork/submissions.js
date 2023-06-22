@@ -7,10 +7,17 @@ Parse.Cloud.afterSave(DisassemblySubmission, async ({ object: submission }) => {
   await submission.fetchWithInclude(['taskList.disassembly.booking', 'taskList.disassembly.contract'], { useMasterKey: true })
   const order = await submission.get('taskList').get('disassembly').get('order').fetch({ useMasterKey: true })
   const disassembly = order.get('disassembly')
-  if (!disassembly.submissions) {
-    disassembly.submissions = {}
-  }
-  disassembly.submissions[submission.get('cube').id] = submission.id
+  const cubeId = submission.get('cube').id
+
+  const submissions = disassembly.submissions || {}
+  submissions[cubeId] = submission.id
+  disassembly.submissions = $cleanDict(submissions)
+
+  const statuses = disassembly.statuses || {}
+  submission.get('status') === 'approved'
+    ? (statuses[cubeId] = submission.get('condition'))
+    : (delete statuses[cubeId])
+  disassembly.statuses = $cleanDict(statuses)
   order.set({ disassembly })
   order.save(null, { useMasterKey: true })
 })
@@ -214,6 +221,7 @@ Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: subm
   const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
   await submission.save(null, { useMasterKey: true })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+
   // control-disassembled
   const controlSubmission = await $query(ControlSubmission)
     .equalTo('disassembly', submission)

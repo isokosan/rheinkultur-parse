@@ -108,7 +108,8 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
 Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts, locationCleanup } }) => {
   await indexTaskList(taskList)
   $audit(taskList, audit)
-  const placeKey = [taskList.get('state').id, taskList.get('ort')].join(':')
+  const placeKey = taskList.get('pk')
+
   for (const scout of taskList.get('scouts') || []) {
     if (notifyScouts === true || notifyScouts?.includes(scout.id)) {
       await $notify({
@@ -120,7 +121,6 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
   }
   // check if scout has other active tasks in the location
   if (locationCleanup) {
-    const placeKey = taskList.get('state').id + ':' + taskList.get('ort')
     for (const scout of taskList.get('scouts') || []) {
       const count = await $query('TaskList')
         .equalTo('ort', taskList.get('ort'))
@@ -424,6 +424,18 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
   }
 }, { requireUser: true })
 
+async function updateDisassemblyStatuses (taskList, cubeId, status) {
+  await taskList.get('disassembly').fetchWithInclude(['contract', 'booking'], { useMasterKey: true })
+  const order = taskList.get('disassembly').get('order')
+  const disassembly = order.get('disassembly')
+  const statuses = disassembly.statuses || {}
+  status
+    ? (statuses[cubeId] = status)
+    : (delete statuses[cubeId])
+  disassembly.statuses = $cleanDict(statuses)
+  return order.set({ disassembly }).save(null, { useMasterKey: true })
+}
+
 Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: taskListId, cubeId, approved }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   await validateScoutManagerOrFieldworkManager(taskList, user)
@@ -438,7 +450,10 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
 
   taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
   const audit = { user, fn: taskList.get('type') + '-submission-preapprove', data: { cubeId, approved } }
-  return taskList.save(null, { useMasterKey: true, context: { audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+
+  // update statuses if disassembly
+  taskList.get('disassembly') && await updateDisassemblyStatuses(taskList, cubeId, approved ? 'preverified' : null)
 }, { requireUser: true })
 
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {

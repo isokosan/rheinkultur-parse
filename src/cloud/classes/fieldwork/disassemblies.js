@@ -24,31 +24,6 @@ Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly }) => {
   disassembly.unset('order')
 })
 
-Parse.Cloud.afterSave(Disassembly, async ({ object: disassembly, context: { audit, countStatuses } }) => {
-  audit && $audit(disassembly.get('order'), audit)
-
-  if (countStatuses) {
-    const taskListsQuery = $query('TaskList')
-      .equalTo('contract', disassembly.get('contract'))
-      .equalTo('booking', disassembly.get('booking'))
-    const statuses = {}
-    await $query('DisassemblySubmission')
-      .matchesQuery('taskList', taskListsQuery)
-      .equalTo('status', 'approved')
-      .select(['cube', 'condition'])
-      .eachBatch((submissions) => {
-        for (const submission of submissions) {
-          statuses[submission.get('cube').id] = submission.get('condition')
-        }
-      }, { useMasterKey: true })
-    const order = disassembly.get('order')
-    const orderDisassembly = order.get('disassembly')
-    orderDisassembly.statuses = $cleanDict(statuses)
-    order.set('disassembly', orderDisassembly)
-    order.save(null, { useMasterKey: true })
-  }
-})
-
 Parse.Cloud.beforeFind(Disassembly, ({ query }) => {
   query.include(['contract', 'booking'])
 })
@@ -68,6 +43,7 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
   }
 })
 
+// TODO: Make sure status of Disassembly is saved and updated?
 Parse.Cloud.beforeDelete(Disassembly, async ({ object: disassembly }) => {
   const remaining = await $query(TaskList)
     .equalTo('disassembly', disassembly)
@@ -203,7 +179,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
           consola.error('disassembly sync error', error)
         }
       }
-      const audit = { fn: 'disassembly-submission-update', data: { cubeIds: updatedIds } }
+      const audit = { fn: 'disassembly-submission-update', data: { cubeIds: submissionCubeIds } }
       await to.save(null, { useMasterKey: true, context: { audit } })
     }
 
