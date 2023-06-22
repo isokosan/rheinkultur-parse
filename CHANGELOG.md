@@ -1,3 +1,10 @@
+## [1.62.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.0...1.62.1) (2023-06-22)
+
+
+### Bug Fixes
+
+* lex countries cached ([f684261](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f684261aa7a2042cf6385ec7d1ad783b6c92a321))
+
 # [1.62.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.61.0...1.62.0) (2023-06-21)
 
 
