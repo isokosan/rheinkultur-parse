@@ -1,3 +1,10 @@
+## [1.62.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.1...1.62.2) (2023-06-22)
+
+
+### Bug Fixes
+
+* persisting disassembly submission and statuses ([e60ac7d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e60ac7d8efe6f1040d40d6038277589f34ac161b))
+
 ## [1.62.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.0...1.62.1) (2023-06-22)
 
 
