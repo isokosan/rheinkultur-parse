@@ -587,6 +587,10 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
   let invoice = await query.first({ useMasterKey: true })
   // handle new invoice if not found
   if (!invoice) {
+    if (resource.voucherStatus === 'draft') {
+      consola.info('aborting invoice import because new invoice is not finalized')
+      return
+    }
     invoice = await $query(Invoice)
       .equalTo('voucherDate', moment(resource.voucherDate).toDate())
       .first({ useMasterKey: true })

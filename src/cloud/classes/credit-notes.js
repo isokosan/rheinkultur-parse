@@ -449,6 +449,10 @@ Parse.Cloud.define('credit-note-sync-lex', async ({ params: { id: creditNoteId, 
   let creditNote = await query.first({ useMasterKey: true })
   // handle new credit note if not found
   if (!creditNote) {
+    if (resource.voucherStatus === 'draft') {
+      consola.info('aborting credit-note import because new credit-note is not finalized')
+      return
+    }
     creditNote = await $query(CreditNote)
       .equalTo('voucherDate', moment(resource.voucherDate).toDate())
       .first({ useMasterKey: true })
