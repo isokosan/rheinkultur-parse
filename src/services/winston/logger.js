@@ -43,7 +43,7 @@ function getLogger () {
     })
   }
   return createLogger({
-    level: process.env.LOG_LEVEL || 'info',
+    level: process.env.LOG_LEVEL || 'http',
     levels,
     format: format.combine(format.errors({ stack: true }), format.timestamp(), format.json()),
     transports: [new transports.Console(), new transports.File({ filename: 'logs/combined.log' })]

@@ -29,9 +29,6 @@ const lexApi = async (resourceurl, method = 'GET', body = {}) => {
         return reject(new Error('LexApi error: ' + error.message))
       }
       return resolve(body)
-    }).catch(error => {
-      consola.error(error)
-      return reject(new Error('Lexoffice unreachable'))
     })
   })
 }
