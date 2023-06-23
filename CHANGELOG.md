@@ -1,3 +1,10 @@
+# [1.63.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.3...1.63.0) (2023-06-23)
+
+
+### Features
+
+* make sure document is not "draft" when importing into WaWi via lex-sync ([eceecbf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eceecbf90d57564eecea7843ec8f44e6498c9f3f))
+
 ## [1.62.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.2...1.62.3) (2023-06-23)
 
 
