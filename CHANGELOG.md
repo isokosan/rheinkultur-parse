@@ -1,3 +1,10 @@
+## [1.62.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.2...1.62.3) (2023-06-23)
+
+
+### Bug Fixes
+
+* http logs ([d98dfd2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d98dfd2086e01fda9f8c62594432e4b74a4aa200))
+
 ## [1.62.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.1...1.62.2) (2023-06-22)
 
 
