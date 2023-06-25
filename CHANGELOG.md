@@ -1,3 +1,10 @@
+# [1.64.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.63.0...1.64.0) (2023-06-25)
+
+
+### Features
+
+* update search fields, lex countries via redis and config ([e0c8a9b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e0c8a9b3f566da95b5706ec5ac999747fd79f2a3))
+
 # [1.63.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.62.3...1.63.0) (2023-06-23)
 
 
