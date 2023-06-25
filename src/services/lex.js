@@ -1,6 +1,4 @@
 const request = require('request')
-const redis = require('./redis')
-
 const Authorization = `Bearer ${process.env.LEX_ACCESS_TOKEN}`
 const headers = {
   Authorization,
@@ -119,9 +117,12 @@ const ensureSubscriptions = async () => {
     }, {}))
 }
 
-const getCountries = async () => {
-  const cached = await redis.hgetall('countries')
-  if (cached) { return cached }
+global.$countries = null
+
+const fetchCountries = async () => {
+  // set and retrieve countries from Parse.Config
+  const config = await Parse.Config.get()
+  if (config.get('countries')) { return config.get('countries') }
   const countries = await Parse.Cloud.httpRequest({
     url: 'https://api.lexoffice.io/v1/countries',
     method: 'GET',
@@ -136,9 +137,15 @@ const getCountries = async () => {
   for (const { countryCode, countryNameDE } of countries) {
     items[countryCode] = countryNameDE
   }
-  await redis.hmset('countries', items)
-  await redis.expire('countries', 60 * 60 * 24)
+  await Parse.Config.save({ countries: items })
   return items
+}
+
+const getCountries = async () => {
+  if (!$countries) {
+    $countries = await fetchCountries()
+  }
+  return $countries
 }
 
 const getContacts = ({ params: { name, number } } = { name: {} }) => {

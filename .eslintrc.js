@@ -42,8 +42,10 @@ module.exports = {
     $saveWithEncode: true,
     $pk: true,
     $parsePk: true,
+    // global variables in memory
     $bPLZ: true,
-    $PDGA: true
+    $PDGA: true,
+    $countries: true
   },
   // add your custom rules here
   rules: {

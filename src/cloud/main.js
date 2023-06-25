@@ -94,7 +94,7 @@ Parse.Cloud.define('enums', () => ({
   fieldworkStatuses
 }), { requireUser: true })
 
-// temporary solution to PLZ's without redis
+// TOLATER: temporary solution to PLZ's without redis
 global.$bPLZ = {}
 async function syncNoMarketingRights () {
   const plzs = await $query('PLZ').equalTo('nMR', true).distinct('objectId', { useMasterKey: true })
@@ -105,7 +105,7 @@ async function syncNoMarketingRights () {
 }
 syncNoMarketingRights()
 
-// TODO: Fetch from single place
+// TOLATER: Save this in database and make editable
 global.$PDGA = {
   'NW:Aachen': true,
   'NW:Alsdorf': true,

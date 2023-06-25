@@ -105,7 +105,13 @@ const INDEXES = {
         properties: {
           geo: { type: 'geo_point' },
           status: { type: 'byte' },
+          ort: { type: 'keyword' },
+          stateId: { type: 'keyword' },
           date: {
+            type: 'date',
+            format: 'strict_date'
+          },
+          dueDate: {
             type: 'date',
             format: 'strict_date'
           }
@@ -577,9 +583,9 @@ Parse.Cloud.define('search-fieldwork', async ({
       }
     })
   } else {
-    sort.unshift({ 'ort.keyword': { order: 'asc' } })
-    sort.unshift({ 'stateId.keyword': { order: 'asc' } })
-    sort.unshift({ dueDate: { order: 'asc' } })
+    sort.unshift({ ort: 'asc' })
+    sort.unshift({ stateId: 'asc' })
+    sort.unshift({ dueDate: 'asc' })
   }
 
   const searchResponse = await client.search({
