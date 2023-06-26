@@ -1,3 +1,10 @@
+## [1.65.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.65.1...1.65.2) (2023-06-26)
+
+
+### Bug Fixes
+
+* disassembly discardBefore overwrite ([33711b0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/33711b09d0773a4474915bf6980ed244a69d646f))
+
 ## [1.65.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.65.0...1.65.1) (2023-06-26)
 
 
