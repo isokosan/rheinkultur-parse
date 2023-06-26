@@ -34,9 +34,15 @@ async function fetchSubmission (taskListId, cubeId, SubmissionClass, submissionI
   return { taskList, cube, submission }
 }
 
-Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form }, user }) => {
+Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ScoutSubmission, submissionId)
-  submission.set({ scout: user, status: 'pending' })
+  submission.set('status', 'pending')
+  !approve && submission.set('scout', user)
+
+  // update submission time if not submitted before or was rejected
+  if (!submission.get('lastSubmittedAt') || submission.get('status') === 'rejected') {
+    submission.set('lastSubmittedAt', new Date())
+  }
 
   // make sure the cube is added to the list if found
   const cubeIds = taskList.get('cubeIds') || []
@@ -113,6 +119,7 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
+
   await $notify({
     user: submission.get('scout'),
     identifier: 'task-submission-rejected',
@@ -121,9 +128,16 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comments, disassemblyId }, user }) => {
+Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comments, disassemblyId, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ControlSubmission, submissionId)
-  submission.set({ scout: user, status: 'pending' })
+
+  submission.set('status', 'pending')
+  !approve && submission.set('scout', user)
+  // update submission time if not submitted before or was rejected
+  if (!submission.get('lastSubmittedAt') || submission.get('status') === 'rejected') {
+    submission.set('lastSubmittedAt', new Date())
+  }
+
   if (condition !== 'no_ad') {
     comments = null
   }
@@ -135,12 +149,7 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
   if (submission.id) {
     changes = $changes(submission, { condition, comments, disassembly })
   }
-  submission.set({
-    scout: user,
-    status: 'pending',
-    condition,
-    comments
-  })
+  submission.set({ condition, comments })
   disassembly ? submission.set({ disassembly }) : submission.unset('disassembly')
 
   submission.set('beforePhoto', beforePhotoId ? await $getOrFail('FileObject', beforePhotoId) : null)
@@ -170,6 +179,7 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
+
   await $notify({
     user: submission.get('scout'),
     identifier: 'task-submission-rejected',
@@ -178,9 +188,17 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
   return { message: 'Kontrolle abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, photoId, comments }, user }) => {
+Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, photoId, comments, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, DisassemblySubmission, submissionId)
-  submission.set({ scout: user, status: 'pending' })
+
+  submission.set('status', 'pending')
+  !approve && submission.set('scout', user)
+
+  // update submission time if not submitted before or was rejected
+  if (!submission.get('lastSubmittedAt') || submission.get('status') === 'rejected') {
+    submission.set('lastSubmittedAt', new Date())
+  }
+
   let changes
   if (condition === 'true') {
     comments = null
@@ -189,9 +207,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
     changes = $changes(submission, { condition, comments })
   }
   submission.set({
-    scout: user,
     condition,
-    status: 'pending',
     photo: photoId ? await $getOrFail('FileObject', photoId) : null,
     comments
   })
@@ -240,6 +256,7 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
   await submission.save(null, { useMasterKey: true, context: { audit } })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
+
   await $notify({
     user: submission.get('scout'),
     identifier: 'task-submission-rejected',

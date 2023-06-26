@@ -26,6 +26,7 @@ const writeMasterOnly = {
 }
 
 const taskSubmissionFields = {
+  lastSubmittedAt: { type: 'Date' },
   taskList: { type: 'Pointer', targetClass: 'TaskList', required: true },
   cube: { type: 'Pointer', targetClass: 'Cube', required: true },
   scout: { type: 'Pointer', targetClass: '_User', required: true },
