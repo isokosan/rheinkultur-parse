@@ -656,6 +656,12 @@ const schemaDefinitions = {
       disassembly: { type: 'Pointer', targetClass: 'DisassemblySubmission' }
     }
   },
+  AssemblySubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      ...taskSubmissionFields
+    }
+  },
   DisassemblySubmission: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {

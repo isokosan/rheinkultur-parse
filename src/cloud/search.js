@@ -526,7 +526,6 @@ Parse.Cloud.define('search', async ({
 // runs only on fieldwork list view
 Parse.Cloud.define('search-fieldwork', async ({
   params: {
-    // pk, // placeKey (stateId:ort)
     c,
     state: stateId,
     type,
