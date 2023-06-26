@@ -1,3 +1,10 @@
+# [1.65.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.64.0...1.65.0) (2023-06-26)
+
+
+### Features
+
+* add last submitted at for submissions ([b3f7503](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b3f75036ca3ab764cf3d7442c82d25f5dde640cc))
+
 # [1.64.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.63.0...1.64.0) (2023-06-25)
 
 
