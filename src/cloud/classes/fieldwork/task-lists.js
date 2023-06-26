@@ -534,16 +534,18 @@ async function getQueryFromSelection (selection, count) {
 // mass updates
 Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection, count } }) => {
   const query = await getQueryFromSelection(selection, count)
+  const today = await $today()
   // return different previews based on action
   const response = {
     statuses: {},
     managers: {},
     scouts: {},
+    future: 0,
     quotasIncomplete: 0
   }
-  // TODO: Add no-quota and has-booked-cube checks
+  // TODO: Add has-booked-cube checks
   await query
-    .select('type', 'manager', 'scouts', 'status', 'statuses', 'quota', 'quotas')
+    .select('type', 'manager', 'scouts', 'status', 'statuses', 'date', 'quota', 'quotas')
     .eachBatch((taskLists) => {
       for (const taskList of taskLists) {
         response.statuses[taskList.get('status') || 0] = (response.statuses[taskList.get('status')] || 0) + 1
@@ -558,6 +560,9 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
         if (taskList.get('type') === 'scout' && !taskList.get('quotas') && !taskList.get('quota')) {
           response.quotasIncomplete++
         }
+        if (taskList.get('date') > today) {
+          response.future++
+        }
       }
     }, { useMasterKey: true })
   return response
@@ -565,14 +570,16 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
 
 Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selection, count, ...form }, user }) => {
   const query = await getQueryFromSelection(selection, count)
+  const today = await $today()
 
   let runFn
   // appoint manager
-  // TODO: remove scouts with locationcleanup in case we allow this for retract as well
+  // TODO: remove scouts with locationCleanup in case we allow this for retract as well
   if (action === 'manager') {
     const manager = form.managerId ? $parsify(Parse.User, form.managerId) : null
     runFn = async (taskList) => {
       await validateAppointAssign(taskList)
+      let locationCleanup
       const changes = {}
       if (form.unsetManager && taskList.get('manager')) {
         changes.managerId = [taskList.get('manager').id, null]
@@ -589,10 +596,11 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       }
       if (form.setStatus !== undefined && form.setStatus !== null && taskList.get('status') !== form.setStatus) {
         changes.taskStatus = [taskList.get('status'), form.setStatus]
+        locationCleanup = true
         taskList.set({ status: form.setStatus })
       }
       if (!$cleanDict(changes)) { return }
-      const audit = { user, fn: 'task-list-update', data: { changes } }
+      const audit = { user, fn: 'task-list-update', data: { changes, locationCleanup } }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
@@ -601,6 +609,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
     const scouts = form.scoutIds ? form.scoutIds.map(id => $parsify(Parse.User, id)) : null
     runFn = async (taskList) => {
       await validateScoutManagerOrFieldworkManager(taskList, user)
+      let locationCleanup
       if (taskList.get('status') > 1) {
         // TOTRANSLATE
         throw new Error('You cannot change scouts in an assigned task list. Please first retract.')
@@ -624,12 +633,17 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
         changes.taskStatus = [taskList.get('status'), form.setStatus]
         taskList.set({ status: form.setStatus })
         if (form.setStatus === 2) {
+          if (taskList.get('date') > today) {
+            throw new Error(`You can assign this task only from ${moment(taskList.get('date')).format('DD.MM.YYYY')}`)
+          }
           notifyScouts = true
+        } else {
+          locationCleanup = true
         }
       }
       if (!$cleanDict(changes)) { return }
       const audit = { user, fn: 'task-list-update', data: { changes } }
-      return taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts } })
+      return taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts, locationCleanup } })
     }
   }
 

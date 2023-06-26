@@ -554,7 +554,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     bool.filter.push({ range: { date: { gte, lte } } })
   }
 
-  stateId && bool.filter.push({ term: { 'stateId.keyword': stateId } })
+  stateId && bool.filter.push({ term: { stateId } })
 
   if (managerId) {
     managerId === 'none' && bool.must_not.push({ exists: { field: 'managerId' } })

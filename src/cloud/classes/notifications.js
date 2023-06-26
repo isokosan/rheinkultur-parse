@@ -6,7 +6,7 @@ const Notification = Parse.Object.extend('Notification')
 const NOTIFICATIONS = {
   'task-list-assigned': {
     mail: false,
-    message: ({ placeKey }) => `You have been assigned to scout ${placeKey.split(':')[1]}.`,
+    message: ({ placeKey }) => `Du hast eine neue Aufgabe in <strong>${placeKey.split(':')[1]}</strong> zugeteilt bekommen.`,
     app: 'scout',
     route: ({ placeKey }) => ({ name: 'location', params: { placeKey } }),
     related: notification => $query(Notification)
@@ -17,6 +17,7 @@ const NOTIFICATIONS = {
   },
   'task-submission-rejected': {
     mail: false,
+    // TOTRANSLATE
     message: ({ cubeId, rejectionReason }) => `Your submission for ${cubeId} was rejected. ${rejectionReason}`,
     app: 'scout',
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })

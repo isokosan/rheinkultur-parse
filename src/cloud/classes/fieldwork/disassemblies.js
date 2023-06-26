@@ -6,7 +6,7 @@ const Disassembly = Parse.Object.extend('Disassembly')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
 const DISCARD_BEFORE = DEVELOPMENT ? '2023-04-01' : '2023-07-01'
-const getDisassemblyStartDate = endDate => endDate && endDate >= DISCARD_BEFORE ? moment(endDate).add(1, 'day').format('YYYY-MM-DD') : null
+
 const getDueDate = date => moment(date).add(2, 'weeks').format('YYYY-MM-DD')
 
 Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly }) => {
@@ -113,12 +113,14 @@ Parse.Cloud.define('disassembly-order-update', async ({
   await Parse.Cloud.run('disassembly-order-sync', { className, id }, { useMasterKey: true })
 }, { requireUser: true })
 
-Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: orderId }, user }) => {
+Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: orderId, forceSince }, user }) => {
+  const discardBefore = forceSince || DISCARD_BEFORE
+
   const sync = []
   const today = await $today()
   const order = await $getOrFail(className, orderId)
   let orderEndDate = order.get('willExtend') ? null : order.get('endsAt')
-  if (orderEndDate && orderEndDate < DISCARD_BEFORE) {
+  if (orderEndDate && orderEndDate < discardBefore) {
     orderEndDate = null
   }
   const contract = className === 'Contract' ? order : null
@@ -135,6 +137,8 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
     await order.save(null, { useMasterKey: true, context: { audit } })
     return sync
   }
+
+  const getDisassemblyStartDate = endDate => endDate && endDate >= discardBefore ? moment(endDate).add(1, 'day').format('YYYY-MM-DD') : null
 
   async function updateTaskListDates (taskList, date, dueDate, type) {
     const disassembly = await ensureDisassemblyExists(order, date, dueDate, type)
