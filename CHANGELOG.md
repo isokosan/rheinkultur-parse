@@ -1,3 +1,10 @@
+## [1.65.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.65.0...1.65.1) (2023-06-26)
+
+
+### Bug Fixes
+
+* introduce AssemblySubmission ([7b80e40](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7b80e40b73427fb112054741c6ef2ad67eb74f8f))
+
 # [1.65.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.64.0...1.65.0) (2023-06-26)
 
 
