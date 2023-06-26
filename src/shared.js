@@ -201,7 +201,6 @@ function removeAllCubeReferencesToOrder (className, objectId, cubeIds) {
     .equalTo('caok', caok)
     .each(cube => {
       cube.unset('order')
-      consola.warn('unsetting order')
       // orderStatusCheck will check if any other active bookings or contracts reference this cube
       return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }, { useMasterKey: true })
@@ -224,7 +223,6 @@ async function setBookingCubeStatus (booking) {
   if (!runningOrder && cubeOrder) {
     if (cubeOrder.className === 'Booking' && cubeOrder.objectId === order.objectId) {
       cube.unset('order')
-      consola.info('unsetting order', cube.id)
       return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }
   }

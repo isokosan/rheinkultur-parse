@@ -5,7 +5,7 @@ const TaskList = Parse.Object.extend('TaskList')
 const Disassembly = Parse.Object.extend('Disassembly')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
-const DISCARD_BEFORE = '2023-04-01'
+const DISCARD_BEFORE = DEVELOPMENT ? '2023-04-01' : '2023-07-01'
 const getDisassemblyStartDate = endDate => endDate && endDate >= DISCARD_BEFORE ? moment(endDate).add(1, 'day').format('YYYY-MM-DD') : null
 const getDueDate = date => moment(date).add(2, 'weeks').format('YYYY-MM-DD')
 
