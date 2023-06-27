@@ -1,3 +1,10 @@
+# [1.66.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.65.2...1.66.0) (2023-06-27)
+
+
+### Features
+
+* add disassembly remove checks ([b3bfcbe](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b3bfcbea4118897e2b5f4240811378fa2641ccd2))
+
 ## [1.65.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.65.1...1.65.2) (2023-06-26)
 
 
