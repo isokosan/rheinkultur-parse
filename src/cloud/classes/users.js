@@ -48,6 +48,18 @@ Parse.Cloud.afterFind(Parse.User, ({ objects: users }) => {
 })
 
 Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user: invitedBy }) => {
+  const [isAdmin, isPartnerScoutManager] = [
+    invitedBy.get('accType') === 'admin',
+    invitedBy.get('accType') === 'partner' && invitedBy.get('permissions')?.includes('manage-scouts')
+  ]
+  if (!isAdmin && !isPartnerScoutManager) {
+    throw new Error('Unbefugter Zugriff!')
+  }
+  if (isPartnerScoutManager) {
+    params.accType = 'scout'
+    params.permissions = []
+    params.companyId = invitedBy.get('company')?.id
+  }
   const inviteToken = generateToken()
   const {
     email,
@@ -73,8 +85,11 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
     invitedAt: new Date()
   })
   const audit = { user: invitedBy, fn: 'user-invite' }
-  return user.signUp(null, { useMasterKey: true, context: { audit } })
-}, $adminOnly)
+  await user.signUp(null, { useMasterKey: true })
+  // audit in signUp context does not work
+  await $audit(user, audit)
+  return user
+}, { requireUser: true })
 
 Parse.Cloud.define('user-update', async ({ params: { id, ...params }, user: auth }) => {
   const user = await $getOrFail(Parse.User, id, ['companyPerson'])

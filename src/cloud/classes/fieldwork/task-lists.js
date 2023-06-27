@@ -137,6 +137,19 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
       }
     }
   }
+
+  // check if date or cubes changes for an active task list (and status did not change)
+  if (audit?.data && taskList.get('status')) {
+    const { changes, cubeChanges } = audit.data
+    if ((cubeChanges || changes?.date) && !changes?.taskStatus) {
+      // notify fieldwork manager about changes
+      await $notify({
+        usersQuery: $query(Parse.User).equalTo('permissions', 'manage-fieldwork'),
+        identifier: 'active-task-list-updated',
+        data: { changes, cubeChanges, taskListId: taskList.id, placeKey, status: taskList.get('status') }
+      })
+    }
+  }
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
@@ -182,8 +195,18 @@ Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
   return taskLists
 })
 
-Parse.Cloud.beforeDelete(TaskList, async ({ object: taskList }) => {
+Parse.Cloud.beforeDelete(TaskList, async ({ object: taskList, context: { notifyRemovedWithAttributes } }) => {
   await unindexTaskList(taskList)
+  if (notifyRemovedWithAttributes) {
+    const placeKey = taskList.get('pk')
+    const status = taskList.get('status')
+    const type = taskList.get('type')
+    await $notify({
+      usersQuery: $query(Parse.User).equalTo('permissions', 'manage-fieldwork'),
+      identifier: 'active-task-list-removed',
+      data: { placeKey, status, type, ...notifyRemovedWithAttributes }
+    })
+  }
 })
 
 Parse.Cloud.afterDelete(TaskList, $deleteAudits)
@@ -364,12 +387,14 @@ Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, use
     throw new Error('Need a manager to appoint to')
   }
   await validateAppointAssign(taskList)
+  const changes = { taskStatus: [taskList.get('status'), 1] }
   taskList.set({ status: 1 })
-  const audit = { user, fn: 'task-list-appoint' }
+  const audit = { user, fn: 'task-list-appoint', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
+  // TODO: Notify manager
   return {
     data: taskList.get('status'),
-    message: 'Abfahrtslist ernennt. Manager notified.'
+    message: 'Abfahrtslist ernennt.'
   }
 }, $fieldworkManager)
 
@@ -388,8 +413,9 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
     throw new Error(`You can assign this task only from ${moment(taskList.get('date')).format('DD.MM.YYYY')}`)
   }
   await validateAppointAssign(taskList)
+  const changes = { taskStatus: [taskList.get('status'), 2] }
   taskList.set({ status: 2 })
-  const audit = { user, fn: 'task-list-assign' }
+  const audit = { user, fn: 'task-list-assign', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts: true } })
   return {
     data: taskList.get('status'),
@@ -407,12 +433,16 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
   if (taskList.get('status') === 1) {
     // Validate if the user is a fieldwork manager before retracting appoint
     if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
+    const changes = { taskStatus: [taskList.get('status'), 0] }
+    audit.data = { changes }
     taskList.set({ status: 0 })
     audit.fn = 'task-list-retract-appoint'
     message = 'Ernennung zurückgezogen.'
   } else {
     // Validate if the user is a fieldwork manager or the manager of the list before retracting assing
     await validateScoutManagerOrFieldworkManager(taskList, user)
+    const changes = { taskStatus: [taskList.get('status'), 1] }
+    audit.data = { changes }
     taskList.set({ status: 1 })
     audit.fn = 'task-list-retract-assign'
     message = 'Beauftragung zurückgezogen.'
@@ -466,8 +496,9 @@ Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) =>
 // check if location has tasks remaining
 Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
+  const changes = { taskStatus: [taskList.get('status'), 4] }
   taskList.set({ status: 4 })
-  const audit = { user, fn: 'task-list-complete' }
+  const audit = { user, fn: 'task-list-complete', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   return {
     data: taskList.get('status'),
@@ -479,8 +510,9 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
 Parse.Cloud.define('task-list-retract-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status') !== 4) { throw new Error('Only completed can be retracted') }
+  const changes = { taskStatus: [taskList.get('status'), 0] }
   taskList.set({ status: 0 })
-  const audit = { user, fn: 'task-list-retract-complete' }
+  const audit = { user, fn: 'task-list-retract-complete', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
     data: taskList.get('status'),

@@ -1,6 +1,8 @@
 const sendPush = require('@/services/push')
 const sendMail = require('@/services/email')
 
+const { TASK_LIST_STATUSES } = require('@/schema/enums')
+
 const Notification = Parse.Object.extend('Notification')
 
 const NOTIFICATIONS = {
@@ -21,6 +23,27 @@ const NOTIFICATIONS = {
     message: ({ cubeId, rejectionReason }) => `Your submission for ${cubeId} was rejected. ${rejectionReason}`,
     app: 'scout',
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
+  },
+  'active-task-list-updated': {
+    mail: false,
+    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in ${placeKey.split(':')[1]} wurde aktualisiert.`,
+    route: ({ taskListId }) => ({ name: 'task-list', params: { listId: taskListId } }),
+    related: notification => $query(Notification)
+      .equalTo('user', notification.get('user'))
+      .equalTo('data.placeKey', notification.get('data').placeKey)
+      .greaterThan('createdAt', moment().subtract(1, 'day').toDate())
+      .first({ useMasterKey: true })
+  },
+  'active-task-list-removed': {
+    mail: false,
+    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in ${placeKey.split(':')[1]} wurde gelösht.`,
+    route: ({ type, orderClass, orderId }) => {
+      if (type === 'disassembly') {
+        const name = orderClass.toLowerCase()
+        return { name: orderClass.toLowerCase(), params: { [`${name}Id`]: orderId }, hash: '#disassembly' }
+      }
+      return { name: 'fieldwork-list' }
+    }
   },
   'booking-request-rejected': {
     mail: false,
@@ -81,13 +104,22 @@ Parse.Cloud.define('notification-read', async ({ params: { id }, user }) => {
   }
 }, { requireUser: true })
 
-const notify = async ({ user, identifier, data }) => {
+const notifyUser = async ({ user, identifier, data }) => {
   const notification = new Notification({ user, identifier, data })
   const related = await resolveRelated(notification)
   if (related) {
     return related.set({ readAt: null }).save(null, { useMasterKey: true })
   }
   return notification.save(null, { useMasterKey: true })
+}
+
+const notify = async ({ user, usersQuery, identifier, data }) => {
+  consola.info('notifing', user, usersQuery)
+  if (user && usersQuery) { throw new Error('Cannot notify both user and usersQuery') }
+  if (user) { return notifyUser({ user, identifier, data }) }
+  return usersQuery.each((record) => {
+    return notifyUser({ user: record, identifier, data })
+  }, { useMasterKey: true })
 }
 
 const send = async (notification) => {

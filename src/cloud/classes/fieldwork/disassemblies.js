@@ -43,18 +43,29 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
   }
 })
 
+async function checkActiveTaskListsExists ({ order, className, disassembly }) {
+  if ((!order || !className) && !disassembly) {
+    throw new Error('Either order and className or disassembly must be provided')
+  }
+  const query = $query(TaskList)
+  if (order) {
+    const contract = className === 'Contract' ? order : null
+    const booking = className === 'Booking' ? order : null
+    query.matchesQuery('disassembly', $query(Disassembly).equalTo('contract', contract).equalTo('booking', booking))
+  }
+  disassembly && query.equalTo('disassembly', disassembly)
+  if (await query.greaterThan('status', 0).count({ useMasterKey: true })) {
+    // TOTRANSLATE
+    throw new Error('Cannot delete disassembly with in-progress tasks. Please revert all tasks first.')
+  }
+}
+
 // TODO: Make sure status of Disassembly is saved and updated?
 Parse.Cloud.beforeDelete(Disassembly, async ({ object: disassembly }) => {
-  const remaining = await $query(TaskList)
-    .equalTo('disassembly', disassembly)
-    .greaterThan('status', 2)
-    .count({ useMasterKey: true })
-  if (remaining) {
-    throw new Error('Cannot delete disassembly with in-progress tasks')
-  }
+  await checkActiveTaskListsExists({ disassembly })
   await $query(TaskList)
     .equalTo('disassembly', disassembly)
-    .lessThanOrEqualTo('status', 1)
+    .equalTo('status', 0)
     .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
 })
 
@@ -95,10 +106,11 @@ Parse.Cloud.define('disassembly-order-update', async ({
   }, user
 }) => {
   const order = await $query(className).get(id, { useMasterKey: true })
+  !fromRMV && await checkActiveTaskListsExists({ order, className })
   const disassembly = order.get('disassembly') || {}
   const changes = $changes(disassembly, { fromRMV }, true)
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
-  // rename key
+  // rename audit key
   changes.disassemblyFromRMV = changes.fromRMV
   delete changes.fromRMV
   disassembly.fromRMV = fromRMV
@@ -129,9 +141,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
 
   // abort and clear lists if disassembly will not be done by RMV
   if (!order.get('disassembly')?.fromRMV) {
-    await getDisassembliesQuery()
-      .lessThan('status', 2) // planned
-      .each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
+    await getDisassembliesQuery().each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
     sync.push({ type: 'all', action: 'remove' })
     const audit = { fn: 'disassembly-sync', data: { sync } }
     await order.save(null, { useMasterKey: true, context: { audit } })
@@ -152,8 +162,6 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
     }
     const audit = { fn: 'task-list-update', data: { changes } }
     taskList.set({ disassembly, date, dueDate })
-    // notify manager that dates have changed
-    // set status to ernannt if beauftragt or in progress
     await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup } })
   }
 
@@ -188,9 +196,11 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
     }
 
     const fromRemainingCubes = from.get('cubeIds').filter(id => !to.get('cubeIds').includes(id))
-    console.info(from.id, fromRemainingCubes)
     if (!fromRemainingCubes.length) {
-      return from.destroy({ useMasterKey: true })
+      const notifyRemovedWithAttributes = from.get('status')
+        ? { orderClass: order.className, orderId: order.id, orderNo: order.get('no') }
+        : false
+      return from.destroy({ useMasterKey: true, context: { notifyRemovedWithAttributes } })
     }
     const fromCubeChanges = $cubeChanges(from, fromRemainingCubes)
     if (!fromCubeChanges) { return }
@@ -381,6 +391,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
         const dueDate = getDueDate(date)
         await updateTaskListDates(taskList, date, dueDate, 'extra')
         sync.push({ pk, type: 'extra', cubeIds, action: 'move', date: [moveDate, date], fn: 'update-task-list-dates', list: taskList.id })
+        continue
       }
       // if some cubes will be remaining in this list, we will not touch it and only move the necessary ones
       for (const date of dates) {
@@ -417,7 +428,10 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
       const taskList = await $getOrFail(TaskList, listId)
       // if all cubes will be moved, and to the same date
       if (removeCubeIds.length === taskList.get('cubeIds').length) {
-        await taskList.destroy({ useMasterKey: true })
+        const notifyRemovedWithAttributes = taskList.get('status')
+          ? { orderClass: order.className, orderId: order.id, orderNo: order.get('no') }
+          : false
+        await taskList.destroy({ useMasterKey: true, context: { notifyRemovedWithAttributes } })
         sync.push({ pk, action: 'remove', cubeIds: removeCubeIds, date: taskList.get('date') })
         continue
       }
