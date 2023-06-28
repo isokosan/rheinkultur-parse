@@ -246,9 +246,11 @@ Parse.Cloud.afterFind(FileObject, ({ objects }) => {
 })
 
 // The FileObject will not be deleted unless the file associated with it is successfuly deleted, or is already not found
-Parse.Cloud.beforeDelete(FileObject, async ({ object, user }) => {
-  if (!user) { throw new Error('Unauthorized') }
-  if (!['intern', 'admin'].includes(user.get('accType'))) { throw new Error('Unauthorized') }
+Parse.Cloud.beforeDelete(FileObject, async ({ object, user, master }) => {
+  if (!master) {
+    if (!user) { throw new Error('Unauthorized') }
+    if (!['intern', 'admin'].includes(user.get('accType'))) { throw new Error('Unauthorized') }
+  }
 
   // check for references of this FileObject
   const references = await Promise.all(Object.keys(FILE_OBJECT_REFERENCES).map((className) => {
