@@ -138,6 +138,9 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
   //   )
   // )
 
+  // do not further constrain when assembly key is requested explicitly
+  if (query._where.assemblyKey) { return }
+
   // so we have to pull the users instead
   const users = user.get('accType') === 'partner'
     ? await $query(Parse.User)
