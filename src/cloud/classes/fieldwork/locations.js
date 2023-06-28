@@ -46,7 +46,8 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
     undefined: 0,
     pending: 1,
     approved: 1,
-    rejected: 2
+    rejected: 2,
+    not_found: 3
   }
 
   for (const taskList of taskLists) {
