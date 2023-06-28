@@ -124,15 +124,33 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
   }
 
   // if not intern constrain photos to only those of the scouts cubes
-  query.equalTo('klsId', null).equalTo('assemblyKey', null)
-  const userQuery = user.get('accType') === 'partner'
-    ? $query(Parse.User).equalTo('company', $pointer('Company', user.get('company').id))
-    : $query(Parse.User).equalTo('objectId', user.id)
+
+  // Unfortunately, matchesQuery inside an and or operator is not functioning
+  // query.equalTo('klsId', null).equalTo('assemblyKey', null)
+  // const userQuery = user.get('accType') === 'partner'
+  //   ? $query(Parse.User).equalTo('company', user.get('company'))
+  //   : $query(Parse.User).equalTo('objectId', user.id)
+  // return Parse.Query.and(
+  //   query,
+  //   Parse.Query.or(
+  //     $query('CubePhoto').equalTo('approved', true),
+  //     $query('CubePhoto').matchesQuery('createdBy', userQuery)
+  //   )
+  // )
+
+  // so we have to pull ids instead
+  const userIds = user.get('accType') === 'partner'
+    ? await $query(Parse.User)
+      .equalTo('company', $pointer('Company', user.get('company').id))
+      .distinct('objectId', { useMasterKey: true })
+      .then(ids => ids.map(id => $pointer('_User', id)))
+    : [user.id]
+
   return Parse.Query.and(
     query,
     Parse.Query.or(
       $query('CubePhoto').equalTo('approved', true),
-      $query('CubePhoto').matchesQuery('createdBy', userQuery)
+      $query('CubePhoto').containedIn('createdBy', userIds)
     )
   )
 })
