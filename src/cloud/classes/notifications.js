@@ -20,13 +20,13 @@ const NOTIFICATIONS = {
   'task-submission-rejected': {
     mail: false,
     // TOTRANSLATE
-    message: ({ cubeId, rejectionReason }) => `Your submission for ${cubeId} was rejected. ${rejectionReason}`,
+    message: ({ cubeId, rejectionReason }) => `Your submission for <strong>${cubeId}</strong> was rejected. ${rejectionReason}`,
     app: 'scout',
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
   },
   'active-task-list-updated': {
     mail: false,
-    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in ${placeKey.split(':')[1]} wurde aktualisiert.`,
+    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde aktualisiert.`,
     route: ({ taskListId }) => ({ name: 'task-list', params: { listId: taskListId } }),
     related: notification => $query(Notification)
       .equalTo('user', notification.get('user'))
@@ -36,7 +36,7 @@ const NOTIFICATIONS = {
   },
   'active-task-list-removed': {
     mail: false,
-    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in ${placeKey.split(':')[1]} wurde gelösht.`,
+    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde gelösht.`,
     route: ({ type, orderClass, orderId }) => {
       if (type === 'disassembly') {
         const name = orderClass.toLowerCase()
@@ -47,7 +47,7 @@ const NOTIFICATIONS = {
   },
   'booking-request-rejected': {
     mail: false,
-    message: ({ no, cubeId, type, reason }) => `Your ${type} submission for booking ${no} for ${cubeId} was rejected. ${reason}`,
+    message: ({ no, cubeId, type, reason }) => `Your ${type} submission for booking <strong>${no}</strong> for <strong>${cubeId}</strong> was rejected. ${reason}`,
     route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
   }
 }
@@ -114,7 +114,6 @@ const notifyUser = async ({ user, identifier, data }) => {
 }
 
 const notify = async ({ user, usersQuery, identifier, data }) => {
-  consola.info('notifing', user, usersQuery)
   if (user && usersQuery) { throw new Error('Cannot notify both user and usersQuery') }
   if (user) { return notifyUser({ user, identifier, data }) }
   return usersQuery.each((record) => {

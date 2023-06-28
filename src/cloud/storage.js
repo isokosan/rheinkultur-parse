@@ -68,7 +68,7 @@ Parse.Cloud.beforeSaveFile(async ({ file }) => {
 
 Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   const name = file._metadata.name
-  const { assetType, cubeId, klsId, originalId, assemblyKey, form } = file.tags()
+  const { assetType, cubeId, klsId, originalId, scope, form } = file.tags()
   let thumb64
   try {
     thumb64 = await getThumbnailBase64(file)
@@ -86,7 +86,7 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   }
   if (cubeId) {
     const cubePhoto = new Parse.Object('CubePhoto')
-    cubePhoto.set({ cubeId, klsId, file, thumb, createdBy: user, assemblyKey, form })
+    cubePhoto.set({ cubeId, klsId, file, thumb, createdBy: user, scope, form })
     return cubePhoto.save(null, { useMasterKey: true })
   }
   if (originalId) {
@@ -113,20 +113,20 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
     query
       .equalTo('approved', true)
       .equalTo('klsId', null) // temporary fix until KLS id is resolved
-      .equalTo('assemblyKey', null)
+      .equalTo('scope', null)
     return
   }
 
   const isIntern = user && ['admin', 'intern'].includes(user.get('accType'))
   if (isIntern) {
-    !query._where.assemblyKey && query.equalTo('assemblyKey', null) // show assembly photos only if specified
+    !query._where.scope && query.equalTo('scope', null) // show assembly photos only if specified
     return
   }
 
   // if not intern constrain photos to only those of the scouts cubes
 
   // Unfortunately, matchesQuery inside an and or operator is not functioning
-  // query.equalTo('klsId', null).equalTo('assemblyKey', null)
+  // query.equalTo('klsId', null).equalTo('scope', null)
   // const userQuery = user.get('accType') === 'partner'
   //   ? $query(Parse.User).equalTo('company', user.get('company'))
   //   : $query(Parse.User).equalTo('objectId', user.id)
@@ -139,7 +139,7 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
   // )
 
   // do not further constrain when assembly key is requested explicitly
-  if (query._where.assemblyKey) { return }
+  if (query._where.scope) { return }
 
   // so we have to pull the users instead
   const users = user.get('accType') === 'partner'
@@ -181,7 +181,7 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
   }
 
   if (!cubePhoto.get('approved')) {
-    if (cubePhoto.get('assemblyKey')) { return }
+    if (cubePhoto.get('scope')) { return }
     // form photos need to be manually approved
     if (cubePhoto.get('form')) { return }
     const user = cubePhoto.get('createdBy')

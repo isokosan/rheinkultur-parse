@@ -6,7 +6,7 @@ const sendPush = async function (userId, message, url) {
     include_external_user_ids: [userId],
     channel_for_external_user_ids: 'push',
     isAnyWeb: true,
-    contents: { en: message },
+    contents: { en: message.replace(/(<([^>]+)>)/ig, '') },
     web_url: url
   })
   return body

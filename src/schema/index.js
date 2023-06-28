@@ -309,7 +309,7 @@ const schemaDefinitions = {
       thumb: { type: 'File', required: true },
       size1000: { type: 'File' },
       original: { type: 'File' }, // carried from file if photo is edited
-      assemblyKey: { type: 'String' } // B:bookingId | C:contractId
+      scope: { type: 'String' } // prefix-B:bookingId | assembly-C:contractId
     },
     indexes: {
       cubeIdIndex: { cubeId: 1 },
@@ -651,8 +651,9 @@ const schemaDefinitions = {
     fields: {
       ...taskSubmissionFields,
       condition: { type: 'String' },
-      beforePhoto: { type: 'Pointer', targetClass: 'FileObject' },
-      afterPhoto: { type: 'Pointer', targetClass: 'FileObject' },
+      // photos are via scope in CubePhotos
+      beforePhotos: { type: 'Array' },
+      afterPhotos: { type: 'Array' },
       disassembly: { type: 'Pointer', targetClass: 'DisassemblySubmission' }
     }
   },

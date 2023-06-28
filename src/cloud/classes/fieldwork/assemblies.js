@@ -1,8 +1,8 @@
 // TODO: move to assemblies.js
-Parse.Cloud.define('assembly-photos', async ({ params: { assemblyKey } }) => {
+Parse.Cloud.define('assembly-photos', async ({ params: { scope } }) => {
   const response = {}
   await $query('CubePhoto')
-    .equalTo('assemblyKey', assemblyKey)
+    .equalTo('scope', scope)
     .eachBatch((photos) => {
       for (const photo of photos) {
         const cubeId = photo.get('cubeId')

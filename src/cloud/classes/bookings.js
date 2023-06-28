@@ -879,6 +879,8 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   }
 
   if (request.media && !cube.get('vAt') && cube.get('media') !== request.media) {
+    // Note: in the future when adding ht in the form make sure to check pointer has id
+    // htId && cube.set('ht', $pointer('HousingType', htId))
     const ht = null
     const media = request.media
     const changes = $changes(cube, { media, ht })

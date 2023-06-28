@@ -23,7 +23,7 @@ filename=$(date +'%d-%m-%Y').gz
 aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./"$foldername"/"$filename"
 
 # with the --drop option this line might be unnecessary
-docker compose exec mongo bash -c 'mongosh rheinklultur-wawi --eval "db.dropDatabase()"'
+docker compose exec mongo bash -c 'mongosh rheinkultur-wawi --eval "db.dropDatabase()"'
 docker compose exec mongo bash -c 'mongorestore --host localhost:27017 --gzip --drop --nsInclude=rheinkultur-wawi.* --archive=db-backups/'"$filename"
 
 node updates/development-reset.js

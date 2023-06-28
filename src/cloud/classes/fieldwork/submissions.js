@@ -3,6 +3,21 @@ const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
+Parse.Cloud.afterSave(ControlSubmission, async ({ object: submission }) => {
+  // cleanup unused cube photos
+  const scopes = ['before', 'after'].map(type => ['control', type, 'TL', submission.get('taskList').id].join('-'))
+  const formPhotoIds = ['beforePhotos', 'afterPhotos'].map(key => submission.get(key)?.map(photo => photo.id)).flat()
+  await $query('CubePhoto')
+    .equalTo('cubeId', submission.get('cube').id)
+    .containedIn('scope', scopes)
+    .notContainedIn('objectId', formPhotoIds)
+    .eachBatch(async (records) => {
+      for (const record of records) {
+        await record.destroy({ useMasterKey: true })
+      }
+    }, { useMasterKey: true })
+})
+
 Parse.Cloud.afterSave(DisassemblySubmission, async ({ object: submission }) => {
   await submission.fetchWithInclude(['taskList.disassembly.booking', 'taskList.disassembly.contract'], { useMasterKey: true })
   const order = await submission.get('taskList').get('disassembly').get('order').fetch({ useMasterKey: true })
@@ -91,7 +106,7 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
     cube.set({ str, hsnr, ort, plz })
     cube.set('state', $parsify('State', stateId))
     cube.set('media', media)
-    cube.set('ht', $parsify('HousingType', htId))
+    htId && cube.set('ht', $parsify('HousingType', htId))
     cube.set('sides', form.sides)
     const scoutData = $cleanDict(form.scoutData)
     scoutData ? cube.set('scoutData', scoutData) : cube.unset('scoutData')
@@ -128,7 +143,7 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoId, afterPhotoId, comments, disassemblyId, approve }, user }) => {
+Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoIds, afterPhotoIds, comments, disassemblyId, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ControlSubmission, submissionId)
 
   submission.set('status', 'pending')
@@ -152,8 +167,9 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
   submission.set({ condition, comments })
   disassembly ? submission.set({ disassembly }) : submission.unset('disassembly')
 
-  submission.set('beforePhoto', beforePhotoId ? await $getOrFail('FileObject', beforePhotoId) : null)
-  submission.set('afterPhoto', afterPhotoId ? await $getOrFail('FileObject', afterPhotoId) : null)
+  const pointerPhotos = ids => ids?.length ? ids.map(id => $pointer('CubePhoto', id)) : null
+  submission.set('beforePhotos', pointerPhotos(beforePhotoIds))
+  submission.set('afterPhotos', pointerPhotos(afterPhotoIds))
   await submission.save(null, { useMasterKey: true })
   taskList.set({ status: 3 })
   const audit = { user, fn: 'control-submission-submit', data: { cubeId, changes } }
