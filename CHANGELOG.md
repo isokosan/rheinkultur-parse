@@ -1,3 +1,10 @@
+## [1.66.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.0...1.66.1) (2023-06-28)
+
+
+### Bug Fixes
+
+* cube photo before find compound query with matches bug ([bd1d701](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bd1d701ddf5e3224bbd97255fc968f47907032c0))
+
 # [1.66.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.65.2...1.66.0) (2023-06-27)
 
 
