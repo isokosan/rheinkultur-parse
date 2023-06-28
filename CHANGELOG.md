@@ -1,3 +1,11 @@
+## [1.66.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.3...1.66.4) (2023-06-28)
+
+
+### Bug Fixes
+
+* ht not set in scout form ([5c32a11](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5c32a11cfeaa21571ce0ab314968bc8a195325ec))
+* not found assets on scout location map ([3bb5fb3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3bb5fb397e0786964761cde5484af62d2ccabc4d))
+
 ## [1.66.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.2...1.66.3) (2023-06-28)
 
 
