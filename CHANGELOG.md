@@ -1,3 +1,10 @@
+## [1.66.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.4...1.66.5) (2023-06-28)
+
+
+### Bug Fixes
+
+* allow deleting FileObjects with master key ([3d9e375](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3d9e375665187c346d9422b504f05f3fe2c1368d))
+
 ## [1.66.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.3...1.66.4) (2023-06-28)
 
 
