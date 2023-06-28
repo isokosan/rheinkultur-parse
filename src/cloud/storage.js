@@ -138,19 +138,19 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
   //   )
   // )
 
-  // so we have to pull ids instead
-  const userIds = user.get('accType') === 'partner'
+  // so we have to pull the users instead
+  const users = user.get('accType') === 'partner'
     ? await $query(Parse.User)
-      .equalTo('company', $pointer('Company', user.get('company').id))
+      .equalTo('company', user.get('company'))
       .distinct('objectId', { useMasterKey: true })
       .then(ids => ids.map(id => $pointer('_User', id)))
-    : [user.id]
+    : [user]
 
   return Parse.Query.and(
     query,
     Parse.Query.or(
       $query('CubePhoto').equalTo('approved', true),
-      $query('CubePhoto').containedIn('createdBy', userIds)
+      $query('CubePhoto').containedIn('createdBy', users)
     )
   )
 })
