@@ -1,3 +1,10 @@
+## [1.66.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.2...1.66.3) (2023-06-28)
+
+
+### Bug Fixes
+
+* assemblyKey query constrain bug ([e23bcef](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e23bcef44eb0f79614b99215e1fc2046f38871f7))
+
 ## [1.66.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.1...1.66.2) (2023-06-28)
 
 
