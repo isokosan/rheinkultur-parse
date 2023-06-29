@@ -58,6 +58,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
     { header: 'Breite', key: 'lat', width: 12 },
     { header: 'Länge', key: 'lon', width: 12 }
   ]
+  // TOLATER: When this is a "booked" export, add motive, externalOrderNo, customerName etc. maybe
 
   const { index, query, sort } = await Parse.Cloud.run('search', { ...req.query, returnQuery: true }, { useMasterKey: true })
   const keepAlive = '1m'
@@ -493,15 +494,8 @@ router.get('/control', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
-function getName ({ className, name, no }) {
-  if (name) { return name }
-  if (className === 'Booking') { return 'Buchung ' + no }
-  if (className === 'Contract') { return 'Vertrag ' + no }
-  return '-'
-}
-
 const addTaskListSheet = async (workbook, taskList) => {
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('booking') || taskList.get('contract')
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly').get('order')
   const company = parent?.get('company') ? await parent.get('company').fetch({ useMasterKey: true }) : null
   const worksheet = workbook.addWorksheet(safeName(`${taskList.get('ort')} (${taskList.get('state').id}) ${moment(taskList.get('dueDate')).format('DD.MM.YYYY')}`))
 
@@ -534,15 +528,22 @@ const addTaskListSheet = async (workbook, taskList) => {
   worksheet.addRow()
   i++
 
-  const { columns, headerRowValues } = getColumnHeaders({
+  const taskListHeaders = {
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     status: { header: 'Status', width: 15 },
+    motive: { header: 'Motiv', width: 30 },
     address: { header: 'Anschrift', width: 30 },
     plz: { header: 'PLZ', width: 15 },
     ort: { header: 'Ort', width: 15 },
     stateName: { header: 'Bundesland', width: 30 }
-  })
+  }
+
+  if (taskList.get('type') === 'scout') {
+    delete taskListHeaders.motive
+  }
+
+  const { columns, headerRowValues } = getColumnHeaders(taskListHeaders)
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
@@ -559,6 +560,7 @@ const addTaskListSheet = async (workbook, taskList) => {
       objectId: cube.id,
       htCode: cube.get('ht')?.get('code') || cube.get('hti'),
       status: CUBE_STATUSES[cube.get('s') || 0],
+      motive: cube.get('order')?.motive,
       address: cube.get('str') + ' ' + cube.get('hsnr'),
       plz: cube.get('plz'),
       ort: cube.get('ort'),
@@ -610,9 +612,14 @@ const addTaskListSheet = async (workbook, taskList) => {
 }
 
 router.get('/task-list', handleErrorAsync(async (req, res) => {
-  const taskList = await (new Parse.Query('TaskList')).include('state').get(req.query.id, { useMasterKey: true })
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly').get('order')
-  const name = getName(parent.toJSON())
+  const taskList = await $query('TaskList')
+    .include(['state', 'briefing', 'control', 'disassembly', 'disassembly.booking', 'disassembly.contract'])
+    .get(req.query.id, { useMasterKey: true })
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')
+  let name = parent.get('name') || parent.get('booking')?.get('no') || parent.get('contract')?.get('no')
+  if (taskList.get('type') === 'disassembly') {
+    name = 'Demontage ' + name
+  }
   const workbook = new excel.Workbook()
   await addTaskListSheet(workbook, taskList)
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -621,20 +628,28 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
 }))
 
 router.get('/task-lists', handleErrorAsync(async (req, res) => {
-  // TODO: Fix bug when Disassembly has - inside the ID
   const [className] = req.query.parent.split('-')
-  const objectId = req.query.parent.replace(`${className}-`, '')
-  const parent = await $getOrFail(className, objectId)
-  const name = getName(parent.toJSON())
+  let name
+  const parentQuery = $query(className)
+  if (className === 'Disassembly') {
+    const [, orderClass, orderId] = req.query.parent.split('-')
+    const order = await $getOrFail(orderClass, orderId)
+    name = 'Demontage ' + order.get('no')
+    parentQuery.equalTo(orderClass.toLowerCase(), order)
+  } else {
+    const objectId = req.query.parent.replace(`${className}-`, '')
+    parentQuery.equalTo('objectId', objectId)
+    name = await parentQuery.first({ useMasterKey: true }).then(parent => parent.get('name'))
+  }
   const workbook = new excel.Workbook()
   await $query('TaskList')
-    .equalTo(className.toLowerCase(), parent)
+    .matchesQuery(className.toLowerCase(), parentQuery)
     .include('state')
     .each(async taskList => {
       await addTaskListSheet(workbook, taskList)
     }, { useMasterKey: true })
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=Alle Demontage ${name}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${name}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
