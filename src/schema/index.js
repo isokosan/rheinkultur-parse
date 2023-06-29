@@ -313,7 +313,7 @@ const schemaDefinitions = {
     },
     indexes: {
       cubeIdIndex: { cubeId: 1 },
-      assemblyKeyIndex: { assemblyKey: 1 }
+      scopeIndex: { scope: 1 }
     }
   },
   CreditNote: {
@@ -668,7 +668,7 @@ const schemaDefinitions = {
     fields: {
       ...taskSubmissionFields,
       condition: { type: 'String' },
-      photo: { type: 'Pointer', targetClass: 'FileObject' }
+      photos: { type: 'Array' }
     }
   },
   // TODO: Remove the following in favor of using a better system?

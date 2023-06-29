@@ -6,7 +6,7 @@ const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 Parse.Cloud.afterSave(ControlSubmission, async ({ object: submission }) => {
   // cleanup unused cube photos
   const scopes = ['before', 'after'].map(type => ['control', type, 'TL', submission.get('taskList').id].join('-'))
-  const formPhotoIds = ['beforePhotos', 'afterPhotos'].map(key => submission.get(key)?.map(photo => photo.id)).flat()
+  const formPhotoIds = ['beforePhotos', 'afterPhotos'].map(key => (submission.get(key) || []).map(photo => photo.id)).flat()
   await $query('CubePhoto')
     .equalTo('cubeId', submission.get('cube').id)
     .containedIn('scope', scopes)
@@ -35,6 +35,19 @@ Parse.Cloud.afterSave(DisassemblySubmission, async ({ object: submission }) => {
   disassembly.statuses = $cleanDict(statuses)
   order.set({ disassembly })
   order.save(null, { useMasterKey: true })
+
+  // cleanup unused cube photos
+  const scope = ['disassembly', 'TL', submission.get('taskList').id].join('-')
+  const formPhotoIds = (submission.get('photos') || []).map(photo => photo.id).flat()
+  await $query('CubePhoto')
+    .equalTo('cubeId', submission.get('cube').id)
+    .equalTo('scope', scope)
+    .notContainedIn('objectId', formPhotoIds)
+    .eachBatch(async (records) => {
+      for (const record of records) {
+        await record.destroy({ useMasterKey: true })
+      }
+    }, { useMasterKey: true })
 })
 
 async function fetchSubmission (taskListId, cubeId, SubmissionClass, submissionId) {
@@ -211,7 +224,7 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
   return { message: 'Kontrolle abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, photoId, comments, approve }, user }) => {
+Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, photoIds, comments, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, DisassemblySubmission, submissionId)
 
   submission.set('status', 'pending')
@@ -229,11 +242,8 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
   if (submission.id) {
     changes = $changes(submission, { condition, comments })
   }
-  submission.set({
-    condition,
-    photo: photoId ? await $getOrFail('FileObject', photoId) : null,
-    comments
-  })
+  const photos = await $query('CubePhoto').containedIn('objectId', photoIds).find({ useMasterKey: true })
+  submission.set({ condition, photos, comments })
   const audit = { user, fn: 'disassembly-submission-submit', data: { cubeId, changes } }
   await submission.save(null, { useMasterKey: true })
 
