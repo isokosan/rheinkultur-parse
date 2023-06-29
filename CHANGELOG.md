@@ -1,3 +1,15 @@
+# [1.69.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.68.0...1.69.0) (2023-06-29)
+
+
+### Bug Fixes
+
+* task list exports and motive inside control and demontage ([f335a2e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f335a2e4ce005bbafe8c9107ae96ff91e0d423da))
+
+
+### Features
+
+* add search sort by german ([556c4c5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/556c4c5090f47ce6770a586a4b93b815ad876747))
+
 # [1.68.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.67.0...1.68.0) (2023-06-29)
 
 
