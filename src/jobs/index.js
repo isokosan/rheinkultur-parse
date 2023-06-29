@@ -13,9 +13,14 @@ const updateJobs = {
     description: 'Frees city cubes that have been early canceled and the date is now past',
     timeoutMinutes: 30
   },
-  end_extend: {
-    name: 'Verträge/Buchungen beenden/verlängern (außer Kinetic).',
+  end_extend_contracts: {
+    name: 'Verträge beenden/verlängern (außer Kinetic).',
     description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
+    timeoutMinutes: 120
+  },
+  end_extend_bookings: {
+    name: 'Buchungen beenden/verlängern. (Vertriebspartner)',
+    description: 'Verlängert oder beendet Buchungen, die ihre Enddatum überschritten haben.',
     timeoutMinutes: 120
   },
   issue_invoices: {

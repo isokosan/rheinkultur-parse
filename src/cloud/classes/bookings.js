@@ -740,6 +740,7 @@ Parse.Cloud.define('booking-cancel-request', async ({ params, user }) => {
   const request = {
     type: wasCanceled ? 'cancel-change' : 'cancel',
     user: user.toPointer(),
+    endsAt, // if the booking is extended before the request is accepted
     changes: changes || undefined,
     comments: comments || undefined,
     createdAt: new Date(),
@@ -947,7 +948,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   }
 
   if (request.type === 'cancel' || request.type === 'cancel-change') {
-    const endsAt = request.changes?.endsAt?.[1] || booking.get('endsAt')
+    const endsAt = request.changes?.endsAt?.[1] || request.endsAt || booking.get('endsAt')
     const cancelNotes = normalizeString(request.comments)
 
     if (booking.get('status') !== 3) {
