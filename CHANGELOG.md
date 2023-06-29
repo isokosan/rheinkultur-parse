@@ -1,3 +1,10 @@
+# [1.67.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.5...1.67.0) (2023-06-29)
+
+
+### Features
+
+* add removal of rejection submission notifications when submission is approved again. ([8c394ba](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8c394bae696ea32140456316d2edaf07e1f656b4))
+
 ## [1.66.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.4...1.66.5) (2023-06-28)
 
 
