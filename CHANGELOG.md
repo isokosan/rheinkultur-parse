@@ -1,3 +1,15 @@
+# [1.68.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.67.0...1.68.0) (2023-06-29)
+
+
+### Bug Fixes
+
+* potential bug with booking request endDate and extensions ([c4741ac](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c4741acba1a520742087d9881aad65a0371a3a68))
+
+
+### Features
+
+* add multiple photos to disassemblies ([7d31795](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7d3179530bdbb62801c4cdff96177c0c3b1e57a8))
+
 # [1.67.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.66.5...1.67.0) (2023-06-29)
 
 
