@@ -47,3 +47,13 @@ Parse.Cloud.define('comment-create', async ({
     }
   }
 })
+
+Parse.Cloud.define('comment-remove', async ({ params: { id: commentId }, user, master }) => {
+  const comment = await $getOrFail(Comment, commentId)
+  if (!master) {
+    if (!comment.get('createdBy') || comment.get('createdBy').id !== user.id) {
+      throw new Parse.Error(403, 'Unbefugter Zugriff')
+    }
+  }
+  return comment.destroy({ useMasterKey: true })
+}, { requireUser: true })

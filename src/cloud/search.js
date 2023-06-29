@@ -36,9 +36,23 @@ const INDEXES = {
   },
   'rheinkultur-cubes': {
     config: {
+      settings: {
+        analysis: {
+          normalizer: {
+            german_sort_normalizer: {
+              type: 'custom',
+              filter: ['lowercase', 'asciifolding']
+            }
+          }
+        }
+      },
       mappings: {
         properties: {
           geo: { type: 'geo_point' },
+          str: {
+            type: 'keyword',
+            normalizer: 'german_sort_normalizer'
+          },
           hsnr_numeric: { type: 'double' }
         }
       }
@@ -349,7 +363,7 @@ Parse.Cloud.define('search', async ({
     if (sb === 'hsnr') {
       sort.unshift({ 'hsnr.keyword': sd })
       sort.unshift({ hsnr_numeric: sd })
-      sort.unshift({ 'str.keyword': sd })
+      sort.unshift({ str: sd })
       sort.unshift({ 'ort.keyword': sd })
       sort.unshift({ 'stateId.keyword': sd })
     }
@@ -461,7 +475,7 @@ Parse.Cloud.define('search', async ({
     [stateId, ort] = pk.split(':')
   }
 
-  str && bool.filter.push({ term: { 'str.keyword': str } })
+  str && bool.filter.push({ term: { str } })
   hsnr && bool.filter.push({ match_phrase_prefix: { hsnr } })
   plz && bool.filter.push({ match_phrase_prefix: { plz } })
   ort && bool.filter.push({ term: { 'ort.keyword': ort } })
@@ -865,12 +879,20 @@ const unindexTaskList = (taskList) => {
   return client.delete({ index: 'rheinkultur-fieldwork', id: taskList.id }).catch(consola.error)
 }
 
-const purgeIndexes = async function () {
-  for (const index of Object.keys(INDEXES)) {
-    await client.indices.exists({ index }) && await client.indices.delete({ index })
-    consola.success(`index deleted: ${index}`)
+const purgeIndex = async function (index) {
+  await client.indices.exists({ index }) && await client.indices.delete({ index })
+  return `index deleted: ${index}`
+}
+
+const purgeIndexes = async function ({ params: { index: singleIndex } }) {
+  if (singleIndex) {
+    return purgeIndex(singleIndex)
   }
-  return 'ok'
+  const messages = []
+  for (const index of Object.keys(INDEXES)) {
+    messages.push(await purgeIndex(index))
+  }
+  return messages
 }
 
 Parse.Cloud.define('purge-search-indexes', purgeIndexes, { requireMaster: true })
@@ -894,6 +916,7 @@ module.exports = {
   client,
   INDEXES,
   createOrUpdateIndex,
+  purgeIndex,
   purgeIndexes,
   indexCube,
   unindexCube,
