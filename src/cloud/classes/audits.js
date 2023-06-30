@@ -1,17 +1,65 @@
 const Audit = Parse.Object.extend('Audit')
 
-Parse.Cloud.beforeFind(Audit, ({ query, user }) => {
-  const company = user?.get('company')
-  if (company) {
-    let constraintQuery = $query('Audit').matchesQuery('user', $query(Parse.User).equalTo('company', company))
-    // if user is booking manager, get bookings related audits
-    if (user?.get('accType') === 'partner' && user?.get('permissions').includes('manage-bookings')) {
-      const bookingsQuery = $query('Audit')
-        .equalTo('itemClass', 'Booking')
-        .matchesKeyInQuery('itemId', 'objectId', $query('Booking').equalTo('company', company))
-      constraintQuery = Parse.Query.or(constraintQuery, bookingsQuery)
+const FIELDWORK_FUNCTIONS = [
+  'briefing-create',
+  'briefing-update',
+  'control-create',
+  'control-update',
+  'disassembly-sync',
+  'task-list-create',
+  'task-list-generate',
+  'task-list-update',
+  'task-list-appoint',
+  'task-list-assign',
+  'task-list-retract-appoint',
+  'task-list-retract-assign',
+  'task-list-complete',
+  'task-list-retract-complete',
+  'scout-submission-submit',
+  'scout-submission-preapprove',
+  'scout-submission-approve',
+  'scout-submission-reject',
+  'control-submission-submit',
+  'control-submission-approve',
+  'control-submission-reject',
+  'disassembly-submission-submit',
+  'disassembly-submission-approve',
+  'disassembly-submission-preapprove',
+  'disassembly-submission-reject',
+  'disassembly-submission-update'
+]
+
+Parse.Cloud.beforeFind(Audit, async ({ query, user, master }) => {
+  if (master) { return }
+  if (!user || user.get('accType') === 'scout') { throw new Parse.Error(401, 'Unbefugter Zugriff') }
+
+  if (['admin', 'intern'].includes(user.get('accType'))) {
+    if (!user.get('permissions')?.includes('manage-fieldwork')) {
+      query.notContainedIn('fn', FIELDWORK_FUNCTIONS)
     }
-    return Parse.Query.and(query, constraintQuery)
+  }
+
+  const orQueries = []
+  if (user.get('accType') === 'partner') {
+    if (user.get('permissions')?.includes('manage-scouts')) {
+      const userIds = await $query(Parse.User)
+        .equalTo('company', user.get('company'))
+        .distinct('objectId', { useMasterKey: true })
+      const users = userIds.map(id => $pointer(Parse.User, id))
+      orQueries.push($query(Audit).containedIn('user', users))
+    }
+    if (user.get('permissions')?.includes('manage-bookings')) {
+      const bookingIds = await $query('Booking')
+        .equalTo('company', user.get('company'))
+        .distinct('objectId', { useMasterKey: true })
+      orQueries.push($query(Audit).equalTo('itemClass', 'Booking').containedIn('itemId', bookingIds))
+    }
+  }
+  if (orQueries.length) {
+    return Parse.Query.and(
+      query,
+      Parse.Query.or(...orQueries)
+    )
   }
 })
 
