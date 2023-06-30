@@ -1,3 +1,10 @@
+## [1.69.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.69.1...1.69.2) (2023-06-30)
+
+
+### Bug Fixes
+
+* wip with audit viewing constraints ([5cb162a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5cb162a521751aec6d30ff464fc55f908ad3b557))
+
 ## [1.69.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.69.0...1.69.1) (2023-06-30)
 
 
