@@ -544,6 +544,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     state: stateId,
     type,
     start,
+    end,
     managerId,
     scoutId,
     status,
@@ -560,15 +561,11 @@ Parse.Cloud.define('search-fieldwork', async ({
     bool.must.push({ range: { status: { gt: 0 } } })
   }
 
-  type && bool.filter.push({ term: { 'type.keyword': type } })
-
-  if (start) {
-    const gte = moment(start, 'MM-YYYY').startOf('month').format('YYYY-MM-DD')
-    const lte = moment(start, 'MM-YYYY').endOf('month').format('YYYY-MM-DD')
-    bool.filter.push({ range: { date: { gte, lte } } })
-  }
+  (start || end) && bool.filter.push({ range: { date: { gte: start, lte: end } } })
 
   stateId && bool.filter.push({ term: { stateId } })
+
+  type && bool.filter.push({ term: { type } })
 
   if (managerId) {
     managerId === 'none' && bool.must_not.push({ exists: { field: 'managerId' } })

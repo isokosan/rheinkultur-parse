@@ -653,10 +653,8 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
-router.get('/disassemblies/:monthYear', handleErrorAsync(async (req, res) => {
-  const month = moment(req.params.monthYear, 'MM-YYYY')
-  const from = moment(month).startOf('month').format('YYYY-MM-DD')
-  const to = moment(month).endOf('month').format('YYYY-MM-DD')
+router.get('/disassemblies', handleErrorAsync(async (req, res) => {
+  const { start: from, end: to } = req.query
 
   const workbook = new excel.Workbook()
   const worksheet = workbook.addWorksheet(safeName(`Demontageliste ${req.params.monthYear}`))

@@ -51,7 +51,7 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
   }
 
   for (const taskList of taskLists) {
-    const { type, cubeIds, scoutAddedCubeIds, counts, statuses } = taskList.attributes
+    const { type, cubeIds, scoutAddedCubeIds, counts, statuses, gp: center } = taskList.attributes
     const cubeLocations = await $query('Cube')
       .containedIn('objectId', cubeIds)
       .select('gp')
@@ -86,7 +86,8 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
       quotaStatus: taskList.get('quotaStatus'),
       ...counts,
       cubes,
-      type
+      type,
+      center
     }
   }
 

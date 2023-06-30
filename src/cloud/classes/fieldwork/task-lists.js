@@ -150,6 +150,19 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
       })
     }
   }
+
+  // set auto-erledigt if approved matches total
+  const { status, counts } = taskList.attributes
+  if (![0, 4].includes(status) && !counts.pending && counts.approved >= counts.total) {
+    // if its a scout list, you can forget about the rejected forms
+    if (taskList.get('type') !== 'scout' && counts.rejected) {
+      return
+    }
+    const changes = { taskStatus: [status, 4] }
+    taskList.set({ status: 4 })
+    const audit = { fn: 'task-list-complete', data: { changes } }
+    await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+  }
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {

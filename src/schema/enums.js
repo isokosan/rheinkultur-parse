@@ -124,7 +124,6 @@ module.exports.TASK_LIST_STATUSES = {
 }
 
 // Briefing, Control, Disassembly
-// These should be calculated from the task lists (except geplant, which is after the list is generated)
 module.exports.FIELDWORK_STATUSES = {
   0: 'Entwurf',
   1: 'Geplant',
