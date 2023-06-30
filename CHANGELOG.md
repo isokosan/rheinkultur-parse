@@ -1,3 +1,10 @@
+## [1.69.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.69.0...1.69.1) (2023-06-30)
+
+
+### Bug Fixes
+
+* scout list bug with extra cubes center ([adfd2f3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/adfd2f30e59f5ab2cb613065cf32e1d1ec23b7e6))
+
 # [1.69.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.68.0...1.69.0) (2023-06-29)
 
 
