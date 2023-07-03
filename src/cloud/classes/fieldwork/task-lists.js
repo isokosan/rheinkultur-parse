@@ -516,11 +516,11 @@ Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) =>
 }, $fieldworkManager)
 
 // check if location has tasks remaining
-Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, user }) => {
+Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  const changes = { taskStatus: [taskList.get('status'), 4] }
-  taskList.set({ status: 4 })
-  const audit = { user, fn: 'task-list-complete', data: { changes } }
+  const changes = { taskStatus: [taskList.get('status'), 4.1] }
+  taskList.set({ status: 4.1 })
+  const audit = { user, fn: 'task-list-mark-complete', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   return {
     data: taskList.get('status'),
@@ -528,17 +528,17 @@ Parse.Cloud.define('task-list-complete', async ({ params: { id: taskListId }, us
   }
 }, $fieldworkManager)
 
-// retract complete mark
-Parse.Cloud.define('task-list-retract-complete', async ({ params: { id: taskListId }, user }) => {
+// unmark complete
+Parse.Cloud.define('task-list-unmark-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status') !== 4) { throw new Error('Only completed can be retracted') }
+  if (taskList.get('status') !== 4.1) { throw new Error('Only marked completed can be unmarked') }
   const changes = { taskStatus: [taskList.get('status'), 0] }
   taskList.set({ status: 0 })
-  const audit = { user, fn: 'task-list-retract-complete', data: { changes } }
+  const audit = { user, fn: 'task-list-unmark-complete', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
     data: taskList.get('status'),
-    message: 'Task list retracted'
+    message: 'Task list unmarked as complete'
   }
 }, $fieldworkManager)
 
@@ -743,22 +743,22 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
     }
   }
-  if (action === 'complete') {
+  if (action === 'mark-complete') {
     runFn = async (taskList) => {
       if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
-      if (taskList.get('status') === 4) { return }
-      taskList.set({ status: 4 })
-      const audit = { user, fn: 'task-list-complete' }
+      if (taskList.get('status') === 4.1) { return }
+      taskList.set({ status: 4.1 })
+      const audit = { user, fn: 'task-list-mark-complete' }
       return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
     }
   }
-  if (action === 'retract-complete') {
+  if (action === 'unmark-complete') {
     runFn = async (taskList) => {
-      // Validate if the user is a fieldwork manager or the manager of the list before retracting assign
+      // Validate if the user is a fieldwork manager or the manager of the list before umarking complete
       await validateScoutManagerOrFieldworkManager(taskList, user)
       if (taskList.get('status') === 0) { return }
       taskList.set({ status: 0 })
-      const audit = { user, fn: 'task-list-retract-complete' }
+      const audit = { user, fn: 'task-list-unmark-complete' }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }

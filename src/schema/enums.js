@@ -120,7 +120,8 @@ module.exports.TASK_LIST_STATUSES = {
   1: 'Ernannt',
   2: 'Beauftragt',
   3: 'In Bearbeitung',
-  4: 'Erledigt'
+  4: 'Erledigt',
+  4.1: 'Erledigt'
 }
 
 // Briefing, Control, Disassembly
