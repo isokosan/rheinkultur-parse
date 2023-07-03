@@ -3,6 +3,8 @@ const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const TaskList = Parse.Object.extend('TaskList')
 
+const getSubmissionClass = type => capitalize(type) + 'Submission'
+
 async function getCenterOfCubes (cubeIds) {
   if (!cubeIds.length) {
     return null
@@ -41,7 +43,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
 
   const taskType = taskList.get('type')
 
-  const submissionClass = capitalize(taskType) + 'Submission'
+  const submissionClass = getSubmissionClass(taskType)
   const submissions = taskList.isNew()
     ? []
     : await $query(submissionClass).equalTo('taskList', taskList).limit(cubeIds.length).find({ useMasterKey: true })
@@ -185,7 +187,7 @@ Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
     taskList.set('parent', taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly'))
     taskList.set('dueDays', moment(taskList.get('dueDate')).diff(today, 'days'))
     if (query._include.includes('submissions')) {
-      const submissionClass = capitalize(taskList.get('type')) + 'Submission'
+      const submissionClass = getSubmissionClass(taskList.get('type'))
       taskList.set('submissions', await $query(submissionClass).equalTo('taskList', taskList).find({ useMasterKey: true }))
     }
     if (taskList.get('type') === 'scout') {
@@ -209,11 +211,18 @@ Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
 })
 
 Parse.Cloud.beforeDelete(TaskList, async ({ object: taskList, context: { notifyRemovedWithAttributes } }) => {
+  // Do not allow deleting task lists with submissions
+  const submissionClass = getSubmissionClass(taskList.get('type'))
+  const count = await $query(submissionClass)
+    .equalTo('taskList', taskList)
+    .count({ useMasterKey: true })
+  if (count) { throw new Error('Diese Liste wurde bereits durch den Scout bearbeitet und kann nicht gelöscht werden.') }
   await unindexTaskList(taskList)
   if (notifyRemovedWithAttributes) {
     const placeKey = taskList.get('pk')
     const status = taskList.get('status')
     const type = taskList.get('type')
+    // TODO: Add here notification to manager and scouts
     await $notify({
       usersQuery: $query(Parse.User).equalTo('permissions', 'manage-fieldwork'),
       identifier: 'active-task-list-removed',
@@ -548,8 +557,10 @@ async function getQueryFromSelection (selection, count) {
 
   selection.state && query.equalTo('state', $parsify('State', selection.state))
   selection.type && query.equalTo('type', selection.type)
-  // TODO
-  // selection.start && query.equalTo('type', type)
+
+  selection.start && query.greaterThanOrEqualTo('date', selection.start)
+  selection.end && query.lessThanOrEqualTo('date', selection.end)
+
   if (selection.managerId) {
     if (selection.managerId === 'none') {
       query.equalTo('manager', null)
