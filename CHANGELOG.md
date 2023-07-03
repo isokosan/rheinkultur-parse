@@ -1,3 +1,10 @@
+# [1.70.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.69.2...1.70.0) (2023-07-03)
+
+
+### Features
+
+* update contract-extend doc generation ([abb25d4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/abb25d4538c46ab08f2a18eb486f32156e8e8748))
+
 ## [1.69.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.69.1...1.69.2) (2023-06-30)
 
 
