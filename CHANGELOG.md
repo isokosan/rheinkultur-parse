@@ -1,3 +1,10 @@
+## [1.70.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.70.0...1.70.1) (2023-07-03)
+
+
+### Bug Fixes
+
+* do not allow deleting task list if any submission exists ([16446ef](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/16446efdbeb3b93e34489d83699e4631a24e837d))
+
 # [1.70.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.69.2...1.70.0) (2023-07-03)
 
 
