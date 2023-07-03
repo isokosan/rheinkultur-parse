@@ -1,3 +1,10 @@
+## [1.70.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.70.1...1.70.2) (2023-07-03)
+
+
+### Bug Fixes
+
+* mark-unmark complete ([03bf7e8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/03bf7e85b12b20beb10e707afce9189122369d47))
+
 ## [1.70.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.70.0...1.70.1) (2023-07-03)
 
 
