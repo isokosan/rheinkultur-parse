@@ -26,7 +26,7 @@ const NOTIFICATIONS = {
   },
   'active-task-list-updated': {
     mail: false,
-    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde aktualisiert.`,
+    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde aktualisiert. Bitte überprüfen Sie den aktuellen Status der Liste.`,
     route: ({ taskListId }) => ({ name: 'task-list', params: { listId: taskListId } }),
     related: notification => $query(Notification)
       .equalTo('user', notification.get('user'))
