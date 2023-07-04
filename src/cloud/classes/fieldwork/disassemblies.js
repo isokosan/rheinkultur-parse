@@ -54,10 +54,23 @@ async function checkActiveTaskListsExists ({ order, className, disassembly }) {
     query.matchesQuery('disassembly', $query(Disassembly).equalTo('contract', contract).equalTo('booking', booking))
   }
   disassembly && query.equalTo('disassembly', disassembly)
+  // TODO: Update check here and go over notifications
   if (await query.greaterThan('status', 0).count({ useMasterKey: true })) {
     // TOTRANSLATE
     throw new Error('Cannot delete disassembly with in-progress tasks. Please revert all tasks first.')
   }
+  // const activeLists = await query.greaterThan('status', 0).find({ useMasterKey: true })
+  // if (activeLists.length) {
+  //   throw new Error('Cannot delete disassembly with submitted tasks.')
+  // }
+  // if (submissions) {
+  //   // Lists with submissions from scouts
+  //   // If there are any submissions from scouts already in this list, do not allow deleting.
+  //   throw new Error('Cannot delete disassembly with submitted tasks.')
+  // }
+  // If there is no submissions yet, but the list was Ernannt oder Beauftragt - then we notify & delete.
+  // Send a notification to all the scouts, and manager of the list, and all feldarbeit-managers
+  // Eine (Demontage/Kontrol/Scouting) liste in Solingen mit # CityCubes wurde gelöscht. (Add the cube and standorte in the notification to show it in a popup when clicked.)
 }
 
 // TODO: Make sure status of Disassembly is saved and updated?

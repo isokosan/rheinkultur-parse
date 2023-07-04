@@ -112,7 +112,6 @@ Parse.Cloud.define('system-status-order-dates', async () => {
   return issues
 }, $internOrAdmin)
 
-
 // TODO: Move to updates folder
 
 // // CHECK OVERLAPPING PLANNED INVOICES OF CONTRACTS

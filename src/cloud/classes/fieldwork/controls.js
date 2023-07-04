@@ -241,7 +241,7 @@ Parse.Cloud.define('control-update', async ({
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId, lists }, user }) => {
+Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
   const cubesQuery = getCubesQuery(control)
   const matchingCubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
@@ -288,10 +288,12 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId, l
     if (placeKey === 'NW:Hilden') {
       consola.warn(cubeIds)
     }
+    const changes = $changes(taskList, { date, dueDate })
     const cubeChanges = $cubeChanges(taskList, cubeIds)
-    if (cubeChanges) {
-      taskList.set({ cubeIds })
-      const audit = { user, fn: 'task-list-update', data: { cubeChanges } }
+    // TODO: Warn manager etc
+    if (changes || cubeChanges) {
+      taskList.set({ date, dueDate, cubeIds })
+      const audit = { user, fn: 'task-list-update', data: { changes, cubeChanges } }
       await taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
@@ -311,11 +313,28 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId, l
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
   const control = await $getOrFail(Control, controlId)
+  // TODO: Check assigned and submitted lists
+  // TOLATER: make checks once, and set status to "removing", and do the removal as jobs...
   if (await $query('TaskList').equalTo('control', control).greaterThan('status', 0).first({ useMasterKey: true })) {
     throw new Error('Controls with task lists in progress cannot be deleted!')
   }
   await $query('TaskList')
     .equalTo('control', control)
-    .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
+    .eachBatch(async (records) => {
+      for (const record of records) {
+        await record.destroy({ useMasterKey: true })
+      }
+    }, { useMasterKey: true })
   return control.destroy({ useMasterKey: true })
 }, { requireUser: true })
+
+// TODO: Change how control is deleted with checking the status of task lists first, then deleting, then running a cleanup job
+Parse.Cloud.beforeDelete(Control, async ({ object: control }) => {
+  // do not allow deleting if there are task lists or submissions
+  const taskListCount = await $query('TaskList')
+    .equalTo('control', control)
+    .count({ useMasterKey: true })
+  if (taskListCount) {
+    throw new Error('Kontrollen mit Aufgabenlisten können nicht gelöscht werden!')
+  }
+})

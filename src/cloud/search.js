@@ -674,6 +674,7 @@ Parse.Cloud.define('search-bookings', async ({
   ort && bool.filter.push({ term: { 'cube.ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'cube.stateId.keyword': stateId } })
 
+  // TODO: Update the date filters to start from/to end from/to
   t && bool.must.push({ range: { startsAt: { lte: t } } })
   f && bool.must.push({ range: { endsAt: { gt: f } } })
   const searchResponse = await client.search({

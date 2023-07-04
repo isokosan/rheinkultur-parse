@@ -48,6 +48,11 @@ Parse.Cloud.beforeFind(Company, ({ query }) => {
 })
 
 Parse.Cloud.afterFind(Company, async ({ query, objects: companies }) => {
+  // set default
+  for (const company of companies) {
+    company.get('dueDays') === undefined && company.set('dueDays', 14)
+  }
+
   if (query._include.includes('persons')) {
     for (const company of companies) {
       const persons = await $query('Person').equalTo('company', company).find({ useMasterKey: true })
