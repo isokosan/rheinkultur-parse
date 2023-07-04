@@ -1,3 +1,10 @@
+# [1.72.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.71.0...1.72.0) (2023-07-04)
+
+
+### Features
+
+* add distributor update show months ([6f8ef2e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6f8ef2e9eb8df98375162a1f17a3f716fa69dc43))
+
 # [1.71.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.70.2...1.71.0) (2023-07-04)
 
 
