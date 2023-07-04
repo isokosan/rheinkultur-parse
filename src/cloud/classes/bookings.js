@@ -27,6 +27,10 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
 
   booking.set('totalDuration', (booking.get('initialDuration') || 0) + (booking.get('extendedDuration') || 0))
 
+  if (booking.get('autoExtendsBy') && !booking.get('canceledAt')) {
+    booking.set('autoExtendsAt', booking.get('endsAt'))
+  }
+
   // cubes
   !booking.get('cubeIds') && booking.set('cubeIds', [])
   booking.set('cubeCount', (booking.get('cubeIds') || []).length)
@@ -206,7 +210,8 @@ Parse.Cloud.define('booking-create', async ({ params, user, master, context: { s
     initialDuration,
     endsAt,
     autoExtendsAt,
-    autoExtendsBy
+    autoExtendsBy,
+    disassemblyFromRMV
   } = normalizeFields(params)
 
   const booking = new Booking({
@@ -220,7 +225,10 @@ Parse.Cloud.define('booking-create', async ({ params, user, master, context: { s
     endsAt,
     autoExtendsAt,
     autoExtendsBy,
-    responsibles: user ? [user] : undefined
+    responsibles: user ? [user] : undefined,
+    disassembly: disassemblyFromRMV
+      ? { fromRMV: true }
+      : null
   })
   companyId && booking.set({ company: await $getOrFail('Company', companyId) })
   companyPersonId && booking.set({ companyPerson: await $getOrFail('Person', companyPersonId) })
@@ -269,7 +277,8 @@ Parse.Cloud.define('booking-update', async ({
     initialDuration,
     endsAt,
     autoExtendsAt,
-    autoExtendsBy
+    autoExtendsBy,
+    disassemblyFromRMV
   } = normalizeFields(params)
 
   const booking = await $getOrFail(Booking, bookingId)
@@ -308,6 +317,14 @@ Parse.Cloud.define('booking-update', async ({
     monthlyMedia,
     endPrices
   })
+
+  const disassembly = booking.get('disassembly') || {}
+  // add disassemblyFromRMV
+  if (disassemblyFromRMV !== disassembly.fromRMV) {
+    changes.disassemblyFromRMV = [Boolean(disassembly.fromRMV), disassemblyFromRMV]
+    disassembly.fromRMV = disassemblyFromRMV
+    booking.set({ disassembly })
+  }
 
   if (companyId !== booking.get('company')?.id) {
     changes.companyId = [booking.get('company')?.id, companyId]
@@ -417,6 +434,8 @@ Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy 
     endsAt: newEndsAt.format('YYYY-MM-DD'),
     extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
   })
+
+  // TODO: Change
   booking.get('autoExtendsBy') && booking.get('autoExtendsAt') && booking.set('autoExtendsAt', newEndsAt.clone().format('YYYY-MM-DD'))
 
   const audit = { user, fn: 'booking-extend', data: { extendBy, endsAt: [endsAt, booking.get('endsAt')] } }

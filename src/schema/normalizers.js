@@ -208,7 +208,8 @@ module.exports = {
         autoExtendsBy: normalizeInt,
         noticePeriod: normalizeInt,
         invoiceDescription: normalizeString,
-        pricingModel: value => ['gradual', 'fixed', 'zero'].includes(value) ? value : null
+        pricingModel: value => ['gradual', 'fixed', 'zero'].includes(value) ? value : null,
+        disassemblyFromRMV: value => value === 'y'
       }
       const normalized = {}
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
@@ -261,7 +262,8 @@ module.exports = {
         initialDuration: normalizeInt,
         autoExtendsAt: normalizeDateString,
         autoExtendsBy: normalizeInt,
-        noticePeriod: normalizeInt
+        noticePeriod: normalizeInt,
+        disassemblyFromRMV: value => value === 'y'
       }
       const normalized = {}
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {

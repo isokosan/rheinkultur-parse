@@ -449,7 +449,8 @@ Parse.Cloud.define('contract-create', async ({ params, user, master, context: { 
     noticePeriod,
     autoExtendsAt,
     autoExtendsBy,
-    pricingModel
+    pricingModel,
+    disassemblyFromRMV
   } = normalizeFields(params)
 
   const company = await $getOrFail('Company', companyId)
@@ -479,7 +480,10 @@ Parse.Cloud.define('contract-create', async ({ params, user, master, context: { 
     commission,
     commissions,
     responsibles: user ? [$pointer(Parse.User, user.id)] : undefined,
-    tags: company.get('tags')
+    tags: company.get('tags'),
+    disassembly: disassemblyFromRMV
+      ? { fromRMV: true }
+      : null
   })
 
   const audit = { user, fn: 'contract-create' }
@@ -566,7 +570,8 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
     autoExtendsBy,
     pricingModel,
     billingCycle,
-    invoiceDescription
+    invoiceDescription,
+    disassemblyFromRMV
   } = normalizeFields(params)
 
   const contract = await $getOrFail(Contract, contractId, ['all'])
@@ -632,6 +637,14 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
     autoExtendsAt,
     monthlyMedia
   })
+
+  const disassembly = contract.get('disassembly') || {}
+  // add disassemblyFromRMV
+  if (disassemblyFromRMV !== disassembly.fromRMV) {
+    changes.disassemblyFromRMV = [Boolean(disassembly.fromRMV), disassemblyFromRMV]
+    disassembly.fromRMV = disassemblyFromRMV
+    contract.set({ disassembly })
+  }
 
   if (companyId !== contract.get('company')?.id) {
     changes.companyId = [contract.get('company')?.id, companyId]
