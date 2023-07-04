@@ -1,3 +1,10 @@
+# [1.73.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.72.0...1.73.0) (2023-07-04)
+
+
+### Features
+
+* add disassembly from rmv in contract and booking forms ([5499219](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5499219e36e57e9cb1e816dc68bb18f7047672c0))
+
 # [1.72.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.71.0...1.72.0) (2023-07-04)
 
 
