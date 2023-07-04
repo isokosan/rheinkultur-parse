@@ -1,3 +1,10 @@
+# [1.71.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.70.2...1.71.0) (2023-07-04)
+
+
+### Features
+
+* add system-status-order-dates check ([06ee9bf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/06ee9bfe644d789c1d3394b62cf797c5b55500d2))
+
 ## [1.70.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.70.1...1.70.2) (2023-07-03)
 
 
