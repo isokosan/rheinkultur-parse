@@ -220,6 +220,25 @@ Parse.Cloud.define('company-update-distributor', async ({
   return company.save(null, { useMasterKey: true, context: { audit } })
 }, $adminOnly)
 
+Parse.Cloud.define('company-update-distributor-show-months', async ({
+  params: {
+    id: companyId,
+    showMonths
+  }, user
+}) => {
+  const company = await $getOrFail(Company, companyId)
+  const distributor = company.get('distributor')
+  if (!distributor) {
+    throw new Error('Only distributors')
+  }
+  if (user.get('company').id !== company.id) {
+    throw new Error('Only for own company')
+  }
+  distributor.showMonths = parseInt(showMonths)
+  company.set({ distributor })
+  return company.save(null, { useMasterKey: true })
+}, { requireUser: true })
+
 Parse.Cloud.define('company-update-agency', async ({
   params: {
     id: companyId,
