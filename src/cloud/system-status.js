@@ -62,6 +62,57 @@ Parse.Cloud.define('system-status-vouchers', async () => {
 
 module.exports.updateUnsyncedLexDocument = updateUnsyncedLexDocument
 
+Parse.Cloud.define('system-status-order-dates', async () => {
+  const issues = {}
+  for (const className of ['Contract', 'Booking']) {
+    await $query(className)
+      .equalTo('voidedAt', null)
+      .select([
+        'no',
+        'startsAt',
+        'initialDuration',
+        'extendedDuration',
+        'autoExtendsBy',
+        'canceledAt',
+        'noticePeriod',
+        // wanna turn into calculated values
+        'autoExtendsAt',
+        'endsAt'
+      ])
+      .eachBatch((records) => {
+        for (const record of records) {
+          const { no, startsAt, initialDuration, extendedDuration, autoExtendsBy, autoExtendsAt, canceledAt, noticePeriod, endsAt } = record.attributes
+          const totalDuration = initialDuration + (extendedDuration || 0)
+
+          const shouldEndAt = moment(startsAt).add(totalDuration, 'months').subtract(1, 'day').format('YYYY-MM-DD')
+          if (!canceledAt && endsAt !== shouldEndAt) {
+            issues[no] = { no, shouldEndAt, endsAt }
+          }
+
+          if (!autoExtendsBy && !autoExtendsAt && canceledAt) {
+            // was early canceled but never had an extension
+            // continue
+          }
+          if (!autoExtendsBy && !canceledAt && autoExtendsAt) {
+            issues[no] = { no, error: 'autoExtendsAt without autoExtendsBy' }
+            continue
+          }
+          if (!autoExtendsAt && !canceledAt && autoExtendsBy) {
+            issues[no] = { no, error: 'autoExtendsBy without autoExtendsAt' }
+          }
+          if (autoExtendsBy && !canceledAt) {
+            const shouldAutoExtendAt = moment(endsAt).subtract(noticePeriod || 0, 'months').format('YYYY-MM-DD')
+            if (autoExtendsAt !== shouldAutoExtendAt) {
+              issues[no] = { no, error: { autoExtendsAt, endsAt, noticePeriod, shouldAutoExtendAt } }
+            }
+          }
+        }
+      }, { useMasterKey: true })
+  }
+  return issues
+}, $internOrAdmin)
+
+
 // TODO: Move to updates folder
 
 // // CHECK OVERLAPPING PLANNED INVOICES OF CONTRACTS
