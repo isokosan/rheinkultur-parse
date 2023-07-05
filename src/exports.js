@@ -1039,7 +1039,6 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     return row
   })
 
-
   // remove externalOrderNo / campaignNo columns if empty
   !rows.find(row => row.externalOrderNo) && (delete fields.externalOrderNo)
   !rows.find(row => row.campaignNo) && (delete fields.campaignNo)
