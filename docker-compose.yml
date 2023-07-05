@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   parse:
-    container_name: wawi-parse
+    container_name: wawi-dev-parse
     build:
       dockerfile: dev.Dockerfile
       args:
@@ -22,20 +22,20 @@ services:
     command: yarn dev
   mongo:
     image: mongo
-    container_name: wawi-mongo
+    container_name: wawi-dev-mongo
     restart: always
     volumes:
         - mongodata:/data/db
         - ./db-backups:/db-backups
   redis:
     image: redis
-    container_name: wawi-redis
+    container_name: wawi-dev-redis
     command: redis-server --bind redis --requirepass passwordtest --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
     volumes:
         - redisdata:/data
   elastic:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
-    container_name: wawi-elastic
+    container_name: wawi-dev-elastic
     environment:
       - node.name=elastic
       - discovery.type=single-node
@@ -45,21 +45,32 @@ services:
       - "ES_JAVA_OPTS=-Xms256M -Xmx256M"
     volumes:
       - elasticsearchdata:/usr/share/elasticsearch/data
+    # ports:
+    #   - 127.0.0.1:9200:9200
     command: >
       bash -c "bin/elasticsearch-plugin install analysis-icu;
       bin/elasticsearch"
+    # networks:
+    #   - es-network
   kibana:
     image: docker.elastic.co/kibana/kibana:8.6.2
-    container_name: wawi-kibana
+    container_name: wawi-dev-kibana
     environment:
       ELASTICSEARCH_HOSTS: http://elasticsearch:9200
     volumes:
       - kibanadata:/usr/share/kibana/data
+    # ports:
+    #   - 127.0.0.1:5601:5601
+    # networks:
+    #   - es-network
     depends_on:
       - elastic
 networks:
   default:
-    name: wawi-network
+    name: wawi-dev-network
+  # es-network:
+  #   name: wawi-dev-es-network
+  #   driver: bridge
 
 volumes:
   elasticsearchdata:
