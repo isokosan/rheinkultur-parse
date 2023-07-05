@@ -574,7 +574,7 @@ module.exports = async function (job) {
   const quarterlyReport = await $getOrFail('QuarterlyReport', id)
   const quarter = quarterlyReport.get('quarter')
 
-  if (quarter.get('status') === 'finalized') {
+  if (quarterlyReport.get('status') === 'finalized') {
     throw new Error('This report has been finalized.')
   }
 

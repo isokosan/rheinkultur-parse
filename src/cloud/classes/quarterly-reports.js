@@ -109,7 +109,8 @@ Parse.Cloud.define('job-status', async ({ params: { jobId } }) => {
   }
   consola.info(job)
   if (job.failedReason || job.stacktrace.length) {
-    throw new Error({ message: job.failedReason, stacktrace: job.stacktrace })
+    consola.error(job.stacktrace)
+    throw new Error(job.failedReason)
   }
   return job?.progress()
 }, $adminOnly)

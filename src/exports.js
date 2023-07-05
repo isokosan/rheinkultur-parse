@@ -20,7 +20,7 @@ const { CUBE_STATUSES } = require('@/schema/enums')
 
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
-const safeName = name => name.replace(/\//g, '').replace(/\s\s+/g, ' ').trim()
+const safeName = name => name.replace(/\//g, '').replace(/\s\s+/g, ' ').replace(/,/g, '').trim()
 
 // common sheets functions
 function getColumnHeaders (headers) {
@@ -153,7 +153,7 @@ router.get('/hts', handleErrorAsync(async (req, res) => {
   }
   const filename = `Verifizierte Gehäusetypen nach Bundesland (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -266,7 +266,7 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
 
   const filename = `Vertrag ${contract.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -325,7 +325,7 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
 
   const filename = `Laufende Verträge ${company.get('name')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -894,7 +894,7 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   headerRow.height = 24
   const filename = `${invoice.get('lexNo') || ''} Rechnungsdetails`.trim()
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () {
     res.status(200).end()
   })
@@ -1039,6 +1039,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     return row
   })
 
+
   // remove externalOrderNo / campaignNo columns if empty
   !rows.find(row => row.externalOrderNo) && (delete fields.externalOrderNo)
   !rows.find(row => row.campaignNo) && (delete fields.campaignNo)
@@ -1059,7 +1060,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   totalRow.font = { name: 'Calibri', bold: true }
 
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
