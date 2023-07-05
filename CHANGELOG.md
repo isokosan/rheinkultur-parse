@@ -1,3 +1,10 @@
+## [1.73.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.73.0...1.73.1) (2023-07-05)
+
+
+### Bug Fixes
+
+* exports safeName strip commas ([7d89711](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7d89711cf04114dc7a9109b9d8ffa3edb635c7bb))
+
 # [1.73.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.72.0...1.73.0) (2023-07-04)
 
 
