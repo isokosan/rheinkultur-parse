@@ -1,3 +1,10 @@
+## [1.75.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.75.1...1.75.2) (2023-07-06)
+
+
+### Bug Fixes
+
+* orderEarlyCancelations in cube active checks ([8bcf04b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8bcf04bc37123c16a9d94b013097190b145741dd))
+
 ## [1.75.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.75.0...1.75.1) (2023-07-06)
 
 
