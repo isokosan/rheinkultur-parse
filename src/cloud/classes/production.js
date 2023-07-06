@@ -12,14 +12,24 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   await bookingOrContract.fetch({ useMasterKey: true })
 
   const cubeIds = bookingOrContract.get('cubeIds') || []
-  for (const key of ['printPackages', 'monthlies', 'prices', 'extras', 'totals']) {
+  // remove cubes that are not in booking/contract from dictionaries
+  for (const key of [
+    'printPackages',
+    'prices',
+    'extras',
+    'totals',
+    'monthlies',
+    'printTemplates',
+    'printFiles',
+    'printNotes'
+  ]) {
     const obj = production.get(key) || {}
     for (const cubeId of Object.keys(obj)) {
       if (!cubeIds.includes(cubeId)) {
         delete obj[cubeId]
       }
     }
-    production.set({ key: obj })
+    production.set(key, obj)
   }
 
   const total = round2(sum(Object.values(production.get('totals') || {})))

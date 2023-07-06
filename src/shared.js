@@ -87,6 +87,7 @@ const getCubeSummaries = function (cubeIds) {
     }, {}))
 }
 
+// TODO: Add start datum check, so that we can finalize orders between orders. Right now we check only the end date.
 async function checkIfCubesAreAvailable (cubeIds, date, selfNo) {
   if (!date) { date = await $today() }
   for (const cubeId of cubeIds) {

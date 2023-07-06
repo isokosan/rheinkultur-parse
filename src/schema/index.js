@@ -515,6 +515,7 @@ const schemaDefinitions = {
       assembler: { type: 'String' }, // company that does the montage
       assemblyStart: { type: 'String' }, // montagebeginn - default one week before contract/booking start
       realizedDate: { type: 'String' }, // belegungstart: realized date when montage is completed (generate gutschein )
+      printTemplates: { type: 'Object' }, // druckvorlagen
       printFiles: { type: 'Object' }, // druckdaten
       printNotes: { type: 'Object' } // hinweise
     }
