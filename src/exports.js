@@ -945,6 +945,15 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     voucherNos: { header: 'Belege.', width: 20 }
   }
 
+  function findFieldKey (header) {
+    for (const [key, dict] of Object.entries(fields)) {
+      if (header === dict.header) {
+        return key
+      }
+    }
+    return null
+  }
+
   if (distributorId) {
     const distributorName = await $getOrFail('Company', distributorId).then((company) => company.get('name'))
     filename = `${distributorName} Q${quarter}`
@@ -1004,6 +1013,14 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
 
   if (lessorCode) {
     filename = `${lessorCode} Q${quarter} Pacht`
+    delete fields.orderNo
+    delete fields.objectId
+    delete fields.externalOrderNo
+    delete fields.campaignNo
+    delete fields.periodStart
+    delete fields.periodEnd
+    delete fields.monthly
+    delete fields.months
     delete fields.total
     delete fields.agencyRate
     delete fields.agencyTotal
@@ -1011,6 +1028,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     delete fields.regionalTotal
     delete fields.serviceRate
     delete fields.serviceTotal
+    fields.totalNet.header = 'Kunden Netto'
     delete fields.voucherNos
   }
 
@@ -1036,6 +1054,12 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     row.end = dateString(row.end)
     row.periodStart = dateString(row.periodStart)
     row.periodEnd = dateString(row.periodEnd)
+    for (const [header, value] of Object.entries(row.extraCols || {})) {
+      const fieldKey = findFieldKey(header)
+      if (fieldKey) {
+        row[fieldKey] = value
+      }
+    }
     return row
   })
 

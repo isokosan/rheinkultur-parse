@@ -935,7 +935,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
       total: round2(mediaTotal)
     }
 
-    if (media.total  === 0) {
+    if (media.total === 0) {
       await invoice.destroy({ useMasterKey: true })
       consola.info('Possible duplicate invoice with 0 Total removed from contract', contract.id, 'invoice', invoice.id)
       i++

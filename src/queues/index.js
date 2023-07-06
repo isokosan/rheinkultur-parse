@@ -153,7 +153,6 @@ async function processCustomInvoices (start, end) {
       row.total = invoice.get('netTotal') || 0
       row.duration = round2(duration)
       row.months = months
-      // TODO: check later
       row.extraCols = invoice.get('extraCols')
       response.push(row)
       i++
