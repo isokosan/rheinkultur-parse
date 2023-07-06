@@ -145,7 +145,7 @@ async function validateBookingActivate (booking) {
   }
 
   // check if all cubes are available
-  await checkIfCubesAreAvailable(cubeIds, booking.get('startsAt'), booking.get('no'))
+  await checkIfCubesAreAvailable(booking)
 
   // validate production
   const production = await $query('Production').equalTo('booking', booking).first({ useMasterKey: true })
@@ -665,7 +665,7 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     monthlyMedia
   })
 
-  await checkIfCubesAreAvailable(booking.get('cubeIds'), booking.get('startsAt'), booking.get('no'))
+  await checkIfCubesAreAvailable(booking)
 
   await validatePricing({
     company: booking.get('company'),
@@ -932,7 +932,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     for (const field of Object.keys(request.changes)) {
       booking.set(field, request.changes[field][1])
     }
-    await checkIfCubesAreAvailable(booking.get('cubeIds'), booking.get('startsAt'), booking.get('no'))
+    await checkIfCubesAreAvailable(booking)
     setCubeStatuses = true
     audit = { fn: 'booking-change-request-accept', user, data: { requestedBy: request.user, changes: request.changes } }
   }

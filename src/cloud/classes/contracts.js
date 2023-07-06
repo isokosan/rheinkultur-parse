@@ -360,7 +360,7 @@ async function validateContractFinalize (contract, skipCubeValidations) {
   }
 
   // check if all cubes are available
-  await checkIfCubesAreAvailable(cubeIds, contract.get('startsAt'), contract.get('no'))
+  await checkIfCubesAreAvailable(contract)
 
   // validate production
   const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })

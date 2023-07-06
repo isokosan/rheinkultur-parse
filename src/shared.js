@@ -88,43 +88,51 @@ const getCubeSummaries = function (cubeIds) {
 }
 
 // TODO: Add start datum check, so that we can finalize orders between orders. Right now we check only the end date.
-async function checkIfCubesAreAvailable (cubeIds, date, selfNo) {
-  if (!date) { date = await $today() }
+async function checkIfCubesAreAvailable (order) {
+  const cubeIds = order.get('cubeIds') || []
+  if (!cubeIds.length) { return }
+  const orderStart = order.get('startsAt')
+  const orderEnd = (order.get('autoExtendsBy') && !order.get('canceledAt')) ? null : order.get('endsAt')
+  const errors = {}
   for (const cubeId of cubeIds) {
-    const contracts = await $query('Contract')
-      .equalTo('cubeIds', cubeId)
-      .greaterThanOrEqualTo('status', 3)
-      .greaterThanOrEqualTo('endsAt', date) // didn't yet end
-      .notEqualTo(`earlyCancellations.${cubeId}`, true) // wasn't taken completely out of the contract
-      .find({ useMasterKey: true })
-    for (const contract of contracts) {
-      if (contract && contract.get('no') !== selfNo) {
-        const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = contract.toJSON()
-        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
-          consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
-          throw new Error(`CityCube ${cubeId} istist zu diesem Startdatum bereits gebucht. (${contract.get('no')})`)
-        }
-      }
+    for (const className of ['Contract', 'Booking']) {
+      const query = $query(className)
+        .equalTo('cubeIds', cubeId)
+        .greaterThanOrEqualTo('status', 3) // is or was active
+      orderEnd && query.lessThan('startsAt', orderEnd)
+      await query
+        .notEqualTo('no', order.get('no'))
+        .notEqualTo(`earlyCancellations.${cubeId}`, true) // wasn't taken completely out of the contract
+        .select(['no', 'startsAt', 'endsAt', 'autoExtendsBy', 'canceledAt', 'earlyCancellations'])
+        .eachBatch((matches) => {
+          for (const match of matches) {
+            const { no, startsAt: cubeStart, endsAt, earlyCancellations, autoExtendsBy, canceledAt } = match.attributes
+            let cubeEnd = ((autoExtendsBy && !canceledAt) ? null : endsAt)
+            if (earlyCancellations?.[cubeId] && earlyCancellations[cubeId] < cubeEnd) {
+              cubeEnd = earlyCancellations[cubeId]
+            }
+            const cubeStartsBeforeOrderEnds = Boolean(!orderEnd || cubeStart <= orderEnd)
+            const cubeStartsAfterOrderEnds = Boolean(orderEnd && cubeStart > orderEnd)
+            const cubeEndsBeforeOrderStarts = Boolean(cubeEnd && cubeEnd < orderStart)
+            if (cubeStartsBeforeOrderEnds && !cubeEndsBeforeOrderStarts && !cubeStartsAfterOrderEnds) {
+              if (!errors[cubeId]) { errors[cubeId] = [] }
+              errors[cubeId].push(no)
+            }
+          }
+        }, { useMasterKey: true })
     }
-    const bookings = await $query('Booking')
-      .equalTo('cubeIds', cubeId)
-      .greaterThanOrEqualTo('status', 3)
-      .greaterThanOrEqualTo('endsAt', date) // didn't yet end
-      .find({ useMasterKey: true })
-    for (const booking of bookings) {
-      if (booking && booking.get('no') !== selfNo) {
-        const { no, startsAt, endsAt, autoExtendsAt, earlyCancellations } = booking.toJSON()
-        if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
-          consola.error({ no, startsAt, endsAt, autoExtendsAt, earlyCancellations })
-          throw new Error(`CityCube ${cubeId} ist zu diesem Startdatum bereits gebucht. (${booking.get('no')})`)
-          // throw new Error(`CityCube ${cubeId} ist bereits in Buchung ${booking.get('no')} gebucht.`)
-        }
-      }
+  }
+  if (Object.keys(errors).length) {
+    const messages = []
+    for (const [cubeId, nos] of Object.entries(errors)) {
+      messages.push(`CityCube ${cubeId} ist bereits gebucht: ${nos.join(', ')}`)
     }
+    throw new Error(messages)
   }
 }
 
 // TODO: Find a more performant way to store this data
+// TODO: Store past booked dates as well somewhere, to fetch status and history more actively, and to be able to show overlaps inside contract and booking pages
 function getOrderSummary (bookingOrContract) {
   const { className, id: objectId } = bookingOrContract
   const {
