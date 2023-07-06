@@ -1,3 +1,10 @@
+# [1.74.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.73.2...1.74.0) (2023-07-06)
+
+
+### Features
+
+* add mass scouting to cubes index ([76857e1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/76857e1025e76c6a9873db5e5dc075c55d30754c))
+
 ## [1.73.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.73.1...1.73.2) (2023-07-06)
 
 
