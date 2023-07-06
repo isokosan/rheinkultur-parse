@@ -1,3 +1,10 @@
+## [1.74.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.74.2...1.74.3) (2023-07-06)
+
+
+### Bug Fixes
+
+* unset production printTemplates if no assembly ([5866d68](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5866d68284fb84664ff67af11d12bfa44457005f))
+
 ## [1.74.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.74.1...1.74.2) (2023-07-06)
 
 
