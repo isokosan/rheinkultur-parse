@@ -93,13 +93,16 @@ async function checkIfCubesAreAvailable (order) {
   if (!cubeIds.length) { return }
   const orderStart = order.get('startsAt')
   const orderEnd = (order.get('autoExtendsBy') && !order.get('canceledAt')) ? null : order.get('endsAt')
+  const orderEarlyCancellations = order.get('earlyCancellations') || {}
   const errors = {}
   for (const cubeId of cubeIds) {
+    const orderCubeEarlyCanceledAt = orderEarlyCancellations[cubeId]
+    const orderCubeEnd = orderCubeEarlyCanceledAt && (!orderEnd || orderCubeEarlyCanceledAt < orderEnd) ? orderCubeEarlyCanceledAt : orderEnd
     for (const className of ['Contract', 'Booking']) {
       const query = $query(className)
         .equalTo('cubeIds', cubeId)
         .greaterThanOrEqualTo('status', 3) // is or was active
-      orderEnd && query.lessThan('startsAt', orderEnd)
+      orderCubeEnd && query.lessThan('startsAt', orderCubeEnd)
       await query
         .notEqualTo('no', order.get('no'))
         .notEqualTo(`earlyCancellations.${cubeId}`, true) // wasn't taken completely out of the contract
@@ -108,12 +111,13 @@ async function checkIfCubesAreAvailable (order) {
           for (const match of matches) {
             const { no, startsAt: cubeStart, endsAt, earlyCancellations, autoExtendsBy, canceledAt } = match.attributes
             let cubeEnd = ((autoExtendsBy && !canceledAt) ? null : endsAt)
-            if (earlyCancellations?.[cubeId] && earlyCancellations[cubeId] < cubeEnd) {
+            if (earlyCancellations?.[cubeId] && (!cubeEnd || earlyCancellations[cubeId] < cubeEnd)) {
               cubeEnd = earlyCancellations[cubeId]
             }
-            const cubeStartsBeforeOrderEnds = Boolean(!orderEnd || cubeStart <= orderEnd)
-            const cubeStartsAfterOrderEnds = Boolean(orderEnd && cubeStart > orderEnd)
+            const cubeStartsBeforeOrderEnds = Boolean(!orderCubeEnd || cubeStart <= orderCubeEnd)
+            const cubeStartsAfterOrderEnds = Boolean(orderCubeEnd && cubeStart > orderCubeEnd)
             const cubeEndsBeforeOrderStarts = Boolean(cubeEnd && cubeEnd < orderStart)
+            // consola.info({ orderEnd, orderCubeEnd, cubeId, cubeStart, endsAt, earlyCanceledAt: earlyCancellations?.[cubeId], cubeEnd, cubeStartsBeforeOrderEnds, cubeStartsAfterOrderEnds, cubeEndsBeforeOrderStarts })
             if (cubeStartsBeforeOrderEnds && !cubeEndsBeforeOrderStarts && !cubeStartsAfterOrderEnds) {
               if (!errors[cubeId]) { errors[cubeId] = [] }
               errors[cubeId].push(no)
