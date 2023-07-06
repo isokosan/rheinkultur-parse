@@ -1,3 +1,10 @@
+# [1.75.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.74.3...1.75.0) (2023-07-06)
+
+
+### Features
+
+* overhaul checkCubesAreAvailable function ([7b80e5a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7b80e5a8de079ccd08ddedb56137d3b8a5a953ed))
+
 ## [1.74.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.74.2...1.74.3) (2023-07-06)
 
 
