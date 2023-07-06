@@ -115,9 +115,9 @@ function getContractCommissionForYear (contract, year) {
 }
 
 function getInvoiceLineItems ({ production, media }) {
-  if (!media?.total) {
+  if (!media) {
     // Should not occur
-    throw new Error('Invoice without media total in invoice getLineItems!')
+    throw new Error('Invoice without media in invoice getLineItems!')
   }
   if (!production) {
     return [{
