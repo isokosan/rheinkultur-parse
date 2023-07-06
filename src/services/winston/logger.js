@@ -31,12 +31,11 @@ function getLogger () {
         format.colorize({ all: true, colors }),
         format.align(),
         format.splat(),
-        format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         format.printf((info) => {
           if (info.level.includes('error')) {
-            return `[${info.timestamp}] ${info.level}: ${info.stack || info.message || ''}`
+            return `${info.level}: ${info.stack || info.message || ''}`
           }
-          return `[${info.timestamp}] ${info.level}: ${info.message}`
+          return `${info.level}: ${info.message}`
         })
       ),
       transports: [new transports.Console()]

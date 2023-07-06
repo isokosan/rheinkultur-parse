@@ -38,3 +38,5 @@ dummy
 - this will create the db-backups folder with root permissions
 `./retrieve_backup.sh`
 - this will give the ownership of the db-backups to your user so aws cli can write to it
+`docker compose logs parse -f --no-log-prefix`
+- connect to parse containers logs
