@@ -57,8 +57,9 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
     .unset('assembler')
     .unset('assemblyStart')
     .unset('realizedDate')
-    .unset('printNotes')
+    .unset('printTemplates')
     .unset('printFiles')
+    .unset('printNotes')
   if (production.get('assembly')) {
     const defaultDates = {
       dueDate: bookingOrContract.get('startsAt'),
