@@ -1,3 +1,10 @@
+## [1.74.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.74.0...1.74.1) (2023-07-06)
+
+
+### Bug Fixes
+
+* remove total check in invoice get line items ([a20d38e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a20d38ea5167c26efe04ffcfff057c26b9f6a58d))
+
 # [1.74.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.73.2...1.74.0) (2023-07-06)
 
 
