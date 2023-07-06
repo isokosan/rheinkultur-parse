@@ -20,7 +20,7 @@ async function cleanAudits (preview) {
           delete data.changes
         }
         if (preview) {
-          consola.info(audit.get('fn'), audit.get('itemId'), audit.get('data'), data)
+          console.info(audit.get('fn'), audit.get('itemId'), audit.get('data'), data)
         } else {
           Object.keys(data).length
             ? await audit.set({ data }).save(null, { useMasterKey: true })
@@ -29,7 +29,7 @@ async function cleanAudits (preview) {
         i++
       }
     }, { useMasterKey: true })
-  consola.info({ i })
+  console.info({ i })
   return i
 }
 
