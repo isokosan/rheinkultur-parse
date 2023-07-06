@@ -115,9 +115,9 @@ function getContractCommissionForYear (contract, year) {
 }
 
 function getInvoiceLineItems ({ production, media }) {
-  if (!media) {
+  if (!media?.total) {
     // Should not occur
-    throw new Error('Invoice without media!')
+    throw new Error('Invoice without media total in invoice getLineItems!')
   }
   if (!production) {
     return [{
@@ -935,6 +935,14 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
       total: round2(mediaTotal)
     }
 
+    if (media.total  === 0) {
+      await invoice.destroy({ useMasterKey: true })
+      consola.info('Possible duplicate invoice with 0 Total removed from contract', contract.id, 'invoice', invoice.id)
+      i++
+      u++
+      continue
+    }
+
     // production never changes!
     const lineItems = getInvoiceLineItems({ production: invoice.get('production'), media })
     const changes = $changes(invoice, { periodEnd, lineItems })
@@ -965,6 +973,7 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
     i++
     updated && (u++)
   }
+
   return u
 }, $internOrAdmin)
 
@@ -1117,6 +1126,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
  *   new upcoming invoices are generated and current ones are updated if necessary
  */
 // email: true (the email defined in invoice address will be used) | string (the custom email will be used) | false (no email will be send)
+// TODO: Make sure double running or so of this function somehow does not created duplicated invoices (as has happened once with V22-0433)
 Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email, extendBy }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
