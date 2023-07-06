@@ -439,10 +439,10 @@ Parse.Cloud.define('cube-photo-remove-kls-id', async ({ params: { photoId }, use
       legacyScoutResults.multipleImagesFixed = true
       cube.set({ legacyScoutResults })
       await $saveWithEncode(cube, null, { useMasterKey: true })
-      return { message: 'All photos marked as belonging to this cube.' }
+      return { message: 'Alle KLS ID Warnungen sind gelöscht.' }
     }
   }
-  return { message: 'Photo marked as belonging to cube.' }
+  return { message: 'KLS ID Warnung gelöscht.' }
 }, $internOrAdmin)
 
 Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, cancellations, generateCreditNote }, user }) => {

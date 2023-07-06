@@ -530,8 +530,7 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
     attachments
   })
   if (mailStatus.accepted.length === 0) {
-    // TOTRANSLATE
-    throw new Error('E-Mail was not accepted')
+    throw new Error('E-Mail konnte nicht verschickt werden. Bitte prüfen Sie die E-Mail Adresse.')
   }
   mailStatus.attachments = attachments.map(attachment => attachment.filename)
   invoice.set({ mailStatus })
@@ -543,7 +542,7 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
 Parse.Cloud.define('invoice-toggle-post', async ({ params: { id: invoiceId }, user }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
   if (invoice.get('status') < 2) {
-    throw new Error('Can\'t post draft invoice')
+    throw new Error('Rechnung muss abgeschlossen sein.')
   }
   const postStatus = invoice.get('postStatus') ? null : { sentAt: moment().format('YYYY-MM-DD') }
   const message = 'Rechnung als ' + (invoice.get('postStatus') ? 'nicht ' : '') + 'versendet markiert'
@@ -556,7 +555,7 @@ Parse.Cloud.define('invoice-toggle-post', async ({ params: { id: invoiceId }, us
 Parse.Cloud.define('invoice-discard', async ({ params: { id: invoiceId }, user, context: { audit: predefinedAudit } }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
   if (invoice.get('status') !== 1) {
-    throw new Error('Can only discard planned invoice')
+    throw new Error('Nur geplante Rechnungen können verworfen werden.')
   }
   const audit = predefinedAudit || { user, fn: 'invoice-discard' }
   invoice.set({ status: 4 })

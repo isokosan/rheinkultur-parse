@@ -300,7 +300,7 @@ async function validateSystemStatus () {
     errors.push(`Übersprungen Belegnummer: ${skippedNumbers.join(', ')}`)
   }
   if (unsyncedLexDocuments) {
-    errors.push(`There are ${unsyncedLexDocuments} vouchers in LexOffice that are not in WaWi`)
+    errors.push(`Es gibt ${unsyncedLexDocuments} ${unsyncedLexDocuments === 1 ? 'Beleg' : 'Belege'} in LexOffice, aber nicht in WaWi`)
   }
   if (errors.length) {
     throw new Error(errors.join(', '))

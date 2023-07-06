@@ -417,8 +417,7 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
     attachments
   })
   if (mailStatus.accepted.length === 0) {
-    // TOTRANSLATE
-    throw new Error('E-Mail was not accepted')
+    throw new Error('E-Mail konnte nicht verschickt werden. Bitte prüfen Sie die E-Mail Adresse.')
   }
   mailStatus.attachments = attachments.map(attachment => attachment.filename)
   creditNote.set({ mailStatus })
@@ -430,7 +429,7 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
 Parse.Cloud.define('credit-note-toggle-post', async ({ params: { id: creditNoteId }, user }) => {
   const creditNote = await $getOrFail(CreditNote, creditNoteId)
   if (creditNote.get('status') < 2) {
-    throw new Error('Can\'t post draft credit note')
+    throw new Error('Gutschrift muss abgeschlossen sein.')
   }
   const postStatus = creditNote.get('postStatus') ? null : { sentAt: moment().format('YYYY-MM-DD') }
   const message = 'Rechnung als ' + (creditNote.get('postStatus') ? 'nicht ' : '') + 'versendet markiert'

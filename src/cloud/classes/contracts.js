@@ -794,10 +794,9 @@ Parse.Cloud.define('contract-set-cube-statuses', async ({ params: { id: contract
   return contract.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
 }, $internOrAdmin)
 
-// TOTRANSLATE
 async function checkIfContractRevertible (contract) {
   if (contract.get('status') !== 3) {
-    throw new Error('Vertrag ist in Entwurfsstatus')
+    throw new Error('Vertrag ist nicht finalisiert.')
   }
   const issuedInvoices = await $query('Invoice')
     .equalTo('contract', contract)
@@ -809,7 +808,7 @@ async function checkIfContractRevertible (contract) {
       ? 'Sie haben bereits eine Rechnung zu diesem Vertrag ausgestellt. Bitte stornieren Sie diese zuerst. Rechnung: ' + issuedInvoices.join(', ')
       : 'Sie haben bereits Rechnungen zu diesem Vertrag ausgestellt. Bitte stornieren Sie diese zuerst. Rechnungen: ' + issuedInvoices.join(', ')
     message += '\n\n'
-    message += 'Mediendienstleistungsverträgen sollten nicht gelöscht oder zurückgezogen werden, da Veränderungen sich auf die Pachtkalkulation auswirken können.'
+    message += 'Mediendienstleistungsverträge sollten nicht gelöscht oder zurückgezogen werden, da sich Veränderungen auf die Pachtkalkulation auswirken können.'
     message += '\n\n'
     message += 'Bitte halten Sie hierzu Rücksprache, um eine andere Lösung zu finden.'
     throw new Error(message)
