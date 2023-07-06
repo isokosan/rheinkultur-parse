@@ -1,3 +1,10 @@
+## [1.74.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.74.1...1.74.2) (2023-07-06)
+
+
+### Bug Fixes
+
+* remove cubes that are not in booking/contract from production dictionaries ([102ca11](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/102ca11852008420230c41fef15308e78b654ce1))
+
 ## [1.74.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.74.0...1.74.1) (2023-07-06)
 
 
