@@ -53,7 +53,8 @@ const INDEXES = {
             type: 'keyword',
             normalizer: 'german_sort_normalizer'
           },
-          hsnr_numeric: { type: 'double' }
+          hsnr_numeric: { type: 'double' },
+          ms: { type: 'boolean' }
         }
       }
     },
@@ -105,6 +106,8 @@ const INDEXES = {
 
         klsId: cube.get('importData')?.klsId,
         stovDate: cube.get('importData')?.date,
+        ms: Boolean(cube.get('legacyScoutResults')),
+
         order: cube.get('order'),
         pair: cube.get('pair'),
 
@@ -458,6 +461,7 @@ Parse.Cloud.define('search', async ({
   s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
   s.includes('nV') && bool.must_not.push({ exists: { field: 'vAt' } })
+  s.includes('ms') && bool.must.push({ term: { ms: true } })
   s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('pOk') && bool.must.push({ exists: { field: 'pOk' } })
   s.includes('pMulti') && bool.must.push({ exists: { field: 'pMulti' } })
