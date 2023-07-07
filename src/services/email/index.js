@@ -38,7 +38,7 @@ const sendMail = async function ({ to, subject, html, template, variables, attac
     replyTo: process.env.MAIL_REPLY_TO,
     cc: devTo ? undefined : process.env.MAIL_CC,
     bcc: devTo ? undefined : process.env.MAIL_BCC,
-    subject,
+    subject: htmlToText(subject, { wordwrap: false }),
     html,
     text,
     attachments

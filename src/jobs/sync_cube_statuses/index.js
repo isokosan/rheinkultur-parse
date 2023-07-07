@@ -1,5 +1,7 @@
 const { setContractCubeStatuses, setBookingCubeStatus } = require('@/shared')
 module.exports = async function (job) {
+  const response = { contracts: {}, bookings: {}, updatedOrders: 0, updatedCubes: 0 }
+  let i = 0
   const cubeCountAggregate = [
     { $group: { _id: 'id', cubeCount: { $sum: '$cubeCount' } } }
   ]
@@ -8,21 +10,32 @@ module.exports = async function (job) {
     $query('Contract').aggregate(cubeCountAggregate),
     $query('Booking').aggregate(cubeCountAggregate)
   ]).then(([[contractCount], [bookingCount]]) => contractCount.cubeCount + bookingCount.cubeCount)
-  let c = 0
   await $query('Contract').eachBatch(async (contracts) => {
     for (const contract of contracts) {
-      await setContractCubeStatuses(contract)
-      c += contract.get('cubeCount')
-      job.progress(parseInt(100 * c / total))
+      const { set, unset } = await setContractCubeStatuses(contract)
+      i += contract.get('cubeCount')
+      if (set.length || unset.length) {
+        consola.info({ no: contract.get('no'), set, unset })
+        response.contracts[contract.get('no')] = { set, unset }
+        response.updatedCubes += (set.length + unset.length)
+        response.updatedOrders += 1
+      }
+      job.progress(parseInt(100 * i / total))
     }
   }, { useMasterKey: true })
-  let b = 0
   await $query('Booking').include('cube').eachBatch(async (bookings) => {
     for (const booking of bookings) {
-      await setBookingCubeStatus(booking)
-      b += 1
-      job.progress(parseInt(100 * (c + b) / total))
+      const { set, unset } = await setBookingCubeStatus(booking)
+      i++
+      if (set.length || unset.length) {
+        consola.info({ no: booking.get('no'), set, unset })
+        response.bookings[booking.get('no')] = { set, unset }
+        response.updatedCubes += (set.length + unset.length)
+        response.updatedOrders += 1
+      }
+      job.progress(parseInt(100 * i / total))
     }
   }, { useMasterKey: true })
-  return Promise.resolve({ contracts: c, bookings: b })
+  response.checkedCubes = i
+  return Promise.resolve(response)
 }

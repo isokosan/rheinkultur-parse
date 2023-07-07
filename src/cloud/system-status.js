@@ -60,7 +60,37 @@ Parse.Cloud.define('system-status-vouchers', async () => {
   return vouchers
 }, $internOrAdmin)
 
-module.exports.updateUnsyncedLexDocument = updateUnsyncedLexDocument
+Parse.Cloud.define('system-status-duplicate-invoices', async () => {
+  const keys = {}
+  const duplicateInvoiceIds = []
+  await $query('Invoice')
+    .notEqualTo('contract', null)
+    .notEqualTo('periodStart', null)
+    .notEqualTo('periodEnd', null)
+    .notEqualTo('status', 3)
+    .select(['contract', 'total', 'lexNo', 'periodStart', 'periodEnd'])
+    .eachBatch((invoices) => {
+      for (const invoice of invoices) {
+        const { periodStart, periodEnd, contract, total } = invoice.attributes
+        const key = [periodStart, periodEnd, contract.id, total].join('-')
+        if (keys[key]) {
+          duplicateInvoiceIds.push(invoice.id)
+          duplicateInvoiceIds.push(keys[key])
+          continue
+        }
+        keys[key] = invoice.id
+      }
+    }, { useMasterKey: true })
+
+  const systemStatus = await Parse.Config.get().then(config => config.get('systemStatus') || {})
+  if (duplicateInvoiceIds.length) {
+    systemStatus.duplicateInvoiceIds = [...new Set(duplicateInvoiceIds)]
+  } else {
+    delete systemStatus.duplicateInvoiceIds
+  }
+  await Parse.Config.save({ systemStatus })
+  return duplicateInvoiceIds
+}, $internOrAdmin)
 
 Parse.Cloud.define('system-status-order-dates', async () => {
   const issues = {}
@@ -112,8 +142,9 @@ Parse.Cloud.define('system-status-order-dates', async () => {
   return issues
 }, $internOrAdmin)
 
-// TODO: Move to updates folder
+module.exports.updateUnsyncedLexDocument = updateUnsyncedLexDocument
 
+// TODO: Move to updates folder
 // // CHECK OVERLAPPING PLANNED INVOICES OF CONTRACTS
 // Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
 //   const allInvoices = await $query('Invoice')

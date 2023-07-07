@@ -8,21 +8,16 @@ const tz = 'Europe/Berlin'
 
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
-  free_early_canceled_cubes: {
-    name: 'Frühzeitig stornierte CityCubes sync.',
-    description: 'Frees city cubes that have been early canceled and the date is now past',
-    timeoutMinutes: 30
-  },
-  end_extend_contracts: {
-    name: 'Verträge beenden/verlängern (außer Kinetic).',
-    description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
-    timeoutMinutes: 120
-  },
-  end_extend_bookings: {
-    name: 'Buchungen beenden/verlängern. (Vertriebspartner)',
-    description: 'Verlängert oder beendet Buchungen, die ihre Enddatum überschritten haben.',
-    timeoutMinutes: 120
-  },
+  // end_extend_contracts: {
+  //   name: 'Verträge beenden/verlängern (außer Kinetic).',
+  //   description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
+  //   timeoutMinutes: 120
+  // },
+  // end_extend_bookings: {
+  //   name: 'Buchungen beenden/verlängern. (Vertriebspartner)',
+  //   description: 'Verlängert oder beendet Buchungen, die ihre Enddatum überschritten haben.',
+  //   timeoutMinutes: 120
+  // },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
     timeoutMinutes: 120
@@ -89,7 +84,13 @@ const updateJobs = {
   system_status_vouchers: {
     name: 'Überprüfung von Nummernkreisen',
     timeoutMinutes: 2,
-    cron: '*/5 * * * *', // every 5 minutes
+    cron: '*/10 * * * *', // every 10 minutes
+    notificationDuration: 2
+  },
+  system_status_duplicate_invoices: {
+    name: 'Überprüfung von Duplizierte Rechnungen',
+    timeoutMinutes: 5,
+    cron: '0/10 * * * *', // every 10 minutes
     notificationDuration: 2
   },
   lex_ensure: {

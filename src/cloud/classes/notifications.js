@@ -1,13 +1,12 @@
 const sendPush = require('@/services/push')
 const sendMail = require('@/services/email')
 
-const { TASK_LIST_STATUSES } = require('@/schema/enums')
+const { TASK_LIST_STATUSES, BOOKING_REQUEST_TYPES } = require('@/schema/enums')
 
 const Notification = Parse.Object.extend('Notification')
 
 const NOTIFICATIONS = {
   'task-list-assigned': {
-    mail: false,
     message: ({ placeKey }) => `Du hast eine neue Aufgabe in <strong>${placeKey.split(':')[1]}</strong> zugeteilt bekommen.`,
     app: 'scout',
     route: ({ placeKey }) => ({ name: 'location', params: { placeKey } }),
@@ -18,14 +17,12 @@ const NOTIFICATIONS = {
       .first({ useMasterKey: true })
   },
   'task-submission-rejected': {
-    mail: false,
     // TOTRANSLATE
     message: ({ cubeId, rejectionReason }) => `Your submission for <strong>${cubeId}</strong> was rejected. ${rejectionReason}`,
     app: 'scout',
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
   },
   'active-task-list-updated': {
-    mail: false,
     message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde aktualisiert. Bitte überprüfen Sie den aktuellen Status der Liste.`,
     route: ({ taskListId }) => ({ name: 'task-list', params: { listId: taskListId } }),
     related: notification => $query(Notification)
@@ -35,7 +32,6 @@ const NOTIFICATIONS = {
       .first({ useMasterKey: true })
   },
   'active-task-list-removed': {
-    mail: false,
     message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde gelösht.`,
     route: ({ type, orderClass, orderId }) => {
       if (type === 'disassembly') {
@@ -46,24 +42,22 @@ const NOTIFICATIONS = {
     }
   },
   'booking-request-rejected': {
-    mail: false,
-    message: ({ no, cubeId, type, reason }) => `Your ${type} submission for booking <strong>${no}</strong> for <strong>${cubeId}</strong> was rejected. ${reason}`,
+    mailContent: ({ no, cubeId, type, reason }) => `
+      <p>Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> von CityCube <strong>${cubeId}</strong> wurde abgelehnt.</p>
+      <p><strong>Art der Anfrage:</strong> ${BOOKING_REQUEST_TYPES[type]}</p>
+      <p><strong>Grund für die Ablehnung:</strong></p>
+      <p>${reason.replace(/\n/g, '<br>')}</p>
+    `,
+    message: ({ no, cubeId, type, reason }) => `Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> von CityCube <strong>${cubeId}</strong> wurde abgelehnt.`,
     route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
   }
 }
 
-const resolveMessage = (notification) => NOTIFICATIONS[notification.get('identifier')].message(notification.get('data'))
-const resolveApp = (notification) => NOTIFICATIONS[notification.get('identifier')].app
-const resolveRoute = (notification) => NOTIFICATIONS[notification.get('identifier')].route(notification.get('data'))
-const resolveRelated = (notification) => NOTIFICATIONS[notification.get('identifier')].related?.(notification)
-const resolveShouldSendPush = (notification, user) => {
-  const { push } = NOTIFICATIONS[notification.get('identifier')]
-  return push !== false // && user.get('settings').notifications.push
-}
-const resolveShouldSendMail = (notification, user) => {
-  const { mail } = NOTIFICATIONS[notification.get('identifier')]
-  return mail !== false // && user.get('settings').notifications.email
-}
+const resolveMessage = notification => NOTIFICATIONS[notification.get('identifier')].message(notification.get('data'))
+const resolveMailContent = notification => NOTIFICATIONS[notification.get('identifier')].mailContent?.(notification.get('data'))
+const resolveApp = notification => NOTIFICATIONS[notification.get('identifier')].app
+const resolveRoute = notification => NOTIFICATIONS[notification.get('identifier')].route(notification.get('data'))
+const resolveRelated = notification => NOTIFICATIONS[notification.get('identifier')].related?.(notification)
 
 Parse.Cloud.beforeSave(Notification, ({ object: notification }) => {
   if (!NOTIFICATIONS[notification.get('identifier')]) { throw new Error('Unrecognized notification identifier') }
@@ -123,17 +117,17 @@ const notify = async ({ user, usersQuery, identifier, data }) => {
 
 const send = async (notification) => {
   const user = await notification.get('user').fetch({ useMasterKey: true })
-  const message = resolveMessage(notification)
   const url = `${process.env.WEBAPP_URL}/n/${notification.id}`
-
-  resolveShouldSendPush(notification, user) && notification.set('push', await sendPush(user.id, message, url))
-  resolveShouldSendMail(notification, user) && notification.set('mail', await sendMail({
+  const mailContent = resolveMailContent(notification)
+  const message = resolveMessage(notification)
+  notification.set('push', await sendPush(user.id, message, url))
+  mailContent && notification.set('mail', await sendMail({
     to: user.get('email'),
     subject: message,
     template: 'notification',
     variables: {
       user: notification.get('user').toJSON(),
-      message,
+      mailContent,
       url
     }
   }))

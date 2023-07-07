@@ -1,4 +1,4 @@
-const { isEqual } = require('lodash')
+const { isEqual, omit } = require('lodash')
 const { round2, round5, parseAsDigitString } = require('./utils')
 const getNewNo = async function (prefix, className, field, digits) {
   const last = await $query(className)
@@ -155,7 +155,7 @@ function getOrderSummary (bookingOrContract) {
     motive,
     externalOrderNo
   } = bookingOrContract.attributes
-  return {
+  return $cleanDict({
     className,
     objectId,
     booking: className === 'Booking' ? bookingOrContract.toPointer() : undefined,
@@ -174,7 +174,14 @@ function getOrderSummary (bookingOrContract) {
     cubeCount,
     motive,
     externalOrderNo
-  }
+  })
+}
+
+function orderSummaryIsEqual (a, b) {
+  return isEqual(
+    omit(a, ['booking', 'contract', 'company']),
+    omit(b, ['booking', 'contract', 'company'])
+  )
 }
 
 // gets the first found active order today
@@ -207,64 +214,75 @@ async function getActiveCubeOrder (cubeId) {
   return null
 }
 
-function removeAllCubeReferencesToOrder (className, objectId, cubeIds) {
-  const caok = [className, objectId].join('$')
-  return $query('Cube')
+async function removeAllCubeReferencesToCaok (caok, cubeIds) {
+  const removed = []
+  await $query('Cube')
     .notContainedIn('objectId', cubeIds)
     .equalTo('caok', caok)
     .each(cube => {
       cube.unset('order')
+      removed.push(cube.id)
       // orderStatusCheck will check if any other active bookings or contracts reference this cube
       return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }, { useMasterKey: true })
+  return removed
 }
 
 async function setBookingCubeStatus (booking) {
+  const response = { set: [], unset: [] }
   const today = moment(await $today())
+  const caok = ['Booking', booking.id].join('$')
   const order = getOrderSummary(booking)
   const cube = booking.get('cube')
   const cubeOrder = cube.get('order')
   // remove all cubes that reference the booking despite the booking having them removed
-  await removeAllCubeReferencesToOrder('Booking', booking.id, [cube.id])
+  const removedCubeIds = await removeAllCubeReferencesToCaok(caok, [cube.id])
+  response.unset.push(...removedCubeIds)
 
   const runningOrder = order.status > 2 && (order.willExtend || today.isSameOrBefore(order.endsAt, 'day'))
-  if (runningOrder && !isEqual(cubeOrder, order)) {
+  if (runningOrder && !orderSummaryIsEqual(cubeOrder, order)) {
     cube.set({ order })
-    consola.info('setting order', cube.id)
-    return $saveWithEncode(cube, null, { useMasterKey: true })
-  }
-  if (!runningOrder && cubeOrder) {
+    response.set.push(cube.id)
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  } else if (!runningOrder && cubeOrder) {
     if (cubeOrder.className === 'Booking' && cubeOrder.objectId === order.objectId) {
       cube.unset('order')
-      return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+      response.unset.push(cube.id)
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }
   }
+  return response
 }
 
 async function setContractCubeStatuses (contract) {
+  const response = { set: [], unset: [] }
+  const today = moment(await $today())
   const order = getOrderSummary(contract)
+  const caok = ['Contract', contract.id].join('$')
   const { cubeIds, earlyCancellations } = contract.attributes
 
-  // remove all cubes that reference the contract despite the contract having them removed
-  await removeAllCubeReferencesToOrder('Contract', contract.id, cubeIds)
+  // remove all cubes that reference the contract despite the contract not having them in cubeIds
+  const removedCubeIds = await removeAllCubeReferencesToCaok(caok, cubeIds)
+  response.unset.push(...removedCubeIds)
 
   if (order.status <= 2) {
     // remove all cubes associated with order if draft
-    return $query('Cube')
+    await $query('Cube')
       .equalTo('order.className', order.className)
       .equalTo('order.objectId', order.objectId)
       .each(cube => {
         cube.unset('order')
+        response.unset.push(cube.id)
         // orderStatusCheck will check if any other active bookings or contracts reference this cube
         return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
       }, { useMasterKey: true })
+    return response
   }
   const query = Parse.Query.or(
-    // same as caok
+    $query('Cube').equalTo('caok', caok),
     $query('Cube').equalTo('order.className', order.className).equalTo('order.objectId', order.objectId),
     $query('Cube').containedIn('objectId', cubeIds || [])
   )
-  const today = moment(await $today())
   const runningOrder = order.willExtend || today.isSameOrBefore(order.endsAt, 'day')
   if (runningOrder) {
     // first we check the status of early ending cubes
@@ -272,29 +290,53 @@ async function setContractCubeStatuses (contract) {
     // set the status of those cubes that were early canceled
     for (const earlyCanceledCubeId of earlyCanceledCubeIds) {
       const date = earlyCancellations[earlyCanceledCubeId]
-      const cube = await $getOrFail('Cube', earlyCanceledCubeId)
-      date === true || today.isAfter(date, 'day')
-        ? cube.unset('order')
-        : cube.set('order', {
-          ...order,
-          earlyCanceledAt: date,
-          endsAt: moment(order.endsAt).isBefore(date) ? order.endsAt : date
-        })
-      // orderStatusCheck will check if any other active bookings or contracts reference this cube
-      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+      const cube = await $query('Cube')
+        .equalTo('objectId', earlyCanceledCubeId)
+        .first({ useMasterKey: true })
+      // if ended, and still set remove
+      const earlyCanceledAndEnded = date === true || today.isAfter(date, 'day')
+      if (earlyCanceledAndEnded) {
+        if (cube.get('caok') === caok) {
+          response.unset.push(cube.id)
+          cube.unset('order')
+          // orderStatusCheck will check if any other active bookings or contracts reference this cube
+          await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+        }
+        continue
+      }
+      const cubeOrder = {
+        ...order,
+        earlyCanceledAt: date,
+        endsAt: moment(order.endsAt).isBefore(date) ? order.endsAt : date
+      }
+      if (!orderSummaryIsEqual(cube.get('order'), cubeOrder)) {
+        cube.set('order', cubeOrder)
+        response.set.push(cube.id)
+        await $saveWithEncode(cube, null, { useMasterKey: true })
+      }
     }
 
     query.notContainedIn('objectId', earlyCanceledCubeIds)
-    return query.each((cube) => {
-      cube.set('order', order)
-      return $saveWithEncode(cube, null, { useMasterKey: true })
+    await query.eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        if (!orderSummaryIsEqual(cube.get('order'), order)) {
+          cube.set('order', order)
+          response.set.push(cube.id)
+          await $saveWithEncode(cube, null, { useMasterKey: true })
+        }
+      }
     }, { useMasterKey: true })
+    return response
   }
   // if the order has ended we unset and free the cubes
-  return query.each((cube) => {
-    cube.unset('order')
-    return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+  await query.equalTo('caok', caok).eachBatch(async (cubes) => {
+    for (const cube of cubes) {
+      cube.unset('order')
+      response.unset.push(cube.id)
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+    }
   }, { useMasterKey: true })
+  return response
 }
 
 // TOTRANSLATE

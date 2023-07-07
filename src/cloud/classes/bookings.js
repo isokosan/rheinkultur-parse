@@ -399,7 +399,7 @@ Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user,
 
 Parse.Cloud.define('booking-set-cube-statuses', async ({ params: { id: bookingId } }) => {
   const booking = await $getOrFail(Booking, bookingId)
-  return booking.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
+  return setBookingCubeStatus(booking)
 }, $internOrAdmin)
 
 Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, user }) => {
@@ -415,8 +415,16 @@ Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, use
  *   the booking end date is updated
  *   extended years is incremented
  */
-Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy }, user, master, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
+
+  if (!master) {
+    if (!['intern', 'admin'].includes(user.get('accType'))) {
+      if (!(user.get('accType') === 'partner' && user.get('permissions').includes('manage-bookings'))) {
+        throw new Error('Unbefugter Zugriff.')
+      }
+    }
+  }
 
   const booking = await $getOrFail(Booking, bookingId)
   if (booking.get('status') !== 3) {
@@ -429,18 +437,17 @@ Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy 
   extendBy = parseInt(extendBy)
 
   const endsAt = booking.get('endsAt')
-  const newEndsAt = moment(endsAt).add(extendBy, 'months')
+  const newEndsAt = moment(endsAt).add(extendBy, 'months').format('YYYY-MM-DD')
   booking.set({
-    endsAt: newEndsAt.format('YYYY-MM-DD'),
+    endsAt: newEndsAt,
     extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
   })
 
-  // TODO: Change
-  booking.get('autoExtendsBy') && booking.get('autoExtendsAt') && booking.set('autoExtendsAt', newEndsAt.clone().format('YYYY-MM-DD'))
+  booking.get('autoExtendsBy') && booking.set('autoExtendsAt', newEndsAt)
 
   const audit = { user, fn: 'booking-extend', data: { extendBy, endsAt: [endsAt, booking.get('endsAt')] } }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, $internOrAdmin)
+}, { requireUser: true })
 
 /**
  * When a booking is canceled on a given date

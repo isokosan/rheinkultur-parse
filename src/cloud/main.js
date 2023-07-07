@@ -4,6 +4,8 @@ const { getCountries } = require('@/services/lex')
 const {
   ACC_TYPES: accTypes,
   BOOKING_STATUSES: bookingStatuses,
+  BOOKING_REQUEST_TYPES: bookingRequestTypes,
+  BOOKING_REQUEST_STATUSES: bookingRequestStatuses,
   CONTRACT_STATUSES: contractStatuses,
   CUBE_STATUSES: cubeStatuses,
   INVOICE_STATUSES: invoiceStatuses,
@@ -80,6 +82,8 @@ Parse.Cloud.define('enums', () => ({
   version,
   accTypes,
   bookingStatuses,
+  bookingRequestTypes,
+  bookingRequestStatuses,
   cubeStatuses,
   contractStatuses,
   invoiceStatuses,

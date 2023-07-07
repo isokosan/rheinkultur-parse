@@ -43,6 +43,23 @@ module.exports.BOOKING_STATUSES = {
   4: 'Gekündigt',
   5: 'Ausgelaufen'
 }
+
+module.exports.BOOKING_REQUEST_TYPES = {
+  create: 'Neue Buchung',
+  change: 'Buchungsänderung',
+  cancel: 'Kündigung',
+  'cancel-change': 'Kündigung Korrektur',
+  'cancel-cancel': 'Kündigung Widerruf',
+  extend: 'Verlängerung',
+  void: 'Stornierung'
+}
+
+module.exports.BOOKING_REQUEST_STATUSES = {
+  0: 'Warten auf Freigabe',
+  1: 'Genehmigt',
+  2: 'Abgelehnt'
+}
+
 module.exports.CONTRACT_STATUSES = {
   '-1': 'Storniert',
   // 0.0: 'Entwurf', // offers
