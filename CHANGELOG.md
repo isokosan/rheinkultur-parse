@@ -1,3 +1,10 @@
+# [1.77.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.76.1...1.77.0) (2023-07-07)
+
+
+### Features
+
+* email signatures ([c7d800c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c7d800c36b355d8c180c2af9566f9a3193a6473f))
+
 ## [1.76.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.76.0...1.76.1) (2023-07-07)
 
 
