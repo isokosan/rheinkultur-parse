@@ -1,3 +1,10 @@
+# [1.76.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.75.3...1.76.0) (2023-07-07)
+
+
+### Features
+
+* cube status checks ([2cbc96d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2cbc96d9a1255586fc524d7dfc8725956cda08ec))
+
 ## [1.75.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.75.2...1.75.3) (2023-07-07)
 
 
