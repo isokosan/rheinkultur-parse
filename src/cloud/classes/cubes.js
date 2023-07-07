@@ -1,9 +1,10 @@
-const { getNewNo, getActiveCubeOrder } = require('@/shared')
+const { getNewNo, getActiveCubeOrder, getFutureCubeOrder } = require('@/shared')
 const { indexCube, unindexCube, indexCubeBookings } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
     // available, booked, not available, not found
     if (this.get('order')) { return 5 }
+    if (this.get('futureOrder')) { return 5 }
     if (this.get('pair')) { return 9 }
     if (this.get('dAt')) { return 8 }
     if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb')) {
@@ -46,9 +47,11 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
 
   if (updating === true) { return }
 
-  if (orderStatusCheck && !cube.get('order')) {
+  if (orderStatusCheck) {
     const order = await getActiveCubeOrder(cube.id)
-    order && cube.set('order', order)
+    order ? cube.set('order', order) : cube.unset('order')
+    const futureOrder = await getFutureCubeOrder(cube.id)
+    futureOrder ? cube.set('futureOrder', futureOrder) : cube.unset('futureOrder')
   }
   // caok: current order key
   cube.get('order')

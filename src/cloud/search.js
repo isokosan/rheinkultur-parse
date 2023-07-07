@@ -109,6 +109,7 @@ const INDEXES = {
         ms: Boolean(cube.get('legacyScoutResults')),
 
         order: cube.get('order'),
+        futureOrder: cube.get('futureOrder'),
         pair: cube.get('pair'),
 
         // status (calculated attribute)
@@ -432,10 +433,23 @@ Parse.Cloud.define('search', async ({
 
   // Booked
   if (s.includes('5')) {
-    bool.must.push({ exists: { field: 'order' } })
-    cId && bool.must.push({ match: { 'order.company.objectId': cId } })
-    orderClass && bool.must.push({ match: { 'order.className': orderClass } })
-    motive && bool.must.push({ match_phrase_prefix: { 'order.motive': motive } })
+    const currentOrderMust = [{ exists: { field: 'order' } }]
+    cId && currentOrderMust.push({ match: { 'order.company.objectId': cId } })
+    orderClass && currentOrderMust.push({ match: { 'order.className': orderClass } })
+    motive && currentOrderMust.push({ match_phrase_prefix: { 'order.motive': motive } })
+    const futureOrderMust = [{ exists: { field: 'futureOrder' } }]
+    cId && futureOrderMust.push({ match: { 'futureOrder.company.objectId': cId } })
+    orderClass && futureOrderMust.push({ match: { 'futureOrder.className': orderClass } })
+    motive && futureOrderMust.push({ match_phrase_prefix: { 'futureOrder.motive': motive } })
+    bool.must.push({
+      bool: {
+        should: [
+          { bool: { must: currentOrderMust } },
+          { bool: { must: futureOrderMust } }
+        ],
+        minimum_should_match: 1
+      }
+    })
   }
   // Nicht vermarktungsfähig
   s.includes('7') && bool.must.push({

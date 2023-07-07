@@ -190,26 +190,54 @@ async function getActiveCubeOrder (cubeId) {
   const contracts = await $query('Contract')
     .equalTo('cubeIds', cubeId)
     .greaterThanOrEqualTo('status', 3)
+    .lessThanOrEqualTo('startsAt', date) // started
     .greaterThanOrEqualTo('endsAt', date) // didn't yet end
+    .notEqualTo(`earlyCancellations.${cubeId}`, true) // was not taken out
     .find({ useMasterKey: true })
   for (const contract of contracts) {
     const earlyCancellations = contract.get('earlyCancellations')
     // wasnt early canceled
-    if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
+    if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
       return getOrderSummary(contract)
     }
   }
   const bookings = await $query('Booking')
     .equalTo('cubeIds', cubeId)
     .greaterThanOrEqualTo('status', 3)
+    .lessThanOrEqualTo('startsAt', date) // started
     .greaterThanOrEqualTo('endsAt', date) // didn't yet end
+    .notEqualTo(`earlyCancellations.${cubeId}`, true) // was not taken out
     .find({ useMasterKey: true })
   for (const booking of bookings) {
     const earlyCancellations = booking.get('earlyCancellations')
     // wasnt early canceled
-    if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] === true || earlyCancellations[cubeId] >= date) {
+    if (!earlyCancellations?.[cubeId] || earlyCancellations[cubeId] >= date) {
       return getOrderSummary(booking)
     }
+  }
+  return null
+}
+
+// gets the first found future order today
+async function getFutureCubeOrder (cubeId) {
+  const date = await $today()
+  const contract = await $query('Contract')
+    .equalTo('cubeIds', cubeId)
+    .greaterThanOrEqualTo('status', 3)
+    .notEqualTo(`earlyCancellations.${cubeId}`, true) // was not taken out
+    .greaterThan('startsAt', date) // did not start yet
+    .first({ useMasterKey: true })
+  if (contract) {
+    return getOrderSummary(contract)
+  }
+  const booking = await $query('Booking')
+    .equalTo('cubeIds', cubeId)
+    .greaterThanOrEqualTo('status', 3)
+    .notEqualTo(`earlyCancellations.${cubeId}`, true) // was not taken out
+    .greaterThan('startsAt', date) // did not start yet
+    .first({ useMasterKey: true })
+  if (booking) {
+    return getOrderSummary(booking)
   }
   return null
 }
@@ -238,6 +266,28 @@ async function setBookingCubeStatus (booking) {
   // remove all cubes that reference the booking despite the booking having them removed
   const removedCubeIds = await removeAllCubeReferencesToCaok(caok, [cube.id])
   response.unset.push(...removedCubeIds)
+
+  const started = today.isSameOrAfter(order.startsAt, 'day')
+  // if order hasnt started yet we save the order caok to future order, and unset order
+  if (!started) {
+    // if the order has ended we unset and free the cubes
+    if (cube.get('caok') === caok || orderSummaryIsEqual(cube.get('order'), order)) {
+      cube.unset('order')
+      response.unset.push(cube.id)
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+    }
+    if (!orderSummaryIsEqual(cube.get('futureOrder'), order)) {
+      cube.set('futureOrder', order)
+      await $saveWithEncode(cube, null, { useMasterKey: true })
+    }
+    return response
+  }
+
+  // if order started remove future order
+  if (cube.get('futureOrder')?.objectId === order.objectId) {
+    cube.unset('futureOrder', order)
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  }
 
   const runningOrder = order.status > 2 && (order.willExtend || today.isSameOrBefore(order.endsAt, 'day'))
   if (runningOrder && !orderSummaryIsEqual(cubeOrder, order)) {
@@ -278,11 +328,40 @@ async function setContractCubeStatuses (contract) {
       }, { useMasterKey: true })
     return response
   }
-  const query = Parse.Query.or(
+  const getBaseQuery = () => Parse.Query.or(
     $query('Cube').equalTo('caok', caok),
     $query('Cube').equalTo('order.className', order.className).equalTo('order.objectId', order.objectId),
     $query('Cube').containedIn('objectId', cubeIds || [])
   )
+  const started = today.isSameOrAfter(order.startsAt, 'day')
+  // if order hasnt started yet we save the order caok to future order, and unset order
+  if (!started) {
+    await getBaseQuery().eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        if (cube.get('caok') === caok || orderSummaryIsEqual(cube.get('order'), order)) {
+          cube.unset('order')
+          response.unset.push(cube.id)
+          await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+        }
+        if (!orderSummaryIsEqual(cube.get('futureOrder'), order)) {
+          cube.set('futureOrder', order)
+          await $saveWithEncode(cube, null, { useMasterKey: true })
+        }
+      }
+    }, { useMasterKey: true })
+    return response
+  }
+
+  // if order started remove future order
+  await getBaseQuery()
+    .equalTo('futureOrder.objectId', order.objectId)
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        cube.unset('futureOrder', order)
+        await $saveWithEncode(cube, null, { useMasterKey: true })
+      }
+    }, { useMasterKey: true })
+
   const runningOrder = order.willExtend || today.isSameOrBefore(order.endsAt, 'day')
   if (runningOrder) {
     // first we check the status of early ending cubes
@@ -316,39 +395,44 @@ async function setContractCubeStatuses (contract) {
       }
     }
 
-    query.notContainedIn('objectId', earlyCanceledCubeIds)
-    await query.eachBatch(async (cubes) => {
-      for (const cube of cubes) {
-        if (!orderSummaryIsEqual(cube.get('order'), order)) {
-          cube.set('order', order)
-          response.set.push(cube.id)
-          await $saveWithEncode(cube, null, { useMasterKey: true })
+    await getBaseQuery()
+      .notContainedIn('objectId', earlyCanceledCubeIds)
+      .eachBatch(async (cubes) => {
+        for (const cube of cubes) {
+          if (!orderSummaryIsEqual(cube.get('order'), order)) {
+            cube.set('order', order)
+            response.set.push(cube.id)
+            await $saveWithEncode(cube, null, { useMasterKey: true })
+          }
         }
-      }
-    }, { useMasterKey: true })
+      }, { useMasterKey: true })
     return response
   }
   // if the order has ended we unset and free the cubes
-  await query.equalTo('caok', caok).eachBatch(async (cubes) => {
-    for (const cube of cubes) {
-      cube.unset('order')
-      response.unset.push(cube.id)
-      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
-    }
-  }, { useMasterKey: true })
+  await getBaseQuery()
+    .equalTo('caok', caok)
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        cube.unset('order')
+        response.unset.push(cube.id)
+        await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+      }
+    }, { useMasterKey: true })
   return response
 }
 
-// TOTRANSLATE
 async function validateSystemStatus () {
   const errors = []
   const systemStatus = await Parse.Config.get().then(config => config.get('systemStatus') || {})
-  const { skippedNumbers, unsyncedLexDocuments } = systemStatus
+  const { skippedNumbers, unsyncedLexDocuments, duplicateInvoiceIds } = systemStatus
   if (skippedNumbers?.length) {
     errors.push(`Übersprungen Belegnummer: ${skippedNumbers.join(', ')}`)
   }
   if (unsyncedLexDocuments) {
     errors.push(`Es gibt ${unsyncedLexDocuments} ${unsyncedLexDocuments === 1 ? 'Beleg' : 'Belege'} in LexOffice, aber nicht in WaWi`)
+  }
+  if (duplicateInvoiceIds?.length) {
+    errors.push(`Duplizierte Rechnungen: ${duplicateInvoiceIds.join(', ')}`)
   }
   if (errors.length) {
     throw new Error(errors.join(', '))
@@ -365,6 +449,7 @@ module.exports = {
   getNewNo,
   checkIfCubesAreAvailable,
   getActiveCubeOrder,
+  getFutureCubeOrder,
   setContractCubeStatuses,
   setBookingCubeStatus,
   validateSystemStatus

@@ -7,12 +7,20 @@ const normalizeDateString = value => value instanceof Date ? moment(value).forma
 const normalizeCubeIds = value => [...new Set(value || [])].sort()
 const normalizeInt = value => value ? parseInt(value) : null
 
+const normalizeEmail = (value) => {
+  const [username, domain] = normalizeString(value)
+    .toLowerCase()
+    .split('@')
+  return [username.replace(/\./g, ''), domain].join('@')
+}
+
 module.exports = {
   defined,
   normalizeString,
   normalizeDateString,
   normalizeCubeIds,
   normalizeInt,
+  normalizeEmail,
   users: {
     UNSET_NULL_FIELDS: [
       'company',
@@ -31,7 +39,7 @@ module.exports = {
         prefix: normalizeString,
         firstName: normalizeString,
         lastName: normalizeString,
-        email: normalizeString,
+        email: normalizeEmail,
         pbx: normalizeString,
         mobile: normalizeString,
         companyId: defined,

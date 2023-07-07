@@ -22,9 +22,16 @@ const transporter = nodemailer.createTransport({
   maxMessages: 100
 })
 
+let signature
+const getSignatureHtml = async () => {
+  if (!signature) {
+    signature = await fs.readFile(path.join(BASE_DIR, '/services/email/signature.html')).then(file => file.toString())
+  }
+  return signature
+}
 const buildMailHtml = ({ template, variables }) => fs
   .readFile(path.join(BASE_DIR, `/services/email/templates/${template}.html`))
-  .then(file => eval('`' + file.toString() + '`')) // eslint-disable-line no-eval
+  .then(async file => eval('`' + file.toString() + '`') + await getSignatureHtml()) // eslint-disable-line no-eval
 
 const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template, variables, attachments }, skip) {
   if (!html && template) {

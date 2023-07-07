@@ -43,12 +43,12 @@ const NOTIFICATIONS = {
   },
   'booking-request-rejected': {
     mailContent: ({ no, cubeId, type, reason }) => `
-      <p>Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> von CityCube <strong>${cubeId}</strong> wurde abgelehnt.</p>
+      <p>Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong> wurde abgelehnt.</p>
       <p><strong>Art der Anfrage:</strong> ${BOOKING_REQUEST_TYPES[type]}</p>
       <p><strong>Grund für die Ablehnung:</strong></p>
       <p>${reason.replace(/\n/g, '<br>')}</p>
     `,
-    message: ({ no, cubeId, type, reason }) => `Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> von CityCube <strong>${cubeId}</strong> wurde abgelehnt.`,
+    message: ({ no, cubeId, type, reason }) => `Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong> wurde abgelehnt.`,
     route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
   }
 }

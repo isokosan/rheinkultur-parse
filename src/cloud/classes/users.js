@@ -17,6 +17,7 @@ Parse.Cloud.beforeSave(Parse.User, async ({ object: user, master }) => {
     })
     user.set('invitationMailStatus', mailStatus)
   }
+  user.get('lastLoginAt') && user.unset('inviteToken')
   if (!user.get('avatar') && !user.get('color')) {
     user.set('color', generateDarkColorHex())
   }

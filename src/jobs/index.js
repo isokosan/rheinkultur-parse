@@ -8,6 +8,78 @@ const tz = 'Europe/Berlin'
 
 // these are the default values, and will be overwritten by Parse Config values if defined.
 const updateJobs = {
+  sync_cube_statuses: {
+    name: 'Sync Cube Statuses',
+    cron: '0 3 * * *', // at 03:00
+    timeoutMinutes: 60,
+    notificationDuration: 24
+  },
+  reindex_cubes: {
+    name: 'Suchindex von CityCubes aktualisieren',
+    timeoutMinutes: 30,
+    cron: '0 4 * * *', // at 03:00 AM
+    notificationDuration: 24
+  },
+  reindex_cities: {
+    name: 'Suchindex von Orte aktualisieren',
+    timeoutMinutes: 30,
+    cron: '0 4 * * *', // at 03:00 AM
+    notificationDuration: 24
+  },
+  reindex_streets: {
+    name: 'Suchindex von Straßen aktualisieren',
+    timeoutMinutes: 30,
+    cron: '30 4 * * *', // at 04:30 AM
+    notificationDuration: 24
+  },
+  reindex_fieldwork: {
+    name: 'Suchindex von Feldarbeit aktualisieren',
+    timeoutMinutes: 30,
+    cron: '30 4 * * *', // at 04:30 AM
+    notificationDuration: 24
+  },
+  reindex_bookings: {
+    name: 'Suchindex von Buchungen aktualisieren',
+    timeoutMinutes: 30,
+    cron: '30 4 * * *', // at 04:30 AM
+    notificationDuration: 24
+  },
+  reindex_booking_requests: {
+    name: 'Suchindex von Buchungsanfragen aktualisieren',
+    timeoutMinutes: 30,
+    cron: '30 4 * * *', // at 04:30 AM
+    notificationDuration: 24
+  },
+  recalculate_aldi_prices: {
+    name: 'Aktualisierung von ALDI preisen.',
+    timeoutMinutes: 30,
+    cron: '30 4 * * *', // at 04:30 AM
+    notificationDuration: 24
+  },
+  sync_disassemblies: {
+    name: 'Demontage synchronizieren.',
+    timeoutMinutes: 30
+    // cron: '30 4 * * *', // at 04:30 AM
+    // notificationDuration: 24
+  },
+  system_status_vouchers: {
+    name: 'Überprüfung von Nummernkreisen',
+    timeoutMinutes: 2,
+    cron: '*/10 * * * *', // every 10 minutes
+    notificationDuration: 1
+  },
+  system_status_duplicate_invoices: {
+    name: 'Überprüfung von Duplizierte Rechnungen',
+    timeoutMinutes: 5,
+    cron: '0/10 * * * *', // every 10 minutes
+    notificationDuration: 1
+  },
+  lex_ensure: {
+    name: 'Überprüfung von Lex-Office Synchronizierung',
+    timeoutMinutes: 15,
+    cron: '*/10 * * * *', // every 10 minutes
+    notificationDuration: 1
+  },
   // end_extend_contracts: {
   //   name: 'Verträge beenden/verlängern (außer Kinetic).',
   //   description: 'Verlängert nur die Verträge, die eine E-Mail-Adresse haben.',
@@ -18,6 +90,10 @@ const updateJobs = {
   //   description: 'Verlängert oder beendet Buchungen, die ihre Enddatum überschritten haben.',
   //   timeoutMinutes: 120
   // },
+  recalculate_future_contract_invoices: {
+    name: 'Recalculate all future invoices from contracts.',
+    timeoutMinutes: 60
+  },
   issue_invoices: {
     name: 'Rechnungen mit heutigen Datum abschliessen.',
     timeoutMinutes: 120
@@ -26,78 +102,6 @@ const updateJobs = {
     name: 'Versenden von E-Mails mit ausgestellten Rechnungen.',
     description: 'Sends emails with issued invoices, that have an email but none were sent. (Past 3 days)',
     timeoutMinutes: 120
-  },
-  reindex_cubes: {
-    name: 'Suchindex von CityCubes aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 3 * * *', // at 03:00 AM
-    notificationDuration: 48
-  },
-  reindex_cities: {
-    name: 'Suchindex von Orte aktualisieren',
-    timeoutMinutes: 30,
-    cron: '30 3 * * *', // nightly at 03:45
-    notificationDuration: 48
-  },
-  reindex_streets: {
-    name: 'Suchindex von Straßen aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // nightly at 04:00
-    notificationDuration: 48
-  },
-  reindex_fieldwork: {
-    name: 'Suchindex von Feldarbeit aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // nightly at 04:00
-    notificationDuration: 48
-  },
-  reindex_bookings: {
-    name: 'Suchindex von Buchungen aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // nightly at 04:00
-    notificationDuration: 48
-  },
-  reindex_booking_requests: {
-    name: 'Suchindex von Buchungsanfragen aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // nightly at 04:00
-    notificationDuration: 48
-  },
-  recalculate_aldi_prices: {
-    name: 'Aktualisierung von ALDI preisen.',
-    timeoutMinutes: 30,
-    cron: '30 4 * * *', // nightly at 04:30,
-    notificationDuration: 48
-  },
-  recalculate_future_contract_invoices: {
-    name: 'Recalculate all future invoices from contracts.',
-    timeoutMinutes: 60
-  },
-  sync_cube_statuses: {
-    name: 'Sync Cube Statuses',
-    timeoutMinutes: 150
-  },
-  sync_disassemblies: {
-    name: 'Demontage synchronizieren.',
-    timeoutMinutes: 60
-  },
-  system_status_vouchers: {
-    name: 'Überprüfung von Nummernkreisen',
-    timeoutMinutes: 2,
-    cron: '*/10 * * * *', // every 10 minutes
-    notificationDuration: 2
-  },
-  system_status_duplicate_invoices: {
-    name: 'Überprüfung von Duplizierte Rechnungen',
-    timeoutMinutes: 5,
-    cron: '0/10 * * * *', // every 10 minutes
-    notificationDuration: 2
-  },
-  lex_ensure: {
-    name: 'Überprüfung von Lex-Office Synchronizierung',
-    timeoutMinutes: 15,
-    cron: '*/10 * * * *', // every 10 minutes
-    notificationDuration: 2
   }
 }
 
