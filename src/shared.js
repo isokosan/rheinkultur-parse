@@ -260,6 +260,7 @@ async function setContractCubeStatuses (contract) {
       }, { useMasterKey: true })
   }
   const query = Parse.Query.or(
+    // same as caok
     $query('Cube').equalTo('order.className', order.className).equalTo('order.objectId', order.objectId),
     $query('Cube').containedIn('objectId', cubeIds || [])
   )
@@ -279,7 +280,8 @@ async function setContractCubeStatuses (contract) {
           earlyCanceledAt: date,
           endsAt: moment(order.endsAt).isBefore(date) ? order.endsAt : date
         })
-      await $saveWithEncode(cube, null, { useMasterKey: true })
+      // orderStatusCheck will check if any other active bookings or contracts reference this cube
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }
 
     query.notContainedIn('objectId', earlyCanceledCubeIds)
