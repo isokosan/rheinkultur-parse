@@ -26,7 +26,7 @@ const buildMailHtml = ({ template, variables }) => fs
   .readFile(path.join(BASE_DIR, `/services/email/templates/${template}.html`))
   .then(file => eval('`' + file.toString() + '`')) // eslint-disable-line no-eval
 
-const sendMail = async function ({ to, subject, html, template, variables, attachments }, skip) {
+const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template, variables, attachments }, skip) {
   if (!html && template) {
     html = await buildMailHtml({ template, variables })
   }
@@ -35,9 +35,9 @@ const sendMail = async function ({ to, subject, html, template, variables, attac
   const mail = {
     from: process.env.MAIL_FROM,
     to: devTo || to,
-    replyTo: process.env.MAIL_REPLY_TO,
-    cc: devTo ? undefined : process.env.MAIL_CC,
-    bcc: devTo ? undefined : process.env.MAIL_BCC,
+    cc: cc !== undefined ? cc : (devTo ? null : process.env.MAIL_CC),
+    bcc: bcc !== undefined ? bcc : (devTo ? null : process.env.MAIL_BCC),
+    replyTo: replyTo !== undefined ? replyTo : process.env.MAIL_REPLY_TO,
     subject: htmlToText(subject, { wordwrap: false }),
     html,
     text,

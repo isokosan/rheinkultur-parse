@@ -123,6 +123,7 @@ const send = async (notification) => {
   notification.set('push', await sendPush(user.id, message, url))
   mailContent && notification.set('mail', await sendMail({
     to: user.get('email'),
+    bcc: null,
     subject: message,
     template: 'notification',
     variables: {
