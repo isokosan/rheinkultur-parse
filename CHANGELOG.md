@@ -1,3 +1,10 @@
+## [1.75.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.75.2...1.75.3) (2023-07-07)
+
+
+### Bug Fixes
+
+* cube sync status bug with early cancelations ([907c670](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/907c670f239b302243be7126a597bf39d4075280))
+
 ## [1.75.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.75.1...1.75.2) (2023-07-06)
 
 
