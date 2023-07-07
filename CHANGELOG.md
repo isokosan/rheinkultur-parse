@@ -1,3 +1,10 @@
+## [1.76.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.76.0...1.76.1) (2023-07-07)
+
+
+### Bug Fixes
+
+* remove bcc from notification emails ([c3f2c84](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c3f2c842e471ee0324809e96ed49347b8ee00519))
+
 # [1.76.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.75.3...1.76.0) (2023-07-07)
 
 
