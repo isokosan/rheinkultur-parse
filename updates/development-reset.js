@@ -7,10 +7,10 @@ require('./../src/globals')
 async function initializeForDevelopment () {
   const today = moment().format('YYYY-MM-DD')
   await Parse.Config.save({ today })
-  consola.success('set today to', today)
+  console.info('set today to', today)
   // update user passwords
   await $query(Parse.User).each(user => user.set('password', '123456').save(null, { useMasterKey: true }), { useMasterKey: true })
-  consola.success('set user passwords')
+  console.info('set user passwords')
   // sync lex accounts with dev lex
   await $query('Address').notEqualTo('lex', null).each(async (address) => {
     // check if address name exists on lexoffice
@@ -22,9 +22,10 @@ async function initializeForDevelopment () {
       }, { useMasterKey: true })
       consola.info('created new lex', address.get('name'))
     } else {
-      consola.success('found lex', address.get('name'))
+      console.info('found existing lex', address.get('name'))
     }
     return address.set({ lex }).save(null, { useMasterKey: true })
   }, { useMasterKey: true })
+  console.info('synced lex accounts with dev lex')
 }
 initializeForDevelopment()
