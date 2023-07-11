@@ -58,9 +58,9 @@ const updateJobs = {
   },
   sync_disassemblies: {
     name: 'Demontage synchronizieren.',
-    timeoutMinutes: 30
-    // cron: '30 4 * * *', // at 04:30 AM
-    // notificationDuration: 24
+    timeoutMinutes: 30,
+    cron: '30 4 * * *', // at 04:30 AM
+    notificationDuration: 24
   },
   system_status_vouchers: {
     name: 'Überprüfung von Nummernkreisen',

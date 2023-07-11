@@ -5,7 +5,7 @@ const TaskList = Parse.Object.extend('TaskList')
 const Disassembly = Parse.Object.extend('Disassembly')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
-const DISCARD_BEFORE = moment(DEVELOPMENT ? '2023-04-01' : '2023-07-01').subtract(1, 'day').format('YYYY-MM-DD')
+const DISCARD_BEFORE = moment('2023-07-01').subtract(1, 'day').format('YYYY-MM-DD')
 
 const getDueDate = date => moment(date).add(2, 'weeks').format('YYYY-MM-DD')
 
@@ -240,7 +240,9 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
       } else {
         sync.push({ type: 'main', action: 'remove', date: mainDisassembly.get('date') })
       }
-      await mainDisassembly.destroy({ useMasterKey: true })
+      if (mainDisassembly.get('date') >= DISCARD_BEFORE) {
+        await mainDisassembly.destroy({ useMasterKey: true })
+      }
     }
   } else if (orderEndDate) {
     const date = getDisassemblyStartDate(orderEndDate)
