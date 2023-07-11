@@ -1,3 +1,10 @@
+## [1.77.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.77.0...1.77.1) (2023-07-11)
+
+
+### Bug Fixes
+
+* remove development from disassembly discard before date ([3ed9057](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3ed905772441c45a65dc3f58c7b59b54e12ffc01))
+
 # [1.77.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.76.1...1.77.0) (2023-07-07)
 
 
