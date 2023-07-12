@@ -510,7 +510,7 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
   if (taskList.get('status') === 1) {
     // Validate if the user is a fieldwork manager before retracting appoint
     if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
-    const changes = { taskStatus: [taskList.get('status'), 0] }
+    const changes = { taskStatus: [taskList.get('status'), 0.1] }
     audit.data = { changes }
     taskList.set({ status: 0.1 })
     audit.fn = 'task-list-retract-appoint'
@@ -587,8 +587,8 @@ Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId 
 Parse.Cloud.define('task-list-unmark-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status') !== 4.1) { throw new Error('Only marked completed can be unmarked') }
-  const changes = { taskStatus: [taskList.get('status'), 0] }
-  taskList.set({ status: 0 })
+  const changes = { taskStatus: [taskList.get('status'), 0.1] }
+  taskList.set({ status: 0.1 })
   const audit = { user, fn: 'task-list-unmark-complete', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
@@ -768,10 +768,10 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       // Validate if the user is a fieldwork manager before retracting appoint
       if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
       const changes = {}
-      if (taskList.get('status') !== 0) {
-        changes.taskStatus = [taskList.get('status'), 0]
+      if (taskList.get('status') !== 0.1) {
+        changes.taskStatus = [taskList.get('status'), 0.1]
       }
-      taskList.set({ status: 0 })
+      taskList.set({ status: 0.1 })
       if (form.unsetManager && taskList.get('manager')) {
         changes.managerId = [taskList.get('manager').id, null]
         taskList.unset('manager')
@@ -816,8 +816,8 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
     runFn = async (taskList) => {
       // Validate if the user is a fieldwork manager or the manager of the list before umarking complete
       await validateScoutManagerOrFieldworkManager(taskList, user)
-      if (taskList.get('status') === 0) { return }
-      taskList.set({ status: 0 })
+      if (taskList.get('status') === 0.1) { return }
+      taskList.set({ status: 0.1 })
       const audit = { user, fn: 'task-list-unmark-complete' }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
