@@ -324,7 +324,7 @@ async function validateAppointAssign (taskList) {
   if (taskList.get('type') === 'scout') {
     for (const cube of cubes) {
       // TOTRANSLATE
-      if (cube.get('order')) { throw new Error('List has booked cubes!') }
+      if (cube.get('order') || cube.get('futureOrder')) { throw new Error('List has booked cubes!') }
     }
   }
 }
@@ -654,7 +654,6 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
     future: 0,
     quotasIncomplete: 0
   }
-  // TODO: Add has-booked-cube checks
   await query
     .select('type', 'manager', 'scouts', 'status', 'statuses', 'date', 'quota', 'quotas')
     .eachBatch((taskLists) => {
@@ -682,6 +681,12 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
 Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selection, count, ...form }, user }) => {
   const query = await getQueryFromSelection(selection, count)
   const today = await $today()
+
+  // check if any of the task lists are not planned (in draft status)
+  // TOTRANSLATE
+  if (await Parse.Query.and(query, $query('TaskList').equalTo('status', 0)).count({ useMasterKey: true })) {
+    throw new Error('There are task lists that are not planned (in draft status) in this selection.')
+  }
 
   let runFn
   // appoint manager
