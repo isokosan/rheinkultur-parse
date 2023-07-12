@@ -1,8 +1,15 @@
 const Briefing = Parse.Object.extend('Briefing')
 const TaskList = Parse.Object.extend('TaskList')
+const { getStatusAndCounts } = require('./task-lists')
 
-Parse.Cloud.beforeSave(Briefing, ({ object: briefing }) => {
+Parse.Cloud.beforeSave(Briefing, async ({ object: briefing, context: { syncStatus } }) => {
   !briefing.get('status') && briefing.set('status', 0)
+
+  if (briefing.isNew()) { return }
+  if (syncStatus || !briefing.get('counts')) {
+    const { status, counts } = await getStatusAndCounts({ briefing })
+    briefing.set({ status, counts })
+  }
 })
 
 Parse.Cloud.afterSave(Briefing, async ({ object: briefing, context: { audit } }) => {

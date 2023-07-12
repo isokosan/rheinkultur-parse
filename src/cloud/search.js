@@ -122,7 +122,10 @@ const INDEXES = {
       mappings: {
         properties: {
           geo: { type: 'geo_point' },
-          status: { type: 'byte' },
+          status: {
+            type: 'scaled_float',
+            scaling_factor: 10
+          },
           ort: { type: 'keyword' },
           stateId: { type: 'keyword' },
           date: {
@@ -576,7 +579,7 @@ Parse.Cloud.define('search-fieldwork', async ({
   const sort = ['_score']
   if (user && user.get('accType') === 'partner') {
     managerId = user.id
-    bool.must.push({ range: { status: { gt: 0 } } })
+    bool.must.push({ range: { status: { gte: 1 } } })
   }
 
   (start || end) && bool.filter.push({ range: { date: { gte: start, lte: end } } })
@@ -596,7 +599,12 @@ Parse.Cloud.define('search-fieldwork', async ({
     scoutId === 'any' && bool.must.push({ exists: { field: 'scoutIds' } })
     scoutId !== 'any' && scoutId !== 'none' && bool.filter.push({ match: { 'scoutIds.keyword': scoutId } })
   }
-  status?.length && bool.must.push({ terms: { status } })
+  if (status?.length) {
+    if (!status.includes(0)) {
+      bool.must.push({ range: { status: { gt: 0 } } })
+    }
+    bool.must.push({ terms: { status } })
+  }
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)

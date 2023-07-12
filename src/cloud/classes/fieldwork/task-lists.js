@@ -26,6 +26,58 @@ async function getCenterOfCubes (cubeIds) {
   return $geopoint(latitude, longitude)
 }
 
+function getParentStatus (parent, statusCounts) {
+  if (parent.get('status') === 0) { return 0 }
+  if (parent.get('status') === 4.1) { return 4.1 }
+  const statuses = Object.keys(statusCounts).map(parseFloat)
+  // all complete
+  if (Math.min(statuses) >= 4) {
+    return 4
+  }
+  // all in progress or complete
+  if (Math.max(statuses) >= 3) {
+    return 3
+  }
+  // all assigned, in progress or complete
+  if (Math.max(statuses) >= 2) {
+    return 2
+  }
+  // all appointed, assigned, in progress or complete
+  if (Math.max(statuses) >= 1) {
+    return 2
+  }
+  return 1
+}
+
+async function getStatusAndCounts ({ briefing, control, disassembly }) {
+  // count how many task lists each status has
+  const statuses = {}
+  const counts = {
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    completed: 0
+  }
+  await $query('TaskList')
+    .equalTo('briefing', briefing)
+    .equalTo('control', control)
+    .equalTo('disassembly', disassembly)
+    .select(['status', 'counts'])
+    .eachBatch((taskLists) => {
+      for (const taskList of taskLists) {
+        const status = taskList.get('status')
+        statuses[status] = (statuses[status] || 0) + 1
+        const listCounts = taskList.get('counts')
+        for (const key of Object.keys(counts)) {
+          counts[key] += listCounts[key] || 0
+        }
+      }
+    }, { useMasterKey: true })
+  const status = getParentStatus(briefing || control || disassembly, statuses)
+  return { status, counts }
+}
+
 Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   !taskList.get('status') && taskList.set('status', 0)
 
@@ -141,7 +193,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
   }
 
   // check if date or cubes changes for an active task list (and status did not change)
-  if (audit?.data && taskList.get('status')) {
+  if (audit?.data && taskList.get('status') >= 1) {
     const { changes, cubeChanges } = audit.data
     if ((cubeChanges || changes?.date) && !changes?.taskStatus) {
       // notify fieldwork manager about changes
@@ -155,7 +207,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 
   // set auto-erledigt if approved matches total
   const { status, counts } = taskList.attributes
-  if (![0, 4].includes(status) && !counts.pending && counts.approved >= counts.total) {
+  if ([1, 2, 3].includes(status) && !counts.pending && counts.approved >= counts.total) {
     // if its a scout list, you can forget about the rejected forms
     if (taskList.get('type') !== 'scout' && counts.rejected) {
       return
@@ -165,6 +217,10 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
     const audit = { fn: 'task-list-complete', data: { changes } }
     await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   }
+  // Not sure if this will degrade performance
+  consola.error('saving parent')
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')
+  await parent.save(null, { useMasterKey: true, context: { syncStatus: true } })
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
@@ -282,7 +338,7 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
     throw new Error('Cannot change cubes in this task list')
   }
   if (taskList.get('status')) {
-    throw new Error('You cannot change cubes in an assigned task list')
+    throw new Error('You cannot change cubes in a planned task list')
   }
   $cubeLimit(cubeIds.length)
   const cubeChanges = $cubeChanges(taskList, cubeIds)
@@ -326,7 +382,7 @@ Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, obje
 
 Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status') > 0) {
+  if (taskList.get('status') >= 1) {
     // TOTRANSLATE
     throw new Error('You cannot change an assigned manager. Please first retract.')
   }
@@ -400,9 +456,9 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
 
 Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status')) {
+  if (taskList.get('status') !== 0.1) {
     // TOTRANSLATE
-    throw new Error('Only draft Abfahrtsliste can be appointed.')
+    throw new Error('Only planned Abfahrtsliste can be appointed.')
   }
   if (!taskList.get('manager')) {
     // TOTRANSLATE
@@ -457,7 +513,7 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
     if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
     const changes = { taskStatus: [taskList.get('status'), 0] }
     audit.data = { changes }
-    taskList.set({ status: 0 })
+    taskList.set({ status: 0.1 })
     audit.fn = 'task-list-retract-appoint'
     message = 'Ernennung zurückgezogen.'
   } else {
@@ -776,3 +832,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
   }, { useMasterKey: true })
   return { updated, errors }
 }, { requireUser: true })
+
+module.exports = {
+  getStatusAndCounts
+}

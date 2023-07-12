@@ -1,15 +1,16 @@
 const axios = require('axios')
 const { intersection } = require('lodash')
 
-const TaskList = Parse.Object.extend('TaskList')
 const Disassembly = Parse.Object.extend('Disassembly')
+const TaskList = Parse.Object.extend('TaskList')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
+const { getStatusAndCounts } = require('./task-lists')
 
 const DISCARD_BEFORE = moment('2023-07-01').subtract(1, 'day').format('YYYY-MM-DD')
 
 const getDueDate = date => moment(date).add(2, 'weeks').format('YYYY-MM-DD')
 
-Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly }) => {
+Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly, context: { syncStatus } }) => {
   if (disassembly.get('booking') && disassembly.get('contract')) {
     throw new Error('Disassembly cannot be tied to a booking and a contract simultaneously')
   }
@@ -22,6 +23,12 @@ Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly }) => {
   !disassembly.get('status') && disassembly.set('status', 1)
   !disassembly.get('dueDate') && disassembly.set('dueDate', getDueDate(disassembly.get('date')))
   disassembly.unset('order')
+  if (disassembly.isNew()) { return }
+
+  if (syncStatus || !disassembly.get('counts')) {
+    const { status, counts } = await getStatusAndCounts({ disassembly })
+    disassembly.set({ status, counts })
+  }
 })
 
 Parse.Cloud.beforeFind(Disassembly, ({ query }) => {
@@ -55,11 +62,11 @@ async function checkActiveTaskListsExists ({ order, className, disassembly }) {
   }
   disassembly && query.equalTo('disassembly', disassembly)
   // TODO: Update check here and go over notifications
-  if (await query.greaterThan('status', 0).count({ useMasterKey: true })) {
+  if (await query.greaterThanOrEqualTo('status', 1).count({ useMasterKey: true })) {
     // TOTRANSLATE
     throw new Error('Cannot delete disassembly with in-progress tasks. Please revert all tasks first.')
   }
-  // const activeLists = await query.greaterThan('status', 0).find({ useMasterKey: true })
+  // const activeLists = await query.greaterThanOrEqualTo('status', 1).find({ useMasterKey: true })
   // if (activeLists.length) {
   //   throw new Error('Cannot delete disassembly with submitted tasks.')
   // }
@@ -78,7 +85,7 @@ Parse.Cloud.beforeDelete(Disassembly, async ({ object: disassembly }) => {
   await checkActiveTaskListsExists({ disassembly })
   await $query(TaskList)
     .equalTo('disassembly', disassembly)
-    .equalTo('status', 0)
+    .lessThan('status', 1)
     .each(list => list.destroy({ useMasterKey: true }), { useMasterKey: true })
 })
 
@@ -266,6 +273,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
       const taskList = new TaskList({
         type: 'disassembly',
         disassembly: newMainAssembly,
+        status: 0.1, // generate as planned
         ort,
         state,
         cubeIds,

@@ -20,10 +20,11 @@ mkdir -p "$foldername"
 sudo chown "$USER:$USER" "$foldername"
 
 filename=$(date +'%d-%m-%Y').gz
-aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./"$foldername"/"$filename"
+# aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./"$foldername"/"$filename"
 
+# if the script is unable to locate the file in docker, make sure the folder exists before bringing docker compose up
 # with the --drop option this line might be unnecessary
 docker compose exec mongo bash -c 'mongosh rheinkultur-wawi --eval "db.dropDatabase()"'
-docker compose exec mongo bash -c 'mongorestore --host localhost:27017 --gzip --drop --nsInclude=rheinkultur-wawi.* --archive=db-backups/'"$filename"
+docker compose exec mongo bash -c 'mongorestore --host localhost:27017 --gzip --drop --nsInclude=rheinkultur-wawi.* --archive=./'"$foldername"/"$filename"
 
 node updates/development-reset.js

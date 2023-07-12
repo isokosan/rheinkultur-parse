@@ -1,6 +1,7 @@
 const { isEqual } = require('lodash')
 const Control = Parse.Object.extend('Control')
 const TaskList = Parse.Object.extend('TaskList')
+const { getStatusAndCounts } = require('./task-lists')
 
 function getCubesQuery (control) {
   const { date, dueDate, lastControlBefore, criteria } = control.attributes
@@ -140,7 +141,7 @@ function getCubesQuery (control) {
   return Parse.Query.and(baseQuery, cubesQuery)
 }
 
-Parse.Cloud.beforeSave(Control, ({ object: control }) => {
+Parse.Cloud.beforeSave(Control, async ({ object: control, context: { syncStatus } }) => {
   !control.get('status') && control.set('status', 0)
 
   // make sure criteria items are cleaned
@@ -150,6 +151,13 @@ Parse.Cloud.beforeSave(Control, ({ object: control }) => {
       delete criterium.item
     }
     control.set({ criteria })
+  }
+
+  if (control.isNew()) { return }
+  if (syncStatus || !control.get('counts')) {
+    consola.info('HERE')
+    const { status, counts } = await getStatusAndCounts({ control })
+    control.set({ status, counts })
   }
 })
 
@@ -202,8 +210,7 @@ Parse.Cloud.define('control-create', async ({
   const control = new Control({
     name,
     date,
-    dueDate,
-    progress: 1
+    dueDate
   })
 
   const audit = { user, fn: 'control-create' }
@@ -241,8 +248,12 @@ Parse.Cloud.define('control-update', async ({
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
+// This is only for generation. For syncing (removing cubes, do a sync function)
 Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
+  if (control.get('status')) {
+    throw new Error('This control was already planned. You may sync the lists instead to remove cubes that are freed')
+  }
   const cubesQuery = getCubesQuery(control)
   const matchingCubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
   const { date, dueDate } = control.attributes
@@ -290,7 +301,7 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
     }
     const changes = $changes(taskList, { date, dueDate })
     const cubeChanges = $cubeChanges(taskList, cubeIds)
-    // TODO: Warn manager etc
+
     if (changes || cubeChanges) {
       taskList.set({ date, dueDate, cubeIds })
       const audit = { user, fn: 'task-list-update', data: { changes, cubeChanges } }
@@ -311,11 +322,28 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
   }
 }, { requireUser: true })
 
+Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }, user }) => {
+  const control = await $getOrFail(Control, controlId)
+  if (control.get('status') > 0) {
+    throw new Error('Control was already planned!')
+  }
+  await $query('TaskList')
+    .equalTo('control', control)
+    .equalTo('status', 0)
+    .eachBatch(async (records) => {
+      for (const record of records) {
+        await record.set('status', 0.1).save(null, { useMasterKey: true })
+      }
+    }, { useMasterKey: true })
+  const audit = { user, fn: 'control-mark-as-planned' }
+  control.set({ status: 1 })
+  return control.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
   const control = await $getOrFail(Control, controlId)
-  // TODO: Check assigned and submitted lists
   // TOLATER: make checks once, and set status to "removing", and do the removal as jobs...
-  if (await $query('TaskList').equalTo('control', control).greaterThan('status', 0).first({ useMasterKey: true })) {
+  if (await $query('TaskList').equalTo('control', control).greaterThanOrEqualTo('status', 1).first({ useMasterKey: true })) {
     throw new Error('Controls with task lists in progress cannot be deleted!')
   }
   await $query('TaskList')

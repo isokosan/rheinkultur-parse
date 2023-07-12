@@ -9,7 +9,10 @@ async function initializeForDevelopment () {
   await Parse.Config.save({ today })
   console.info('set today to', today)
   // update user passwords
-  await $query(Parse.User).each(user => user.set('password', '123456').save(null, { useMasterKey: true }), { useMasterKey: true })
+  await $query(Parse.User).each(async (user) => {
+    user.set('password', '123456')
+    await user.save(null, { useMasterKey: true })
+  }, { useMasterKey: true })
   console.info('set user passwords')
   // sync lex accounts with dev lex
   await $query('Address').notEqualTo('lex', null).each(async (address) => {
