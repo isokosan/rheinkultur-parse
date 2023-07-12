@@ -1,3 +1,10 @@
+# [1.78.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.77.1...1.78.0) (2023-07-12)
+
+
+### Features
+
+* fieldwork statuses ([ca0f466](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ca0f46699ce3ca4116b54d90bce713fb0a19f05e))
+
 ## [1.77.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.77.0...1.77.1) (2023-07-11)
 
 
