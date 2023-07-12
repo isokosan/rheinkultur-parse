@@ -1,3 +1,10 @@
+## [1.79.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.79.0...1.79.1) (2023-07-12)
+
+
+### Bug Fixes
+
+* throw error on task list mass updates if any are in draft status ([0826760](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/082676061d9806a7d2d84292cbd8749bcf7ee846))
+
 # [1.79.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.78.0...1.79.0) (2023-07-12)
 
 
