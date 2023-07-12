@@ -155,7 +155,6 @@ Parse.Cloud.beforeSave(Control, async ({ object: control, context: { syncStatus 
 
   if (control.isNew()) { return }
   if (syncStatus || !control.get('counts')) {
-    consola.info('HERE')
     const { status, counts } = await getStatusAndCounts({ control })
     control.set({ status, counts })
   }

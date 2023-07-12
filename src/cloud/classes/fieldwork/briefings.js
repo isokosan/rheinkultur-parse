@@ -164,6 +164,24 @@ Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, p
   }
 }, { requireUser: true })
 
+Parse.Cloud.define('briefing-mark-as-planned', async ({ params: { id: briefingId }, user }) => {
+  const briefing = await $getOrFail(Briefing, briefingId)
+  if (briefing.get('status') > 0) {
+    throw new Error('Briefing was already planned!')
+  }
+  await $query('TaskList')
+    .equalTo('briefing', briefing)
+    .equalTo('status', 0)
+    .eachBatch(async (records) => {
+      for (const record of records) {
+        await record.set('status', 0.1).save(null, { useMasterKey: true })
+      }
+    }, { useMasterKey: true })
+  const audit = { user, fn: 'briefing-mark-as-planned' }
+  briefing.set({ status: 1 })
+  return briefing.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
 Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user, context: { seedAsId } }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   return briefing.destroy({ useMasterKey: true })

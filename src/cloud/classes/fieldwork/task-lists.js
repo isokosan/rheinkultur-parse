@@ -218,7 +218,6 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
     await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   }
   // Not sure if this will degrade performance
-  consola.error('saving parent')
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')
   await parent.save(null, { useMasterKey: true, context: { syncStatus: true } })
 })
