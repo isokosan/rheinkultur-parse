@@ -1,3 +1,11 @@
+## [1.80.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.0...1.80.1) (2023-07-12)
+
+
+### Bug Fixes
+
+* fieldwork parent statuses ([54b096a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/54b096acc777fee39c317dd1407a7f9efb7e2d4d))
+* mass action statuses on reverts ([f5ff066](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f5ff066a4cf0337ec68d8533af961fdb181a64cb))
+
 # [1.80.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.79.2...1.80.0) (2023-07-12)
 
 
