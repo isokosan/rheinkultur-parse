@@ -1,3 +1,10 @@
+## [1.79.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.79.1...1.79.2) (2023-07-12)
+
+
+### Bug Fixes
+
+* hide draft lists from fieldwork list ([8405398](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8405398cee56751c4319f9d914cc31b4bd9f0e1d))
+
 ## [1.79.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.79.0...1.79.1) (2023-07-12)
 
 
