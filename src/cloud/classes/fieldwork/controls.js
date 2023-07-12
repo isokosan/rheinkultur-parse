@@ -197,6 +197,25 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
   }
 })
 
+// TOTRANSLATE
+Parse.Cloud.beforeDelete(Control, async ({ object: control }) => {
+  const wipListExists = await $query(TaskList)
+    .equalTo('control', control)
+    .greaterThan('status', 0)
+    .find({ useMasterKey: true })
+  if (wipListExists.length) {
+    throw new Error('There are work in progress lists inside this control')
+  }
+  await $query('TaskList')
+    .equalTo('control', control)
+    .equalTo('status', 0)
+    .eachBatch(async (taskLists) => {
+      for (const taskList of taskLists) {
+        await taskList.destroy({ useMasterKey: true })
+      }
+    }, { useMasterKey: true })
+})
+
 Parse.Cloud.afterDelete(Control, $deleteAudits)
 
 Parse.Cloud.define('control-create', async ({
@@ -214,7 +233,7 @@ Parse.Cloud.define('control-create', async ({
 
   const audit = { user, fn: 'control-create' }
   return control.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $fieldworkManager)
 
 function getCriteriaChanges (before, after) {
   const beforeKeys = []
@@ -245,7 +264,7 @@ Parse.Cloud.define('control-update', async ({
   control.set({ name, date, dueDate, criteria })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $fieldworkManager)
 
 // This is only for generation. For syncing (removing cubes, do a sync function)
 Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId }, user }) => {
@@ -319,7 +338,7 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
   return {
     message: `${Object.keys(locations).length} lists generated`
   }
-}, { requireUser: true })
+}, $fieldworkManager)
 
 Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
@@ -337,31 +356,9 @@ Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }
   const audit = { user, fn: 'control-mark-as-planned' }
   control.set({ status: 1 })
   return control.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $fieldworkManager)
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
   const control = await $getOrFail(Control, controlId)
-  // TOLATER: make checks once, and set status to "removing", and do the removal as jobs...
-  if (await $query('TaskList').equalTo('control', control).greaterThanOrEqualTo('status', 1).first({ useMasterKey: true })) {
-    throw new Error('Controls with task lists in progress cannot be deleted!')
-  }
-  await $query('TaskList')
-    .equalTo('control', control)
-    .eachBatch(async (records) => {
-      for (const record of records) {
-        await record.destroy({ useMasterKey: true })
-      }
-    }, { useMasterKey: true })
   return control.destroy({ useMasterKey: true })
-}, { requireUser: true })
-
-// TODO: Change how control is deleted with checking the status of task lists first, then deleting, then running a cleanup job
-Parse.Cloud.beforeDelete(Control, async ({ object: control }) => {
-  // do not allow deleting if there are task lists or submissions
-  const taskListCount = await $query('TaskList')
-    .equalTo('control', control)
-    .count({ useMasterKey: true })
-  if (taskListCount) {
-    throw new Error('Kontrollen mit Aufgabenlisten können nicht gelöscht werden!')
-  }
-})
+}, $fieldworkManager)

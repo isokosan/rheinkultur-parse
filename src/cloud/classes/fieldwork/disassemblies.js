@@ -143,7 +143,7 @@ Parse.Cloud.define('disassembly-order-update', async ({
   }
   await order.save(null, { useMasterKey: true, context: { audit } })
   await Parse.Cloud.run('disassembly-order-sync', { className, id }, { useMasterKey: true })
-}, { requireUser: true })
+}, $internOrAdmin)
 
 Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: orderId, forceSince }, user }) => {
   const discardBefore = forceSince || DISCARD_BEFORE

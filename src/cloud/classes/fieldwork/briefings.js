@@ -39,14 +39,23 @@ Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
   }
 })
 
+// TOTRANSLATE
 Parse.Cloud.beforeDelete(Briefing, async ({ object: briefing }) => {
   const wipListExists = await $query(TaskList)
     .equalTo('briefing', briefing)
+    .greaterThan('status', 0)
     .find({ useMasterKey: true })
   if (wipListExists.length) {
     throw new Error('There are work in progress lists inside this briefing')
   }
-  // TODO: Check statuses, to make sure really no wip exists
+  await $query('TaskList')
+    .equalTo('briefing', briefing)
+    .equalTo('status', 0)
+    .eachBatch(async (taskLists) => {
+      for (const taskList of taskLists) {
+        await taskList.destroy({ useMasterKey: true })
+      }
+    }, { useMasterKey: true })
 })
 
 Parse.Cloud.afterDelete(Briefing, $deleteAudits)
@@ -68,7 +77,7 @@ Parse.Cloud.define('briefing-create', async ({
 
   const audit = { user, fn: 'briefing-create' }
   return briefing.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $fieldworkManager)
 
 Parse.Cloud.define('briefing-update', async ({
   params: {
@@ -89,7 +98,7 @@ Parse.Cloud.define('briefing-update', async ({
   }
   const audit = { user, fn: 'briefing-update', data: { changes } }
   return briefing.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $fieldworkManager)
 
 Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, lists }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
@@ -129,7 +138,7 @@ Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, list
     }
   }
   return true
-}, { requireUser: true })
+}, $fieldworkManager)
 
 Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, placeKey }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
@@ -162,7 +171,7 @@ Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, p
     message: `${ort} added.`,
     data: await taskList.save(null, { useMasterKey: true, context: { audit } })
   }
-}, { requireUser: true })
+}, $fieldworkManager)
 
 Parse.Cloud.define('briefing-mark-as-planned', async ({ params: { id: briefingId }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
@@ -180,9 +189,9 @@ Parse.Cloud.define('briefing-mark-as-planned', async ({ params: { id: briefingId
   const audit = { user, fn: 'briefing-mark-as-planned' }
   briefing.set({ status: 1 })
   return briefing.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+}, $fieldworkManager)
 
 Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user, context: { seedAsId } }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   return briefing.destroy({ useMasterKey: true })
-}, $adminOnly)
+}, $fieldworkManager)
