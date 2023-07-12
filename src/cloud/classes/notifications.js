@@ -17,8 +17,7 @@ const NOTIFICATIONS = {
       .first({ useMasterKey: true })
   },
   'task-submission-rejected': {
-    // TOTRANSLATE
-    message: ({ cubeId, rejectionReason }) => `Your submission for <strong>${cubeId}</strong> was rejected. ${rejectionReason}`,
+    message: ({ cubeId, placeKey, rejectionReason }) => `Standort <strong>${cubeId}</strong> in ${placeKey.split(':')[1]} wurde abgelehnt. <strong>${rejectionReason}</strong>`,
     app: 'scout',
     route: ({ placeKey, cubeId }) => ({ name: 'location', params: { placeKey }, query: { cubeId } })
   },

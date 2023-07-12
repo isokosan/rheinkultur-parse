@@ -39,14 +39,13 @@ Parse.Cloud.afterFind(Briefing, async ({ query, objects: briefings }) => {
   }
 })
 
-// TOTRANSLATE
 Parse.Cloud.beforeDelete(Briefing, async ({ object: briefing }) => {
   const wipListExists = await $query(TaskList)
     .equalTo('briefing', briefing)
     .greaterThan('status', 0)
     .find({ useMasterKey: true })
   if (wipListExists.length) {
-    throw new Error('There are work in progress lists inside this briefing')
+    throw new Error('Briefing mit geplanten Listen kann nicht gelöscht werden.')
   }
   await $query('TaskList')
     .equalTo('briefing', briefing)

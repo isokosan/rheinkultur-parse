@@ -146,7 +146,7 @@ module.exports.TASK_LIST_STATUSES = {
 module.exports.FIELDWORK_STATUSES = {
   0: 'Entwurf',
   1: 'Geplant',
-  2: 'Aktiv',
+  2: 'Vorbereitet',
   3: 'In Bearbeitung',
   4: 'Erledigt'
 }

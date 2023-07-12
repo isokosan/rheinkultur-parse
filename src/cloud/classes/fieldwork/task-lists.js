@@ -31,19 +31,15 @@ function getParentStatus (parent, statusCounts) {
   if (parent.get('status') === 4.1) { return 4.1 }
   const statuses = Object.keys(statusCounts).map(parseFloat)
   // all complete
-  if (Math.min(statuses) >= 4) {
+  if (Math.min(...statuses) >= 4) {
     return 4
   }
-  // all in progress or complete
-  if (Math.max(statuses) >= 3) {
+  // some are assigned, progress or complete
+  if (Math.max(...statuses) >= 2) {
     return 3
   }
-  // all assigned, in progress or complete
-  if (Math.max(statuses) >= 2) {
-    return 2
-  }
-  // all appointed, assigned, in progress or complete
-  if (Math.max(statuses) >= 1) {
+  // all appointed
+  if (Math.max(...statuses) >= 1) {
     return 2
   }
   return 1
@@ -301,14 +297,14 @@ function validateScoutManagerOrFieldworkManager (taskList, user) {
 // TOTRANSLATE
 async function validateAppointAssign (taskList) {
   if (!taskList.get('cubeIds').length) {
-    throw new Error('This task list has no cubes!')
+    throw new Error('Diese Liste hat keine CityCubes!')
   }
   if (!taskList.get('date') || !taskList.get('dueDate')) {
-    throw new Error('Please set date and due date first.')
+    throw new Error('Bitte setzen Sie zuerst ein Datum und Fälligkeitsdatum.')
   }
   if (taskList.get('type') === 'scout') {
     if (!taskList.get('quotas') && !taskList.get('quota')) {
-      throw new Error('Please set quotas.')
+      throw new Error('Bitte setzen Sie zuerst die Anzahle.')
     }
   }
   const { ort, state: { id: stateId } } = taskList.attributes
@@ -317,27 +313,26 @@ async function validateAppointAssign (taskList) {
   const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
   if (!cubes.length) { throw new Error('No cubes found') }
   if (cubes.some(cube => cube.get('ort') !== ort || cube.get('state').id !== stateId)) {
-    throw new Error('There are cubes outside of the location of this list')
+    throw new Error('Es gibt CityCubes außerhalb des Einsatzortes dieser Liste.')
   }
 
   // reject booked cubes
   if (taskList.get('type') === 'scout') {
     for (const cube of cubes) {
       // TOTRANSLATE
-      if (cube.get('order') || cube.get('futureOrder')) { throw new Error('List has booked cubes!') }
+      if (cube.get('order') || cube.get('futureOrder')) { throw new Error('Diese Liste hat bereits vermarkteten CityCubes.') }
     }
   }
 }
 
 // Used in marklist store component to save manual cube changes
-// TOTRANSLATE
 Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, cubeIds }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('type') !== 'scout' || !taskList.get('briefing')) {
-    throw new Error('Cannot change cubes in this task list')
+    throw new Error('CityCubes in kann nicht geändert werden.')
   }
   if (taskList.get('status')) {
-    throw new Error('You cannot change cubes in a planned task list')
+    throw new Error('CityCubes in kann nicht geändert werden.')
   }
   $cubeLimit(cubeIds.length)
   const cubeChanges = $cubeChanges(taskList, cubeIds)
@@ -382,8 +377,7 @@ Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, obje
 Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status') >= 1) {
-    // TOTRANSLATE
-    throw new Error('You cannot change an assigned manager. Please first retract.')
+    throw new Error('Sie können den Manager nicht ändern. Bitte ziehen Sie die Ernennung zuerst zurück.')
   }
   const { managerId } = normalizeFields(params)
   if (managerId === taskList.get('manager')?.id) {
@@ -409,8 +403,7 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
   const taskList = await $getOrFail(TaskList, taskListId)
   await validateScoutManagerOrFieldworkManager(taskList, user)
   if (taskList.get('status') > 1) {
-    // TOTRANSLATE
-    throw new Error('You cannot change scouts in an assigned task list. Please first retract.')
+    throw new Error('Sie können die Scouts nicht ändern. Bitte ziehen Sie die Beauftragung zuerst zurück.')
   }
   const { scoutIds } = normalizeFields(params)
   const currentScoutIds = (taskList.get('scouts') || []).map(s => s.id)
@@ -456,12 +449,10 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
 Parse.Cloud.define('task-list-appoint', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status') !== 0.1) {
-    // TOTRANSLATE
-    throw new Error('Only planned Abfahrtsliste can be appointed.')
+    throw new Error('Nur geplante Abfahrtsliste können ernannt werden.')
   }
   if (!taskList.get('manager')) {
-    // TOTRANSLATE
-    throw new Error('Need a manager to appoint to')
+    throw new Error('Bitte wählen Sie zuerst einen Manager aus.')
   }
   await validateAppointAssign(taskList)
   const changes = { taskStatus: [taskList.get('status'), 1] }
@@ -480,11 +471,10 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
   await validateScoutManagerOrFieldworkManager(taskList, user)
 
   if (!taskList.get('manager') || taskList.get('status') !== 1) {
-    // TOTRANSLATE
-    throw new Error('Only Abfahrtsliste appointed to a manager be assigned.')
+    throw new Error('Nur Abfahrtsliste, die einem Manager ernannt wurde, können beauftragt werden.')
   }
   if (!(taskList.get('scouts') || []).length) {
-    throw new Error('Need at least one scout to assign to')
+    throw new Error('Bitte wählen Sie zuerst Scouts aus.')
   }
   if (moment(taskList.get('date')).isAfter(await $today(), 'day')) {
     throw new Error(`You can assign this task only from ${moment(taskList.get('date')).format('DD.MM.YYYY')}`)
@@ -503,7 +493,7 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
 Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (![1, 2, 3].includes(taskList.get('status'))) {
-    throw new Error('Only lists that are in progress or assigned to a scout can be retracted.')
+    throw new Error('Nur Abfahrtsliste, die sich in Ernannt, Beauftragt oder In Bearbeitung Status finden, können zurückgezogen werden.')
   }
   const audit = { user }
   let message
@@ -579,21 +569,21 @@ Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId 
   await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   return {
     data: taskList.get('status'),
-    message: 'Task list marked complete'
+    message: 'Liste als erledigt markiert.'
   }
 }, $fieldworkManager)
 
 // unmark complete
 Parse.Cloud.define('task-list-unmark-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status') !== 4.1) { throw new Error('Only marked completed can be unmarked') }
+  if (taskList.get('status') !== 4.1) { throw new Error('Liste nicht als erledigt markiert.') }
   const changes = { taskStatus: [taskList.get('status'), 0.1] }
   taskList.set({ status: 0.1 })
   const audit = { user, fn: 'task-list-unmark-complete', data: { changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return {
     data: taskList.get('status'),
-    message: 'Task list unmarked as complete'
+    message: 'Markierung erledigt zurückgezogen.'
   }
 }, $fieldworkManager)
 

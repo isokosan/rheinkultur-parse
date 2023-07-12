@@ -63,8 +63,7 @@ async function checkActiveTaskListsExists ({ order, className, disassembly }) {
   disassembly && query.equalTo('disassembly', disassembly)
   // TODO: Update check here and go over notifications
   if (await query.greaterThanOrEqualTo('status', 1).count({ useMasterKey: true })) {
-    // TOTRANSLATE
-    throw new Error('Cannot delete disassembly with in-progress tasks. Please revert all tasks first.')
+    throw new Error('Demontage mit geplante Listen kann nicht gelöscht werden.')
   }
   // const activeLists = await query.greaterThanOrEqualTo('status', 1).find({ useMasterKey: true })
   // if (activeLists.length) {

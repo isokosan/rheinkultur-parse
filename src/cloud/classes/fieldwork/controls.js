@@ -197,14 +197,13 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
   }
 })
 
-// TOTRANSLATE
 Parse.Cloud.beforeDelete(Control, async ({ object: control }) => {
   const wipListExists = await $query(TaskList)
     .equalTo('control', control)
     .greaterThan('status', 0)
     .find({ useMasterKey: true })
   if (wipListExists.length) {
-    throw new Error('There are work in progress lists inside this control')
+    throw new Error('Kontrolle mit geplanten Listen kann nicht gelöscht werden.')
   }
   await $query('TaskList')
     .equalTo('control', control)
