@@ -1,3 +1,10 @@
+# [1.79.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.78.0...1.79.0) (2023-07-12)
+
+
+### Features
+
+* add briefing planning ([67a8297](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/67a82971427b7c21a3f83390a2d49fbaf6bd942d))
+
 # [1.78.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.77.1...1.78.0) (2023-07-12)
 
 
