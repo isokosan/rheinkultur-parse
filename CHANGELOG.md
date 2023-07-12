@@ -1,3 +1,10 @@
+## [1.80.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.1...1.80.2) (2023-07-12)
+
+
+### Bug Fixes
+
+* remove status column, add comment column to task list exports ([1d86645](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1d86645f7680e500b0e79ac1e1bf88e8e652ff7a))
+
 ## [1.80.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.0...1.80.1) (2023-07-12)
 
 
