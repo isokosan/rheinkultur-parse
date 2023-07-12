@@ -531,12 +531,13 @@ const addTaskListSheet = async (workbook, taskList) => {
   const taskListHeaders = {
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
-    status: { header: 'Status', width: 15 },
+    // status: { header: 'Status', width: 15 },
     motive: { header: 'Motiv', width: 30 },
     address: { header: 'Anschrift', width: 30 },
     plz: { header: 'PLZ', width: 15 },
     ort: { header: 'Ort', width: 15 },
-    stateName: { header: 'Bundesland', width: 30 }
+    stateName: { header: 'Bundesland', width: 30 },
+    __empty1__: { header: 'Kommentar', width: 30 }
   }
 
   if (taskList.get('type') === 'scout') {
