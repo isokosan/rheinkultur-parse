@@ -599,12 +599,10 @@ Parse.Cloud.define('search-fieldwork', async ({
     scoutId === 'any' && bool.must.push({ exists: { field: 'scoutIds' } })
     scoutId !== 'any' && scoutId !== 'none' && bool.filter.push({ match: { 'scoutIds.keyword': scoutId } })
   }
-  if (status?.length) {
-    if (!status.includes(0)) {
-      bool.must.push({ range: { status: { gt: 0 } } })
-    }
-    bool.must.push({ terms: { status } })
-  }
+
+  // hide drafts if not included in status filter explicity
+  status?.length && bool.must.push({ terms: { status } })
+  !status?.includes(0) && bool.must.push({ range: { status: { gt: 0 } } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)
