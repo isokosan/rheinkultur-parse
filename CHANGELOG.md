@@ -1,3 +1,10 @@
+# [1.80.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.79.2...1.80.0) (2023-07-12)
+
+
+### Features
+
+* fieldwork permissions and deletions for controls and briefings ([5c62043](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5c62043965a2550d1a31415e581cbd897b795f75))
+
 ## [1.79.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.79.1...1.79.2) (2023-07-12)
 
 
