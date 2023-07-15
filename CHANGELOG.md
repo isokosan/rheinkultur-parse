@@ -1,3 +1,11 @@
+## [1.80.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.2...1.80.3) (2023-07-15)
+
+
+### Bug Fixes
+
+* cube future order unset if not active ([51d7ba6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/51d7ba658897db71bd2f197b8af171e25d62e422))
+* re-enable import in script ([f8b764f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f8b764f063fcaa0a530e35c5e659938ced5c4aa6))
+
 ## [1.80.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.1...1.80.2) (2023-07-12)
 
 
