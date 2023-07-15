@@ -20,7 +20,7 @@ mkdir -p "$foldername"
 sudo chown "$USER:$USER" "$foldername"
 
 filename=$(date +'%d-%m-%Y').gz
-# aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./"$foldername"/"$filename"
+aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./"$foldername"/"$filename"
 
 # if the script is unable to locate the file in docker, make sure the folder exists before bringing docker compose up
 # with the --drop option this line might be unnecessary
