@@ -184,6 +184,16 @@ function orderSummaryIsEqual (a, b) {
   )
 }
 
+function orderPointerIsEqual (a, b) {
+  if (!a?.objectId || !b?.objectId) {
+    return false
+  }
+  if (a?.className !== b?.className) {
+    return false
+  }
+  return a.objectId === b.objectId
+}
+
 // gets the first found active order today
 async function getActiveCubeOrder (cubeId) {
   const date = await $today()
@@ -263,20 +273,37 @@ async function setBookingCubeStatus (booking) {
   const order = getOrderSummary(booking)
   const cube = booking.get('cube')
   const cubeOrder = cube.get('order')
+  const cubeFutureOrder = cube.get('futureOrder')
+
   // remove all cubes that reference the booking despite the booking having them removed
   const removedCubeIds = await removeAllCubeReferencesToCaok(caok, [cube.id])
   response.unset.push(...removedCubeIds)
+
+  // remove cube associated with booking if draft or voided
+  if (order.status <= 2) {
+    // if the order has ended we unset and free the cubes
+    if (cube.get('caok') === caok || orderPointerIsEqual(cubeOrder, order)) {
+      cube.unset('order')
+      response.unset.push(cube.id)
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+    }
+    if (orderPointerIsEqual(cubeFutureOrder, order)) {
+      cube.unset('futureOrder', order)
+      await $saveWithEncode(cube, null, { useMasterKey: true })
+    }
+    return response
+  }
 
   const started = today.isSameOrAfter(order.startsAt, 'day')
   // if order hasnt started yet we save the order caok to future order, and unset order
   if (!started) {
     // if the order has ended we unset and free the cubes
-    if (cube.get('caok') === caok || orderSummaryIsEqual(cube.get('order'), order)) {
+    if (cube.get('caok') === caok || orderPointerIsEqual(cubeOrder, order)) {
       cube.unset('order')
       response.unset.push(cube.id)
       await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }
-    if (!orderSummaryIsEqual(cube.get('futureOrder'), order)) {
+    if (!orderSummaryIsEqual(cubeFutureOrder, order)) {
       cube.set('futureOrder', order)
       await $saveWithEncode(cube, null, { useMasterKey: true })
     }
@@ -284,22 +311,20 @@ async function setBookingCubeStatus (booking) {
   }
 
   // if order started remove future order
-  if (cube.get('futureOrder')?.objectId === order.objectId) {
+  if (orderPointerIsEqual(cubeFutureOrder, order)) {
     cube.unset('futureOrder', order)
     await $saveWithEncode(cube, null, { useMasterKey: true })
   }
 
-  const runningOrder = order.status > 2 && (order.willExtend || today.isSameOrBefore(order.endsAt, 'day'))
+  const runningOrder = order.willExtend || today.isSameOrBefore(order.endsAt, 'day')
   if (runningOrder && !orderSummaryIsEqual(cubeOrder, order)) {
     cube.set({ order })
     response.set.push(cube.id)
     await $saveWithEncode(cube, null, { useMasterKey: true })
-  } else if (!runningOrder && cubeOrder) {
-    if (cubeOrder.className === 'Booking' && cubeOrder.objectId === order.objectId) {
-      cube.unset('order')
-      response.unset.push(cube.id)
-      await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
-    }
+  } else if (!runningOrder && (cube.get('caok') === caok || orderPointerIsEqual(cubeOrder, order))) {
+    cube.unset('order')
+    response.unset.push(cube.id)
+    await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
   }
   return response
 }
@@ -315,8 +340,8 @@ async function setContractCubeStatuses (contract) {
   const removedCubeIds = await removeAllCubeReferencesToCaok(caok, cubeIds)
   response.unset.push(...removedCubeIds)
 
+  // remove all cubes associated with order if draft or voided
   if (order.status <= 2) {
-    // remove all cubes associated with order if draft
     await $query('Cube')
       .equalTo('order.className', order.className)
       .equalTo('order.objectId', order.objectId)
@@ -325,6 +350,14 @@ async function setContractCubeStatuses (contract) {
         response.unset.push(cube.id)
         // orderStatusCheck will check if any other active bookings or contracts reference this cube
         return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+      }, { useMasterKey: true })
+    // remove all cubes associated with future order if draft
+    await $query('Cube')
+      .equalTo('futureOrder.className', order.className)
+      .equalTo('futureOrder.objectId', order.objectId)
+      .each(cube => {
+        cube.unset('futureOrder')
+        return $saveWithEncode(cube, null, { useMasterKey: true })
       }, { useMasterKey: true })
     return response
   }
@@ -338,7 +371,7 @@ async function setContractCubeStatuses (contract) {
   if (!started) {
     await getBaseQuery().eachBatch(async (cubes) => {
       for (const cube of cubes) {
-        if (cube.get('caok') === caok || orderSummaryIsEqual(cube.get('order'), order)) {
+        if (cube.get('caok') === caok || orderPointerIsEqual(cube.get('order'), order)) {
           cube.unset('order')
           response.unset.push(cube.id)
           await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
@@ -375,7 +408,7 @@ async function setContractCubeStatuses (contract) {
       // if ended, and still set remove
       const earlyCanceledAndEnded = date === true || today.isAfter(date, 'day')
       if (earlyCanceledAndEnded) {
-        if (cube.get('caok') === caok) {
+        if (cube.get('caok') === caok || orderPointerIsEqual(cube.get('order'), order)) {
           response.unset.push(cube.id)
           cube.unset('order')
           // orderStatusCheck will check if any other active bookings or contracts reference this cube
