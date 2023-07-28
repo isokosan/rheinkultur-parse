@@ -1,3 +1,10 @@
+## [1.80.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.4...1.80.5) (2023-07-28)
+
+
+### Bug Fixes
+
+* update schedule hours and improve remove caok references performance ([cc4078a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cc4078a160e699c1341760d424b2295f672064d9))
+
 ## [1.80.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.3...1.80.4) (2023-07-28)
 
 
