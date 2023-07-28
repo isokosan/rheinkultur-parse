@@ -263,6 +263,16 @@ async function removeAllCubeReferencesToCaok (caok, cubeIds) {
       // orderStatusCheck will check if any other active bookings or contracts reference this cube
       return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }, { useMasterKey: true })
+  // TODO: Test removal of future orders
+  const [className, itemId] = caok.split('$')
+  await $query('Cube')
+    .notContainedIn('objectId', cubeIds)
+    .equalTo('futureOrder.className', className)
+    .equalTo('futureOrder.objectId', itemId)
+    .each(cube => {
+      cube.unset('futureOrder')
+      return $saveWithEncode(cube, null, { useMasterKey: true })
+    }, { useMasterKey: true })
   return removed
 }
 
