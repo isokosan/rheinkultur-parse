@@ -1,3 +1,11 @@
+## [1.80.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.3...1.80.4) (2023-07-28)
+
+
+### Bug Fixes
+
+* also remove future order field if cube id is not referenced within the list ([dd6c203](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dd6c203d5de75ed6ad2d18e88295393b51d90e16))
+* temporary increase submissions limit to 10000 ([5f62cd6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5f62cd669e03c8ba6a52e9649d5ed8a156838641))
+
 ## [1.80.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.2...1.80.3) (2023-07-15)
 
 
