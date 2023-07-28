@@ -257,11 +257,13 @@ async function removeAllCubeReferencesToCaok (caok, cubeIds) {
   await $query('Cube')
     .notContainedIn('objectId', cubeIds)
     .equalTo('caok', caok)
-    .each(cube => {
-      cube.unset('order')
-      removed.push(cube.id)
-      // orderStatusCheck will check if any other active bookings or contracts reference this cube
-      return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        cube.unset('order')
+        // orderStatusCheck will check if any other active bookings or contracts reference this cube
+        await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+        removed.push(cube.id)
+      }
     }, { useMasterKey: true })
   // TODO: Test removal of future orders
   const [className, itemId] = caok.split('$')
@@ -269,9 +271,11 @@ async function removeAllCubeReferencesToCaok (caok, cubeIds) {
     .notContainedIn('objectId', cubeIds)
     .equalTo('futureOrder.className', className)
     .equalTo('futureOrder.objectId', itemId)
-    .each(cube => {
-      cube.unset('futureOrder')
-      return $saveWithEncode(cube, null, { useMasterKey: true })
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        cube.unset('futureOrder')
+        await $saveWithEncode(cube, null, { useMasterKey: true })
+      }
     }, { useMasterKey: true })
   return removed
 }
