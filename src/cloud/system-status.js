@@ -1,4 +1,5 @@
 const { parseAsDigitString } = require('@/utils')
+const { getVersion: getElasticVersion } = require('@/services/elastic')
 
 const UnsyncedLexDocument = Parse.Object.extend('UnsyncedLexDocument')
 
@@ -140,6 +141,17 @@ Parse.Cloud.define('system-status-order-dates', async () => {
       }, { useMasterKey: true })
   }
   return issues
+}, $internOrAdmin)
+
+Parse.Cloud.define('system-status-elastic-version-match', async () => {
+  const elasticVersions = {
+    client: require('@/../package.json').dependencies['@elastic/elasticsearch'],
+    server: await getElasticVersion()
+  }
+  const systemStatus = await Parse.Config.get().then(config => config.get('systemStatus') || {})
+  systemStatus.elasticVersions = elasticVersions
+  await Parse.Config.save({ systemStatus })
+  return elasticVersions
 }, $internOrAdmin)
 
 module.exports.updateUnsyncedLexDocument = updateUnsyncedLexDocument

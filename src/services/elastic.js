@@ -38,4 +38,5 @@ async function test () {
 }
 
 module.exports = client
+module.exports.getVersion = () => client.info().then(({ version: { number } }) => number)
 module.exports.test = test
