@@ -1,3 +1,10 @@
+# [1.81.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.5...1.81.0) (2023-08-05)
+
+
+### Features
+
+* add elasticsearch version match check ([ada8656](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ada8656a419081cba349c689752cef2c2f332d1a))
+
 ## [1.80.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.4...1.80.5) (2023-07-28)
 
 
