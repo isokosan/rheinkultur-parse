@@ -236,6 +236,7 @@ async function getFutureCubeOrder (cubeId) {
     .greaterThanOrEqualTo('status', 3)
     .notEqualTo(`earlyCancellations.${cubeId}`, true) // was not taken out
     .greaterThan('startsAt', date) // did not start yet
+    .ascending('startsAt')
     .first({ useMasterKey: true })
   if (contract) {
     return getOrderSummary(contract)
@@ -245,6 +246,7 @@ async function getFutureCubeOrder (cubeId) {
     .greaterThanOrEqualTo('status', 3)
     .notEqualTo(`earlyCancellations.${cubeId}`, true) // was not taken out
     .greaterThan('startsAt', date) // did not start yet
+    .ascending('startsAt')
     .first({ useMasterKey: true })
   if (booking) {
     return getOrderSummary(booking)
@@ -302,7 +304,7 @@ async function setBookingCubeStatus (booking) {
       await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }
     if (orderPointerIsEqual(cubeFutureOrder, order)) {
-      cube.unset('futureOrder', order)
+      cube.unset('futureOrder')
       await $saveWithEncode(cube, null, { useMasterKey: true })
     }
     return response
@@ -318,15 +320,19 @@ async function setBookingCubeStatus (booking) {
       await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
     }
     if (!orderSummaryIsEqual(cubeFutureOrder, order)) {
-      cube.set('futureOrder', order)
-      await $saveWithEncode(cube, null, { useMasterKey: true })
+      // do not update if another future order that starts earlier is already set
+      const futureOrder = await getFutureCubeOrder(cube.id)
+      if (!orderSummaryIsEqual(cubeFutureOrder, futureOrder)) {
+        cube.set('futureOrder', futureOrder)
+        await $saveWithEncode(cube, null, { useMasterKey: true })
+      }
     }
     return response
   }
 
   // if order started remove future order
   if (orderPointerIsEqual(cubeFutureOrder, order)) {
-    cube.unset('futureOrder', order)
+    cube.unset('futureOrder')
     await $saveWithEncode(cube, null, { useMasterKey: true })
   }
 
@@ -390,9 +396,14 @@ async function setContractCubeStatuses (contract) {
           response.unset.push(cube.id)
           await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
         }
-        if (!orderSummaryIsEqual(cube.get('futureOrder'), order)) {
-          cube.set('futureOrder', order)
-          await $saveWithEncode(cube, null, { useMasterKey: true })
+        const cubeFutureOrder = cube.get('futureOrder')
+        if (!orderSummaryIsEqual(cubeFutureOrder, order)) {
+          // do not update if another future order that starts earlier is already set
+          const futureOrder = await getFutureCubeOrder(cube.id)
+          if (!orderSummaryIsEqual(cubeFutureOrder, futureOrder)) {
+            cube.set('futureOrder', futureOrder)
+            await $saveWithEncode(cube, null, { useMasterKey: true })
+          }
         }
       }
     }, { useMasterKey: true })
@@ -404,7 +415,7 @@ async function setContractCubeStatuses (contract) {
     .equalTo('futureOrder.objectId', order.objectId)
     .eachBatch(async (cubes) => {
       for (const cube of cubes) {
-        cube.unset('futureOrder', order)
+        cube.unset('futureOrder')
         await $saveWithEncode(cube, null, { useMasterKey: true })
       }
     }, { useMasterKey: true })
