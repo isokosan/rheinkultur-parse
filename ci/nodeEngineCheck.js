@@ -1,4 +1,3 @@
-
 const core = require('@actions/core')
 const semver = require('semver')
 const fs = require('node:fs').promises
