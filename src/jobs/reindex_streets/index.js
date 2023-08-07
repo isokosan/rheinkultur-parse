@@ -1,11 +1,10 @@
-const { client, INDEXES } = require('@/cloud/search')
+const { client, INDEXES, deleteAndRecreateIndex } = require('@/cloud/search')
 const { chunk } = require('lodash')
 
 // If you run into resource_exists issues, delete the docker containers etc with "docker system prune"
 module.exports = async function (job) {
   const index = 'rheinkultur-streets-autocomplete'
-  await client.indices.exists({ index }) && await client.indices.delete({ index })
-  await client.indices.create({ index, body: INDEXES[index].config })
+  await deleteAndRecreateIndex(index)
   const query = INDEXES[index].parseQuery
   const bodies = await query
     .then(INDEXES[index].datasetMap)

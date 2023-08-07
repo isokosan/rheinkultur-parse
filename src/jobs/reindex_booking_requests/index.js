@@ -1,10 +1,8 @@
-const { client, INDEXES } = require('@/cloud/search')
+const { client, INDEXES, deleteAndRecreateIndex } = require('@/cloud/search')
 
 module.exports = async function (job) {
   const index = 'rheinkultur-booking-requests'
-  // delete index
-  await client.indices.exists({ index }) && await client.indices.delete({ index })
-  await client.indices.create({ index, body: INDEXES[index].config })
+  await deleteAndRecreateIndex(index)
   const query = INDEXES[index].parseQuery
   const total = await query.count({ useMasterKey: true })
   let i = 0

@@ -8,6 +8,8 @@ const client = new Client({
       password: process.env.ELASTIC_PASS
     }
     : undefined
+  // maxRetries: 3,
+  // requestTimeout: 30000
 })
 
 async function test () {

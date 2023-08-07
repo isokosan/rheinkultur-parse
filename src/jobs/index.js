@@ -74,12 +74,12 @@ const updateJobs = {
     cron: '0/10 * * * *', // every 10 minutes
     notificationDuration: 1
   },
-  system_status_elastic_version_match: {
-    name: 'Überprüfung von Elasticsearch Client & Server version match',
-    timeoutMinutes: 5,
-    cron: '0 * * * *', // every hour
-    notificationDuration: 1
-  },
+  // system_status_elastic_version_match: {
+  //   name: 'Überprüfung von Elasticsearch Client & Server version match',
+  //   timeoutMinutes: 5,
+  //   cron: '0 * * * *', // every hour
+  //   notificationDuration: 1
+  // },
   lex_ensure: {
     name: 'Überprüfung von Lex-Office Synchronizierung',
     timeoutMinutes: 15,

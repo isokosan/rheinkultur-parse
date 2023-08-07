@@ -1,4 +1,4 @@
-const { client, INDEXES } = require('@/cloud/search')
+const { client, INDEXES, deleteAndRecreateIndex } = require('@/cloud/search')
 
 const createCity = async (body) => Parse.Cloud.httpRequest({
   method: 'POST',
@@ -39,8 +39,7 @@ module.exports = async function (job) {
   }
 
   const index = 'rheinkultur-cities-autocomplete'
-  await client.indices.exists({ index }) && await client.indices.delete({ index })
-  await client.indices.create({ index, body: INDEXES[index].config })
+  await deleteAndRecreateIndex(index)
   const query = INDEXES[index].parseQuery
   query.limit(1000)
   const citiesCount = await query.count({ useMasterKey: true })

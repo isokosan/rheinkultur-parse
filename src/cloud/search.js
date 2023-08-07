@@ -276,6 +276,7 @@ Parse.Cloud.define(
     .then(hits => hits.map(hit => hit._id)),
   { validateMasterKey: true }
 )
+
 Parse.Cloud.define(
   'cities-autocomplete',
   ({ params: { query } }) => autocompleteSearch('rheinkultur-cities-autocomplete', 'ort', query)
@@ -934,10 +935,40 @@ async function createOrUpdateIndex (index) {
   return client.indices.create({ index, body: INDEXES[index].config })
 }
 
+async function deleteAndRecreateIndex (index, retries = 0) {
+  if (await client.indices.exists({ index })) {
+    const { acknowledged } = await client.indices.delete({ index })
+    if (!acknowledged) {
+      if (retries < 5) {
+        retries++
+        return deleteAndRecreateIndex(index, retries)
+      }
+      throw new Error('Delete response not acknowledged')
+    }
+  }
+  try {
+    const { acknowledged } = await client.indices.create({ index, body: INDEXES[index].config })
+    if (!acknowledged && retries < 5) {
+      retries++
+      return deleteAndRecreateIndex(index, retries)
+    }
+    throw new Error('Create response not acknowledged')
+  } catch (error) {
+    if (error.statusCode === 400) {
+      if (error.body.error.type === 'resource_already_exists_exception' && retries < 5) {
+        retries++
+        return deleteAndRecreateIndex(index, retries)
+      }
+      throw error
+    }
+  }
+}
+
 module.exports = {
   client,
   INDEXES,
   createOrUpdateIndex,
+  deleteAndRecreateIndex,
   purgeIndex,
   purgeIndexes,
   indexCube,
