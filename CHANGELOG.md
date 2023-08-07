@@ -1,3 +1,12 @@
+## [1.81.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.0...1.81.1) (2023-08-07)
+
+
+### Bug Fixes
+
+* add ascending order to cube future orders ([393db58](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/393db58f034ecb08a733729a49c61514586b1893))
+* add retries and error handling to delete & recreate index ([ab5bdc5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ab5bdc565a274bc89ed73c5c037e8bd34fd486c7))
+* remove voided contracts from finalize-preview checks ([ed76a43](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ed76a43a83fac521b9ebe647d8d1ced89627751a))
+
 # [1.81.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.80.5...1.81.0) (2023-08-05)
 
 
