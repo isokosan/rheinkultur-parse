@@ -577,7 +577,7 @@ Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId 
 // unmark complete
 Parse.Cloud.define('task-list-unmark-complete', async ({ params: { id: taskListId }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('status') !== 4.1) { throw new Error('Liste nicht als erledigt markiert.') }
+  if (taskList.get('status') < 4) { throw new Error('Liste nicht als erledigt markiert.') }
   const changes = { taskStatus: [taskList.get('status'), 0.1] }
   taskList.set({ status: 0.1 })
   const audit = { user, fn: 'task-list-unmark-complete', data: { changes } }
