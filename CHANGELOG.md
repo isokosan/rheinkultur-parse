@@ -1,3 +1,10 @@
+## [1.81.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.2...1.81.3) (2023-08-07)
+
+
+### Bug Fixes
+
+* update job schedule to give 180 mins to sync cube statuses ([64b6873](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/64b6873b6bb1039fdf070ac8729f04ed333c92e4))
+
 ## [1.81.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.1...1.81.2) (2023-08-07)
 
 
