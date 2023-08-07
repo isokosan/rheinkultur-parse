@@ -744,6 +744,7 @@ Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractI
     const contracts = await $query('Contract')
       .notEqualTo('objectId', contractId)
       .equalTo('cubeIds', cubeId)
+      .greaterThan('status', 0)
       .lessThan('status', 3)
       .find({ useMasterKey: true })
     for (const contract of contracts) {
@@ -755,6 +756,7 @@ Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractI
     }
     const bookings = await $query('Booking')
       .equalTo('cubeIds', cubeId)
+      .greaterThan('status', 0)
       .lessThan('status', 3)
       .find({ useMasterKey: true })
     for (const booking of bookings) {
