@@ -1,3 +1,10 @@
+## [1.81.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.1...1.81.2) (2023-08-07)
+
+
+### Bug Fixes
+
+* allow fieldwork manager to revert "completed" list ([e1e21e2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e1e21e2c6a5e9177bd64816a25da621c7e639abe))
+
 ## [1.81.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.0...1.81.1) (2023-08-07)
 
 
