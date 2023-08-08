@@ -168,8 +168,8 @@ const fakeScout = async function ({ company }) {
     username: email,
     email,
     password: '123456',
-    firstName: faker.name.firstName(),
-    lastName: faker.name.lastName(),
+    firstName: faker.person.firstName(),
+    lastName: faker.person.lastName(),
     accType: 'scout',
     mobile: faker.phone.number(),
     company

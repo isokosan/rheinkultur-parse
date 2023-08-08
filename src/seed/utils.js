@@ -1,5 +1,4 @@
-const { faker } = require('@faker-js/faker')
-faker.locale = 'de'
+const { fakerDE: faker } = require('@faker-js/faker')
 
 async function createFakeObj (className, qty = 10, fakeFn, opts = {}) {
   const Obj = Parse.Object.extend(className)

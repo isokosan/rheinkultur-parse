@@ -11,11 +11,11 @@ const seed = async () => {
 
 async function getRandomCubeIds (pagination, verify = true, inSolingen = false) {
   const longitude = inSolingen
-    ? faker.address.longitude(7.3, 6.9)
-    : faker.address.longitude(14, 6.9)
+    ? faker.location.longitude(7.3, 6.9)
+    : faker.location.longitude(14, 6.9)
   const latitude = inSolingen
-    ? faker.address.latitude(51.3, 50.9)
-    : faker.address.latitude(53, 47)
+    ? faker.location.latitude(51.3, 50.9)
+    : faker.location.latitude(53, 47)
   const c = [longitude, latitude].join(',')
   const cubeIds = await Parse.Cloud.run('search', {
     c,
