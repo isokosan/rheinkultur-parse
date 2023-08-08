@@ -1,3 +1,10 @@
+## [1.83.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.83.0...1.83.1) (2023-08-08)
+
+
+### Bug Fixes
+
+* update deps ([1453ade](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1453adeec61ab0c3c03ea04821ee65cc0ee9255a))
+
 # [1.83.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.82.1...1.83.0) (2023-08-08)
 
 
