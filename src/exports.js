@@ -554,6 +554,8 @@ const addTaskListSheet = async (workbook, taskList) => {
   const cubes = await (new Parse.Query('Cube'))
     .containedIn('objectId', cubeIds)
     .include(['ht', 'state'])
+    .ascending('str')
+    .addAscending('hsnr')
     .limit(cubeIds.length)
     .find({ useMasterKey: true })
   for (const cube of cubes) {
@@ -592,7 +594,8 @@ const addTaskListSheet = async (workbook, taskList) => {
       s: 'available',
       pagination: 1000,
       ort: taskList.get('ort'),
-      state: taskList.get('state').id
+      state: taskList.get('state').id,
+      sb: 'hsnr'
     }, { useMasterKey: true })
     for (const doc of results) {
       // TODO: Remove cubeIds that are in other briefing tasks in this area

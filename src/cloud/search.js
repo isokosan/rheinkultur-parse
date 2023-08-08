@@ -364,6 +364,7 @@ Parse.Cloud.define('search', async ({
   }
 
   if (!isMap) {
+    !sd && (sd = 'asc')
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/sort-search-results.html#geo-sorting
     if (sb === 'objectId') {
       sort.unshift({ 'objectId.keyword': sd })
@@ -534,7 +535,6 @@ Parse.Cloud.define('search', async ({
       's'
     ]
   }
-
   const searchResponse = await client.search({
     index: 'rheinkultur-cubes',
     body: {
