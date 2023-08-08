@@ -5,7 +5,7 @@ const request = promisify(require('request'))
 
 const seed = async function () {
   await (new Parse.Schema('PLZ')).purge()
-  await redis.del('no-marketing-rights')
+  await redis.del('blacklisted-plzs')
   const blacklists = [...new Set(require('./blacklist.json').map(({ PLZ: plz }) => plz))]
     .map((plz) => {
       while (plz.length < 5) {
@@ -42,7 +42,7 @@ const seed = async function () {
     })
   }
   consola.success('PLZs seeded')
-  return redis.scard('no-marketing-rights')
+  return redis.scard('blacklisted-plzs')
 }
 
 module.exports = {

@@ -817,6 +817,14 @@ Parse.Cloud.define('booked-cubes', async () => {
 }, $adminOnly)
 
 // Before is only defined if address is changing
+const indexCubes = async (cubes) => {
+  const dataset = INDEXES['rheinkultur-cubes'].datasetMap(cubes)
+  consola.info('indexing:', dataset.length, dataset[0]._id)
+  if (!dataset.length) { return }
+  return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-cubes', _id } }, doc]) })
+}
+
+// Before is only defined if address is changing
 const indexCube = async (cube, before) => {
   // overwrite or create the document
   const [{ _id: id, doc: body }] = INDEXES['rheinkultur-cubes'].datasetMap([cube])
@@ -972,6 +980,7 @@ module.exports = {
   purgeIndex,
   purgeIndexes,
   indexCube,
+  indexCubes,
   unindexCube,
   indexCubeBookings,
   indexBooking,

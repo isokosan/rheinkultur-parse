@@ -1,4 +1,5 @@
 const { getNewNo, getActiveCubeOrder, getFutureCubeOrder } = require('@/shared')
+const redis = require('@/services/redis')
 const { indexCube, unindexCube, indexCubeBookings } = require('@/cloud/search')
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
@@ -40,7 +41,7 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
   }
 
   if (cube.get('lc') === 'TLK') {
-    $bPLZ[cube.get('plz')] ? cube.set('bPLZ', true) : cube.unset('bPLZ')
+    await redis.sismember('blacklisted-plzs', cube.get('plz')) ? cube.set('bPLZ', true) : cube.unset('bPLZ')
     const placeKey = [cube.get('state')?.id, cube.get('ort')].join(':')
     $PDGA[placeKey] ? cube.set('PDGA', true) : cube.unset('PDGA')
   }
@@ -139,7 +140,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   for (const cube of cubes) {
     if (cube.get('lc') === 'TLK') {
       cube.set('klsId', cube.get('importData')?.klsId)
-      $bPLZ[cube.get('plz')] ? cube.set('bPLZ', true) : cube.unset('bPLZ')
+      await redis.sismember('blacklisted-plzs', cube.get('plz')) ? cube.set('bPLZ', true) : cube.unset('bPLZ')
       const placeKey = [cube.get('state')?.id, cube.get('ort')].join(':')
       $PDGA[placeKey] ? cube.set('PDGA', true) : cube.unset('PDGA')
     }
