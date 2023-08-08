@@ -1,3 +1,10 @@
+## [1.83.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.83.1...1.83.2) (2023-08-08)
+
+
+### Bug Fixes
+
+* disassembly task-lists always planned ([ae5c1c8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ae5c1c8c80a5d4812acc6162e28e240d4e9fbf5a))
+
 ## [1.83.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.83.0...1.83.1) (2023-08-08)
 
 
