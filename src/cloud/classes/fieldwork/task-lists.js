@@ -75,7 +75,7 @@ async function getStatusAndCounts ({ briefing, control, disassembly }) {
 }
 
 Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
-  !taskList.get('status') && taskList.set('status', 0)
+  !taskList.get('status') && taskList.set('status', taskList.get('type') === 'disassembly' ? 0.1 : 0)
 
   const cubeIds = [...new Set(taskList.get('cubeIds') || [])]
   cubeIds.sort()

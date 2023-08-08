@@ -383,6 +383,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
       const taskList = new TaskList({
         type: 'disassembly',
         disassembly,
+        status: 0.1,
         ort,
         state,
         cubeIds,
@@ -433,6 +434,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
         const newTaskList = new TaskList({
           type: 'disassembly',
           disassembly,
+          status: taskList.get('status'),
           ort,
           state,
           date,
