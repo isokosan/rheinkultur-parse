@@ -60,7 +60,7 @@
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
     "@semantic-release/npm": "10.0.4",
-    "conventional-changelog-eslint": "3.0.9",
+    "conventional-changelog-eslint": "4.0.0",
     "cross-env": "7.0.3",
     "eslint": "8.46.0",
     "eslint-config-standard": "17.1.0",
