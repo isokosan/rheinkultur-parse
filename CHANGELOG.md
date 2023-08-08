@@ -1,3 +1,10 @@
+# [1.83.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.82.1...1.83.0) (2023-08-08)
+
+
+### Features
+
+* add auto-remove booked cubes from briefing if no status ([7191911](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/71919118f9f357d5b23d9943b193ecb869b7ea2e))
+
 ## [1.82.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.82.0...1.82.1) (2023-08-08)
 
 
