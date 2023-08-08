@@ -1,3 +1,10 @@
+# [1.82.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.3...1.82.0) (2023-08-08)
+
+
+### Features
+
+* move plz blacklist to redis ([ce01e81](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ce01e812ce2e4e8da0815c8621b1d6a96fbf7968))
+
 ## [1.81.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.2...1.81.3) (2023-08-07)
 
 
