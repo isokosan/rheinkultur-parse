@@ -194,3 +194,23 @@ Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user,
   const briefing = await $getOrFail(Briefing, briefingId)
   return briefing.destroy({ useMasterKey: true })
 }, $fieldworkManager)
+
+Parse.Cloud.define('briefings-remove-booked-cube', async ({ params: { cubeId } }) => {
+  return $query('TaskList')
+    .equalTo('type', 'scout')
+    .equalTo('cubeIds', cubeId)
+    .equalTo(`statuses.${cubeId}`, null)
+    .greaterThan('status', 0)
+    .lessThan('status', 4)
+    .equalTo('type', 'scout')
+    .each(async (taskList) => {
+      const cubeIds = taskList.get('cubeIds').filter(id => id !== cubeId)
+      const cubeChanges = $cubeChanges(taskList, cubeIds)
+      if (!cubeChanges) {
+        throw new Error('Keine Änderungen')
+      }
+      taskList.set({ cubeIds })
+      const audit = { fn: 'task-list-update', data: { cubeChanges, removedBooked: true } }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }, { useMasterKey: true })
+}, { requireMaster: true })

@@ -324,7 +324,7 @@ async function setBookingCubeStatus (booking) {
       const futureOrder = await getFutureCubeOrder(cube.id)
       if (!orderSummaryIsEqual(cubeFutureOrder, futureOrder)) {
         cube.set('futureOrder', futureOrder)
-        await $saveWithEncode(cube, null, { useMasterKey: true })
+        await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: true } })
       }
     }
     return response
@@ -340,7 +340,7 @@ async function setBookingCubeStatus (booking) {
   if (runningOrder && !orderSummaryIsEqual(cubeOrder, order)) {
     cube.set({ order })
     response.set.push(cube.id)
-    await $saveWithEncode(cube, null, { useMasterKey: true })
+    await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: true } })
   } else if (!runningOrder && (cube.get('caok') === caok || orderPointerIsEqual(cubeOrder, order))) {
     cube.unset('order')
     response.unset.push(cube.id)
@@ -402,7 +402,7 @@ async function setContractCubeStatuses (contract) {
           const futureOrder = await getFutureCubeOrder(cube.id)
           if (!orderSummaryIsEqual(cubeFutureOrder, futureOrder)) {
             cube.set('futureOrder', futureOrder)
-            await $saveWithEncode(cube, null, { useMasterKey: true })
+            await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: true } })
           }
         }
       }
@@ -449,7 +449,7 @@ async function setContractCubeStatuses (contract) {
       if (!orderSummaryIsEqual(cube.get('order'), cubeOrder)) {
         cube.set('order', cubeOrder)
         response.set.push(cube.id)
-        await $saveWithEncode(cube, null, { useMasterKey: true })
+        await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: true } })
       }
     }
 
@@ -460,7 +460,7 @@ async function setContractCubeStatuses (contract) {
           if (!orderSummaryIsEqual(cube.get('order'), order)) {
             cube.set('order', order)
             response.set.push(cube.id)
-            await $saveWithEncode(cube, null, { useMasterKey: true })
+            await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: true } })
           }
         }
       }, { useMasterKey: true })

@@ -135,7 +135,9 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   if (!taskList.isNew() && taskType === 'scout') {
     const quota = taskList.get('quota')
     const quotas = taskList.get('quotas')
-    counts.total = quota || sum(Object.values(quotas || {}))
+    if (quota || quotas) {
+      counts.total = quota || sum(Object.values(quotas || {}))
+    }
     const quotasCompleted = {}
     for (const media of ['MFG', 'KVZ']) {
       quotasCompleted[media] = await $query(submissionClass)

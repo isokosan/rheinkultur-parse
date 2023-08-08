@@ -112,12 +112,17 @@ async function checkARPair (cube) {
   await setPair(cube, pair)
 }
 
-Parse.Cloud.afterSave(Cube, async ({ object: cube, context: { audit, updating } }) => {
+Parse.Cloud.afterSave(Cube, async ({ object: cube, context: { audit, updating, checkBriefings } }) => {
   if (updating === true) { return }
   audit && $audit(cube, audit)
   // check cube pairs, if the save was not initiated by pair function
   if (!audit || !['cube-set-pair', 'cube-unset-pair'].includes(audit.fn)) {
     checkARPair(cube)
+  }
+  if (checkBriefings) {
+    if (cube.get('order') || cube.get('futureOrder')) {
+      Parse.Cloud.run('briefings-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
+    }
   }
 })
 
