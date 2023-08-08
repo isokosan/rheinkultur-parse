@@ -1,3 +1,10 @@
+## [1.82.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.82.0...1.82.1) (2023-08-08)
+
+
+### Bug Fixes
+
+* sorting of task list exports ([5537fde](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5537fde17f2aa587a5a9c64bb57c67762dd6d887))
+
 # [1.82.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.81.3...1.82.0) (2023-08-08)
 
 
