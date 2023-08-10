@@ -1331,9 +1331,9 @@ Parse.Cloud.define('contract-cancel', async ({
   }
 
   contract.set({ endsAt, canceledAt: new Date(), cancelNotes })
-  if (contract.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+  if (contract.get('status') > 3) {
     contract.set('status', 3)
-    message += ' Vertrag status auf Aktiv gestellt.'
+    message += ' Vertrag status auf Aktiv gestellt. Bitte prüfen Sie den Status des Vertrags.'
   }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   if (moment(endsAt).isBefore(await $today(), 'day') && contract.get('status') === 3) {
@@ -1361,10 +1361,10 @@ Parse.Cloud.define('contract-cancel-cancel', async ({
   const audit = { user, fn: 'contract-cancel-cancel', data: { changes } }
   contract.set({ endsAt, canceledAt: null, cancelNotes: null })
   let message = 'Kündigung zurückgezogen.'
-  if (contract.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+  if (contract.get('status') > 3) {
     contract.set('status', 3)
     contract.set('canceledAt', null)
-    message += ' Vertrag status auf Aktiv gestellt.'
+    message += ' Vertrag status auf Aktiv gestellt. Bitte prüfen Sie den Status des Vertrags.'
   }
   await contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   const updatedInvoices = await Parse.Cloud.run(

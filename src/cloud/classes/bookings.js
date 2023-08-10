@@ -494,10 +494,10 @@ Parse.Cloud.define('booking-cancel-cancel', async ({
   const audit = { user, fn: 'booking-cancel-cancel', data: { changes } }
   booking.set({ endsAt, canceledAt: null, cancelNotes: null })
   let message = 'Kündigung zurückgerufen.'
-  if (booking.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+  if (booking.get('status') > 3) {
     booking.set('status', 3)
     booking.set('canceledAt', null)
-    message += ' Buchung status auf Aktiv gestellt.'
+    message += ' Buchung status auf Aktiv gestellt. Bitte überprüfen Sie den Status der Buchung.'
   }
   await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   return message
@@ -1001,10 +1001,10 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     setCubeStatuses = true
     audit = { user, fn: 'booking-cancel-cancel-request-accept', data: { changes } }
     message += 'Kündigung zurückgerufen.'
-    if (booking.get('status') > 3 && moment(endsAt).isSameOrAfter(await $today(), 'day')) {
+    if (booking.get('status') > 3) {
       booking.set('status', 3)
       booking.set('canceledAt', null)
-      message += ' Buchung status auf Aktiv gestellt.'
+      message += ' Buchung status auf Aktiv gestellt. Bitte überprüfen Sie den Status der Buchung.'
     }
   }
 
