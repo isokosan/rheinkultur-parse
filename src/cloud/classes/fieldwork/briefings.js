@@ -216,12 +216,11 @@ Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefi
         .distinct('objectId', { useMasterKey: true })
       const cubeIds = taskList.get('cubeIds').filter((id) => !bookedCubeIds.includes(id))
       const cubeChanges = $cubeChanges(taskList, cubeIds)
-      if (!cubeChanges) {
-        throw new Error('Keine Änderungen')
+      if (cubeChanges) {
+        taskList.set({ cubeIds })
+        const audit = { fn: 'task-list-update', data: { cubeChanges, removedBooked: true } }
+        return taskList.save(null, { useMasterKey: true, context: { audit } })
       }
-      taskList.set({ cubeIds })
-      const audit = { fn: 'task-list-update', data: { cubeChanges, removedBooked: true } }
-      return taskList.save(null, { useMasterKey: true, context: { audit } })
     }, { useMasterKey: true })
 }, $fieldworkManager)
 

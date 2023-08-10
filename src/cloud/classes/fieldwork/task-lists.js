@@ -347,23 +347,6 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
-Parse.Cloud.define('scout-list-remove-booked-cubes', async ({ params: { id: taskListId }, user }) => {
-  const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('type') !== 'scout') { throw new Error('This is only for scout lists') }
-  const bookedCubeIds = await $query('Cube')
-    .containedIn('objectId', taskList.get('cubeIds'))
-    .notEqualTo('order', null)
-    .distinct('objectId', { useMasterKey: true })
-  if (!bookedCubeIds.length) { return }
-  // return the difference between the current cubeIds and the booked ones
-  const cubeIds = taskList.get('cubeIds').filter(id => !bookedCubeIds.includes(id))
-  const cubeChanges = $cubeChanges(taskList, cubeIds)
-  if (!cubeChanges) { throw new Error('Keine Änderungen') }
-  taskList.set({ cubeIds })
-  const audit = { user, fn: 'task-list-update', data: { cubeChanges, reason: 'CityCubes schon vermarktet.' } }
-  return taskList.save(null, { useMasterKey: true, context: { audit } })
-})
-
 // Used in RkFieldworkTable to display counts
 Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, objectId } } }) => {
   return $query('TaskList')
