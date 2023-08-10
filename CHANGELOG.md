@@ -1,3 +1,10 @@
+# [1.84.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.83.2...1.84.0) (2023-08-10)
+
+
+### Features
+
+* add remove to mass task-list actions ([1458fae](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1458fae51b63cf4110333ea2f0b21c36db3ae77a))
+
 ## [1.83.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.83.1...1.83.2) (2023-08-08)
 
 
