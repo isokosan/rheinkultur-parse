@@ -526,13 +526,15 @@ const schemaDefinitions = {
   QuarterlyReport: {
     CLP: { ...readMasterOnly, ...writeMasterOnly },
     fields: {
-      quarter: { type: 'String', required: true } // Q-YYYY
+      quarter: { type: 'String', required: true }, // Q-YYYY
+      status: { type: 'String' }
     }
   },
   PartnerQuarter: {
     CLP: { ...readMasterOnly, ...writeMasterOnly },
     fields: {
-      quarter: { type: 'String', required: true } // Q-YYYY
+      quarter: { type: 'String', required: true }, // Q-YYYY
+      status: { type: 'String' }
     }
   },
   PLZ: {
