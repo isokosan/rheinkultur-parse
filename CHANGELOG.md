@@ -1,3 +1,10 @@
+## [1.84.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.84.0...1.84.1) (2023-08-10)
+
+
+### Bug Fixes
+
+* when removing booked cubes skip instead of error on non-changed-lists ([adb6cfe](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/adb6cfed488fcdff19f58209d1434dacfe19ab71))
+
 # [1.84.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.83.2...1.84.0) (2023-08-10)
 
 
