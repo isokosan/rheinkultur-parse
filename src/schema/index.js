@@ -547,6 +547,7 @@ const schemaDefinitions = {
     fields: {
       ort: { type: 'String', required: true },
       state: { type: 'Pointer', targetClass: 'State', required: true },
+      pk: { type: 'String', required: true },
       nMR: { type: 'Boolean' }
     }
   },

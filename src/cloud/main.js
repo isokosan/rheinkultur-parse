@@ -78,6 +78,20 @@ Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
   return dictionary
 })
 
+// TOLATER: Save this in database and make editable
+global.$PDGA = {
+  'NW:Aachen': true,
+  'NW:Alsdorf': true,
+  'NW:Baesweiler': true,
+  'NW:Eschweiler': true,
+  'NW:Herzogenrath': true,
+  'NW:Monschau': true,
+  'NW:Roetgen': true,
+  'NW:Simmerath': true,
+  'NW:Stolberg': true,
+  'NW:Würselen': true
+}
+
 Parse.Cloud.define('enums', () => ({
   version,
   accTypes,
@@ -95,19 +109,6 @@ Parse.Cloud.define('enums', () => ({
   printPackageFiles,
   interestRates,
   taskListStatuses,
-  fieldworkStatuses
+  fieldworkStatuses,
+  PDGA: Object.keys($PDGA)
 }), { requireUser: true })
-
-// TOLATER: Save this in database and make editable
-global.$PDGA = {
-  'NW:Aachen': true,
-  'NW:Alsdorf': true,
-  'NW:Baesweiler': true,
-  'NW:Eschweiler': true,
-  'NW:Herzogenrath': true,
-  'NW:Monschau': true,
-  'NW:Roetgen': true,
-  'NW:Simmerath': true,
-  'NW:Stolberg': true,
-  'NW:Würselen': true
-}
