@@ -1,3 +1,10 @@
+# [1.85.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.84.2...1.85.0) (2023-08-10)
+
+
+### Features
+
+* add pk to plzs ([3a21224](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3a21224dcb58646726f5ffac656a6b1e86da8263))
+
 ## [1.84.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.84.1...1.84.2) (2023-08-10)
 
 
