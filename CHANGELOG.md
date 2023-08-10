@@ -1,3 +1,10 @@
+# [1.86.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.85.0...1.86.0) (2023-08-10)
+
+
+### Features
+
+* add closing to partner quarters ([4f7710b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4f7710b25bc56c0191a535a016d4855d585a018b))
+
 # [1.85.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.84.2...1.85.0) (2023-08-10)
 
 
