@@ -1,3 +1,10 @@
+## [1.84.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.84.1...1.84.2) (2023-08-10)
+
+
+### Bug Fixes
+
+* in every case with order cancelation changes, set the status back to 3 ([34c7645](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/34c764523d5cab01e38f44107b7e051e38bb6488))
+
 ## [1.84.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.84.0...1.84.1) (2023-08-10)
 
 
