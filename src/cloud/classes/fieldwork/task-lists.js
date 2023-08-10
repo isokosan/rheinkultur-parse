@@ -677,8 +677,12 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
 
   // check if any of the task lists are not planned (in draft status)
   // TOTRANSLATE
-  if (await Parse.Query.and(query, $query('TaskList').equalTo('status', 0)).count({ useMasterKey: true })) {
+  if (action !== 'remove' && await Parse.Query.and(query, $query('TaskList').equalTo('status', 0)).count({ useMasterKey: true })) {
     throw new Error('There are task lists that are not planned (in draft status) in this selection.')
+  }
+
+  if (action === 'remove' && await Parse.Query.and(query, $query('TaskList').greaterThan('status', 0)).count({ useMasterKey: true })) {
+    throw new Error('There are task lists that are already planned in this selection that cannot be deleted.')
   }
 
   let runFn
@@ -713,7 +717,6 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
-
   if (action === 'scouts') {
     const scouts = form.scoutIds ? form.scoutIds.map(id => $parsify(Parse.User, id)) : null
     runFn = async (taskList) => {
@@ -755,7 +758,6 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       return taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts, locationCleanup } })
     }
   }
-
   if (action === 'retract-appoint') {
     runFn = async (taskList) => {
       // Validate if the user is a fieldwork manager before retracting appoint
@@ -813,6 +815,14 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       taskList.set({ status: 0.1 })
       const audit = { user, fn: 'task-list-unmark-complete' }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+  }
+  if (action === 'remove') {
+    runFn = async (taskList) => {
+      // Validate if the user is a fieldwork manager
+      if (!user.get('permissions')?.includes('manage-fieldwork')) { throw new Error('Unbefugter Zugriff.') }
+      if (taskList.get('status') > 0) { return }
+      return taskList.destroy({ useMasterKey: true })
     }
   }
 

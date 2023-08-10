@@ -195,6 +195,37 @@ Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user,
   return briefing.destroy({ useMasterKey: true })
 }, $fieldworkManager)
 
+// removed booked cubes from draft briefing
+Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefingId } }) => {
+  const briefing = await $getOrFail(Briefing, briefingId)
+  // TOTRANSLATE
+  if (briefing.get('status') !== 0) {
+    throw new Error('Briefing is not a draft!')
+  }
+  return $query('TaskList')
+    .equalTo('type', 'scout')
+    .equalTo('briefing', briefing)
+    .equalTo('status', 0)
+    .each(async (taskList) => {
+      const activeOrFutureBookingExistsQuery = Parse.Query.or(
+        $query('Cube').notEqualTo('order', null),
+        $query('Cube').notEqualTo('futureOrder', null)
+      )
+      const bookedCubeIds = await activeOrFutureBookingExistsQuery
+        .containedIn('objectId', taskList.get('cubeIds'))
+        .distinct('objectId', { useMasterKey: true })
+      const cubeIds = taskList.get('cubeIds').filter((id) => !bookedCubeIds.includes(id))
+      const cubeChanges = $cubeChanges(taskList, cubeIds)
+      if (!cubeChanges) {
+        throw new Error('Keine Änderungen')
+      }
+      taskList.set({ cubeIds })
+      const audit = { fn: 'task-list-update', data: { cubeChanges, removedBooked: true } }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }, { useMasterKey: true })
+}, $fieldworkManager)
+
+// removes newly booked cube from briefings that are running
 Parse.Cloud.define('briefings-remove-booked-cube', async ({ params: { cubeId } }) => {
   return $query('TaskList')
     .equalTo('type', 'scout')
@@ -202,7 +233,6 @@ Parse.Cloud.define('briefings-remove-booked-cube', async ({ params: { cubeId } }
     .equalTo(`statuses.${cubeId}`, null)
     .greaterThan('status', 0)
     .lessThan('status', 4)
-    .equalTo('type', 'scout')
     .each(async (taskList) => {
       const cubeIds = taskList.get('cubeIds').filter(id => id !== cubeId)
       const cubeChanges = $cubeChanges(taskList, cubeIds)
