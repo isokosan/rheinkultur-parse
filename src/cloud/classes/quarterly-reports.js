@@ -28,33 +28,43 @@ Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
 
 async function checkIfQuarterIsReportable (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
-  const [contracts, bookings, invoices] = await Promise.all([
-    // check contracts ended / extended
-    $query('Contract')
-      .equalTo('status', 3) // aktiv
-      .lessThanOrEqualTo('endsAt', end)
-      .count({ useMasterKey: true }),
-    // check bookings ended / extended
-    $query('Booking')
-      .equalTo('status', 3) // aktiv
-      .lessThanOrEqualTo('endsAt', end)
-      .count({ useMasterKey: true }),
-    // check invoices issued
-    $query('Invoice')
-      .lessThan('status', 2)
-      .greaterThan('periodEnd', start)
-      .lessThanOrEqualTo('periodStart', end)
-      .count({ useMasterKey: true })
-    // TODO: Check if Marc Asriel quarterly invoice is issued
-  ])
-  if (contracts || bookings || invoices) {
-    return {
-      contracts: contracts || undefined,
-      bookings: bookings || undefined,
-      invoices: invoices || undefined
-    }
+
+  const issues = {}
+
+  const contracts = await $query('Contract')
+    .equalTo('status', 3) // aktiv
+    .lessThanOrEqualTo('endsAt', end)
+    .count({ useMasterKey: true })
+  if (contracts) {
+    issues.contracts = contracts
   }
-  return true
+
+  const partnerQuarters = await $query('PartnerQuarter')
+    .equalTo('quarter', quarter)
+    .notEqualTo('status', 'finalized')
+    .find({ useMasterKey: true })
+  if (partnerQuarters.length) {
+    issues.partnerQuarters = partnerQuarters
+  }
+
+  const invoices = await $query('Invoice')
+    .lessThan('status', 2)
+    .greaterThan('periodEnd', start)
+    .lessThanOrEqualTo('periodStart', end)
+    .count({ useMasterKey: true })
+  if (invoices) {
+    issues.invoices = invoices
+  }
+
+  // check bookings ended / extended
+  // $query('Booking')
+  //   .equalTo('status', 3) // aktiv
+  //   .lessThanOrEqualTo('endsAt', end)
+  //   .count({ useMasterKey: true })
+
+  // TODO: Check if Marc Asriel quarterly invoice is issued
+
+  return Object.keys(issues).length ? { issues } : false
 }
 
 Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) => {
@@ -63,11 +73,7 @@ Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) 
     .descending('createdAt')
     .first({ useMasterKey: true })
   if (!report) {
-    const reportable = await checkIfQuarterIsReportable(quarter)
-    if (reportable !== true) {
-      return { reportable }
-    }
-    return { report: await new QuarterlyReport({ quarter }).save(null, { useMasterKey: true }) }
+    return await checkIfQuarterIsReportable(quarter) || { report: await new QuarterlyReport({ quarter }).save(null, { useMasterKey: true }) }
   }
   return { report }
 }, $adminOnly)

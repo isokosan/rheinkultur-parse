@@ -13,7 +13,7 @@ async function clean () {
         s++
         return notification.destroy({ useMasterKey: true })
       }
-  }, { useMasterKey: true })
+    }, { useMasterKey: true })
   console.log({ s })
 }
 
