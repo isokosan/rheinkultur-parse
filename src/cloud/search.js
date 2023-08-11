@@ -331,6 +331,12 @@ Parse.Cloud.define('search', async ({
 
   s = s ? s.split(',').filter(Boolean) : []
 
+  // normalize media/htId
+  if (htId === 'KVZ' || htId === 'MFG') {
+    media = htId
+    htId = undefined
+  }
+
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']

@@ -57,6 +57,9 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
     { header: 'Bundesland', key: 'stateName', width: 20 },
     { header: 'Breite', key: 'lat', width: 12 },
     { header: 'Länge', key: 'lon', width: 12 }
+    // { header: 'Ampelnähe', key: 'q1', width: 12 },
+    // { header: '', key: 'lon', width: 12 },
+    // { header: 'Länge', key: 'lon', width: 12 },
   ]
   // TOLATER: When this is a "booked" export, add motive, externalOrderNo, customerName etc. maybe
 
@@ -87,7 +90,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
     pointInTimeId = pit_id
     for (const row of hits.map(({ _source: doc }) => {
       doc.verified = doc.vAt ? 'Ja' : ''
-      doc.htCode = (doc.ht ? housingTypes[doc.ht.objectId]?.code : doc.hti) || ''
+      doc.htCode = (doc.ht ? housingTypes[doc.ht.objectId]?.code : doc.hti) || doc.media || ''
       doc.stateName = states[doc.stateId]?.name || ''
       doc.lat = doc.gp.latitude
       doc.lon = doc.gp.longitude
@@ -332,73 +335,93 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
 router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
-  const production = await (new Parse.Query('Production')).get(req.query.id, { useMasterKey: true })
-  const printTemplates = production.get('printTemplates')
-  const cubes = await (new Parse.Query('Cube'))
-    .containedIn('objectId', Object.keys(printTemplates))
-    .limit(1000)
-    .find()
-  const rows = []
+  const production = await $getOrFail('Production', req.query.id, ['booking', 'contract'])
+  const bookingOrContract = await production.get('booking') || production.get('contract')
+  const company = await bookingOrContract.get('company').fetch({ useMasterKey: true })
+
+  const workbook = new excel.Workbook()
+  const worksheet = workbook.addWorksheet('CityCubes')
+
+  const period = [bookingOrContract.get('startsAt'), bookingOrContract.get('endsAt')]
+    .map(d => moment(d).format('DD.MM.YYYY')).join(' - ')
+
+  const infos = [
+    { label: 'Kunde', content: company?.get('name') || '-' },
+    { label: 'Produkt / Medium', content: 'CityCubes' },
+    { label: 'Belegungsart', content: '' },
+    { label: 'Werbemittel', content: '' },
+    { label: 'Buchungszeitraum', content: `${period} (${bookingOrContract.get('initialDuration')} Monate)` },
+    { label: 'Lieferung der Druckdaten', content: `bis spätestens ${moment(production.get('printFilesDue')).format('DD.MM.YYYY')}` },
+    { label: 'Montagebeginn:', content: `ab ${moment(production.get('assemblyStart')).format('DD.MM.YYYY')}` }
+  ]
+  bookingOrContract?.get('motive') && infos.push({ label: 'Motiv', content: bookingOrContract.get('motive') })
+  bookingOrContract?.get('campaignNo') && infos.push({ label: 'Kampagnennummer.', content: bookingOrContract.get('campaignNo') })
+  bookingOrContract?.get('externalOrderNo') && infos.push({ label: 'Extern. Auftragsnr.', content: bookingOrContract.get('externalOrderNo') })
+
+  let i = 1
+  for (const info of infos) {
+    const row = worksheet.getRow(i)
+    row.values = [info.label, info.content]
+    row.height = 20
+    row.getCell(1).font = { bold: true }
+    row.alignment = { vertical: 'middle', horizontal: 'left' }
+    worksheet.mergeCells(`B${i}:D${i}`)
+    i++
+  }
+  worksheet.addRow()
+  i++
+
+  const { columns, headerRowValues } = getColumnHeaders({
+    assemblyStart: { header: 'Erschließungstermin\n(bis spätestens)', width: 30 },
+    stateName: { header: 'Bundesland', width: 20 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    comments: { header: 'Bemerkungen', width: 20 },
+    ppMaterial: { header: 'Belegung Material', width: 20 },
+    ppNo: { header: 'Belegungsnummer', width: 10 },
+    x1: { header: 'Strassenzugewandte Front\n(Tür - oder Rückseite)', width: 20 },
+    x2: { header: 'Rest Streichen\n(wenn nötig)', width: 20 },
+    x3: { header: 'Volumenpreis (EK)', width: 20 },
+    // printName: { header: 'Belegungsnummer', width: 10 },
+    assembler: { header: 'Wer montiert', width: 20 }
+  })
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 8 }
+  headerRow.height = 40
+  headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
+
+  const printPackages = production.get('printPackages')
+  const cubeIds = Object.keys(printPackages)
+  const cubes = await $query('Cube')
+    .containedIn('objectId', cubeIds)
+    .limit(cubeIds.length)
+    .find({ useMasterKey: true })
   for (const cube of cubes) {
     const { str, hsnr, plz, ort, ht, state } = cube.attributes
-    const printPackage = production.get('printPackages')[cube.id]
-    const { objectId: ppId, no, name } = printPackage
-    rows.push({
+    const pp = printPackages[cube.id]
+    consola.info(pp)
+    worksheet.addRow({
+      assemblyStart: production.get('assemblyStart'),
       objectId: cube.id,
+      stateName: states[state.id]?.name || '',
       htCode: housingTypes[ht.id]?.code || '',
       str,
       hsnr,
       plz,
       ort,
-      stateName: states[state.id]?.name || '',
-      pp: [no, name].filter(Boolean).join(' - '),
-      templates: process.env.WEBAPP_URL + '/pp/' + ppId + '?ht=' + ht.id
+      ppNo: pp?.no || '-',
+      ppMaterial: pp?.type || '-',
+      comments: production.get('printNotes')?.[cube.id],
+      x1: 'X',
+      x2: 'X',
+      assembler: production.get('assembler') || '-'
     })
   }
-  const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet('CityCubes')
-  worksheet.columns = [
-    {
-      header: 'CityCube ID',
-      key: 'objectId',
-      width: 15
-    },
-    {
-      header: 'Gehäusetyp',
-      key: 'htCode',
-      width: 15
-    },
-    {
-      header: 'Stadt',
-      key: 'ort',
-      width: 15
-    },
-    {
-      header: 'Straße',
-      key: 'str',
-      width: 20
-    },
-    {
-      header: 'Hausnummer',
-      key: 'hsnr',
-      style: alignRight,
-      width: 10
-    },
-    {
-      header: 'Bundesland',
-      key: 'stateName',
-      style: {
-        alignment: { shrinkToFit: true }
-      },
-      width: 20
-    },
-    { header: 'Belegungspaket', key: 'pp', width: 25 },
-    { header: 'Druckspezifikationen', key: 'templates', width: 30 }
-  ]
-  worksheet.addRows(rows)
-  const headerRow = worksheet.getRow(1)
-  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
-  headerRow.height = 24
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   const contractOrBooking = production.get('contract') || production.get('booking')
   res.set('Content-Disposition', 'attachment; filename=' + contractOrBooking.get('no') + '.xlsx')
@@ -506,7 +529,7 @@ const addTaskListSheet = async (workbook, taskList) => {
   ]
   // singular quota
   if (taskList.get('quota')) {
-    infos.push({ label: 'Anzahl', content: taskList.get('quota') })
+    infos.push({ label: 'Anzahl', content: `${taskList.get('quota')}` })
   }
   // media based quota
   if (taskList.get('quotas')) {
@@ -521,8 +544,10 @@ const addTaskListSheet = async (workbook, taskList) => {
   for (const info of infos) {
     const row = worksheet.getRow(i)
     row.values = [info.label, info.content]
-    row.height = 24
+    row.height = 20
     row.getCell(1).font = { bold: true }
+    row.alignment = { vertical: 'middle', horizontal: 'left' }
+    worksheet.mergeCells(`B${i}:D${i}`)
     i++
   }
   worksheet.addRow()
@@ -602,7 +627,7 @@ const addTaskListSheet = async (workbook, taskList) => {
       if (cubeIds.includes(doc.objectId)) {
         continue
       }
-      worksheet.addRow({
+      const row = worksheet.addRow({
         objectId: doc.objectId,
         htCode: housingTypes[doc.ht?.id]?.code || doc.hti || '',
         status: CUBE_STATUSES[doc.s || 0],
@@ -611,6 +636,15 @@ const addTaskListSheet = async (workbook, taskList) => {
         ort: doc.ort,
         stateName: states[doc.stateId].name
       })
+      for (let r = 1; r <= columns.length; r++) {
+        const cell = row.getCell(r)
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        }
+      }
     }
   }
 }
