@@ -150,3 +150,30 @@ module.exports.FIELDWORK_STATUSES = {
   3: 'In Bearbeitung',
   4: 'Erledigt'
 }
+
+module.exports.CUBE_FEATURES = {
+  obstructionLevel: {
+    label: 'Sichtbarkeit',
+    values: {
+      unobscured: 'Dauerhaft sichtbar',
+      partly: 'Eingeschränkt sichtbar',
+      concealed: 'Schlecht sichtbar'
+    }
+  },
+  angleToTraffic: {
+    label: 'Position zur Verkersachse',
+    values: {
+      perpendicular: 'Quer zur Fahrbahn',
+      diagonal: 'Leicht quer zur Fahrbahn',
+      parallel: 'Parallel zur Fahrbahn'
+    }
+  },
+  nearTrafficLights: {
+    label: 'Ampelnähe',
+    values: {
+      y: 'In Ampelnähe',
+      n: 'Nicht in Ampelnähe'
+    }
+  }
+}
+

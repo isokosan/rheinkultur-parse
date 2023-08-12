@@ -104,6 +104,7 @@ const INDEXES = {
         Agwb: cube.get('Agwb'),
         TTMR: cube.get('TTMR'),
 
+        scoutData: cube.get('scoutData'),
         klsId: cube.get('importData')?.klsId,
         stovDate: cube.get('importData')?.date,
         ms: Boolean(cube.get('legacyScoutResults')),
@@ -486,6 +487,7 @@ Parse.Cloud.define('search', async ({
   s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
   s.includes('nV') && bool.must_not.push({ exists: { field: 'vAt' } })
+  s.includes('sM') && bool.must.push({ exists: { field: 'scoutData' } })
   s.includes('ms') && bool.must.push({ term: { ms: true } })
   s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('pOk') && bool.must.push({ exists: { field: 'pOk' } })

@@ -16,7 +16,7 @@ const { round2, dateString, durationString } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
-const { CUBE_STATUSES } = require('@/schema/enums')
+const { CUBE_STATUSES, CUBE_FEATURES } = require('@/schema/enums')
 
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
@@ -44,24 +44,30 @@ const numberStyle = { numFmt: '#,####', ...alignRight }
 router.get('/cubes', handleErrorAsync(async (req, res) => {
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
-  const workbook = new excel.stream.xlsx.WorkbookWriter({})
+  const workbook = new excel.stream.xlsx.WorkbookWriter({ useStyles: true })
   const worksheet = workbook.addWorksheet('CityCubes')
-  worksheet.columns = [
-    { header: 'CityCube ID', key: 'objectId', width: 30 },
-    { header: 'Verifiziert', key: 'verified', width: 20 },
-    { header: 'Gehäusetyp', key: 'htCode', width: 20 },
-    { header: 'Straße', key: 'str', width: 15 },
-    { header: 'Hausnummer', key: 'hsnr', width: 15 },
-    { header: 'PLZ', key: 'plz', width: 10 },
-    { header: 'Ort', key: 'ort', width: 15 },
-    { header: 'Bundesland', key: 'stateName', width: 20 },
-    { header: 'Breite', key: 'lat', width: 12 },
-    { header: 'Länge', key: 'lon', width: 12 }
-    // { header: 'Ampelnähe', key: 'q1', width: 12 },
-    // { header: '', key: 'lon', width: 12 },
-    // { header: 'Länge', key: 'lon', width: 12 },
-  ]
-  // TOLATER: When this is a "booked" export, add motive, externalOrderNo, customerName etc. maybe
+
+  const fields = {
+    objectId: { header: 'CityCube ID',width: 30 },
+    verified: { header: 'Verifiziert', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 15 },
+    hsnr: { header: 'Hausnummer', width: 15 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 15 },
+    stateName: { header: 'Bundesland', width: 20 },
+    lat: { header: 'Breite', width: 13 },
+    lon: { header: 'Länge', width: 13 }
+  }
+  for (const cubeFeature of Object.keys(CUBE_FEATURES)) {
+    fields[cubeFeature] = { header: CUBE_FEATURES[cubeFeature].label, width: 30 }
+  }
+  const { columns, headerRowValues } = getColumnHeaders(fields)
+  worksheet.columns = columns
+
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true }
+  headerRow.height = 24
 
   const { index, query, sort } = await Parse.Cloud.run('search', { ...req.query, returnQuery: true }, { useMasterKey: true })
   const keepAlive = '1m'
@@ -94,9 +100,14 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
       doc.stateName = states[doc.stateId]?.name || ''
       doc.lat = doc.gp.latitude
       doc.lon = doc.gp.longitude
+      if (doc.scoutData) {
+        for (const key of Object.keys(CUBE_FEATURES)) {
+          doc[key] = CUBE_FEATURES[key].values[doc.scoutData[key]] || ''
+        }
+      }
       return doc
     })) {
-      worksheet.addRow(row).commit()
+      worksheet.addRow(row)
     }
     if (hits.length < size) {
       break

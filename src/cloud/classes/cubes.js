@@ -1,6 +1,7 @@
 const { getNewNo, getActiveCubeOrder, getFutureCubeOrder } = require('@/shared')
 const redis = require('@/services/redis')
 const { indexCube, unindexCube, indexCubeBookings } = require('@/cloud/search')
+
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
     // available, booked, not available, not found
