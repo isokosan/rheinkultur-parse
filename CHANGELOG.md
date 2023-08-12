@@ -1,3 +1,10 @@
+## [1.87.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.87.0...1.87.1) (2023-08-12)
+
+
+### Bug Fixes
+
+* add non-cube-features filter to search ([47c9055](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/47c9055f12349c5cdd798db75012e7455409836b))
+
 # [1.87.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.86.0...1.87.0) (2023-08-12)
 
 
