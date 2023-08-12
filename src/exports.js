@@ -48,7 +48,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   const worksheet = workbook.addWorksheet('CityCubes')
 
   const fields = {
-    objectId: { header: 'CityCube ID',width: 30 },
+    objectId: { header: 'CityCube ID', width: 30 },
     verified: { header: 'Verifiziert', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 15 },

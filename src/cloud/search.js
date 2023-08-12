@@ -488,6 +488,7 @@ Parse.Cloud.define('search', async ({
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
   s.includes('nV') && bool.must_not.push({ exists: { field: 'vAt' } })
   s.includes('sM') && bool.must.push({ exists: { field: 'scoutData' } })
+  s.includes('sM-') && bool.must_not.push({ exists: { field: 'scoutData' } })
   s.includes('ms') && bool.must.push({ term: { ms: true } })
   s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('pOk') && bool.must.push({ exists: { field: 'pOk' } })
