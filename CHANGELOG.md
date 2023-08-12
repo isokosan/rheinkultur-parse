@@ -1,3 +1,11 @@
+# [1.87.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.86.0...1.87.0) (2023-08-12)
+
+
+### Features
+
+* add scoutData to search and rename question labels and values ([c260111](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c260111a61110ebae38b499ba3db0950f850eb90))
+* move media in htId to search fn ([54b6ade](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/54b6ade46c45b5ba329b5723dd33b46150b5a8bf))
+
 # [1.86.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.85.0...1.86.0) (2023-08-10)
 
 
