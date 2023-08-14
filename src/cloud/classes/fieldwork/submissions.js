@@ -175,7 +175,11 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
 
 Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoIds, afterPhotoIds, comments, disassemblyId, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ControlSubmission, submissionId)
-
+  if (!submission.get('orderKey')) {
+    const cubeOrder = await $query('Cube').select('order').equalTo('objectId', cubeId).first({ useMasterKey: true }).then(cube => cube.get('order'))
+    const orderKey = [cubeOrder.className, cubeOrder.objectId].join('$')
+    submission.set('orderKey', orderKey)
+  }
   submission.set('status', 'pending')
   !approve && submission.set('scout', user)
   // update submission time if not submitted before or was rejected
@@ -259,6 +263,7 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
   // control-disassembled
   const controlList = await $query('TaskList')
     .equalTo('type', 'control')
+    // .lessThan('date', )
     .equalTo('cubeIds', cubeId)
     .first({ sessionToken: user.getSessionToken() })
   controlList && await Parse.Cloud.run('control-submission-submit', {

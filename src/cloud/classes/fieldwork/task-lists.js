@@ -297,7 +297,6 @@ function validateScoutManagerOrFieldworkManager (taskList, user) {
   throw new Error('Unbefugter Zugriff')
 }
 
-// TOTRANSLATE
 async function validateAppointAssign (taskList) {
   if (!taskList.get('cubeIds').length) {
     throw new Error('Diese Liste hat keine CityCubes!')
@@ -322,7 +321,6 @@ async function validateAppointAssign (taskList) {
   // reject booked cubes
   if (taskList.get('type') === 'scout') {
     for (const cube of cubes) {
-      // TOTRANSLATE
       if (cube.get('order') || cube.get('futureOrder')) { throw new Error('Diese Liste hat bereits vermarkteten CityCubes.') }
     }
   }
