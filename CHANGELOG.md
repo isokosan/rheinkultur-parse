@@ -1,3 +1,10 @@
+# [1.90.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.89.0...1.90.0) (2023-08-14)
+
+
+### Features
+
+* add counts and order key maps to controls ([a77f5c5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a77f5c5aecb0617e16a00d809ac5deb852a421ff))
+
 # [1.89.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.88.0...1.89.0) (2023-08-14)
 
 
