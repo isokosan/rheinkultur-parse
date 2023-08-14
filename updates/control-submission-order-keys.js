@@ -1,7 +1,8 @@
+// TOCHECK: SHOULD RETURN 0 EACH TIME
 async function controlSubmissionOrderKeys () {
   let s = 0
   await $query('ControlSubmission')
-    // .equalTo('orderKey', null)
+    .equalTo('orderKey', null)
     .include('cube')
     .eachBatch(async (batch) => {
       for (const submission of batch) {

@@ -14,7 +14,7 @@ function getCubesQuery (control) {
     .lessThanOrEqualTo('order.endsAt', dueDate)
   const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', dueDate)
 
-  // order status is active, canceled or ended
+  // order status is active and started, extends or ends after control date
   let baseQuery = Parse.Query.or(extendsDuringControlPeriod, endDateAfterControlPeriod)
     .greaterThan('order.status', 2)
     .lessThan('order.startsAt', date)
@@ -265,6 +265,14 @@ Parse.Cloud.define('control-update', async ({
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
+Parse.Cloud.define('control-counts', async ({ params: { id: controlId } }) => {
+  const control = await $getOrFail(Control, controlId)
+  const cubesQuery = getCubesQuery(control)
+  const distinctCubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
+  const distinctOrderKeys = await cubesQuery.distinct('caok', { useMasterKey: true })
+  return { cubes: distinctCubeIds.length, orders: distinctOrderKeys.length }
+}, $fieldworkManager)
+
 // This is only for generation. For syncing (removing cubes, do a sync function)
 Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
@@ -277,9 +285,10 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
 
   const cubes = await $query('Cube')
     .containedIn('objectId', matchingCubeIds)
-    .select(['objectId', 'ort', 'state'])
+    .select(['objectId', 'ort', 'state', 'caok'])
     .limit(matchingCubeIds.length)
     .find({ useMasterKey: true })
+  const cubeOrderKeys = cubes.reduce((acc, cube) => ({ ...acc, [cube.id]: cube.get('caok') }), {})
   const locations = {}
   for (const cube of cubes) {
     const stateId = cube.get('state')?.id
@@ -327,13 +336,12 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
   }
 
   // remove placeKeys not in list
-  consola.warn('removing missing')
   await $query('TaskList')
     .equalTo('control', control)
     .notContainedIn('pk', Object.keys(locations))
     .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
 
-  await control.set('cubeIds', matchingCubeIds).save(null, { useMasterKey: true })
+  await control.set('cubeIds', matchingCubeIds).set('cubeOrderKeys', cubeOrderKeys).save(null, { useMasterKey: true })
   return {
     message: `${Object.keys(locations).length} lists generated`
   }
