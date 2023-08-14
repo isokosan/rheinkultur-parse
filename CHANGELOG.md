@@ -1,3 +1,10 @@
+## [1.91.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.91.0...1.91.1) (2023-08-14)
+
+
+### Bug Fixes
+
+* add marked disassembled cube ids and sync with audits ([14bc7c3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/14bc7c357159775165ddf48c37d9b6a961295a87))
+
 # [1.91.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.90.0...1.91.0) (2023-08-14)
 
 
