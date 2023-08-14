@@ -85,7 +85,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.set('gp', await getCenterOfCubes(cubeIds))
   taskList.set('pk', $pk(taskList))
 
-  for (const cubeIdField of ['adminApprovedCubeIds', 'scoutAddedCubeIds']) {
+  for (const cubeIdField of ['adminApprovedCubeIds', 'scoutAddedCubeIds', 'markedDisassembledCubeIds']) {
     taskList.get(cubeIdField) && taskList.set(cubeIdField, intersection([...new Set(taskList.get(cubeIdField))], cubeIds))
   }
 
@@ -542,8 +542,8 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
       .equalTo(`cubeOrderKeys.${cubeId}`, orderKey)
       .distinct('objectId', { useMasterKey: true })
     if (!controlIds) { return }
-    if (approved) {
-      await $query('TaskList')
+    approved
+      ? await $query('TaskList')
         .equalTo('type', 'control')
         .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
         .equalTo('cubeIds', cubeId)
@@ -551,20 +551,19 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
         .each(async (list) => {
           const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
           markedDisassembledCubeIds.push(cubeId)
-          list.set('markedDisassembledCubeIds', [...new Set(markedDisassembledCubeIds)])
-          await list.save(null, { useMasterKey: true })
+          list.set('markedDisassembledCubeIds', markedDisassembledCubeIds)
+          await list.save(null, { useMasterKey: true, context: { audit } })
         }, { useMasterKey: true })
-    }
-    await $query('TaskList')
-      .equalTo('type', 'control')
-      .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
-      .equalTo('cubeIds', cubeId)
-      .equalTo('markedDisassembledCubeIds', cubeId)
-      .each(async (list) => {
-        const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
-        list.set('markedDisassembledCubeIds', markedDisassembledCubeIds.filter(id => id !== cubeId))
-        await list.save(null, { useMasterKey: true })
-      }, { useMasterKey: true })
+      : await $query('TaskList')
+        .equalTo('type', 'control')
+        .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
+        .equalTo('cubeIds', cubeId)
+        .equalTo('markedDisassembledCubeIds', cubeId)
+        .each(async (list) => {
+          const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
+          list.set('markedDisassembledCubeIds', markedDisassembledCubeIds.filter(id => id !== cubeId))
+          await list.save(null, { useMasterKey: true, context: { audit } })
+        }, { useMasterKey: true })
   }
 }, { requireUser: true })
 
