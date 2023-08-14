@@ -1,3 +1,10 @@
+# [1.92.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.91.1...1.92.0) (2023-08-14)
+
+
+### Features
+
+* add last control link to cubes for internal ([af132c9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/af132c9713153576dac302ca5397319d0ac3f230))
+
 ## [1.91.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.91.0...1.91.1) (2023-08-14)
 
 
