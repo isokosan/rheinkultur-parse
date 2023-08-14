@@ -195,6 +195,15 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
       cube.set('scoutSubmissions', scoutSubmissions)
     }
 
+    if (query._include.includes('lastControlSubmission')) {
+      const lastControlSubmission = await $query('ControlSubmission')
+        .equalTo('cube', cube)
+        .descending('createdAt')
+        .first({ useMasterKey: true })
+        .then(submission => submission.toJSON())
+      cube.set('lastControlSubmission', lastControlSubmission)
+    }
+
     if (query._include.includes('otherPair')) {
       cube.set('otherPair', await getARPair(cube.id))
     }
