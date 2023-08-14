@@ -823,6 +823,36 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
   return { updated, errors }
 }, { requireUser: true })
 
+// what scout sees on location map when clicking on a cube
+Parse.Cloud.define('task-list-retrieve-as-scout', async ({ params: { id: taskListId, cubeId }, user }) => {
+  consola.warn(user)
+  let task = await $query('TaskList').get(taskListId, { sessionToken: user.getSessionToken() })
+  // control has disassembly within the control dates
+  if (task.get('type') === 'control') {
+    const disassemblyTask = await $query('TaskList')
+      .equalTo('type', 'disassembly')
+      .equalTo('cubeIds', cubeId)
+      .lessThanOrEqualTo('date', task.get('dueDate'))
+      .first({ useMasterKey: true })
+    if (disassemblyTask) {
+      // disable the control task
+      task.set('disabled', true)
+      // show disassembly button if the scout is assigned
+      const userIsScout = !!disassemblyTask.get('scouts')?.find(s => s.id === user.id)
+      if (userIsScout && [2, 3].includes(disassemblyTask.get('status'))) {
+        task = disassemblyTask
+      }
+      // TOTRANSLATE
+      const dateDisplay = moment(disassemblyTask.get('dueDate')).format('DD.MM.YYYY')
+      task.set('information', `Diese CityCube wird bis zum ${dateDisplay} ohnehin abgebaut.`)
+    }
+  }
+  const submission = await $query(getSubmissionClass(task.get('type')))
+    .equalTo('cube', $parsify('Cube', cubeId))
+    .first({ sessionToken: user.getSessionToken() })
+  return { task: task.toJSON(), submission: submission?.toJSON() }
+}, { requireUser: true })
+
 module.exports = {
   getStatusAndCounts
 }
