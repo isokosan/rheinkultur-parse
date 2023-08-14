@@ -632,8 +632,10 @@ const schemaDefinitions = {
       cubeCount: { type: 'Number', default: 0 },
 
       // only for scout and parent briefing
-      scoutAddedCubeIds: { type: 'Array' }, // // case when scout adds extra cube (briefings)
-      adminApprovedCubeIds: { type: 'Array' }, // case when admin pre-approves the cube (briefings)
+      scoutAddedCubeIds: { type: 'Array' }, // // case for briefings when scout adds extra cube (briefings)
+      markedDisassembledCubeIds: { type: 'Array' }, // case for controls when admin marks a cube disassembled
+      adminApprovedCubeIds: { type: 'Array' }, // case when admin marks as approved (skipped) (for all)
+
       quota: { type: 'Number' }, // single quota
       quotas: { type: 'Object' }, // media based quota
 

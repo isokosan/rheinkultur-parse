@@ -236,7 +236,8 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, photoIds, comments, approve }, user }) => {
-  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, DisassemblySubmission, submissionId)
+  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, DisassemblySubmission, submissionId, ['disassembly'])
+  const disassembly = taskList.get('disassembly')
 
   submission.set('status', 'pending')
   !approve && submission.set('scout', user)
@@ -261,17 +262,25 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
   taskList.set({ status: 3 })
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   // control-disassembled
-  const controlList = await $query('TaskList')
+  const order = disassembly.get('order')
+  const orderKey = [order.className, order.id].join('$')
+  const controlIds = await $query('Control')
+    .greaterThan('status', 0)
+    .equalTo(`cubeOrderKeys.${cubeId}`, orderKey)
+    .distinct('objectId', { useMasterKey: true })
+  await $query('TaskList')
     .equalTo('type', 'control')
-    // .lessThan('date', )
+    .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
     .equalTo('cubeIds', cubeId)
-    .first({ sessionToken: user.getSessionToken() })
-  controlList && await Parse.Cloud.run('control-submission-submit', {
-    id: controlList.id,
-    cubeId,
-    condition: 'disassembled',
-    disassemblyId: submission.id
-  }, { sessionToken: user.getSessionToken() })
+    .equalTo(`statuses.${cubeId}`, null) // no activity yet
+    .each(async (list) => {
+      await Parse.Cloud.run('control-submission-submit', {
+        id: list.id,
+        cubeId,
+        condition: 'disassembled',
+        disassemblyId: submission.id
+      }, { sessionToken: user.getSessionToken() })
+    }, { useMasterKey: true })
   return { message: 'Demontage erfolgreich.', data: submission }
 }, { requireUser: true })
 
