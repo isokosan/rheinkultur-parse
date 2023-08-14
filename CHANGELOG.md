@@ -1,3 +1,10 @@
+# [1.88.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.87.1...1.88.0) (2023-08-14)
+
+
+### Features
+
+* add in-background task list fetching to check non-scout planned disassemblies in control periods ([e059552](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e059552bbb115d2cb84995b23beb59f4985c9e98))
+
 ## [1.87.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.87.0...1.87.1) (2023-08-12)
 
 
