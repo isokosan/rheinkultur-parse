@@ -167,9 +167,9 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
         .limit(adminApprovedCubeIds.length)
         .select('media')
         .find({ useMasterKey: true })) {
-          const media = cube.get('media')
-          results[media] = (results[media] || 0) + 1
-        }
+        const media = cube.get('media')
+        results[media] = (results[media] || 0) + 1
+      }
 
       const quotasCompleted = {}
       for (const media of ['MFG', 'KVZ']) {
