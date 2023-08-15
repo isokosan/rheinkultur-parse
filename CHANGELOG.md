@@ -1,3 +1,10 @@
+## [1.92.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.0...1.92.1) (2023-08-15)
+
+
+### Bug Fixes
+
+* no control bug ([56d47f1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/56d47f15db6cd5f1e24c324529c71b71aaf14e69))
+
 # [1.92.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.91.1...1.92.0) (2023-08-14)
 
 
