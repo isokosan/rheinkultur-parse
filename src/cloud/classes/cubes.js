@@ -200,7 +200,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
         .equalTo('cube', cube)
         .descending('createdAt')
         .first({ useMasterKey: true })
-        .then(submission => submission.toJSON())
+        .then(submission => submission?.toJSON())
       cube.set('lastControlSubmission', lastControlSubmission)
     }
 
