@@ -1,3 +1,10 @@
+## [1.94.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.94.0...1.94.1) (2023-08-16)
+
+
+### Bug Fixes
+
+* remove all drafts from bookings search for partners ([fb83223](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fb83223669978b20da4f188bf95a3e8855ccd76c))
+
 # [1.94.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.93.0...1.94.0) (2023-08-16)
 
 
