@@ -1,7 +1,7 @@
 const { cloneDeep } = require('lodash')
 
 async function cleanAudits (preview) {
-  let i = 0
+  let c = 0
   await $query('Audit')
     .notEqualTo('data.changes', null)
     .select(['fn', 'itemId', 'data'])
@@ -20,7 +20,7 @@ async function cleanAudits (preview) {
           delete data.changes
         }
         console.info(audit.get('fn'), audit.get('itemId'), audit.get('data'), data)
-        i++
+        c++
         if (preview) {
           return
         }
@@ -29,8 +29,21 @@ async function cleanAudits (preview) {
           : await audit.destroy({ useMasterKey: true })
       }
     }, { useMasterKey: true })
-  console.info({ i })
-  return i
+
+  let r = 0
+  await $query('Audit')
+    .equalTo('data', null)
+    .endsWith('fn', '-update')
+    .select(['fn', 'itemId', 'data'])
+    .each(async (audit) => {
+      console.log(audit.get('fn'), audit.get('itemId'), audit.get('data'))
+      if (!preview) {
+        await audit.destroy({ useMasterKey: true })
+      }
+      r++
+    }, { useMasterKey: true })
+  console.info('DONE', { cleaned: c, removed: r })
+  return
 }
 
 require('./run')(() => cleanAudits())

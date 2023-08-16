@@ -1,8 +1,7 @@
 // TOCHECK: SHOULD RETURN 0 EACH TIME
-async function controlResults () {
+async function saveResults () {
   let l = 0
   await $query('TaskList')
-    .equalTo('type', 'control')
     .greaterThan('status', 1)
     .equalTo('results', null)
     .eachBatch(async (batch) => {
@@ -14,4 +13,4 @@ async function controlResults () {
   console.log(l)
 }
 
-require('./run')(controlResults)
+require('./run')(saveResults)
