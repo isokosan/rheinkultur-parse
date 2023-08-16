@@ -1,3 +1,10 @@
+## [1.92.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.1...1.92.2) (2023-08-16)
+
+
+### Bug Fixes
+
+* smtp settings and email-username normalizer ([d577217](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d5772171240c4c05be742025a5c7e74aa6dc4f1e))
+
 ## [1.92.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.0...1.92.1) (2023-08-15)
 
 
