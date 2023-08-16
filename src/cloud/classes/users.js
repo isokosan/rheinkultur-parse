@@ -1,5 +1,5 @@
 const { generateToken, generatePassword, generateDarkColorHex } = require('@/utils')
-const { users: { normalizeUsernameFromEmail, normalizeFields, UNSET_NULL_FIELDS } } = require('@/schema/normalizers')
+const { normalizeUsernameFromEmail, users: { normalizeFields, UNSET_NULL_FIELDS } } = require('@/schema/normalizers')
 const sendMail = require('@/services/email')
 
 // Notes on username and email:
