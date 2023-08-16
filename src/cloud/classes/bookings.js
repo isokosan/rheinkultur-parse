@@ -320,7 +320,7 @@ Parse.Cloud.define('booking-update', async ({
 
   const disassembly = booking.get('disassembly') || {}
   // add disassemblyFromRMV
-  if (disassemblyFromRMV !== disassembly.fromRMV) {
+  if (disassemblyFromRMV !== Boolean(disassembly.fromRMV)) {
     changes.disassemblyFromRMV = [Boolean(disassembly.fromRMV), disassemblyFromRMV]
     disassembly.fromRMV = disassemblyFromRMV
     booking.set({ disassembly })

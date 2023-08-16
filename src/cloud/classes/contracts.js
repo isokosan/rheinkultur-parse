@@ -640,7 +640,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
 
   const disassembly = contract.get('disassembly') || {}
   // add disassemblyFromRMV
-  if (disassemblyFromRMV !== disassembly.fromRMV) {
+  if (disassemblyFromRMV !== Boolean(disassembly.fromRMV)) {
     changes.disassemblyFromRMV = [Boolean(disassembly.fromRMV), disassemblyFromRMV]
     disassembly.fromRMV = disassemblyFromRMV
     contract.set({ disassembly })
