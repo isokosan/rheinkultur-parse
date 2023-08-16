@@ -441,93 +441,6 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   })
 }))
 
-router.get('/control', handleErrorAsync(async (req, res) => {
-  const housingTypes = await fetchHousingTypes()
-  const states = await fetchStates()
-  let isAldi = false
-  const aldiTagIds = await (new Parse.Query('Tag')).containedIn('name', ['ALDI', 'ALDI Süd', 'ALDI Nord']).distinct('objectId', { useMasterKey: true })
-  // control list might be for a single control list, or a control with many control lists
-  const { id, controlId } = req.query
-  const query = new Parse.Query('TaskList')
-  id && query.equalTo('objectId', id)
-  if (controlId) {
-    const control = await (new Parse.Query('Control')).equalTo('objectId', controlId).first({ useMasterKey: true })
-    query.equalTo('control', control)
-    if (control.get('source').className === 'Company') {
-      const company = await control.get('source')
-      if ((company.get('tags') || []).includes(tag => aldiTagIds.includes(tag.id))) {
-        isAldi = true
-      }
-    }
-    if (control.get('source').className === 'Tag') {
-      if (aldiTagIds.includes(control.get('source').id)) {
-        isAldi = true
-      }
-    }
-  }
-
-  const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet('Kontrolliste')
-  const { columns, headerRowValues } = getColumnHeaders({
-    cbNo: { header: 'Vertragsnr.', width: 20 },
-    companyName: { header: 'Kunde', width: 20 },
-    externalOrderNo: { header: isAldi ? 'VST' : 'Auftragsnr.', width: 20 },
-    campaignNo: { header: isAldi ? 'Regional-gesellschaft' : 'Kampagne', width: 20 },
-    motive: { header: 'Kunde/Motiv', width: 20 },
-    stateName: { header: 'Bundesland', width: 30 },
-    plz: { header: 'PLZ', width: 15 },
-    ort: { header: 'Ort', width: 15 },
-    str: { header: 'Straße', width: 20 },
-    hsnr: { header: 'Hsnr.', width: 20 },
-    htCode: { header: 'Gehäusetyp', width: 20 },
-    objectId: { header: 'CityCube ID', width: 20 },
-    startsAt: { header: 'Startdatum', width: 20, style: dateStyle },
-    endsAt: { header: 'Enddatum', width: 20, style: dateStyle }
-  })
-  worksheet.columns = columns
-  const headerRow = worksheet.addRow(headerRowValues)
-  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
-  headerRow.height = 24
-
-  let skip = 0
-  while (true) {
-    const taskLists = await query.limit(10).skip(skip).find({ useMasterKey: true })
-    if (!taskLists.length) {
-      break
-    }
-    skip += taskLists.length
-    for (const taskList of taskLists) {
-      const cubeIds = taskList.get('cubeIds') || []
-      const cubes = await $query('Cube')
-        .containedIn('objectId', cubeIds)
-        .limit(cubeIds.length)
-        .find({ useMasterKey: true })
-      for (const cube of cubes) {
-        const contractOrBooking = await $getOrFail(cube.get('order').className, cube.get('order').objectId, ['company'])
-        worksheet.addRow({
-          objectId: cube.id,
-          cbNo: contractOrBooking.get('no'),
-          companyName: contractOrBooking.get('company')?.get('name'),
-          externalOrderNo: contractOrBooking.get('externalOrderNo'),
-          campaignNo: contractOrBooking.get('campaignNo'),
-          motive: contractOrBooking.get('motive'),
-          htCode: housingTypes[cube.get('ht')?.id]?.code || '',
-          str: cube.get('str'),
-          hsnr: cube.get('hsnr'),
-          plz: cube.get('plz'),
-          ort: cube.get('ort'),
-          stateName: states[cube.get('state')?.id]?.name || '',
-          startsAt: startOfUtcDate(contractOrBooking.get('startsAt')),
-          endsAt: startOfUtcDate(cube.get('order').endsAt)
-        })
-      }
-    }
-  }
-  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', 'attachment; filename=Kontrolliste.xlsx')
-  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
-}))
-
 const addTaskListSheet = async (workbook, taskList) => {
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly').get('order')
   const company = parent?.get('company') ? await parent.get('company').fetch({ useMasterKey: true }) : null
@@ -587,7 +500,7 @@ const addTaskListSheet = async (workbook, taskList) => {
   headerRow.height = 24
 
   const cubeIds = taskList.get('cubeIds') || []
-  const cubes = await (new Parse.Query('Cube'))
+  const cubes = await $query('Cube')
     .containedIn('objectId', cubeIds)
     .include(['ht', 'state'])
     .ascending('str')
@@ -659,7 +572,6 @@ const addTaskListSheet = async (workbook, taskList) => {
     }
   }
 }
-
 router.get('/task-list', handleErrorAsync(async (req, res) => {
   const taskList = await $query('TaskList')
     .include(['state', 'briefing', 'control', 'disassembly', 'disassembly.booking', 'disassembly.contract'])
@@ -675,7 +587,6 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', `attachment; filename=${name} ${taskList.get('ort')}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
-
 router.get('/task-lists', handleErrorAsync(async (req, res) => {
   const [className] = req.query.parent.split('-')
   let name
@@ -701,7 +612,6 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', `attachment; filename=${name}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
-
 router.get('/disassemblies', handleErrorAsync(async (req, res) => {
   const { start: from, end: to } = req.query
 
@@ -735,7 +645,7 @@ router.get('/disassemblies', handleErrorAsync(async (req, res) => {
       const cubeIds = taskList.get('cubeIds') || []
       const order = taskList.get('disassembly').get('order')
       await order.fetchWithInclude('company', { useMasterKey: true })
-      const cubes = await (new Parse.Query('Cube'))
+      const cubes = await $query('Cube')
         .containedIn('objectId', cubeIds)
         .include(['ht', 'state'])
         .limit(cubeIds.length)
@@ -759,6 +669,120 @@ router.get('/disassemblies', handleErrorAsync(async (req, res) => {
   // add all to rows
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=Demontage ${req.params.monthYear}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
+  const control = await $getOrFail('Control', req.params.controlId)
+
+  const workbook = new excel.Workbook()
+  const worksheet = workbook.addWorksheet('Report')
+
+  const infos = [
+    { label: 'Kontrolle', content: control.get('name') || '-' },
+    { label: 'Total CityCubes', content: control.get('counts').total },
+    { label: 'Controlled CityCubes', content: control.get('counts').completed }
+  ]
+
+  let i = 1
+  for (const info of infos) {
+    const row = worksheet.getRow(i)
+    row.values = [info.label, info.content]
+    row.height = 20
+    row.getCell(1).font = { bold: true }
+    row.alignment = { vertical: 'middle', horizontal: 'left' }
+    worksheet.mergeCells(`B${i}:D${i}`)
+    i++
+  }
+  worksheet.addRow()
+  i++
+
+  // prepare maps
+  const housingTypes = await fetchHousingTypes()
+  const states = await fetchStates()
+
+  async function getOrdersMap (orderKeys) {
+    const orderKeyArrs = await [...new Set(orderKeys)].map(key => key.split('$'))
+    const contractIds = orderKeyArrs.filter(([key]) => key === 'Contract').map(([, id]) => id)
+    const response = await $query('Contract')
+      .containedIn('objectId', contractIds)
+      .limit(contractIds.length)
+      .select(['no', 'motive'])
+      .find({ useMasterKey: true })
+      .then(contracts => contracts.reduce((dict, contract) => {
+        dict[`Contract$${contract.id}`] = contract.attributes
+        return dict
+      }, {}))
+    const bookingIds = orderKeyArrs.filter(([key]) => key === 'Booking').map(([, id]) => id)
+    return $query('Booking')
+      .containedIn('objectId', bookingIds)
+      .limit(bookingIds.length)
+      .select(['no', 'motive'])
+      .find({ useMasterKey: true })
+      .then(bookings => bookings.reduce((dict, booking) => {
+        dict[`Booking$${booking.id}`] = booking.attributes
+        return dict
+      }, response))
+  }
+  const ordersMap = await getOrdersMap(Object.values(control.get('cubeOrderKeys')))
+
+  const { columns, headerRowValues } = getColumnHeaders({
+    objectId: { header: 'CityCube ID', width: 20 },
+    orderNo: { header: 'Auftragsnr.', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    address: { header: 'Anschrift', width: 20 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    condition: { header: 'Zustand', width: 20 },
+    comments: { header: 'Kommentar', width: 20 },
+    repairCost: { header: 'Reperaturkosten', width: 20 },
+    motive: { header: 'Motiv', width: 20 }
+    // start: { header: 'Startdatum', width: 12, style: dateStyle },
+    // end: { header: 'Enddatum', width: 12, style: dateStyle },
+    // duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    // monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    // pp: { header: 'Belegungspaket', width: 20 },
+  })
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 24
+
+  const REPORT_CONDITIONS = ['no_ad', 'ill']
+  await $query('TaskList')
+    .equalTo('control', control)
+    .include('submissions')
+    .eachBatch(async (taskLists) => {
+      for (const taskList of taskLists) {
+        const submissions = taskList.get('submissions').filter(s => REPORT_CONDITIONS.includes(s.condition))
+        const cubeIds = taskList.get('cubeIds') || []
+        const cubes = await $query('Cube')
+          .containedIn('objectId', submissions.map(s => s.cube.id))
+          .limit(cubeIds.length)
+          .find({ useMasterKey: true })
+        for (const submission of submissions) {
+          const cube = cubes.find(c => c.id === submission.cube.id)
+          const orderKey = control.get('cubeOrderKeys')?.[cube.id]
+          const { no: orderNo, motive } = ordersMap[orderKey]
+          worksheet.addRow({
+            objectId: cube.id,
+            orderNo,
+            htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
+            address: cube.get('str') + ' ' + cube.get('hsnr'),
+            plz: cube.get('plz'),
+            ort: cube.get('ort'),
+            stateName: states[cube.get('state')?.id]?.name || '',
+            condition: submission.condition || '',
+            comments: submission.comments || '',
+            motive
+          })
+        }
+      }
+    }, { useMasterKey: true })
+
+  const filename = safeName(control.get('name'))
+  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -1150,7 +1174,6 @@ router.get('/contract-extend-pdf/:contractId', handleErrorAsync(async (req, res)
       drive.files.delete({ fileId })
     })
 }))
-
 router.get('/invoice-pdf/:resourceId', handleErrorAsync(async (req, res) => {
   const lexDocument = await getLexInvoiceDocument(req.params.resourceId)
   const response = await getLexFile(lexDocument.files.documentFileId)
@@ -1158,7 +1181,6 @@ router.get('/invoice-pdf/:resourceId', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', `inline; filename="${lexDocument.voucherNumber}.pdf"`)
   return res.send(response.buffer)
 }))
-
 router.get('/credit-note-pdf/:resourceId', handleErrorAsync(async (req, res) => {
   const lexDocument = await getLexCreditNoteDocument(req.params.resourceId)
   const response = await getLexFile(lexDocument.files.documentFileId)
