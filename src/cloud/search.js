@@ -690,6 +690,8 @@ Parse.Cloud.define('search-bookings', async ({
   }
   if (user?.get('accType') === 'partner' && user.get('company')) {
     companyId = user.get('company').id
+    // partners cannot see draft bookings
+    bool.must_not.push({ range: { status: { gte: 0, lte: 2 } } })
   }
 
   // booking
