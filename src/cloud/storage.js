@@ -10,13 +10,9 @@ function handleFileDestroyError (error) {
   consola.error('Skipped destroy file:', error.message)
 }
 
-const getThumbnailBase64 = async (file) => {
-  if (file._metadata.thumb) {
-    return
-  }
-  const contentType = file._source?.type
-  const base64 = await file.getData()
-  if (contentType?.endsWith('pdf')) {
+const getThumbnail = async (file) => {
+  if (file._metadata.thumb) { return }
+  if (file._source?.type?.endsWith('pdf')) {
     const options = {
       format: 'png',
       width: null,
@@ -24,65 +20,69 @@ const getThumbnailBase64 = async (file) => {
       quality: 70,
       density: 36
     }
-    return fromBase64(base64, options).bulk(-1, true)
+    const base64 = await fromBase64(await file.getData(), options).bulk(-1, true)
       .then(pages => pages.map(page => page.base64))
       .then(mergeImages)
+    return new Parse.File('thumb.png', { base64 }, 'image/png', { thumb: 'true' })
   }
-  return sharp(Buffer.from(base64, 'base64'))
+  // try to generate thumb if image
+  return sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 270, width: 270, fit: sharp.fit.inside })
     .withMetadata()
+    .webp({ nearLossless: true })
     .toBuffer()
-    .then(data => data.toString('base64'))
+    .then(data => new Parse.File('thumb.webp', { base64: data.toString('base64') }, 'image/webp', { thumb: 'true' }))
+    .catch((error) => {
+      if (error.message !== 'Input buffer contains unsupported image format') {
+        consola.error(error.code, error.message)
+      }
+      return null
+    })
 }
 
-const getSize1000Base64 = async (file) => {
-  if (file._metadata.thumb) {
-    return
-  }
-  const base64 = await file.getData()
-  return sharp(Buffer.from(base64, 'base64'))
+const getSize1000 = async (file) => {
+  if (file._metadata.thumb) { return }
+  const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 1000, width: 1000, fit: sharp.fit.inside })
     .withMetadata()
+    .webp({ nearLossless: true })
     .toBuffer()
     .then(data => data.toString('base64'))
     .catch((error) => {
       handleFileDestroyError(error)
       return null
     })
+  return new Parse.File('size1000.webp', { base64 }, 'image/webp', { thumb: 'size1000' })
 }
 
 Parse.Cloud.beforeSaveFile(async ({ file }) => {
-  if (file._metadata.name) {
-    file._metadata.name = encodeURIComponent(file._metadata.name)
-  }
-  const extension = file._name.split('.').reverse()[0].toLowerCase()
-  if (['jpeg', 'jpg'].includes(extension)) {
+  file._metadata.name && (file._metadata.name = encodeURIComponent(file._metadata.name))
+  if (!file._metadata.thumb && file._source?.type.startsWith('image/')) {
+    const extension = file._name.split('.').reverse()[0].toLowerCase()
+    if (extension === 'webp') { return }
     const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
-      .jpeg({ mozjpeg: true })
-      .withMetadata()
+      .webp({ nearLossless: true })
       .toBuffer()
       .then(data => data.toString('base64'))
-    return new Parse.File(file._name, { base64 }, undefined, file._metadata, file._tags)
+    const replaceExtension = name => name.replace(new RegExp(`.${extension}$`), '.webp')
+    file._metadata.name && (file._metadata.name = replaceExtension(file._metadata.name))
+    return new Parse.File(replaceExtension(file._name), { base64 }, 'image/webp', file._metadata, file._tags)
   }
 })
 
 Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   const name = file._metadata.name
   const { assetType, cubeId, klsId, originalId, scope, form } = file.tags()
-  let thumb64
+  let thumb
   try {
-    thumb64 = await getThumbnailBase64(file)
+    thumb = await getThumbnail(file)
+    thumb && await thumb.save({ useMasterKey: true })
   } catch (error) {
     // abort save and delete file instead if thumbnail errors
     await file.destroy({ useMasterKey: true })
     consola.error(error)
     error.message = `Datei ist beschädigt: ${error.message}.`
     throw error
-  }
-  let thumb
-  if (thumb64) {
-    thumb = new Parse.File('thumb.png', { base64: thumb64 }, 'image/png', { thumb: 'true' })
-    await thumb.save({ useMasterKey: true })
   }
   if (cubeId) {
     const cubePhoto = new Parse.Object('CubePhoto')
@@ -164,8 +164,7 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
     cubePhoto.unset('thumb')
   }
   if (!cubePhoto.get('thumb')) {
-    const base64 = await getThumbnailBase64(cubePhoto.get('file'))
-    const thumb = new Parse.File('thumb.png', { base64 }, 'image/png', { thumb: 'true' })
+    const thumb = await getThumbnail(cubePhoto.get('file'))
     await thumb.save({ useMasterKey: true })
     cubePhoto.set({ thumb })
   }
@@ -174,8 +173,7 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
     cubePhoto.unset('size1000')
   }
   if (!cubePhoto.get('size1000')) {
-    const base64 = await getSize1000Base64(cubePhoto.get('file'))
-    const size1000 = new Parse.File('size1000.png', { base64 }, 'image/png', { thumb: 'size1000' })
+    const size1000 = await getSize1000(cubePhoto.get('file'))
     await size1000.save({ useMasterKey: true })
     cubePhoto.set({ size1000 })
   }
