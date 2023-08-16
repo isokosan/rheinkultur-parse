@@ -1,3 +1,10 @@
+# [1.94.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.93.0...1.94.0) (2023-08-16)
+
+
+### Features
+
+* wip with control reports ([fb05c7f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fb05c7fd6aac8354c28251270b0d5138c77b1e01))
+
 # [1.93.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.3...1.93.0) (2023-08-16)
 
 
