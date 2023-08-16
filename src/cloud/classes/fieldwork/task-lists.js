@@ -136,27 +136,87 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   }
   counts.completed = parseInt(counts.pending + counts.approved)
 
-  if (!taskList.isNew() && taskType === 'scout') {
-    const quota = taskList.get('quota')
-    const quotas = taskList.get('quotas')
-    if (quota || quotas) {
-      counts.total = quota || sum(Object.values(quotas || {}))
-    }
-    const quotasCompleted = {}
-    for (const media of ['MFG', 'KVZ']) {
-      quotasCompleted[media] = await $query(submissionClass)
+  if (!taskList.isNew()) {
+    // scout report and quota updates
+    const results = {}
+    if (taskType === 'scout') {
+      const quota = taskList.get('quota')
+      const quotas = taskList.get('quotas')
+      if (quota || quotas) {
+        counts.total = quota || sum(Object.values(quotas || {}))
+      }
+
+      await $query('ScoutSubmission')
         .equalTo('taskList', taskList)
         .containedIn('status', ['pending', 'approved'])
-        .notEqualTo('form.notFound', true)
-        .equalTo('form.media', media)
-        .count({ useMasterKey: true })
+        .select('form')
+        .eachBatch((submissions) => {
+          for (const submission of submissions) {
+            if (submission.get('form').notFound) {
+              results.nf = (results.nf || 0) + 1
+              continue
+            }
+            const media = submission.get('form').media
+            results[media] = (results[media] || 0) + 1
+          }
+        }, { useMasterKey: true })
+
       // add on top media of admin approved cubes
-      quotasCompleted[media] += await $query('Cube')
+      for (const cube of await $query('Cube')
         .containedIn('objectId', adminApprovedCubeIds)
-        .equalTo('media', media)
-        .count({ useMasterKey: true })
+        .limit(adminApprovedCubeIds.length)
+        .select('media')
+        .find({ useMasterKey: true })) {
+        const media = cube.get('media')
+        results[media] = (results[media] || 0) + 1
+      }
+
+      const quotasCompleted = {}
+      for (const media of ['MFG', 'KVZ']) {
+        quotasCompleted[media] = results[media]
+      }
+      taskList.set({ results, quotasCompleted })
     }
-    taskList.set({ quotasCompleted })
+
+    // control report
+    if (taskType === 'control') {
+      await $query('ControlSubmission')
+        .equalTo('taskList', taskList)
+        .containedIn('status', ['pending', 'approved'])
+        .select('condition')
+        .eachBatch((submissions) => {
+          for (const submission of submissions) {
+            const condition = submission.get('condition')
+            results[condition] = (results[condition] || 0) + 1
+          }
+        }, { useMasterKey: true })
+
+      // add on top marked-disassembled
+      if (markedDisassembledCubeIds.length) {
+        results.disassemled = (results.disassembled || 0) + markedDisassembledCubeIds.length
+      }
+      taskList.set({ results })
+    }
+
+    // control report and quota updates
+    if (taskType === 'disassembly') {
+      await $query('DisassemblySubmission')
+        .equalTo('taskList', taskList)
+        .containedIn('status', ['pending', 'approved'])
+        .select('condition')
+        .eachBatch((submissions) => {
+          for (const submission of submissions) {
+            const condition = submission.get('condition')
+            results[condition] = (results[condition] || 0) + 1
+          }
+        }, { useMasterKey: true })
+
+      // add on top marked-disassembled
+      if (markedDisassembledCubeIds.length) {
+        results.marked = (results.marked || 0) + markedDisassembledCubeIds.length
+      }
+      taskList.set({ results })
+    }
   }
   taskList.set({ statuses, counts })
 })

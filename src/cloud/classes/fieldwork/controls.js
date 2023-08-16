@@ -369,3 +369,15 @@ Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, c
   const control = await $getOrFail(Control, controlId)
   return control.destroy({ useMasterKey: true })
 }, $fieldworkManager)
+
+Parse.Cloud.define('control-report', async ({ params: { id: controlId }, user }) => {
+  const control = await $getOrFail(Control, controlId)
+  const report = {}
+  await $query('TaskList')
+    .equalTo('control', control)
+    .select(['pk', 'results'])
+    .each(async (taskList) => {
+      report[taskList.get('pk')] = taskList.get('results') || {}
+    }, { useMasterKey: true })
+  return report
+}, $fieldworkManager)

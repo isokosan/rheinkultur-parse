@@ -243,3 +243,15 @@ Parse.Cloud.define('briefings-remove-booked-cube', async ({ params: { cubeId } }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }, { useMasterKey: true })
 }, { requireMaster: true })
+
+Parse.Cloud.define('briefing-report', async ({ params: { id: briefingId }, user }) => {
+  const briefing = await $getOrFail(Briefing, briefingId)
+  const report = {}
+  await $query('TaskList')
+    .equalTo('briefing', briefing)
+    .select(['pk', 'results'])
+    .each(async (taskList) => {
+      report[taskList.get('pk')] = taskList.get('results') || {}
+    }, { useMasterKey: true })
+  return report
+}, $fieldworkManager)

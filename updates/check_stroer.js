@@ -7592,7 +7592,7 @@ async function checkStroerMatches () {
       }
     }, { useMasterKey: true })
 
-  consola.info({ s, p })
+  console.info({ s, p })
 }
 
 require('./run')(() => checkStroerMatches())
