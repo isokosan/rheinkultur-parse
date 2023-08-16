@@ -43,7 +43,6 @@ async function cleanAudits (preview) {
       r++
     }, { useMasterKey: true })
   console.info('DONE', { cleaned: c, removed: r })
-  return
 }
 
 require('./run')(() => cleanAudits())
