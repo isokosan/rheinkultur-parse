@@ -1,3 +1,10 @@
+# [1.95.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.94.1...1.95.0) (2023-08-16)
+
+
+### Features
+
+* add heif support to sharp ([1621df2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1621df2d53b93d94d827a4b1d223618bf693830f))
+
 ## [1.94.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.94.0...1.94.1) (2023-08-16)
 
 
