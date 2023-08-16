@@ -1,3 +1,16 @@
+# [1.93.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.3...1.93.0) (2023-08-16)
+
+
+### Bug Fixes
+
+* disassemblyFromRMV audit change bug ([c482526](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c482526d71cb2c93bdd43210a300bb055e6f9614))
+* save task-list results on all task lists ([a9f64f9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a9f64f9d89308846fde1801c1c91fbfc14ab115c))
+
+
+### Features
+
+* finish control-briefing-reports ([7e65601](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7e656017fb84d44c74e13a29bee80d47f415276c))
+
 ## [1.92.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.2...1.92.3) (2023-08-16)
 
 
