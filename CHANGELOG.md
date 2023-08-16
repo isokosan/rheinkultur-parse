@@ -1,3 +1,10 @@
+## [1.95.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.0...1.95.1) (2023-08-16)
+
+
+### Bug Fixes
+
+* storage formats to webp ([1325210](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/13252107564dd1d9883c84def36e98c3eb937893))
+
 # [1.95.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.94.1...1.95.0) (2023-08-16)
 
 
