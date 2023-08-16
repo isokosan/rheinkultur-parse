@@ -1,3 +1,10 @@
+## [1.92.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.2...1.92.3) (2023-08-16)
+
+
+### Bug Fixes
+
+* import normalizer in user invite bug ([c3c5b70](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c3c5b7006e20c069b950b06c9a532091a9d8a90b))
+
 ## [1.92.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.92.1...1.92.2) (2023-08-16)
 
 
