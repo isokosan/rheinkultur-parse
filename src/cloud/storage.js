@@ -28,8 +28,8 @@ const getThumbnail = async (file) => {
   // try to generate thumb if image
   return sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 270, width: 270, fit: sharp.fit.inside })
-    .withMetadata()
     .webp({ nearLossless: true })
+    .withMetadata()
     .toBuffer()
     .then(data => new Parse.File('thumb.webp', { base64: data.toString('base64') }, 'image/webp', { thumb: 'true' }))
     .catch((error) => {
@@ -44,8 +44,8 @@ const getSize1000 = async (file) => {
   if (file._metadata.thumb) { return }
   const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 1000, width: 1000, fit: sharp.fit.inside })
-    .withMetadata()
     .webp({ nearLossless: true })
+    .withMetadata()
     .toBuffer()
     .then(data => data.toString('base64'))
     .catch((error) => {
