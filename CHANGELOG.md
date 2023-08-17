@@ -1,3 +1,10 @@
+## [1.95.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.1...1.95.2) (2023-08-17)
+
+
+### Bug Fixes
+
+* use webp conversion only on png files and fix metadata ([a78df6c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a78df6c3fe614f013a5474d891aad4e2917e0f11))
+
 ## [1.95.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.0...1.95.1) (2023-08-16)
 
 
