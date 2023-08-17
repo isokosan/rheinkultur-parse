@@ -27,6 +27,7 @@ Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly, context: { syn
 
   if (syncStatus || !disassembly.get('counts')) {
     const { status, counts } = await getStatusAndCounts({ disassembly })
+    // TODO: if changing add audit
     disassembly.set({ status, counts })
   }
 })

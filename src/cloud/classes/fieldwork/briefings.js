@@ -8,6 +8,7 @@ Parse.Cloud.beforeSave(Briefing, async ({ object: briefing, context: { syncStatu
   if (briefing.isNew()) { return }
   if (syncStatus || !briefing.get('counts')) {
     const { status, counts } = await getStatusAndCounts({ briefing })
+    // TODO: if changing add audit
     briefing.set({ status, counts })
   }
 })
@@ -255,3 +256,44 @@ Parse.Cloud.define('briefing-report', async ({ params: { id: briefingId }, user 
     }, { useMasterKey: true })
   return report
 }, $fieldworkManager)
+
+Parse.Cloud.define('briefing-generate-contract', async ({ params: { id: briefingId }, user }) => {
+  const briefing = await $getOrFail('Briefing', briefingId, ['company'])
+  const company = briefing.get('company')
+  const taskListsQuery = $query('TaskList').equalTo('briefing', briefing)
+
+  // pre-approved verified cubes
+  const adminApprovedCubeIds = await taskListsQuery.distinct('adminApprovedCubeIds', { useMasterKey: true })
+  // aggregate([
+  //   { $unwind: "$adminApprovedCubeIds" },
+  //   { $group: { _id: null, adminApprovedCubeIds: { $addToSet: "$adminApprovedCubeIds" } } }
+  // ], { useMasterKey: true })
+
+  // approved submissions
+  const approvedCubeIds = await $query('ScoutSubmission')
+    .matchesQuery('taskList', taskListsQuery)
+    .equalTo('status', 'approved')
+    .notEqualTo('form.media', null)
+    .distinct('cube', { useMasterKey: true })
+    .then(cubes => cubes.map(cube => cube.objectId))
+
+  // return { adminApprovedCubeIds, approvedCubeIds }
+  const Contract = Parse.Object.extend('Contract')
+  const contract = new Contract({
+    cubeIds: [...adminApprovedCubeIds, ...approvedCubeIds],
+    status: 2,
+    company,
+    briefing,
+    campaignNo: briefing.get('name')
+  })
+  if (company) {
+    contract.set({
+      tags: contract.get('company').get('tags'),
+      billingCycle: contract.get('company').get('billingCycle') || 12,
+      address: company.get('address'),
+      invoiceAddress: company.get('invoiceAddress')
+    })
+  }
+  const audit = { user, fn: 'contract-generate' }
+  return contract.save(null, { useMasterKey: true, context: { audit } })
+}, $internOrAdmin)

@@ -28,7 +28,7 @@ const getThumbnail = async (file) => {
   // try to generate thumb if image
   return sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 270, width: 270, fit: sharp.fit.inside })
-    // .webp({ nearLossless: true })
+    // .webp({ nearLossless: true }) !! withMetadata does not work and causes bugs with mobile upload orientation
     .withMetadata()
     .toBuffer()
     .then(data => new Parse.File('thumb_' + file._name, { base64: data.toString('base64') }, undefined, { thumb: 'true' }))
@@ -44,7 +44,7 @@ const getSize1000 = async (file) => {
   if (file._metadata.thumb) { return }
   const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 1000, width: 1000, fit: sharp.fit.inside })
-    // .webp({ nearLossless: true })
+    // .webp({ nearLossless: true }) !! withMetadata does not work and causes bugs with mobile upload orientation
     .withMetadata()
     .toBuffer()
     .then(data => data.toString('base64'))

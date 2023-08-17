@@ -706,20 +706,30 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
     const response = await $query('Contract')
       .containedIn('objectId', contractIds)
       .limit(contractIds.length)
-      .select(['no', 'motive'])
+      .select(['no', 'company', 'motive'])
+      .include('company')
       .find({ useMasterKey: true })
       .then(contracts => contracts.reduce((dict, contract) => {
-        dict[`Contract$${contract.id}`] = contract.attributes
+        dict[`Contract$${contract.id}`] = {
+          no: contract.get('no'),
+          motive: contract.get('motive'),
+          companyName: contract.get('company')?.get('name')
+        }
         return dict
       }, {}))
     const bookingIds = orderKeyArrs.filter(([key]) => key === 'Booking').map(([, id]) => id)
     return $query('Booking')
       .containedIn('objectId', bookingIds)
       .limit(bookingIds.length)
-      .select(['no', 'motive'])
+      .select(['no', 'company', 'motive'])
+      .include('company')
       .find({ useMasterKey: true })
       .then(bookings => bookings.reduce((dict, booking) => {
-        dict[`Booking$${booking.id}`] = booking.attributes
+        dict[`Booking$${booking.id}`] = {
+          no: booking.get('no'),
+          motive: booking.get('motive'),
+          companyName: booking.get('company')?.get('name')
+        }
         return dict
       }, response))
   }
@@ -727,7 +737,8 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
 
   const { columns, headerRowValues } = getColumnHeaders({
     objectId: { header: 'CityCube ID', width: 20 },
-    orderNo: { header: 'Auftragsnr.', width: 20 },
+    orderNo: { header: 'Auftragsnr.', width: 15 },
+    companyName: { header: 'Kunde', width: 30 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     address: { header: 'Anschrift', width: 20 },
     plz: { header: 'PLZ', width: 10 },
@@ -766,10 +777,11 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
         for (const submission of submissions) {
           const cube = cubes.find(c => c.id === submission.cube.id)
           const orderKey = control.get('cubeOrderKeys')?.[cube.id]
-          const { no: orderNo, motive } = ordersMap[orderKey]
+          const { no: orderNo, motive, companyName } = ordersMap[orderKey]
           worksheet.addRow({
             objectId: cube.id,
             orderNo,
+            companyName,
             htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
             address: cube.get('str') + ' ' + cube.get('hsnr'),
             plz: cube.get('plz'),

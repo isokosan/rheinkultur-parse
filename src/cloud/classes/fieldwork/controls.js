@@ -156,6 +156,7 @@ Parse.Cloud.beforeSave(Control, async ({ object: control, context: { syncStatus 
   if (control.isNew()) { return }
   if (syncStatus || !control.get('counts')) {
     const { status, counts } = await getStatusAndCounts({ control })
+    // TODO: if changing add audit
     control.set({ status, counts })
   }
 })

@@ -393,34 +393,6 @@ Parse.Cloud.define('contract-invoices-preview', async ({ params: { id: contractI
 }, $internOrAdmin)
 
 /**
- * Generates a contract with cubeids
- */
-Parse.Cloud.define('contract-generate', async ({ params, user }) => {
-  const {
-    companyId,
-    companyPersonId,
-    motive,
-    externalOrderNo,
-    campaignNo,
-    cubeIds
-  } = normalizeFields(params)
-  const contract = new Contract({
-    status: 2,
-    motive,
-    externalOrderNo,
-    campaignNo,
-    cubeIds,
-    responsibles: user ? [user] : undefined
-  })
-  companyId && contract.set({ company: await $getOrFail('Company', companyId) })
-  companyPersonId && contract.set({ companyPerson: await $getOrFail('Person', companyPersonId) })
-  contract.set({ tags: contract.get('company').get('tags') })
-  contract.set({ billingCycle: contract.get('company')?.get('billingCycle') || 12 })
-  const audit = { user, fn: 'contract-generate' }
-  return contract.save(null, { useMasterKey: true, context: { audit } })
-}, $internOrAdmin)
-
-/**
  * Creates a contract with the basic settings.
  * Cubes and amounts are handled later
  */
