@@ -1,3 +1,10 @@
+## [1.95.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.3...1.95.4) (2023-08-17)
+
+
+### Bug Fixes
+
+* attempt to fix wrong turning of thumbs ([75fa78d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/75fa78dbd80994bb39197ffdb3b81545465abd00))
+
 ## [1.95.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.2...1.95.3) (2023-08-17)
 
 
