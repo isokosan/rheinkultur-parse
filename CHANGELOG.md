@@ -1,3 +1,15 @@
+# [1.97.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.96.0...1.97.0) (2023-08-17)
+
+
+### Bug Fixes
+
+* webp rotation bug ([d055ec8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d055ec8138da3fdd6e34d8560c39c0787294302a))
+
+
+### Features
+
+* introduce cube data to store in contracts ([43586ab](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/43586abcf0b0087b1696b5a3871a0fbc4d486a3a))
+
 # [1.96.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.5...1.96.0) (2023-08-17)
 
 
