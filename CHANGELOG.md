@@ -1,3 +1,10 @@
+## [1.95.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.4...1.95.5) (2023-08-17)
+
+
+### Bug Fixes
+
+* attempt to remove webp conversion from thumbs ([c4027cf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c4027cf746445c172a4c06b833f2899c1eb4c1e8))
+
 ## [1.95.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.3...1.95.4) (2023-08-17)
 
 
