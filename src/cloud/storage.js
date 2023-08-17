@@ -28,10 +28,10 @@ const getThumbnail = async (file) => {
   // try to generate thumb if image
   return sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 270, width: 270, fit: sharp.fit.inside })
-    .webp({ nearLossless: true })
+    // .webp({ nearLossless: true })
     .withMetadata()
     .toBuffer()
-    .then(data => new Parse.File('thumb.webp', { base64: data.toString('base64') }, 'image/webp', { thumb: 'true' }))
+    .then(data => new Parse.File('thumb_' + file._name, { base64: data.toString('base64') }, undefined, { thumb: 'true' }))
     .catch((error) => {
       if (error.message !== 'Input buffer contains unsupported image format') {
         consola.error(error.code, error.message)
@@ -44,7 +44,7 @@ const getSize1000 = async (file) => {
   if (file._metadata.thumb) { return }
   const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
     .resize({ height: 1000, width: 1000, fit: sharp.fit.inside })
-    .webp({ nearLossless: true })
+    // .webp({ nearLossless: true })
     .withMetadata()
     .toBuffer()
     .then(data => data.toString('base64'))
@@ -52,7 +52,7 @@ const getSize1000 = async (file) => {
       handleFileDestroyError(error)
       return null
     })
-  return new Parse.File('size1000.webp', { base64 }, 'image/webp', { thumb: 'size1000' })
+  return new Parse.File('size1000_' + file._name, { base64 }, undefined, { thumb: 'size1000' })
 }
 
 Parse.Cloud.beforeSaveFile(async ({ file }) => {
