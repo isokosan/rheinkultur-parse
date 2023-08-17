@@ -1,3 +1,10 @@
+## [1.95.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.2...1.95.3) (2023-08-17)
+
+
+### Bug Fixes
+
+* add control conditions to report export ([975f9ff](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/975f9ff479989c92e463222da303b664f3b54117))
+
 ## [1.95.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.1...1.95.2) (2023-08-17)
 
 
