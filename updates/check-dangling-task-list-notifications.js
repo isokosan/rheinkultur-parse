@@ -1,3 +1,4 @@
+// SHOULD RETURN 0 -> if not, errors in code leading to notifications dangling
 async function clean () {
   let s = 0
   await $query('Notification')

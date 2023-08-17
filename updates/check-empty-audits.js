@@ -1,5 +1,6 @@
-const { cloneDeep } = require('lodash')
+// SHOULD RETURN 0 -> if not, there are errors in code leading to empty audits
 
+const { cloneDeep } = require('lodash')
 async function cleanAudits (preview) {
   let c = 0
   await $query('Audit')

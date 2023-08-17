@@ -7565,6 +7565,7 @@ const KLS_IDS = [
   '15302241'
 ]
 const NMR_TEXT = 'Ströer Stadtgebiet Berlin'
+
 async function checkStroerMatches () {
   let s = 0
   await $query('Cube')
@@ -7577,22 +7578,22 @@ async function checkStroerMatches () {
         s++
       }
     }, { useMasterKey: true })
+  console.info('done nMRs', s)
 
-  let p = 0
+  // let p = 0
   // remove nMR rule from PLZ's in Berlin
-  await $query('PLZ')
-    .equalTo('ort', 'Berlin')
-    .equalTo('state', $parsify('State', 'BE'))
-    .equalTo('nMR', true)
-    .eachBatch(async (plzs) => {
-      for (const plz of plzs) {
-        plz.unset('nMR')
-        await $saveWithEncode(plz, null, { useMasterKey: true })
-        p++
-      }
-    }, { useMasterKey: true })
-
-  console.info({ s, p })
+  // await $query('PLZ')
+  //   .equalTo('ort', 'Berlin')
+  //   .equalTo('state', $parsify('State', 'BE'))
+  //   .equalTo('nMR', true)
+  //   .eachBatch(async (plzs) => {
+  //     for (const plz of plzs) {
+  //       plz.unset('nMR')
+  //       await $saveWithEncode(plz, null, { useMasterKey: true })
+  //       p++
+  //     }
+  //   }, { useMasterKey: true })
+  // console.info('done PLZs', p)
 }
 
 require('./run')(() => checkStroerMatches())
