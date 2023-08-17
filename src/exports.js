@@ -748,13 +748,16 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
   headerRow.height = 24
 
-  const REPORT_CONDITIONS = ['no_ad', 'ill']
+  const REPORT_CONDITIONS = {
+    no_ad: 'Fehlt/Beschädigt',
+    ill: 'Verschmutzt'
+  }
   await $query('TaskList')
     .equalTo('control', control)
     .include('submissions')
     .eachBatch(async (taskLists) => {
       for (const taskList of taskLists) {
-        const submissions = taskList.get('submissions').filter(s => REPORT_CONDITIONS.includes(s.condition))
+        const submissions = taskList.get('submissions').filter(s => REPORT_CONDITIONS[s.condition])
         const cubeIds = taskList.get('cubeIds') || []
         const cubes = await $query('Cube')
           .containedIn('objectId', submissions.map(s => s.cube.id))
@@ -772,7 +775,7 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
             plz: cube.get('plz'),
             ort: cube.get('ort'),
             stateName: states[cube.get('state')?.id]?.name || '',
-            condition: submission.condition || '',
+            condition: REPORT_CONDITIONS[submission.condition] || '',
             comments: submission.comments || '',
             motive
           })
