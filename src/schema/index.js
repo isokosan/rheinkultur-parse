@@ -242,6 +242,9 @@ const schemaDefinitions = {
       tags: { type: 'Array' },
       responsibles: { type: 'Array' },
 
+      // stored
+      cubeData: { type: 'Object' },
+
       // calculated
       cubeCount: { type: 'Number' },
       totalDuration: { type: 'Number' }

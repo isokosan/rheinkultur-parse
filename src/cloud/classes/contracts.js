@@ -60,6 +60,7 @@ Parse.Cloud.beforeFind(Contract, ({ query }) => {
     'address',
     'companyPerson',
     'invoiceAddress',
+    'cubeData',
     'agency',
     'agencyPerson',
     'production',
@@ -67,6 +68,7 @@ Parse.Cloud.beforeFind(Contract, ({ query }) => {
     'tags',
     'gradual'
   ])
+  !query._include.includes('cubeData') && query.exclude('cubeData')
 })
 
 Parse.Cloud.afterFind(Contract, async ({ objects: contracts, query }) => {
@@ -757,8 +759,27 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
     await invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } })
   }
 
+  // save cube data in time of finalization
+  const cubeData = await $query('Cube')
+    .containedIn('objectId', contract.get('cubeIds'))
+    .include(['hsnr', 'str', 'plz', 'ort', 'state', 'media', 'ht', 'hti'])
+    .limit(contract.get('cubeIds').length)
+    .find({ useMasterKey: true })
+    .then(cubes => cubes.reduce((acc, cube) => {
+      acc[cube.id] = {
+        hsnr: cube.get('hsnr'),
+        str: cube.get('str'),
+        plz: cube.get('plz'),
+        ort: cube.get('ort'),
+        stateId: cube.get('state').objectId,
+        media: cube.get('media'),
+        htId: cube.get('ht')?.objectId
+      }
+      return acc
+    }))
+
   // set contract status to active
-  contract.set({ status: 3 })
+  contract.set({ status: 3, cubeData })
   const audit = { user, fn: 'contract-finalize' }
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
