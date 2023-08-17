@@ -1,3 +1,10 @@
+# [1.96.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.5...1.96.0) (2023-08-17)
+
+
+### Features
+
+* add briefing generate contract ([c4d9352](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c4d9352d412e5961908fbc73a116cabc9452766f))
+
 ## [1.95.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.95.4...1.95.5) (2023-08-17)
 
 
