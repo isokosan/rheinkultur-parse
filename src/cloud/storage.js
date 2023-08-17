@@ -60,13 +60,24 @@ Parse.Cloud.beforeSaveFile(async ({ file }) => {
   if (!file._metadata.thumb && file._source?.type.startsWith('image/')) {
     const extension = file._name.split('.').reverse()[0].toLowerCase()
     if (extension === 'webp') { return }
-    const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
-      .webp({ nearLossless: true })
-      .toBuffer()
-      .then(data => data.toString('base64'))
-    const replaceExtension = name => name.replace(new RegExp(`.${extension}$`), '.webp')
-    file._metadata.name && (file._metadata.name = replaceExtension(file._metadata.name))
-    return new Parse.File(replaceExtension(file._name), { base64 }, 'image/webp', file._metadata, file._tags)
+    if (['jpeg', 'jpg'].includes(extension)) {
+      const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
+        .jpeg({ mozjpeg: true })
+        .withMetadata()
+        .toBuffer()
+        .then(data => data.toString('base64'))
+      return new Parse.File(file._name, { base64 }, undefined, file._metadata, file._tags)
+    }
+    if (extension === 'png') {
+      const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))
+        .webp({ nearLossless: true })
+        .withMetadata()
+        .toBuffer()
+        .then(data => data.toString('base64'))
+      const replaceExtension = name => name.replace(new RegExp(`.${extension}$`), '.webp')
+      file._metadata.name && (file._metadata.name = replaceExtension(file._metadata.name))
+      return new Parse.File(replaceExtension(file._name), { base64 }, 'image/webp', file._metadata, file._tags)
+    }
   }
 })
 
