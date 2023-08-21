@@ -776,7 +776,7 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
         htId: cube.get('ht')?.objectId
       }
       return acc
-    }))
+    }, {}))
 
   // set contract status to active
   contract.set({ status: 3, cubeData })
