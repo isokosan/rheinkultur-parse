@@ -56,6 +56,18 @@ const schemaDefinitions = {
       permissions: { type: 'Array' }
     }
   },
+  CookieConsent: {
+    CLP: {
+      get: { '*': true },
+      find: { '*': true },
+      count: { '*': true },
+      ...writeMasterOnly
+    },
+    fields: {
+      user: { type: 'Pointer', targetClass: '_User' },
+      activity: { type: 'Object' }
+    }
+  },
   Address: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
