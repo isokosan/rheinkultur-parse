@@ -4,7 +4,7 @@ const CookieConsent = Parse.Object.extend('CookieConsent')
 const SERVICES = {
   googleMaps: {
     name: 'Google Maps',
-    lastUpdated: '2023-08-24T00:00:00.000Z',
+    lastUpdated: '2023-08-21T00:00:00.000Z',
     description: `
       <div>
         <div>
@@ -323,7 +323,7 @@ Parse.Cloud.beforeSave(CookieConsent, async ({ object: cookieConsent }) => {
   await ensureUniqueField(cookieConsent, 'user')
 })
 
-function getCurrentFromActivity(activity = {}) {
+function getCurrentFromActivity (activity = {}) {
   const current = {}
   for (const key of Object.keys(activity)) {
     const lastActivity = activity[key][0]
@@ -342,7 +342,6 @@ Parse.Cloud.afterFind(CookieConsent, async ({ objects }) => {
 })
 
 Parse.Cloud.define('cookie-consent', async ({ params: { id, update }, user }) => {
-  consola.info({ id, ...update })
   const query = $query(CookieConsent)
   user ? query.equalTo('user', user) : query.equalTo('objectId', id)
   const cookieConsent = await query.first({ useMasterKey: true }) || new CookieConsent({ user })
