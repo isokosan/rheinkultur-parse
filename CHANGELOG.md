@@ -1,3 +1,10 @@
+# [1.98.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.97.1...1.98.0) (2023-08-21)
+
+
+### Features
+
+* cookie consents ([4a9bf92](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4a9bf926ffe0f00ba8b08c733ffbcee79c772f59))
+
 ## [1.97.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.97.0...1.97.1) (2023-08-21)
 
 
