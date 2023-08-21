@@ -1,3 +1,10 @@
+## [1.97.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.97.0...1.97.1) (2023-08-21)
+
+
+### Bug Fixes
+
+* cube data on finalize ([95d0bde](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/95d0bde728756f6bd43038f78d7b37825de00192))
+
 # [1.97.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.96.0...1.97.0) (2023-08-17)
 
 
