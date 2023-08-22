@@ -389,13 +389,12 @@ router.get('/kinetic-extensions', handleErrorAsync(async (req, res) => {
   const { getQuarterStartEnd } = require('@/shared')
   const currentQuarter = moment().format('Q-YYYY')
   const { start, end } = getQuarterStartEnd(currentQuarter)
-
   const rows = []
   await $query('Contract')
     .equalTo('company', company)
     .equalTo('status', 3)
     .greaterThanOrEqualTo('endsAt', start)
-    .lessThan('endsAt', end)
+    .lessThanOrEqualTo('endsAt', end)
     .eachBatch(async (contracts) => {
       for (const contract of contracts) {
         rows.push({
@@ -411,10 +410,7 @@ router.get('/kinetic-extensions', handleErrorAsync(async (req, res) => {
       }
     }, { useMasterKey: true })
 
-  consola.warn(rows)
-  rows.sort((a, b) => {
-    return a.endsAt > b.endsAt ? 1 : -1
-  })
+  rows.sort((a, b) => a.endsAt > b.endsAt ? 1 : -1)
 
   for (const item of rows) {
     const row = worksheet.addRow(item)
