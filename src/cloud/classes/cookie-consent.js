@@ -4,6 +4,7 @@ const CookieConsent = Parse.Object.extend('CookieConsent')
 const SERVICES = {
   googleMaps: {
     name: 'Google Maps',
+    essential: true,
     lastUpdated: '2023-08-21T00:00:00.000Z',
     description: `
       <div>
@@ -109,6 +110,7 @@ const SERVICES = {
   },
   mapTiler: {
     name: 'MapTiler',
+    essential: true,
     lastUpdated: '2023-08-21T00:00:00.000Z',
     description: `
       <div>
@@ -223,6 +225,7 @@ const SERVICES = {
   },
   oneSignal: {
     name: 'OneSignal',
+    essential: false,
     lastUpdated: '2023-08-21T00:00:00.000Z',
     description: `
       <div>
@@ -364,8 +367,9 @@ Parse.Cloud.define('cookie-consent', async ({ params: { id, update }, user }) =>
     }
     cookieConsent.set('current', getCurrentFromActivity(activity))
   }
-  return {
-    consent: cookieConsent.toJSON(),
-    SERVICES: update ? undefined : SERVICES
+  const response = { consent: cookieConsent.toJSON() }
+  if (!update) {
+    response.services = SERVICES
   }
-}, { requireUser: true })
+  return response
+})

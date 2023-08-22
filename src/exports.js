@@ -34,6 +34,7 @@ function getColumnHeaders (headers) {
   }
   return { columns, headerRowValues }
 }
+const alignCenter = { alignment: { horizontal: 'center' } }
 const alignRight = { alignment: { horizontal: 'right' } }
 const dateStyle = { numFmt: 'dd.mm.yyyy', ...alignRight }
 const priceStyle = { numFmt: '#,##0.00 "€";[Red]-#,##0.00 "€"', ...alignRight }
@@ -344,67 +345,110 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
 }))
 
 router.get('/assembly-list', handleErrorAsync(async (req, res) => {
+  // const { PRINT_PACKAGE_TYPES } = require('@/schema/enums')
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
   const production = await $getOrFail('Production', req.query.id, ['booking', 'contract'])
   const bookingOrContract = await production.get('booking') || production.get('contract')
   const company = await bookingOrContract.get('company').fetch({ useMasterKey: true })
 
+  if (company.id !== 'FNFCxMgEEr') {
+    throw new Error('This function is only available for Kinetic orders.')
+  }
+
   const workbook = new excel.Workbook()
   const worksheet = workbook.addWorksheet('CityCubes')
 
   const period = [bookingOrContract.get('startsAt'), bookingOrContract.get('endsAt')]
     .map(d => moment(d).format('DD.MM.YYYY')).join(' - ')
+  const assemblyStart = moment(production.get('assemblyStart')).format('DD.MM.YYYY')
+
+  const firstRow = worksheet.getRow(1)
+  firstRow.values = [bookingOrContract?.get('motive')]
+  firstRow.height = 20
+  firstRow.font = { bold: true, size: 10 }
+  firstRow.alignment = { vertical: 'middle', horizontal: 'left' }
+  worksheet.mergeCells('A1:D1')
 
   const infos = [
-    { label: 'Kunde', content: company?.get('name') || '-' },
-    { label: 'Produkt / Medium', content: 'CityCubes' },
-    { label: 'Belegungsart', content: '' },
-    { label: 'Werbemittel', content: '' },
+    { label: 'CityCube', content: 'Telekom Deutschland GmbH' },
+    { label: 'Produkt / Medium', content: 'CityCube', bold: true },
+    { label: 'Belegungsart', content: 'jeweils (Strassenzugewandte) Frontbelegung' },
+    { label: 'Werbemittel', content: 'Trägerplatten (ALU-Dibond o.ä.)' },
     { label: 'Buchungszeitraum', content: `${period} (${bookingOrContract.get('initialDuration')} Monate)` },
     { label: 'Lieferung der Druckdaten', content: `bis spätestens ${moment(production.get('printFilesDue')).format('DD.MM.YYYY')}` },
-    { label: 'Montagebeginn:', content: `ab ${moment(production.get('assemblyStart')).format('DD.MM.YYYY')}` }
+    { label: 'Montagebeginn:', content: `ab ${assemblyStart}` }
   ]
-  bookingOrContract?.get('motive') && infos.push({ label: 'Motiv', content: bookingOrContract.get('motive') })
-  bookingOrContract?.get('campaignNo') && infos.push({ label: 'Kampagnennummer.', content: bookingOrContract.get('campaignNo') })
-  bookingOrContract?.get('externalOrderNo') && infos.push({ label: 'Extern. Auftragsnr.', content: bookingOrContract.get('externalOrderNo') })
 
-  let i = 1
+  let i = 2
   for (const info of infos) {
     const row = worksheet.getRow(i)
     row.values = [info.label, info.content]
     row.height = 20
-    row.getCell(1).font = { bold: true }
+    info.bold && (row.getCell(2).font = { bold: true })
     row.alignment = { vertical: 'middle', horizontal: 'left' }
     worksheet.mergeCells(`B${i}:D${i}`)
     i++
   }
-  worksheet.addRow()
-  i++
 
   const { columns, headerRowValues } = getColumnHeaders({
-    assemblyStart: { header: 'Erschließungstermin\n(bis spätestens)', width: 30 },
     stateName: { header: 'Bundesland', width: 20 },
-    plz: { header: 'PLZ', width: 10 },
-    ort: { header: 'Ort', width: 20 },
+    assemblyStart: { header: 'Erschließungstermin\n(bis spätestens)', width: 15, style: { ...dateStyle, ...alignCenter } },
+    plz: { header: 'PLZ', width: 10, style: alignRight },
+    ort: { header: 'Ort', width: 15 },
+    qty: { header: 'Anzahl', width: 10, style: alignCenter },
     str: { header: 'Straße', width: 20 },
     hsnr: { header: 'Hsnr.', width: 10 },
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
-    comments: { header: 'Bemerkungen', width: 20 },
-    ppMaterial: { header: 'Belegung Material', width: 20 },
-    ppNo: { header: 'Belegungsnummer', width: 10 },
-    x1: { header: 'Strassenzugewandte Front\n(Tür - oder Rückseite)', width: 20 },
-    x2: { header: 'Rest Streichen\n(wenn nötig)', width: 20 },
-    x3: { header: 'Volumenpreis (EK)', width: 20 },
-    // printName: { header: 'Belegungsnummer', width: 10 },
-    assembler: { header: 'Wer montiert', width: 20 }
+    comments: { header: 'Bemerkungen', width: 40, style: alignCenter },
+    ppMaterial: { header: 'Belegung Material', width: 15, style: alignCenter },
+    ppNo: { header: 'Belegungsnummer', width: 15, style: alignCenter },
+    x1: { header: 'Strassenzugewandte\nFront\n(Tür - oder Rückseite)', width: 15, style: alignCenter },
+    x2: { header: 'Rest Streichen\n(wenn nötig)', width: 15, style: alignCenter },
+    x3: { header: 'Volumenpreis (EK)', width: 20, style: priceStyle },
+    assembler: { header: 'Wer montiert', width: 20, style: alignCenter }
   })
+
   worksheet.columns = columns
+
+  function paintCell (cell, color) {
+    const argb = color.startsWith('#') ? color.substr(1) : color
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb },
+      bgColor: { argb }
+    }
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    }
+  }
+
+  function paintRow (row, color) {
+    for (let r = 1; r <= columns.length; r++) {
+      paintCell(row.getCell(r), color)
+    }
+  }
+
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 8 }
   headerRow.height = 40
   headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
+  paintRow(headerRow, '#000090')
+  paintCell(headerRow.getCell(columns.length), '#C4909D')
+  paintCell(headerRow.getCell(columns.length - 1), '#C4909D')
+  i++
+  const subHeaderRow = worksheet.addRow()
+  paintRow(subHeaderRow, '#000090')
+  paintCell(subHeaderRow.getCell(columns.length), '#C4909D')
+  paintCell(subHeaderRow.getCell(columns.length - 1), '#C4909D')
+  i++
+
+  const startOfDataRow = i
 
   const printPackages = production.get('printPackages')
   const cubeIds = Object.keys(printPackages)
@@ -415,9 +459,8 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   for (const cube of cubes) {
     const { str, hsnr, plz, ort, ht, state } = cube.attributes
     const pp = printPackages[cube.id]
-    consola.info(pp)
-    worksheet.addRow({
-      assemblyStart: production.get('assemblyStart'),
+    const row = worksheet.addRow({
+      assemblyStart,
       objectId: cube.id,
       stateName: states[state.id]?.name || '',
       htCode: housingTypes[ht.id]?.code || '',
@@ -425,17 +468,45 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
       hsnr,
       plz,
       ort,
+      qty: 1,
       ppNo: pp?.no || '-',
-      ppMaterial: pp?.type || '-',
+      // ppMaterial: PRINT_PACKAGE_TYPES[pp?.type] || '-',
+      ppMaterial: 'Trägerplatten',
       comments: production.get('printNotes')?.[cube.id],
       x1: 'X',
       x2: 'X',
       assembler: production.get('assembler') || '-'
     })
+    const cell = row.getCell(columns.length)
+    cell.font = { size: 8 }
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'fbff00' },
+      bgColor: { argb: 'fbff00' }
+    }
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    }
+    i++
   }
-  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+  const totalRow = worksheet.addRow({
+    qty: { formula: `SUM(E${startOfDataRow}:E${i - 1})` },
+    x3: { formula: `SUM(O${startOfDataRow}:O${i - 1})` }
+  })
+  totalRow.height = 50
+  totalRow.font = { bold: true, size: 12, color: '#FFFFFF' }
+  totalRow.alignment = { vertical: 'middle', horizontal: 'center' }
+  paintRow(totalRow, '#000090')
+
   const contractOrBooking = production.get('contract') || production.get('booking')
-  res.set('Content-Disposition', 'attachment; filename=' + contractOrBooking.get('no') + '.xlsx')
+  const filename = safeName(['Montageauftrag', contractOrBooking.get('motive'), contractOrBooking.get('no')].filter(Boolean).join(' '))
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', 'attachment; filename=' + filename + '.xlsx')
   return workbook.xlsx.write(res).then(function () {
     res.status(200).end()
   })

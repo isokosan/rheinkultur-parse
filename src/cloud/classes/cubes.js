@@ -332,6 +332,38 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
+Parse.Cloud.define('cube-update-sides', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
+  const cube = await $getOrFail(Cube, id)
+  const sides = {}
+  for (const field of ['front', 'left', 'right', 'back']) {
+    if ([null, 'y', 'n'].includes(params[field])) {
+      sides[field] = params[field] || undefined
+    }
+  }
+  const changes = $changes(cube, { sides })
+  if (!Object.keys(changes).length) {
+    throw new Error('Keine Änderungen.')
+  }
+  cube.set({ sides })
+  const audit = { user, fn: 'cube-update', data: { changes } }
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
+}, $internOrAdmin)
+
+Parse.Cloud.define('cube-update-scout-data', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
+  const cube = await $getOrFail(Cube, id)
+  const scoutData = {}
+  for (const field of ['obstructionLevel', 'nearTrafficLights', 'angleToTraffic']) {
+    scoutData[field] = params[field]
+  }
+  const changes = $changes(cube.get('scoutData') || {}, scoutData, true)
+  if (!Object.keys(changes).length) {
+    throw new Error('Keine Änderungen.')
+  }
+  cube.set({ scoutData })
+  const audit = { user, fn: 'cube-update', data: { changes } }
+  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
+}, $internOrAdmin)
+
 Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id)
   if (cube.get('vAt')) {

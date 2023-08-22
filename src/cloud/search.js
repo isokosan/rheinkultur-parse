@@ -194,7 +194,7 @@ const INDEXES = {
           externalOrderNo: booking.get('externalOrderNo'),
           companyId: booking.get('company').id,
           autoExtends: Boolean(booking.get('autoExtendsBy')),
-          disassemblyFromRMV: booking.get('disassembly')?.fromRMV,
+          disassemblyFromRMV: booking.get('disassembly')?.fromRMV === true ? true : undefined,
           startsAt: booking.get('startsAt'),
           endsAt: booking.get('endsAt'),
           // responsibleIds: booking.get('responsibles')

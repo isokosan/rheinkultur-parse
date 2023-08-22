@@ -32,6 +32,9 @@ const batch = (payload, serverURL) => Promise.all(chunk(payload, 50)
 const ensureUniqueField = async function (parseObject, ...fields) {
   const query = $query(parseObject.className)
     .notEqualTo('objectId', parseObject.id || null)
+  if (fields.every(field => parseObject.get(field) === null || parseObject.get(field) === undefined)) {
+    return
+  }
   for (const field of fields) {
     query.equalTo(field, parseObject.get(field))
   }

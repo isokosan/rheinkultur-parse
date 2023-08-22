@@ -264,10 +264,6 @@ Parse.Cloud.define('briefing-generate-contract', async ({ params: { id: briefing
 
   // pre-approved verified cubes
   const adminApprovedCubeIds = await taskListsQuery.distinct('adminApprovedCubeIds', { useMasterKey: true })
-  // aggregate([
-  //   { $unwind: "$adminApprovedCubeIds" },
-  //   { $group: { _id: null, adminApprovedCubeIds: { $addToSet: "$adminApprovedCubeIds" } } }
-  // ], { useMasterKey: true })
 
   // approved submissions
   const approvedCubeIds = await $query('ScoutSubmission')
@@ -280,18 +276,24 @@ Parse.Cloud.define('briefing-generate-contract', async ({ params: { id: briefing
   // return { adminApprovedCubeIds, approvedCubeIds }
   const Contract = Parse.Object.extend('Contract')
   const contract = new Contract({
-    cubeIds: [...adminApprovedCubeIds, ...approvedCubeIds],
+    cubeIds: [...adminApprovedCubeIds, ...approvedCubeIds].sort(),
     status: 2,
     company,
     briefing,
     campaignNo: briefing.get('name')
   })
   if (company) {
+    const { paymentType, dueDays } = company.attributes
+    const { billingCycle, pricingModel, invoicingAt } = company.get('contractDefaults') || {}
     contract.set({
       tags: contract.get('company').get('tags'),
-      billingCycle: contract.get('company').get('billingCycle') || 12,
       address: company.get('address'),
-      invoiceAddress: company.get('invoiceAddress')
+      invoiceAddress: company.get('invoiceAddress'),
+      billingCycle: billingCycle || 12,
+      invoicingAt: invoicingAt || pricingModel === 'gradual' ? 'end' : 'start',
+      paymentType: paymentType || 0,
+      dueDays: dueDays || 14,
+      pricingModel: pricingModel || null
     })
   }
   const audit = { user, fn: 'contract-generate' }
