@@ -1,3 +1,10 @@
+## [1.100.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.100.1...1.100.2) (2023-08-22)
+
+
+### Bug Fixes
+
+* end date in kinetic exports ([2204644](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/22046448d7afbe91281701ec2e0385431971de34))
+
 ## [1.100.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.100.0...1.100.1) (2023-08-22)
 
 
