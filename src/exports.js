@@ -42,6 +42,28 @@ const percentStyle = { numFmt: '#.##"%";#.##"%";""', ...alignRight }
 const monthsStyle = { numFmt: '#.####', ...alignRight }
 const numberStyle = { numFmt: '#,####', ...alignRight }
 
+function paintCell (cell, color) {
+  const argb = color.startsWith('#') ? color.substr(1) : color
+  cell.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb },
+    bgColor: { argb }
+  }
+  cell.border = {
+    top: { style: 'thin' },
+    left: { style: 'thin' },
+    bottom: { style: 'thin' },
+    right: { style: 'thin' }
+  }
+}
+
+function paintRow (row, color, colCount) {
+  for (let r = 1; r <= colCount; r++) {
+    paintCell(row.getCell(r), color)
+  }
+}
+
 router.get('/cubes', handleErrorAsync(async (req, res) => {
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
@@ -344,6 +366,74 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
+router.get('/kinetic-extensions', handleErrorAsync(async (req, res) => {
+  const workbook = new excel.Workbook()
+  const company = await $getOrFail('Company', 'FNFCxMgEEr')
+  const { columns, headerRowValues } = getColumnHeaders({
+    orderNo: { header: 'RMV intern\nAuftragsnr.', width: 15 },
+    externalOrderNo: { header: 'Auftragsnummer.', width: 20 },
+    campaignNo: { header: 'Kampagnenname Kinetic', width: 50, style: alignCenter },
+    motive: { header: 'Kunde/Motiv - System RMV', width: 50, style: alignCenter },
+    end: { header: 'Enddatum', width: 20, style: dateStyle },
+    deadline: { header: 'Buchungsdeadline', width: 20, style: dateStyle },
+    cubeCount: { header: 'Anzahl\nCubes', width: 13, style: alignCenter }
+  })
+
+  const worksheet = workbook.addWorksheet(safeName(company.get('name')))
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+  headerRow.height = 40
+  paintRow(headerRow, '##cecece', columns.length)
+
+  const { getQuarterStartEnd } = require('@/shared')
+  const currentQuarter = moment().format('Q-YYYY')
+  const { start, end } = getQuarterStartEnd(currentQuarter)
+
+  const rows = []
+  await $query('Contract')
+    .equalTo('company', company)
+    .equalTo('status', 3)
+    .greaterThanOrEqualTo('endsAt', start)
+    .lessThan('endsAt', end)
+    .eachBatch(async (contracts) => {
+      for (const contract of contracts) {
+        rows.push({
+          endsAt: contract.get('endsAt'), // for sorting
+          orderNo: contract.get('no'),
+          externalOrderNo: contract.get('externalOrderNo'),
+          campaignNo: contract.get('campaignNo'),
+          motive: contract.get('motive'),
+          end: moment(contract.get('endsAt')).format('DD.MM.YYYY'),
+          deadline: moment(contract.get('endsAt')).subtract(2, 'months').format('DD.MM.YYYY'),
+          cubeCount: contract.get('cubeCount')
+        })
+      }
+    }, { useMasterKey: true })
+
+  consola.warn(rows)
+  rows.sort((a, b) => {
+    return a.endsAt > b.endsAt ? 1 : -1
+  })
+
+  for (const item of rows) {
+    const row = worksheet.addRow(item)
+    paintCell(row.getCell(1), '#C5E0B3')
+  }
+
+  const totalRow = worksheet.addRow({
+    cubeCount: { formula: `SUM(G1:G${rows.length})` }
+  })
+  totalRow.height = 24
+  totalRow.font = { bold: true, size: 12 }
+  totalRow.alignment = { vertical: 'middle', horizontal: 'center' }
+
+  const filename = `Übersicht Aufträge Q${moment().format('Q')} (Stand ${moment().format('DD.MM.YYYY')})`
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
 router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   // const { PRINT_PACKAGE_TYPES } = require('@/schema/enums')
   const housingTypes = await fetchHousingTypes()
@@ -412,38 +502,16 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
 
   worksheet.columns = columns
 
-  function paintCell (cell, color) {
-    const argb = color.startsWith('#') ? color.substr(1) : color
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb },
-      bgColor: { argb }
-    }
-    cell.border = {
-      top: { style: 'thin' },
-      left: { style: 'thin' },
-      bottom: { style: 'thin' },
-      right: { style: 'thin' }
-    }
-  }
-
-  function paintRow (row, color) {
-    for (let r = 1; r <= columns.length; r++) {
-      paintCell(row.getCell(r), color)
-    }
-  }
-
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 8 }
   headerRow.height = 40
   headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
-  paintRow(headerRow, '#000090')
+  paintRow(headerRow, '#000090', columns.length)
   paintCell(headerRow.getCell(columns.length), '#C4909D')
   paintCell(headerRow.getCell(columns.length - 1), '#C4909D')
   i++
   const subHeaderRow = worksheet.addRow()
-  paintRow(subHeaderRow, '#000090')
+  paintRow(subHeaderRow, '#000090', columns.length)
   paintCell(subHeaderRow.getCell(columns.length), '#C4909D')
   paintCell(subHeaderRow.getCell(columns.length - 1), '#C4909D')
   i++
@@ -501,7 +569,7 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   totalRow.height = 50
   totalRow.font = { bold: true, size: 12, color: '#FFFFFF' }
   totalRow.alignment = { vertical: 'middle', horizontal: 'center' }
-  paintRow(totalRow, '#000090')
+  paintRow(totalRow, '#000090', columns.length)
 
   const contractOrBooking = production.get('contract') || production.get('booking')
   const filename = safeName(['Montageauftrag', contractOrBooking.get('motive'), contractOrBooking.get('no')].filter(Boolean).join(' '))
