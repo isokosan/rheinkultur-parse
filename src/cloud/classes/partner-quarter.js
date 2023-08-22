@@ -18,6 +18,16 @@ Parse.Cloud.beforeFind(PartnerQuarter, ({ query }) => {
   !query._include.includes('bookings') && query.exclude('bookings')
 })
 
+Parse.Cloud.afterFind(PartnerQuarter, async ({ objects }) => {
+  for (const partnerQuarter of objects) {
+    partnerQuarter.get('status') !== 'finalized' && partnerQuarter.set('pendingCount', await $query('Booking')
+      .equalTo('company', partnerQuarter.get('company'))
+      .equalTo('status', 3) // aktiv
+      .lessThanOrEqualTo('endsAt', getQuarterStartEnd(partnerQuarter.get('quarter')).end)
+      .count({ useMasterKey: true }))
+  }
+})
+
 const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
   const company = await $getOrFail('Company', companyId)
   const partnerQuarter = await $query(PartnerQuarter)
@@ -30,7 +40,7 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
   if (partnerQuarter && partnerQuarter.get('status') === 'finalized') {
     return partnerQuarter.toJSON()
   }
-  const { pricingModel, commission, fixedPrice, fixedPriceMap } = company.get('distributor')
+  const { pricingModel, commission, fixedPrice, fixedPriceMap, periodicInvoicing } = company.get('distributor')
   // get pricing info
   const { start, end } = getQuarterStartEnd(quarter)
   const bookings = {}
@@ -38,7 +48,7 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
   let total = 0
   await $query('Booking')
     .equalTo('company', company)
-    .greaterThan('status', 2) // active, canceled or ended
+    .greaterThanOrEqualTo('status', 3) // active, canceled or ended
     .greaterThan('endsAt', start)
     .lessThanOrEqualTo('startsAt', end)
     .include(['cube', 'cube.state', 'cube.ht'])
@@ -87,14 +97,18 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
         }
         row.motive = booking.get('motive')
         row.externalOrderNo = booking.get('externalOrderNo')
+        row.campaignNo = booking.get('campaignNo')
 
+        bookings[booking.id] = row
         // totals
         total = round2(total + (row.monthly * row.months || 0))
         endTotal = round2(endTotal + (row.monthlyEnd * row.months || 0))
-
-        bookings[booking.id] = row
       }
     }, { useMasterKey: true })
+
+  if (periodicInvoicing?.total) {
+    total = round2(total + periodicInvoicing.total)
+  }
 
   partnerQuarter.set({
     bookings,
@@ -126,7 +140,20 @@ Parse.Cloud.define('partner-quarter-close', async ({ params: { companyId, quarte
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings') || user.get('company')?.id !== companyId) {
     throw new Error('Unbefugter Zugriff')
   }
+
+  // if there are any bookings that are ending / extending inside the quarter, throw an error here
   const company = await $getOrFail('Company', companyId)
+  const { end } = getQuarterStartEnd(quarter)
+  // check bookings ended / extended
+  const pendingNos = await $query('Booking')
+    .equalTo('company', company)
+    .equalTo('status', 3) // aktiv
+    .lessThanOrEqualTo('endsAt', end)
+    .distinct('no', { useMasterKey: true })
+  if (pendingNos.length) {
+    throw new Error('Es gibt noch Buchungen die im Quartal enden oder verlängert werden müssen: ' + pendingNos.join(', '))
+  }
+
   const partnerQuarter = await $query(PartnerQuarter)
     .equalTo('company', company)
     .equalTo('quarter', quarter)

@@ -56,11 +56,14 @@ async function checkIfQuarterIsReportable (quarter) {
     issues.invoices = invoices
   }
 
-  // check bookings ended / extended
-  // $query('Booking')
-  //   .equalTo('status', 3) // aktiv
-  //   .lessThanOrEqualTo('endsAt', end)
-  //   .count({ useMasterKey: true })
+  const creditNotes = await $query('CreditNote')
+    .lessThan('status', 2)
+    .greaterThan('periodEnd', start)
+    .lessThanOrEqualTo('periodStart', end)
+    .count({ useMasterKey: true })
+  if (creditNotes) {
+    issues.creditNotes = creditNotes
+  }
 
   // TODO: Check if Marc Asriel quarterly invoice is issued
 

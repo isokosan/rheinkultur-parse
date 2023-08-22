@@ -238,90 +238,12 @@ async function processCreditNotes (start, end) {
   return response
 }
 
-async function processBookings (start, end) {
-  const response = []
-  let i = 0
-  while (true) {
-    const bookings = await $query('Booking')
-      .greaterThanOrEqualTo('status', 3) // active, canceled or ended
-      .greaterThan('endsAt', start)
-      .lessThanOrEqualTo('startsAt', end)
-      .include(['company'])
-      .skip(i)
-      .find({ useMasterKey: true })
-    if (!bookings.length) { break }
-    for (const booking of bookings) {
-      const periodStart = booking.get('startsAt') > start
-        ? booking.get('startsAt')
-        : start
-      const periodEnd = booking.get('endsAt') < end
-        ? booking.get('endsAt')
-        : end
-      const earlyCancellations = booking.get('earlyCancellations') || {}
-      const cubeSummaries = await getCubeSummaries(booking.get('cubeIds'))
-      for (const cubeSummary of Object.values(cubeSummaries)) {
-        const cubeCanceledAt = earlyCancellations[cubeSummary.objectId]
-        // if cube is canceledEarly, and the early cancelation is before periodStart, skip
-        if (cubeCanceledAt && (cubeCanceledAt === true || cubeCanceledAt < periodStart)) {
-          continue
-        }
-
-        const cubePeriodEnd = cubeCanceledAt && cubeCanceledAt < periodEnd ? cubeCanceledAt : periodEnd
-
-        const row = {
-          orderNo: booking.get('no'),
-          companyId: booking.get('company')?.id,
-          companyName: booking.get('company')?.get('name'),
-          ...cubeSummary,
-          periodStart,
-          periodEnd: cubePeriodEnd,
-          months: moment(cubePeriodEnd).add(1, 'days').diff(periodStart, 'months', true),
-          monthly: 0
-        }
-
-        // booking pricing
-        const company = booking.get('company')
-        if (company) {
-          row.distributorId = company.id
-          const { pricingModel, commission, fixedPrice, fixedPriceMap } = company.get('distributor')
-          if (pricingModel === 'commission' && commission) {
-            row.monthlyEnd = booking.get('endPrices')?.[cubeSummary.objectId] || 0
-            row.distributorRate = commission
-            const distributorRatio = round5(row.distributorRate / 100)
-            row.monthlyDistributor = round2(row.monthlyEnd * distributorRatio)
-            row.monthly = round2(row.monthlyEnd - row.monthlyDistributor)
-          }
-          if (pricingModel === 'fixed') {
-            row.monthly = fixedPrice || fixedPriceMap[cubeSummary.media]
-          }
-          if (!pricingModel && booking.get('monthlyMedia')?.[cubeSummary.objectId]) {
-            row.monthly = booking.get('monthlyMedia')?.[cubeSummary.objectId]
-          }
-        }
-
-        const { startsAt, endsAt, initialDuration, extendedDuration } = booking.attributes
-        row.start = startsAt
-        row.end = endsAt
-        row.duration = initialDuration
-        if (extendedDuration) {
-          row.duration += `+${extendedDuration}`
-        }
-        // check early cancel
-        if (cubeCanceledAt && cubeCanceledAt < endsAt) {
-          row.end = cubeCanceledAt
-          row.duration = moment(cubeCanceledAt).diff(startsAt, 'months', true)
-        }
-        row.motive = booking.get('motive')
-        row.externalOrderNo = booking.get('externalOrderNo')
-        row.campaignNo = booking.get('campaignNo')
-        response.push(row)
-      }
-    }
-    i += bookings.length
-  }
-  consola.info(`Processed ${i} bookings`)
-  return response
-}
+// TODO: Process completed partner quarters instead of bookings
+// Or alternatively, fetch partner quarters dynamically
+// async function processPartnerQuarters (quarter) {
+//   const response = []
+//   return response
+// }
 
 // Kinetic, Here & Now etc.
 async function processCustomContracts (start, end) {
@@ -589,7 +511,8 @@ module.exports = async function (job) {
   const mediaInvoices = await processMediaInvoices(start, end)
   job.progress('Processing custom invoices...')
   const customInvoices = await processCustomInvoices(start, end)
-  const bookings = await processBookings(start, end)
+  // TODO: process partner quarters
+  // const bookings = await processBookings(start, end)
   job.progress('Processing 0€ contracts...')
   const zeroContracts = await processCustomContracts(start, end)
   job.progress('Processing occupied cubes...')
@@ -600,7 +523,7 @@ module.exports = async function (job) {
   const rows = await Promise.all([
     ...mediaInvoices,
     ...customInvoices,
-    ...bookings,
+    // ...bookings,
     ...zeroContracts,
     ...occupiedCubes,
     ...creditNotes
@@ -748,15 +671,3 @@ module.exports = async function (job) {
   consola.success('QUARTER COMPLETE', quarter)
   return Promise.resolve({})
 }
-
-// processBookings('2021-01-01', '2021-03-31').then(consola.info)
-// processBookings('2023-01-01', '2023-03-31')
-// processCreditNotes('2023-01-01', '2023-03-31').then(consola.info)
-
-// processCustomInvoices('2023-01-01', '2023-03-31').then(consola.info)
-// processCustomInvoices('2023-01-01', '2023-03-31')
-// processCustomInvoices('2023-04-01', '2023-06-30')
-
-// processCustomBookings('2022-10-01', '2022-12-31').then(consola.info)
-// processCustomContracts('2022-10-01', '2022-12-31').then(consola.info)
-// processOccupiedCubes('2022-10-01', '2022-12-31').then(consola.info)
