@@ -1,3 +1,10 @@
+## [1.100.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.100.0...1.100.1) (2023-08-22)
+
+
+### Bug Fixes
+
+* wait for lex while dev-reset ([681e24f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/681e24f4ed147db3e1af93207bc956c72c469831))
+
 # [1.100.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.99.0...1.100.0) (2023-08-22)
 
 
