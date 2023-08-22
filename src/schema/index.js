@@ -64,6 +64,7 @@ const schemaDefinitions = {
       ...writeMasterOnly
     },
     fields: {
+      uuid: { type: 'String', required: true },
       user: { type: 'Pointer', targetClass: '_User' },
       activity: { type: 'Object' }
     }

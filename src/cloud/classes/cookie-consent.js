@@ -1,10 +1,12 @@
 const { ensureUniqueField } = require('@/utils')
 const CookieConsent = Parse.Object.extend('CookieConsent')
 
+const { v4: uuidv4 } = require('uuid')
+
 const SERVICES = {
   googleMaps: {
     name: 'Google Maps',
-    essential: true,
+    category: 'essential',
     lastUpdated: '2023-08-21T00:00:00.000Z',
     description: `
       <div>
@@ -110,7 +112,7 @@ const SERVICES = {
   },
   mapTiler: {
     name: 'MapTiler',
-    essential: true,
+    category: 'essential',
     lastUpdated: '2023-08-21T00:00:00.000Z',
     description: `
       <div>
@@ -225,7 +227,7 @@ const SERVICES = {
   },
   oneSignal: {
     name: 'OneSignal',
-    essential: false,
+    category: 'functional',
     lastUpdated: '2023-08-21T00:00:00.000Z',
     description: `
       <div>
@@ -323,7 +325,7 @@ const SERVICES = {
 }
 
 Parse.Cloud.beforeSave(CookieConsent, async ({ object: cookieConsent }) => {
-  await ensureUniqueField(cookieConsent, 'user')
+  await ensureUniqueField(cookieConsent, ['user', 'uuid'])
 })
 
 function getCurrentFromActivity (activity = {}) {
@@ -344,11 +346,11 @@ Parse.Cloud.afterFind(CookieConsent, async ({ objects }) => {
   }
 })
 
-Parse.Cloud.define('cookie-consent', async ({ params: { id, update }, user }) => {
+Parse.Cloud.define('cookie-consent', async ({ params: { consentId, update }, user }) => {
   const query = $query(CookieConsent)
-  user ? query.equalTo('user', user) : query.equalTo('objectId', id)
+  user ? query.equalTo('user', user) : query.equalTo('uuid', consentId)
   const cookieConsent = await query.first({ useMasterKey: true }) || new CookieConsent({ user })
-  cookieConsent.isNew() && await cookieConsent.save(null, { useMasterKey: true })
+  cookieConsent.isNew() && await cookieConsent.set('uuid', uuidv4()).save(null, { useMasterKey: true })
   if (update) {
     const current = cookieConsent.get('current') || {}
     const activity = cookieConsent.get('activity') || {}
