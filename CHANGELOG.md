@@ -1,3 +1,10 @@
+# [1.100.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.99.0...1.100.0) (2023-08-22)
+
+
+### Features
+
+* add uuid to cookie consents ([f541d0a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f541d0ad42e3af9e96629ca283b03c6321b68c1c))
+
 # [1.99.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.98.0...1.99.0) (2023-08-22)
 
 
