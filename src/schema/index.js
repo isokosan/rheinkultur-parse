@@ -67,6 +67,9 @@ const schemaDefinitions = {
       uuid: { type: 'String', required: true },
       user: { type: 'Pointer', targetClass: '_User' },
       activity: { type: 'Object' }
+    },
+    indexes: {
+      uuidIndex: { uuid: 1 }
     }
   },
   Address: {
