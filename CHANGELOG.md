@@ -1,3 +1,10 @@
+# [1.99.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.98.0...1.99.0) (2023-08-22)
+
+
+### Features
+
+* add cube update sides and scout data fns ([5e2b223](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5e2b2230f6ad29e47609c5dd3bee8039924fa8cf))
+
 # [1.98.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.97.1...1.98.0) (2023-08-21)
 
 
