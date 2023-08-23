@@ -1,3 +1,10 @@
+# [1.101.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.100.2...1.101.0) (2023-08-23)
+
+
+### Features
+
+* add quarter param to kinetic export ([0a2a876](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0a2a87630107f4b04d8d6706e813dca1052f58cb))
+
 ## [1.100.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.100.1...1.100.2) (2023-08-22)
 
 
