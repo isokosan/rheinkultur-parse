@@ -366,7 +366,11 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
-router.get('/kinetic-extensions', handleErrorAsync(async (req, res) => {
+router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => {
+  const quarter = req.params.quarter
+  const { getQuarterStartEnd } = require('@/shared')
+  const { start, end } = getQuarterStartEnd(quarter)
+
   const workbook = new excel.Workbook()
   const company = await $getOrFail('Company', 'FNFCxMgEEr')
   const { columns, headerRowValues } = getColumnHeaders({
@@ -386,9 +390,6 @@ router.get('/kinetic-extensions', handleErrorAsync(async (req, res) => {
   headerRow.height = 40
   paintRow(headerRow, '##cecece', columns.length)
 
-  const { getQuarterStartEnd } = require('@/shared')
-  const currentQuarter = moment().format('Q-YYYY')
-  const { start, end } = getQuarterStartEnd(currentQuarter)
   const rows = []
   await $query('Contract')
     .equalTo('company', company)
@@ -404,7 +405,7 @@ router.get('/kinetic-extensions', handleErrorAsync(async (req, res) => {
           campaignNo: contract.get('campaignNo'),
           motive: contract.get('motive'),
           end: moment(contract.get('endsAt')).format('DD.MM.YYYY'),
-          deadline: moment(contract.get('endsAt')).subtract(2, 'months').format('DD.MM.YYYY'),
+          deadline: moment(contract.get('endsAt')).subtract(42, 'days').format('DD.MM.YYYY'),
           cubeCount: contract.get('cubeCount')
         })
       }
@@ -424,7 +425,7 @@ router.get('/kinetic-extensions', handleErrorAsync(async (req, res) => {
   totalRow.font = { bold: true, size: 12 }
   totalRow.alignment = { vertical: 'middle', horizontal: 'center' }
 
-  const filename = `Übersicht Aufträge Q${moment().format('Q')} (Stand ${moment().format('DD.MM.YYYY')})`
+  const filename = `Übersicht Aufträge Q${quarter} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
