@@ -1,3 +1,10 @@
+## [1.101.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.0...1.101.1) (2023-08-27)
+
+
+### Bug Fixes
+
+* objectId bug in contract-finalize cube data store ([a29d7d1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a29d7d1343cf499c15ace8a6dcb8c4e9492a45a0))
+
 # [1.101.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.100.2...1.101.0) (2023-08-23)
 
 
