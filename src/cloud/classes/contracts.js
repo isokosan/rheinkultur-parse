@@ -771,15 +771,16 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
         str: cube.get('str'),
         plz: cube.get('plz'),
         ort: cube.get('ort'),
-        stateId: cube.get('state').objectId,
+        stateId: cube.get('state').id,
         media: cube.get('media'),
-        htId: cube.get('ht')?.objectId
+        htId: cube.get('ht')?.id
       }
       return acc
     }, {}))
 
   // set contract status to active
   contract.set({ status: 3, cubeData })
+  consola.info('set cubeData', cubeData)
   const audit = { user, fn: 'contract-finalize' }
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
