@@ -780,7 +780,6 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
 
   // set contract status to active
   contract.set({ status: 3, cubeData })
-  consola.info('set cubeData', cubeData)
   const audit = { user, fn: 'contract-finalize' }
   return contract.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
