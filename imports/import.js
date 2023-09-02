@@ -42,13 +42,13 @@ async function generateSeedRowFn () {
     if (!objectId) { return false }
     // if cube already updated, skip
     if (await $query('Cube').equalTo('objectId', objectId).equalTo('importData.date', date).count({ useMasterKey: true })) {
-      console.info('Cube already updated', objectId)
+      // console.info('Cube already updated', objectId)
       return false
     }
 
     // if skipped import already exists, skip
     if (await $query('SkippedCubeImport').equalTo('cubeId', objectId).equalTo('date', date).count({ useMasterKey: true })) {
-      console.info('Import already skipped', objectId)
+      // console.info('Import already skipped', objectId)
       return false
     }
 
@@ -149,17 +149,18 @@ async function generateSeedRowFn () {
     }
     existingCube.id = encodeURIComponent(existingCube.id)
     // update the geopoint and import data in any case
+    // TODO: Next time, remove gp update if unverified, or if cube location was manually updated with an audit, run the apply cube update gp again fn
     existingCube.set({ importData, hti, gp })
     //  set MBfD if true
     MBfD ? existingCube.set({ MBfD }) : existingCube.unset('MBfD')
     if (existingCube.get('vAt')) {
-      await existingCube.save(null, { useMasterKey: true })
+      await existingCube.save(null, { useMasterKey: true, context: { updating: true } })
       return objectId + ' verified update'
     }
-    existingCube.set({ str, hsnr, plz, ort, state, gp })
+    existingCube.set({ str, hsnr, plz, ort, state })
     // update the ht if defined
     ht && existingCube.set({ ht })
-    await existingCube.save(null, { useMasterKey: true })
+    await existingCube.save(null, { useMasterKey: true, context: { updating: true } })
     return objectId + ' unverified update'
   }
 }
