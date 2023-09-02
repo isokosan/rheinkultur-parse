@@ -20,7 +20,7 @@
     "start": "export TZ=\"Europe/Berlin\" && node src/index.js --trace-warnings",
     "dev": "cross-env NODE_ENV=development TZ=\"Europe/Berlin\" nodemon --inspect --watch src src/index.js",
     "dev-start": "cross-env NODE_ENV=development TZ=\"Europe/Berlin\" node src/index.js",
-    "serve-json": "node serve-json.js",
+    "serve-rows": "node imports/serve-rows.js",
     "lint": "eslint './**/*.js' --fix",
     "prepare": "husky install"
   },

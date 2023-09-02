@@ -56,7 +56,7 @@ db-backups
 .LSOverride
 
 backups
-imports
+imports/data
 cluster.yaml
 local
 docker

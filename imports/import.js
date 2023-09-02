@@ -1,8 +1,8 @@
 require('dotenv').config()
 const axios = require('axios')
 global.Parse = require('parse/node')
-Parse.serverURL = process.env.PRODUCTION_SERVER_URL
-// Parse.serverURL = process.env.PUBLIC_SERVER_URL
+// Parse.serverURL = process.env.PRODUCTION_SERVER_URL
+Parse.serverURL = process.env.PUBLIC_SERVER_URL
 console.log(Parse.serverURL)
 Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MASTER_KEY)
 require('./../src/globals')
@@ -19,7 +19,7 @@ const {
 } = require('./../src/seed/cubes/utils')
 
 const lc = 'TLK'
-const date = '2023-04-21'
+const date = '2023-09-02'
 
 const seedCube = async (body, seeding = true) => axios({
   method: 'POST',
@@ -41,13 +41,13 @@ async function generateSeedRowFn () {
     if (!objectId) { return false }
     // if cube already updated, skip
     if (await $query('Cube').equalTo('objectId', objectId).equalTo('importData.date', date).count({ useMasterKey: true })) {
-      // consola.info('Cube already updated', objectId)
+      console.info('Cube already updated', objectId)
       return false
     }
 
     // if skipped import already exists, skip
     if (await $query('SkippedCubeImport').equalTo('cubeId', objectId).equalTo('date', date).count({ useMasterKey: true })) {
-      // consola.info('Import already skipped', objectId)
+      console.info('Import already skipped', objectId)
       return false
     }
 
@@ -71,7 +71,8 @@ async function generateSeedRowFn () {
       ausbautreiber: cleanVal(row.ausbautreiber),
       ausbautreiber1: cleanVal(row.ausbautreiber1),
       ausbautreiber2: cleanVal(row.ausbautreiber2),
-      versorgung: cleanVal(row.versorgung)
+      versorgung: cleanVal(row.versorgung),
+      vertrags_partner: cleanVal(row.Vertragspartner)
     }
 
     let ht
@@ -100,6 +101,7 @@ async function generateSeedRowFn () {
       const input = str.indexOf(' / ') !== -1
         ? [str.replace(' / ', ' & '), ort].join(' ')
         : `${str} ${plz || ort}`
+      console.warn('GETTING PLACES PREDICTIONS', objectId, input)
       const predictions = await getPlacesPredictions(input)
       if (!predictions.length) {
         return skipCubeImport({ cubeId: objectId, lc, date, i, e: 'No predictions', input })
@@ -134,7 +136,7 @@ async function generateSeedRowFn () {
         }, false)
       } catch (error) {
         if (error.data?.code === 137) {
-          consola.warn(`${objectId} exists`)
+          console.warn(`${objectId} exists`)
           return false
         }
         const e = error.data?.message || error.message
@@ -153,7 +155,7 @@ async function generateSeedRowFn () {
       await existingCube.save(null, { useMasterKey: true })
       return objectId + ' verified update'
     }
-    existingCube.set({ str, hsnr, plz, ort, state })
+    existingCube.set({ str, hsnr, plz, ort, state, gp })
     // update the ht if defined
     ht && existingCube.set({ ht })
     await existingCube.save(null, { useMasterKey: true })
@@ -211,34 +213,3 @@ ${runningOperations.join('\n')}
   })
 }
 start()
-
-// async function checkNotUpdated() {
-//   let found = 0
-//   let notFound = 0
-//   const skippedCubeIds = await $query('SkippedCubeImport').distinct('cubeId', { useMasterKey: true })
-//   const nonUpdatedCubes = await $query('Cube')
-//     .equalTo('lc', lc)
-//     .notContainedIn('objectId', skippedCubeIds)
-//     .notEqualTo('importData.date', date)
-//     .distinct('objectId', { useMasterKey: true })
-//   for (objectId of nonUpdatedCubes) {
-//     if (!(/^[A-Za-z0-9ÄÖÜäöüß*_/()-]+$/).test(objectId)) {
-//       consola.error('Should delete', objectId)
-//       continue
-//     }
-//     const row = await axios({ url: 'http://localhost:5001/objectId/' + encodeURIComponent(objectId) })
-//       .then(res => res.data)
-//       .catch(error => error.response.data)
-//     if (!row.error) {
-//       found++
-//       consola.warn(objectId, row)
-//       continue
-//     }
-//     notFound++
-//   }
-//   consola.warn('found', found)
-//   consola.warn('notFound', notFound)
-//   return
-// }
-
-// checkNotUpdated()
