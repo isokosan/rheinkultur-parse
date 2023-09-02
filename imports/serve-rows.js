@@ -6,8 +6,9 @@ const app = require('express')()
 
 async function start () {
   const filename = process.argv[2] || 'import.csv'
+  const csvFilePath = path.resolve(__dirname, 'data', filename)
   console.log(`starting up ${filename}`)
-  const csvFilePath = path.resolve(__dirname, filename)
+  console.log(`full path: ${csvFilePath}`)
   const data = await csv().fromFile(csvFilePath)
 
   const dict = {}
@@ -34,7 +35,6 @@ async function start () {
       row.breite = lat
       row.laenge = lon
     }
-
     if (row.bundesland) {
       row.bundesland = row.bundesland.replace(/Ã¼/g, 'ü')
     }

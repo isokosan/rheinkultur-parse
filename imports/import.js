@@ -1,10 +1,11 @@
 require('dotenv').config()
 const axios = require('axios')
 global.Parse = require('parse/node')
-// Parse.serverURL = process.env.PRODUCTION_SERVER_URL
-Parse.serverURL = process.env.PUBLIC_SERVER_URL
-console.log(Parse.serverURL)
+// const serverURL = process.env.PRODUCTION_SERVER_URL
+const serverURL = process.env.PUBLIC_SERVER_URL
+console.log(serverURL)
 Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MASTER_KEY)
+Parse.serverURL = serverURL
 require('./../src/globals')
 
 const { getPlacesPredictions, getPlaceById } = require('./../src/services/google-maps')
@@ -23,7 +24,7 @@ const date = '2023-09-02'
 
 const seedCube = async (body, seeding = true) => axios({
   method: 'POST',
-  url: `${process.env.PRODUCTION_SERVER_URL}/classes/Cube`,
+  url: `${serverURL}/classes/Cube`,
   headers: {
     'Content-Type': 'application/json;charset=utf-8',
     'X-Parse-Application-Id': process.env.APP_ID,
