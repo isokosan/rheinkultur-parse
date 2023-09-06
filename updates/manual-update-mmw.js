@@ -262,21 +262,24 @@ async function updateContractBillingCycle (contract) {
 }
 
 async function run () {
-  const company = await $getOrFail('Company', 'rBRozYiVzN')
-  await $query('Contract')
-    .equalTo('status', 3)
-    .equalTo('company', company)
-    .notEqualTo('billingCycle', BILLING_CYCLE)
-    .include(['address', 'invoiceAddress', 'production', 'company'])
-    .each(async (contract) => {
-      if (contract.get('production')) {
-        throw new Error('Custom period invoice generation on contracts with production is not yet supported.')
-      }
-      if (contract.get('earlyCancellations')) {
-        throw new Error('Custom period invoice generation on contracts with early canceled cubes is not yet supported.')
-      }
-      return updateContractBillingCycle(contract)
-    }, { useMasterKey: true })
+  // const company = await $getOrFail('Company', 'rBRozYiVzN')
+  // await $query('Contract')
+  //   .equalTo('status', 3)
+  //   .equalTo('company', company)
+  //   .notEqualTo('billingCycle', BILLING_CYCLE)
+  //   .include(['address', 'invoiceAddress', 'production', 'company'])
+  //   .each(async (contract) => {
+  //     if (contract.get('production')) {
+  //       throw new Error('Custom period invoice generation on contracts with production is not yet supported.')
+  //     }
+  //     if (contract.get('earlyCancellations')) {
+  //       throw new Error('Custom period invoice generation on contracts with early canceled cubes is not yet supported.')
+  //     }
+  //     return updateContractBillingCycle(contract)
+  //   }, { useMasterKey: true })
+
+  const contract = await $getOrFail('Contract', '15Tv0LRAZJ', ['address', 'invoiceAddress', 'production', 'company'])
+  await updateContractBillingCycle(contract)
   console.log('OK')
 }
 

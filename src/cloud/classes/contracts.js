@@ -175,7 +175,7 @@ function getPeriodEnd ({ periodStart, billingCycle, contractStart, contractEnd, 
 
 // Note: we do not consider early cancellations here since this is only used before contract finalization
 async function getInvoicesPreview (contract) {
-  await contract.fetchWithInclude(['address', 'invoiceAddress', 'production'], { useMasterKey: true })
+  await contract.fetchWithInclude(['address', 'invoiceAddress', 'production', 'company'], { useMasterKey: true })
 
   const invoicesPreview = []
   const contractStart = moment(contract.get('startsAt'))
@@ -753,7 +753,6 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   await validateContractFinalize(contract, skipCubeValidations)
 
   const Invoice = Parse.Object.extend('Invoice')
-  await contract.get('company').fetchWithInclude('company', { useMasterKey: true })
   for (const item of await getInvoicesPreview(contract)) {
     const invoice = new Invoice(item)
     await invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } })
