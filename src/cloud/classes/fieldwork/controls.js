@@ -104,10 +104,7 @@ function getCubesQuery (control) {
     cubesQuery.doesNotMatchKeyInQuery('order.company.objectId', 'objectId', companiesQuery)
   }
   if (filters.Cube.include.length) {
-    cubesQuery = Parse.Query.or(
-      $query('Cube').containedIn('objectId', filters.Cube.include),
-      cubesQuery
-    )
+    cubesQuery.containedIn('objectId', filters.Cube.include)
   }
   if (filters.Cube.exclude.length) {
     cubesQuery.notContainedIn('objectId', filters.Cube.exclude)
@@ -323,9 +320,6 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
       continue
     }
     const cubeIds = locations[placeKey]
-    if (placeKey === 'NW:Hilden') {
-      consola.warn(cubeIds)
-    }
     const changes = $changes(taskList, { date, dueDate })
     const cubeChanges = $cubeChanges(taskList, cubeIds)
 
