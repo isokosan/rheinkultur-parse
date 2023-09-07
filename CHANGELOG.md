@@ -1,3 +1,10 @@
+## [1.101.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.1...1.101.2) (2023-09-07)
+
+
+### Bug Fixes
+
+* cube id in control criteria and join ([bd6dd2c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bd6dd2c70e94dc720a92db77bae1ecb63e82929d))
+
 ## [1.101.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.0...1.101.1) (2023-08-27)
 
 
