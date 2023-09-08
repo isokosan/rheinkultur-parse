@@ -380,7 +380,8 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
     motive: { header: 'Kunde/Motiv - System RMV', width: 50, style: alignCenter },
     end: { header: 'Enddatum', width: 20, style: dateStyle },
     deadline: { header: 'Buchungsdeadline', width: 20, style: dateStyle },
-    cubeCount: { header: 'Anzahl\nCubes', width: 13, style: alignCenter }
+    cubeCount: { header: 'Anzahl\nCubes', width: 13, style: alignCenter },
+    total: { header: 'Summe', width: 20, style: priceStyle }
   })
 
   const worksheet = workbook.addWorksheet(safeName(company.get('name')))
@@ -390,6 +391,46 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
   headerRow.height = 40
   paintRow(headerRow, '##cecece', columns.length)
 
+  // const cityPopulations = await $query('City')
+  //   .notEqualTo('population', null)
+  //   .select('population')
+  //   .limit(10000)
+  //   .find({ useMasterKey: true })
+  //   .then(cities => cities.reduce((map, city) => {
+  //     map[city.id] = city.get('population')
+  //     return map
+  //   }, {}))
+
+  // function getPrice (pk) {
+  //   const population = cityPopulations[pk]
+  //   if (!population) {
+  //     throw new Error('Population not found for city ' + pk)
+  //   }
+  //   if (population > 251000) {
+  //     return 145
+  //   }
+  //   if (population > 51000) {
+  //     return 110
+  //   }
+  //   return 90
+  // }
+  // async function getTotal(contract) {
+  //   const cubeIds = contract.get('cubeIds')
+  //   const pkCountsMap = await $query('Cube')
+  //     .containedIn('objectId', cubeIds)
+  //     .limit(cubeIds.length)
+  //     .select(['ort', 'state'])
+  //     .find({ useMasterKey: true })
+  //     .then(cubes => cubes.reduce((map, cube) => {
+  //       const pk = `${cube.get('state').id}:${cube.get('ort')}`
+  //       map[pk] = (map[pk] || 0) + 1
+  //       return map
+  //     }, {}))
+  //   return Object.keys(pkCountsMap).reduce((sum, pk) => {
+  //     return round2(sum + getPrice(pk) * pkCountsMap[pk])
+  //   }, 0)
+  // }
+
   const rows = []
   await $query('Contract')
     .equalTo('company', company)
@@ -398,6 +439,7 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
     .lessThanOrEqualTo('endsAt', end)
     .eachBatch(async (contracts) => {
       for (const contract of contracts) {
+        // await getTotal(contract)
         rows.push({
           endsAt: contract.get('endsAt'), // for sorting
           orderNo: contract.get('no'),
@@ -407,6 +449,7 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
           end: moment(contract.get('endsAt')).format('DD.MM.YYYY'),
           deadline: moment(contract.get('endsAt')).subtract(42, 'days').format('DD.MM.YYYY'),
           cubeCount: contract.get('cubeCount')
+          // total
         })
       }
     }, { useMasterKey: true })

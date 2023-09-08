@@ -6,11 +6,10 @@ Parse.Cloud.beforeSave(PLZ, async ({ object: plz }) => {
   if (plz.id.length !== 5) {
     throw new Error('PLZ sollte 5 Zeichen lang sein.')
   }
-  !plz.get('pk') && plz.set('pk', $pk(plz))
   await redis[plz.get('nMR') ? 'sadd' : 'srem']('blacklisted-plzs', plz.id)
 })
 
-Parse.Cloud.afterSave(PLZ, ({ object: plz, context: { skipIndexCubes } }) => skipIndexCubes ? null : $query('Cube').equalTo('plz', plz.id).eachBatch(indexCubes, { useMasterKey: true }))
+Parse.Cloud.afterSave(PLZ, ({ object: plz, context: { reindexCubes } }) => reindexCubes && $query('Cube').equalTo('plz', plz.id).eachBatch(indexCubes, { useMasterKey: true }))
 
 Parse.Cloud.afterFind(PLZ, async ({ objects, query }) => {
   if (query._include.includes('cubeCount')) {
