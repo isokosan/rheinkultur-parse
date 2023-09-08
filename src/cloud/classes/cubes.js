@@ -384,14 +384,25 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('cube-undo-verify', async ({ params: { id }, user }) => {
+Parse.Cloud.define('cube-undo-verify', async ({ params: { id, force }, user }) => {
   const cube = await $getOrFail(Cube, id)
   if (!cube.get('vAt')) { throw new Error('CityCube ist nicht verifiziert.') }
   // do not allow unverifying if the cube was in a past production with assembly, or contract etc (temporary)
 
-  if (cube.get('order')) {
+  if (cube.get('order') && !force) {
     const { className, objectId } = cube.get('order')
-    const order = await $getOrFail(className, objectId)
+    const order = await $getOrFail(className, objectId, 'production')
+    if (className === 'Contract' && order.get('pricingModel') === 'fixed') {
+      throw new Error('CityCubes that are contracted with fixed pricing cannot be unverified. Please contact an administrator.')
+    }
+    if (order.get('production')) {
+      throw new Error('CityCubes that are in active contracts/bookings which have production cannot be unverified. Please contact an administrator.')
+    }
+  }
+  if (cube.get('futureOrder') && !force) {
+    const { className, objectId } = cube.get('futureOrder')
+    const order = await $getOrFail(className, objectId, 'production')
+    console.log(order)
     if (className === 'Contract' && order.get('pricingModel') === 'fixed') {
       throw new Error('CityCubes that are contracted with fixed pricing cannot be unverified. Please contact an administrator.')
     }
