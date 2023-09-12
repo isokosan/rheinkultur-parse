@@ -1,3 +1,10 @@
+# [1.102.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.4...1.102.0) (2023-09-12)
+
+
+### Features
+
+* add population calculation to kinetic exports ([4c63e45](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4c63e451464864ebd1f38f33ec61932c554afc94))
+
 ## [1.101.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.3...1.101.4) (2023-09-12)
 
 
