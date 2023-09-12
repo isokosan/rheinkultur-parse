@@ -1,3 +1,10 @@
+# [1.103.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.102.0...1.103.0) (2023-09-12)
+
+
+### Features
+
+* add nominatim request from env var ([785140e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/785140e166a939cb6c38c14b93f28e85d5f23eb5))
+
 # [1.102.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.4...1.102.0) (2023-09-12)
 
 
