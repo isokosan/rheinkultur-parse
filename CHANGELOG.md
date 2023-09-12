@@ -1,3 +1,10 @@
+## [1.103.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.103.0...1.103.1) (2023-09-12)
+
+
+### Bug Fixes
+
+* make sure to use booleans in disassemblyFromRMV audit changes ([d4f9289](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d4f928927c0a9da26a5121e99f0d1f459bd4ad0d))
+
 # [1.103.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.102.0...1.103.0) (2023-09-12)
 
 
