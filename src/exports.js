@@ -412,7 +412,7 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
     }
     return 90
   }
-  async function getTotal(contract) {
+  async function getTotal (contract) {
     const cubeIds = contract.get('cubeIds')
     const pkCountsMap = await $query('Cube')
       .containedIn('objectId', cubeIds)
