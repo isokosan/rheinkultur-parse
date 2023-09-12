@@ -391,45 +391,43 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
   headerRow.height = 40
   paintRow(headerRow, '##cecece', columns.length)
 
-  // const cityPopulations = await $query('City')
-  //   .notEqualTo('population', null)
-  //   .select('population')
-  //   .limit(10000)
-  //   .find({ useMasterKey: true })
-  //   .then(cities => cities.reduce((map, city) => {
-  //     map[city.id] = city.get('population')
-  //     return map
-  //   }, {}))
+  const cityPopulations = await $query('City')
+    .notEqualTo('population', null)
+    .select('population')
+    .limit(10000)
+    .find({ useMasterKey: true })
+    .then(cities => cities.reduce((map, city) => {
+      map[city.id] = city.get('population')
+      return map
+    }, {}))
 
-  // function getPrice (pk) {
-  //   const population = cityPopulations[pk]
-  //   if (!population) {
-  //     throw new Error('Population not found for city ' + pk)
-  //   }
-  //   if (population > 251000) {
-  //     return 145
-  //   }
-  //   if (population > 51000) {
-  //     return 110
-  //   }
-  //   return 90
-  // }
-  // async function getTotal(contract) {
-  //   const cubeIds = contract.get('cubeIds')
-  //   const pkCountsMap = await $query('Cube')
-  //     .containedIn('objectId', cubeIds)
-  //     .limit(cubeIds.length)
-  //     .select(['ort', 'state'])
-  //     .find({ useMasterKey: true })
-  //     .then(cubes => cubes.reduce((map, cube) => {
-  //       const pk = `${cube.get('state').id}:${cube.get('ort')}`
-  //       map[pk] = (map[pk] || 0) + 1
-  //       return map
-  //     }, {}))
-  //   return Object.keys(pkCountsMap).reduce((sum, pk) => {
-  //     return round2(sum + getPrice(pk) * pkCountsMap[pk])
-  //   }, 0)
-  // }
+  function getPrice (pk) {
+    const population = cityPopulations[pk]
+    console.log(population)
+    if (population && population > 250000) {
+      return 145
+    }
+    if (population && population > 50000) {
+      return 110
+    }
+    return 90
+  }
+  async function getTotal(contract) {
+    const cubeIds = contract.get('cubeIds')
+    const pkCountsMap = await $query('Cube')
+      .containedIn('objectId', cubeIds)
+      .limit(cubeIds.length)
+      .select(['ort', 'state'])
+      .find({ useMasterKey: true })
+      .then(cubes => cubes.reduce((map, cube) => {
+        const pk = `${cube.get('state').id}:${cube.get('ort')}`
+        map[pk] = (map[pk] || 0) + 1
+        return map
+      }, {}))
+    return Object.keys(pkCountsMap).reduce((sum, pk) => {
+      return round2(sum + getPrice(pk) * pkCountsMap[pk])
+    }, 0)
+  }
 
   const rows = []
   await $query('Contract')
@@ -439,7 +437,6 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
     .lessThanOrEqualTo('endsAt', end)
     .eachBatch(async (contracts) => {
       for (const contract of contracts) {
-        // await getTotal(contract)
         rows.push({
           endsAt: contract.get('endsAt'), // for sorting
           orderNo: contract.get('no'),
@@ -448,8 +445,8 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
           motive: contract.get('motive'),
           end: moment(contract.get('endsAt')).format('DD.MM.YYYY'),
           deadline: moment(contract.get('endsAt')).subtract(42, 'days').format('DD.MM.YYYY'),
-          cubeCount: contract.get('cubeCount')
-          // total
+          cubeCount: contract.get('cubeCount'),
+          total: await getTotal(contract)
         })
       }
     }, { useMasterKey: true })
@@ -462,11 +459,11 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
   }
 
   const totalRow = worksheet.addRow({
-    cubeCount: { formula: `SUM(G1:G${rows.length})` }
+    cubeCount: { formula: `SUM(G1:G${rows.length})` },
+    total: { formula: `SUM(H1:H${rows.length})` }
   })
   totalRow.height = 24
   totalRow.font = { bold: true, size: 12 }
-  totalRow.alignment = { vertical: 'middle', horizontal: 'center' }
 
   const filename = `Übersicht Aufträge Q${quarter} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
