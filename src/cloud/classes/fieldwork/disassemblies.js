@@ -131,7 +131,7 @@ Parse.Cloud.define('disassembly-order-update', async ({
   const changes = $changes(disassembly, { fromRMV }, true)
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
   // rename audit key
-  changes.disassemblyFromRMV = changes.fromRMV
+  changes.disassemblyFromRMV = [Boolean(changes.fromRMV[0]), Boolean(changes.fromRMV[1])]
   delete changes.fromRMV
   disassembly.fromRMV = fromRMV
   order.set({ disassembly })
