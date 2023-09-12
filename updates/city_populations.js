@@ -149,4 +149,33 @@
 //   console.log(lessThan5)
 // }
 
-// require('./run')(checkOrt)
+// https://wawi-api.isokosan.com/nominatim/reverse?format=jsonv2&lat=51.46229695307144&lon=13.22054206417892
+// https://www.statistikportal.de/de/veroeffentlichungen/georeferenzierte-bevoelkerungszahlen
+
+// const saveCityPopulations50 = async () => {
+//   stateIds = await $query('State').find({ useMasterKey: true })
+//     .then(states => states.reduce((acc, state) => ({ ...acc, [state.get('name')]: state.id }), {}))
+//   const csvFilePath = path.resolve(__dirname, '../..', '50000.csv')
+//   const populations = await csv({ trim: true }).fromFile(csvFilePath)
+//   for (const { city, population, state } of populations) {
+//     const stateId = stateIds[state]
+//     if (!stateId) {
+//       console.log('state not found', state)
+//       continue
+//     }
+//     const cityObject = await $query('City')
+//       .equalTo('ort', city)
+//       .equalTo('state', $parsify('State', stateId))
+//       .first({ useMasterKey: true })
+//     if (!cityObject) {
+//       console.log('city not found', city, state)
+//       continue
+//     }
+//     if (!cityObject.get('population')) {
+//       cityObject.set('population', parseInt(population))
+//       await $saveWithEncode(cityObject, null, { useMasterKey: true })
+//     }
+//   }
+// }
+
+// require('./run')(saveCityPopulations50)

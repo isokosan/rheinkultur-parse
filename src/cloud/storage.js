@@ -57,10 +57,24 @@ const getSize1000 = async (file) => {
   return new Parse.File('size1000.webp', { base64 }, 'image/webp', { thumb: 'size1000' })
 }
 
+const ALLOWED_IMAGE_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'apng',
+  'avif',
+  'webp',
+  'svg',
+  'gif'
+]
+
 Parse.Cloud.beforeSaveFile(async ({ file }) => {
   file._metadata.name && (file._metadata.name = encodeURIComponent(file._metadata.name))
   if (!file._metadata.thumb && file._source?.type.startsWith('image/')) {
     const extension = file._name.split('.').reverse()[0].toLowerCase()
+    if (!ALLOWED_IMAGE_EXTENSIONS.includes(extension)) {
+      throw new Error(`Dateiendung ${extension} nicht erlaubt.`)
+    }
     if (extension === 'webp') { return }
     if (['jpeg', 'jpg'].includes(extension)) {
       const base64 = await sharp(Buffer.from(await file.getData(), 'base64'))

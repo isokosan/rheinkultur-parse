@@ -21,7 +21,11 @@ global.$parsify = (className, objectId) => {
   item.id = objectId
   return item
 }
+
+// arg1: Either a list of coordinate pairs, an object with latitude, longitude, or the latitude or the point.
+// arg2: The longitude of the GeoPoint
 global.$geopoint = (...args) => new Parse.GeoPoint(...args)
+
 global.$pointer = (className, objectId) => $parsify(className, objectId).toPointer()
 global.$query = className => new Parse.Query(className)
 global.$attr = (object, key) => typeof object.get === 'function' ? object.get(key) : object[key]
