@@ -1,3 +1,10 @@
+## [1.101.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.3...1.101.4) (2023-09-12)
+
+
+### Bug Fixes
+
+* add image extension server side validation on file upload ([7c4be91](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7c4be919203074c920e14af8dc112e445c294281))
+
 ## [1.101.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.101.2...1.101.3) (2023-09-08)
 
 
