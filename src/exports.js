@@ -403,7 +403,6 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
 
   function getPrice (pk) {
     const population = cityPopulations[pk]
-    console.log(population)
     if (population && population > 250000) {
       return 145
     }
