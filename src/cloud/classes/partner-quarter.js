@@ -66,6 +66,8 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
           ...cubeSummary,
           periodStart,
           periodEnd,
+          autoExtendsBy: booking.get('autoExtendsBy'),
+          canceledAt: booking.get('canceledAt'),
           months: moment(periodEnd).add(1, 'days').diff(periodStart, 'months', true),
           monthly: 0
         }
@@ -96,13 +98,14 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
         row.motive = booking.get('motive')
         row.externalOrderNo = booking.get('externalOrderNo')
         row.campaignNo = booking.get('campaignNo')
+        row.total = round2(row.monthly * (row.months || 0))
 
         bookings[booking.id] = row
-        total = round2(total + (row.monthly * row.months || 0))
+        total = round2(total + row.total)
       }
     }, { useMasterKey: true })
 
-  const rows = Object.values(bookings)
+  const rows = Object.values(bookings).sort((a, b) => a.orderNo > b.orderNo ? 1 : -1)
   if (periodicInvoicing?.total) {
     // add row with invoice total
     const invoice = await $query('Invoice')

@@ -679,7 +679,8 @@ Parse.Cloud.define('search-bookings', async ({
     sb,
     sd,
     from,
-    pagination
+    pagination,
+    returnQuery
   }, user, master
 }) => {
   // BUILD QUERY
@@ -713,6 +714,15 @@ Parse.Cloud.define('search-bookings', async ({
   // TODO: Update the date filters to start from/to end from/to
   t && bool.must.push({ range: { startsAt: { lte: t } } })
   f && bool.must.push({ range: { endsAt: { gt: f } } })
+
+  if (returnQuery) {
+    return {
+      index: 'rheinkultur-bookings',
+      query: { bool },
+      sort
+    }
+  }
+
   const searchResponse = await client.search({
     index: 'rheinkultur-bookings',
     body: {

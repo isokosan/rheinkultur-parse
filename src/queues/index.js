@@ -581,6 +581,11 @@ module.exports = async function (job) {
     }
     return row
   }))
+  rows.sort((a, b) => {
+    if (a.orderNo && !b.orderNo) { return -1 }
+    if (!a.orderNo && b.orderNo) { return 1 }
+    return a.orderNo < b.orderNo ? -1 : 1
+  })
 
   const rheinkultur = { total: 0, totalNet: 0, cubes: 0, orders: {} }
   const customers = {}

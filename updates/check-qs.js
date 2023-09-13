@@ -34,7 +34,6 @@
 // }
 
 async function recalculate () {
-
   await $query('Invoice')
     .equalTo('company', $parsify('Company', '4EBkZmBra0'))
     .equalTo('extraCols.Motiv', 'Potsdam Vertrag')

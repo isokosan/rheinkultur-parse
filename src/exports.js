@@ -12,11 +12,25 @@ const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
 const { getLexFile, getLexInvoiceDocument, getLexCreditNoteDocument } = require('@/services/lex')
 const { getCubeSummaries } = require('@/shared')
-const { round2, dateString, durationString } = require('@/utils')
+const { round2, round5, dateString, durationString } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
 const { CUBE_STATUSES, CUBE_FEATURES } = require('@/schema/enums')
+
+// validate session and attach user from Parse
+router.use(async (req, res, next) => {
+  req.sessionToken = req.query.sid
+  const session = req.query.sid && await $query(Parse.Session)
+    .equalTo('sessionToken', req.sessionToken)
+    .include('user')
+    .first({ useMasterKey: true })
+  if (!session) {
+    return res.status(401).send('Unbefügter Zugriff.')
+  }
+  req.user = session.get('user')
+  next()
+})
 
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
@@ -329,7 +343,7 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     start: { header: 'Startdatum', width: 12, style: dateStyle },
     end: { header: 'Enddatum', width: 12, style: dateStyle },
     duration: { header: 'Laufzeit', width: 10, style: alignRight },
-    autoExtends: { header: 'A-V', width: 15, style: alignRight },
+    autoExtends: { header: 'Autoverl.', width: 15, style: alignRight },
     monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
     pp: { header: 'Belegungspaket', width: 20 }
   })
@@ -1348,6 +1362,247 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
+router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
+  const partnerQuarter = await $getOrFail('PartnerQuarter', req.params.quarterId, 'rows')
+  if (partnerQuarter.get('company').id !== req.user.get('company').id) {
+    throw new Error('Unbefügter Zugriff')
+  }
+
+  const filename = `Aufträge Q${partnerQuarter.get('quarter')}`
+  const workbook = new excel.Workbook()
+  const worksheet = workbook.addWorksheet('Quartalsbericht')
+  const fields = {
+    orderNo: { header: 'Auftragsnr.', width: 15 },
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    autoExtends: { header: 'Autoverl.', width: 10, style: alignCenter },
+    periodStart: { header: 'Zeitraumstart', width: 12, style: dateStyle },
+    periodEnd: { header: 'Zeitraumende', width: 12, style: dateStyle },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    months: { header: 'Monate', width: 10, style: monthsStyle },
+    total: { header: 'Zeitraumsumme', width: 15, style: priceStyle }
+  }
+
+  function findFieldKey (header) {
+    for (const [key, dict] of Object.entries(fields)) {
+      if (header === dict.header) {
+        return key
+      }
+    }
+    return null
+  }
+
+  const rows = partnerQuarter.get('rows').map((row) => {
+    row.start = dateString(row.start)
+    row.end = dateString(row.end)
+    row.periodStart = dateString(row.periodStart)
+    row.periodEnd = dateString(row.periodEnd)
+    row.autoExtends = row.autoExtendsBy
+      ? row.canceledAt ? 'nein (gekündigt)' : 'ja'
+      : 'nein'
+    for (const [header, value] of Object.entries(row.extraCols || {})) {
+      const fieldKey = findFieldKey(header)
+      if (fieldKey) {
+        row[fieldKey] = value
+      }
+    }
+    return row
+  })
+
+  // remove externalOrderNo / campaignNo columns if empty
+  !rows.find(row => row.externalOrderNo) && (delete fields.externalOrderNo)
+  !rows.find(row => row.campaignNo) && (delete fields.campaignNo)
+
+  const { columns, headerRowValues } = getColumnHeaders(fields)
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 10 }
+  worksheet.addRows(rows)
+
+  // add total row
+  const keys = ['monthly', 'total']
+  const totals = {}
+  for (const key of keys.filter(key => key in fields)) {
+    totals[key] = rows.reduce((sum, row) => round2(sum + (row[key] || 0)), 0)
+  }
+  const totalRow = worksheet.addRow(totals)
+  totalRow.font = { name: 'Calibri', bold: true }
+
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
+router.get('/bookings', handleErrorAsync(async (req, res) => {
+  const housingTypes = await fetchHousingTypes()
+  const states = await fetchStates()
+  const workbook = new excel.stream.xlsx.WorkbookWriter({ useStyles: true })
+  const worksheet = workbook.addWorksheet('Meine Buchungen')
+
+  const fields = {
+    orderNo: { header: 'Auftragsnr.', width: 15 },
+    companyName: { header: 'Kunde', width: 40 },
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    autoExtends: { header: 'Autoverl.', width: 10, style: alignCenter },
+    periodStart: { header: 'Zeitraumstart', width: 12, style: dateStyle },
+    periodEnd: { header: 'Zeitraumende', width: 12, style: dateStyle },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    months: { header: 'Monate', width: 10, style: monthsStyle },
+    total: { header: 'Zeitraumsumme', width: 15, style: priceStyle }
+  }
+
+  if (req.user.accType === 'partner') {
+    delete fields.companyName
+  }
+  if (!req.query.f && !req.query.t) {
+    delete fields.periodStart
+    delete fields.periodEnd
+    delete fields.months
+    delete fields.total
+  }
+
+  const { columns, headerRowValues } = getColumnHeaders(fields)
+  worksheet.columns = columns
+
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true }
+  headerRow.height = 24
+
+  const { index, query, sort } = await Parse.Cloud.run(
+    'search-bookings',
+    { ...req.query, sb: 'no', sd: 'asc', returnQuery: true },
+    { sessionToken: req.sessionToken }
+  )
+  const keepAlive = '1m'
+  const size = 5000
+  // Sorting should be by _shard_doc or at least include _shard_doc
+  sort.push({ _shard_doc: 'desc' })
+  let searchAfter
+  let pointInTimeId = (await elastic.openPointInTime({ index, keep_alive: keepAlive })).id
+  let count = 0
+  while (true) {
+    const { pit_id, hits: { hits } } = await elastic.search({
+      body: {
+        pit: {
+          id: pointInTimeId,
+          keep_alive: keepAlive
+        },
+        size,
+        track_total_hits: false,
+        query,
+        sort,
+        search_after: searchAfter
+      }
+    })
+    if (!hits || !hits.length) {
+      break
+    }
+    pointInTimeId = pit_id
+    const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
+    const bookings = await $query('Booking')
+      .containedIn('objectId', bookingIds)
+      .include(['deleted', 'company'])
+      .limit(bookingIds.length)
+      .find({ useMasterKey: true })
+    for (const hit of hits) {
+      const booking = bookings.find(obj => obj.id === hit._source.bookingId)
+      if (!booking) { continue }
+      const row = {
+        ...booking.attributes,
+        orderNo: booking.get('no'),
+        companyName: booking.get('company').get('name'),
+        objectId: booking.get('cube').id,
+        ...booking.get('cube').attributes,
+        htCode: housingTypes[booking.get('cube').get('ht')?.id]?.name || booking.get('cube').get('hti') || booking.get('cube').get('media') || '',
+        stateName: states[booking.get('cube').get('state').id]?.name || '',
+        ...getCubeOrderDates(booking.get('cube'), booking),
+        periodStart: dateString(req.query.f),
+        periodEnd: dateString(req.query.t),
+        autoExtends: booking.get('autoExtendsBy')
+          ? booking.get('canceledAt') ? 'nein (gekündigt)' : 'ja'
+          : 'nein'
+      }
+
+      const { pricingModel, commission, fixedPrice, fixedPriceMap } = booking.get('company').get('distributor')
+
+      if (pricingModel === 'commission' && commission) {
+        row.monthlyEnd = booking.get('endPrices')?.[row.objectId] || 0
+        row.distributorRate = commission
+        const distributorRatio = round5(row.distributorRate / 100)
+        row.monthlyDistributor = round2(row.monthlyEnd * distributorRatio)
+        row.monthly = round2(row.monthlyEnd - row.monthlyDistributor)
+      }
+      if (pricingModel === 'fixed') {
+        row.monthly = fixedPrice || fixedPriceMap[row.media]
+      }
+      if (!pricingModel && booking.get('monthlyMedia')?.[row.objectId]) {
+        row.monthly = booking.get('monthlyMedia')?.[row.objectId]
+      }
+
+      if (req.query.f && req.query.t) {
+        row.months = moment(req.query.t).add(1, 'days').diff(req.query.f, 'months', true)
+        row.total = round2(row.monthly * (row.months || 0))
+      }
+      worksheet.addRow(row)
+    }
+    count += hits.length
+    if (hits.length < size) {
+      break
+    }
+    // search after has to provide value for each sort
+    const lastHit = hits[hits.length - 1]
+    searchAfter = lastHit.sort
+  }
+  await elastic.closePointInTime({ id: pointInTimeId })
+
+  const colSumFormula = `SUM(INDIRECT(ADDRESS(2,COLUMN(),4)):INDIRECT(ADDRESS(${count + 1},COLUMN(),4)))`
+  const totalRow = worksheet.addRow({
+    monthly: { formula: colSumFormula },
+    total: { formula: colSumFormula }
+  })
+  totalRow.height = 24
+  totalRow.font = { bold: true, size: 12 }
+
+  worksheet.commit()
+
+  const buffer = await new Promise((resolve, reject) => {
+    workbook.commit().then(() => {
+      const stream = workbook.stream
+      const result = stream.read()
+      resolve(result)
+    }).catch((e) => {
+      reject(e)
+    })
+  })
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', 'attachment; filename=Meine Buchungen.xlsx')
+  res.set('Content-Length', buffer.length)
+  return res.send(buffer)
 }))
 
 router.get('/contract-extend-pdf/:contractId', handleErrorAsync(async (req, res) => {
