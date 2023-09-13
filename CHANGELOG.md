@@ -1,3 +1,10 @@
+# [1.104.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.103.2...1.104.0) (2023-09-13)
+
+
+### Features
+
+* add periodicDistributorQuarter marker for invoices ([44034c6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/44034c62cb137d5c3179ed2db94e442931f883e8))
+
 ## [1.103.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.103.1...1.103.2) (2023-09-13)
 
 
