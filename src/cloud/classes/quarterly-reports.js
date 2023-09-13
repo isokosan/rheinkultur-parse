@@ -8,7 +8,6 @@ const QuarterlyReport = Parse.Object.extend('QuarterlyReport')
 const reportQueue = createQueue('process_quarterly_report')
 reportQueue.process(path.join(BASE_DIR, 'queues/index.js'))
 reportQueue.obliterate({ force: true }).then(response => consola.success('obliterated', response))
-// reportQueue.getJobs().then(response => consola.info('jobs', response))
 
 function validateQuarterYearString (str) {
   const regex = /^[1-4]-\d{4}$/
@@ -106,7 +105,12 @@ Parse.Cloud.define('quarterly-report-finalize', async ({ params: { quarter } }) 
   if (report.get('status') !== 'draft') {
     throw new Error('Cannot finalize report in non-draft status')
   }
-  return report.set('status', 'finalized').save(null, { useMasterKey: true })
+  report.set('status', 'finalized')
+  await report.save(null, { useMasterKey: true })
+  return {
+    data: report,
+    message: 'Bericht finalisiert'
+  }
 }, $adminOnly)
 
 Parse.Cloud.define('job-start', ({ params: { id } }) => reportQueue.add({ id }).then(job => job.id), $adminOnly)
@@ -116,7 +120,6 @@ Parse.Cloud.define('job-status', async ({ params: { jobId } }) => {
   if (!job) {
     throw new Error('Job not found')
   }
-  consola.info(job)
   if (job.failedReason || job.stacktrace.length) {
     consola.error(job.stacktrace)
     throw new Error(job.failedReason)

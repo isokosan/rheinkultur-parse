@@ -57,6 +57,21 @@ const getQuarterStartEnd = function (quarter) {
   return { start, end }
 }
 
+const CUBE_SUMMARY_KEYS = [
+  'objectId',
+  'lc',
+  'media',
+  'htId',
+  'htCode',
+  'hti',
+  'str',
+  'hsnr',
+  'plz',
+  'ort',
+  'stateId',
+  'stateName'
+]
+
 const getCubeSummary = function (cube) {
   const summary = cube.toJSON()
   delete summary.createdAt
@@ -70,6 +85,11 @@ const getCubeSummary = function (cube) {
     summary.stateId = summary.state.objectId
     summary.stateName = summary.state.name
     delete summary.state
+  }
+  for (const key of Object.keys(summary)) {
+    if (!CUBE_SUMMARY_KEYS.includes(key)) {
+      delete summary[key]
+    }
   }
   return summary
 }

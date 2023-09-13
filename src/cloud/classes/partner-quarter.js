@@ -15,7 +15,7 @@ Parse.Cloud.beforeSave(PartnerQuarter, async ({ object: partnerQuarter }) => {
 })
 
 Parse.Cloud.beforeFind(PartnerQuarter, ({ query }) => {
-  !query._include.includes('bookings') && query.exclude('bookings')
+  !query._include.includes('rows') && query.exclude('rows')
 })
 
 Parse.Cloud.afterFind(PartnerQuarter, async ({ objects }) => {
@@ -41,10 +41,8 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
     return partnerQuarter.toJSON()
   }
   const { pricingModel, commission, fixedPrice, fixedPriceMap, periodicInvoicing } = company.get('distributor')
-  // get pricing info
   const { start, end } = getQuarterStartEnd(quarter)
   const bookings = {}
-  let endTotal = 0
   let total = 0
   await $query('Booking')
     .equalTo('company', company)
@@ -100,9 +98,7 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
         row.campaignNo = booking.get('campaignNo')
 
         bookings[booking.id] = row
-        // totals
         total = round2(total + (row.monthly * row.months || 0))
-        endTotal = round2(endTotal + (row.monthlyEnd * row.months || 0))
       }
     }, { useMasterKey: true })
 
@@ -110,12 +106,13 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
     total = round2(total + periodicInvoicing.total)
   }
 
+  const rows = Object.values(bookings)
   partnerQuarter.set({
-    bookings,
-    bookingCount: Object.keys(bookings).length,
+    rows,
     total,
-    endTotal
+    count: rows.length
   })
+
   await partnerQuarter.save(null, { useMasterKey: true })
   return partnerQuarter.toJSON()
 }
@@ -127,12 +124,12 @@ Parse.Cloud.define('partner-quarters', async ({ user }) => {
   }
   const companyId = user.get('company').id
   const quarter = moment(await $today()).format('Q-YYYY')
-
-  // fetch separately later and use this function as queue worker
-  return {
-    current: await getOrCalculatePartnerQuarter(companyId, quarter),
-    last: await getOrCalculatePartnerQuarter(companyId, moment(quarter, 'Q-YYYY').subtract(1, 'quarter').format('Q-YYYY'))
-  }
+  const current = await getOrCalculatePartnerQuarter(companyId, quarter)
+  const lastQuarter = moment(quarter, 'Q-YYYY').subtract(1, 'quarter')
+  const last = lastQuarter.isBefore('2023-07-01', 'quarter')
+    ? null
+    : await getOrCalculatePartnerQuarter(companyId, lastQuarter.format('Q-YYYY'))
+  return { current, last }
 }, { requireUser: true })
 
 Parse.Cloud.define('partner-quarter-close', async ({ params: { companyId, quarter }, user }) => {
@@ -167,3 +164,7 @@ Parse.Cloud.define('partner-quarter-close', async ({ params: { companyId, quarte
     data: partnerQuarter.toJSON()
   }
 }, { requireUser: true })
+
+Parse.Cloud.define('partner-quarter', async ({ params: { companyId, quarter } }) => {
+  return getOrCalculatePartnerQuarter(companyId, quarter)
+}, { requireMaster: true })

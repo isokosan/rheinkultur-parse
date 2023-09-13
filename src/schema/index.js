@@ -546,14 +546,28 @@ const schemaDefinitions = {
     CLP: { ...readMasterOnly, ...writeMasterOnly },
     fields: {
       quarter: { type: 'String', required: true }, // Q-YYYY
-      status: { type: 'String' }
+      status: { type: 'String' },
+      rows: { type: 'Array' }, // holds all data
+      // totals (summaries)
+      rheinkultur: { type: 'Object' }, // Total
+      customers: { type: 'Object' }, // Regular Contracts
+      distributors: { type: 'Object' }, // Partner Quarters
+      agencies: { type: 'Object' }, // Agencies
+      regionals: { type: 'Object' }, // SKK, SKS
+      lessors: { type: 'Object' } // TLK, TBS, etc
+
     }
   },
   PartnerQuarter: {
     CLP: { ...readMasterOnly, ...writeMasterOnly },
     fields: {
+      company: { type: 'Pointer', targetClass: 'Company', required: true },
       quarter: { type: 'String', required: true }, // Q-YYYY
-      status: { type: 'String' }
+      status: { type: 'String' },
+      rows: { type: 'Array' }, // holds all data
+      // totals (summary)
+      total: { type: 'Number' },
+      count: { type: 'Number' }
     }
   },
   PLZ: {

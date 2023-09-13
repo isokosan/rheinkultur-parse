@@ -238,12 +238,22 @@ async function processCreditNotes (start, end) {
   return response
 }
 
-// TODO: Process completed partner quarters instead of bookings
-// Or alternatively, fetch partner quarters dynamically
-// async function processPartnerQuarters (quarter) {
-//   const response = []
-//   return response
-// }
+// TODO: Check Marc Asriel periodic invoice as row
+async function processPartnerQuarters (quarter) {
+  const response = []
+  await $query('PartnerQuarter')
+    .equalTo('quarter', quarter)
+    .equalTo('status', 'finalized')
+    .include(['rows', 'company'])
+    .each((partnerQuarter) => {
+      const companyName = partnerQuarter.get('company').get('name')
+      response.push(...(partnerQuarter.get('rows') || []).map(row => ({
+        ...row,
+        companyName
+      })))
+    }, { useMasterKey: true })
+  return response
+}
 
 // Kinetic, Here & Now etc.
 async function processCustomContracts (start, end) {
@@ -511,8 +521,7 @@ module.exports = async function (job) {
   const mediaInvoices = await processMediaInvoices(start, end)
   job.progress('Processing custom invoices...')
   const customInvoices = await processCustomInvoices(start, end)
-  // TODO: process partner quarters
-  // const bookings = await processBookings(start, end)
+  const partnerBookings = await processPartnerQuarters(quarter)
   job.progress('Processing 0€ contracts...')
   const zeroContracts = await processCustomContracts(start, end)
   job.progress('Processing occupied cubes...')
@@ -523,7 +532,7 @@ module.exports = async function (job) {
   const rows = await Promise.all([
     ...mediaInvoices,
     ...customInvoices,
-    // ...bookings,
+    ...partnerBookings,
     ...zeroContracts,
     ...occupiedCubes,
     ...creditNotes
