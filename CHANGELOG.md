@@ -1,3 +1,10 @@
+# [1.105.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.104.0...1.105.0) (2023-09-13)
+
+
+### Features
+
+* add booking exports ([ec39495](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ec3949593532897c70f476c07baa30e4e6b47b07))
+
 # [1.104.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.103.2...1.104.0) (2023-09-13)
 
 
