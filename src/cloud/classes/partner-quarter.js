@@ -102,11 +102,37 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
       }
     }, { useMasterKey: true })
 
+  const rows = Object.values(bookings)
   if (periodicInvoicing?.total) {
-    total = round2(total + periodicInvoicing.total)
+    // add row with invoice total
+    const invoice = await $query('Invoice')
+      .equalTo('company', company)
+      .include('lessor')
+      .equalTo('periodicDistributorQuarter', quarter)
+      .first({ useMasterKey: true })
+    if (invoice) {
+      const row = {
+        voucherNos: invoice.get('lexNo'),
+        lc: invoice.get('lessor').get('lessor').code,
+        distributorId: company.id,
+        companyId: company.id,
+        companyName: company.get('name'),
+        start: invoice.get('periodStart'),
+        end: invoice.get('periodEnd')
+      }
+      row.periodStart = row.start > start ? row.start : start
+      row.periodEnd = row.end < end ? row.end : end
+      const duration = moment(row.end).add(1, 'days').diff(moment(row.start), 'months', true)
+      const months = moment(row.periodEnd).add(1, 'days').diff(moment(row.periodStart), 'months', true)
+      row.total = invoice.get('netTotal') || 0
+      row.duration = round2(duration)
+      row.months = months
+      row.extraCols = invoice.get('extraCols')
+      rows.push(row)
+      total = round2(total + row.total)
+    }
   }
 
-  const rows = Object.values(bookings)
   partnerQuarter.set({
     rows,
     total,

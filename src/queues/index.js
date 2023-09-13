@@ -129,6 +129,7 @@ async function processCustomInvoices (start, end) {
   const invoicesQuery = $query('Invoice')
     .equalTo('status', 2)
     .equalTo('media', null)
+    .equalTo('periodicDistributorQuarter', null) // exclude periodic distributor invoices (MA Lionsgroup)
     .notEqualTo('lessor', null)
     .greaterThan('periodEnd', start)
     .lessThanOrEqualTo('periodStart', end)

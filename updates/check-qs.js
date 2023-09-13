@@ -34,6 +34,20 @@
 // }
 
 async function recalculate () {
+
+  await $query('Invoice')
+    .equalTo('company', $parsify('Company', '4EBkZmBra0'))
+    .equalTo('extraCols.Motiv', 'Potsdam Vertrag')
+    .equalTo('netTotal', 7000)
+    .equalTo('periodicDistributorQuarter', null)
+    .each((invoice) => {
+      const periodStart = invoice.get('periodStart')
+      const quarter = moment(periodStart).format('Q-YYYY')
+      invoice.set('periodicDistributorQuarter', quarter)
+      console.log('saved periodicDistributorQuarter')
+      return invoice.save(null, { useMasterKey: true })
+    }, { useMasterKey: true })
+
   await $query('PartnerQuarter').equalTo('status', 'finalized').each(pq => pq.destroy({ useMasterKey: true }), { useMasterKey: true })
   const partners = await $query('Company').notEqualTo('distributor', null).find({ useMasterKey: true })
   for (const partner of partners) {
