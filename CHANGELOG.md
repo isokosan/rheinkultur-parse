@@ -1,3 +1,10 @@
+## [1.103.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.103.1...1.103.2) (2023-09-13)
+
+
+### Bug Fixes
+
+* partner quarters row style ([0fe56f7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0fe56f7040c0b5cd494504229fddcf480b016adf))
+
 ## [1.103.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.103.0...1.103.1) (2023-09-12)
 
 
