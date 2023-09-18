@@ -44,6 +44,19 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
     const cube = await $getOrFail('Cube', cubeId)
     booking.set('cube', cube)
   }
+
+  // make sure monthlyMedia is only allowing for this single cube
+  if (booking.get('monthlyMedia')) {
+    const monthlyMedia = booking.get('monthlyMedia')
+    if (Object.keys(monthlyMedia || {}).length) {
+      for (const id of Object.keys(monthlyMedia || {})) {
+        if (id !== cubeId) {
+          delete monthlyMedia[id]
+        }
+      }
+    }
+    Object.keys(monthlyMedia).length ? booking.set('monthlyMedia', monthlyMedia) : booking.unset('monthlyMedia')
+  }
 })
 
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {

@@ -984,7 +984,7 @@ async function deleteAndRecreateIndex (index, retries = 0) {
     throw new Error('Create response not acknowledged')
   } catch (error) {
     if (error.statusCode === 400) {
-      if (error.body.error.type === 'resource_already_exists_exception' && retries < 5) {
+      if (['process_cluster_event_timeout_exception', 'resource_already_exists_exception'].includes(error.body.error.type) && retries < 5) {
         retries++
         return deleteAndRecreateIndex(index, retries)
       }
