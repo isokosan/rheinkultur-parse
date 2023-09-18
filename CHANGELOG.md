@@ -1,3 +1,10 @@
+## [1.105.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.105.0...1.105.1) (2023-09-18)
+
+
+### Bug Fixes
+
+* add monthly media cleanup for bookings ([0d3a21d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0d3a21d5bb68a08ccb378082b1fdee13bb3c0819))
+
 # [1.105.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.104.0...1.105.0) (2023-09-13)
 
 
