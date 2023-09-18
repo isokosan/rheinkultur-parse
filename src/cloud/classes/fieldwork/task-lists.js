@@ -913,7 +913,6 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
 
 // what scout sees on location map when clicking on a cube
 Parse.Cloud.define('task-list-retrieve-as-scout', async ({ params: { id: taskListId, cubeId }, user }) => {
-  consola.warn(user)
   let task = await $query('TaskList').get(taskListId, { sessionToken: user.getSessionToken() })
   // control has disassembly within the control dates
   if (task.get('type') === 'control') {
