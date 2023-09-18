@@ -1,3 +1,10 @@
+# [1.106.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.105.1...1.106.0) (2023-09-18)
+
+
+### Features
+
+* add htNM to not markeatable housing types ([a43ab3e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a43ab3e40778a046ad8477501a890ff84f9acbdd))
+
 ## [1.105.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.105.0...1.105.1) (2023-09-18)
 
 
