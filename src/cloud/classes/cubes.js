@@ -155,7 +155,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
     if (cube.get('hti') && ['59', '82', '82 A', '82 B', '82 C', '83', '92'].includes(cube.get('hti'))) {
       cube.set('hti', `KVZ ${cube.get('hti')}`)
     }
-
+    cube.get('htNM') && cube.set('hti', 'Nicht vermarktbar')
     if (isPublic) {
       for (const key of Object.keys(cube.attributes)) {
         if (!PUBLIC_FIELDS.includes(key)) {
@@ -277,9 +277,17 @@ Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) 
 
 Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, user }) => {
   const cube = await $getOrFail(Cube, id)
+  if (housingTypeId === 'htNM') {
+    const changes = { htId: [cube.get('ht')?.id, 'htNM'] }
+    const audit = { user, fn: 'cube-update', data: { changes } }
+    cube.unset('ht').set('htNM', true)
+    return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
+  }
   const ht = housingTypeId ? await $getOrFail('HousingType', housingTypeId) : null
-  if ((cube.get('ht')?.id || null) === (housingTypeId || null)) { throw new Error('Keine Änderung.') }
-  const changes = { htId: [cube.get('ht')?.id, housingTypeId] }
+  const currentHtId = cube.get('htNM') ? 'htNM' : (cube.get('ht')?.id || null)
+  if (currentHtId === (housingTypeId || null)) { throw new Error('Keine Änderung.') }
+  const changes = { htId: [cube.get('htNM') ? 'htNM' : cube.get('ht')?.id, housingTypeId] }
+  cube.unset('htNM')
   housingTypeId
     ? cube.set({ ht, media: ht.get('media') })
     : cube.unset('ht')
@@ -372,7 +380,7 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   if (cube.get('dAt')) {
     throw new Error('CityCube kann nicht verifiziert werden, weil er ausgeblendet ist. ')
   }
-  if (!cube.get('ht')) {
+  if (!cube.get('ht') && !cube.get('htNM')) {
     throw new Error('Bitte Gehäusetyp auswählen.')
   }
   const { state, str, plz, ort } = cube.attributes

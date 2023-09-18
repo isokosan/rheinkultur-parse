@@ -103,6 +103,7 @@ const INDEXES = {
         PG: cube.get('PG'),
         Agwb: cube.get('Agwb'),
         TTMR: cube.get('TTMR'),
+        htNM: cube.get('htNM'),
 
         scoutData: cube.get('scoutData'),
         klsId: cube.get('importData')?.klsId,
@@ -337,6 +338,10 @@ Parse.Cloud.define('search', async ({
     media = htId
     htId = undefined
   }
+  if (htId === 'htNM') {
+    s.push('htNM')
+    htId = undefined
+  }
 
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
@@ -494,6 +499,7 @@ Parse.Cloud.define('search', async ({
   s.includes('pOk') && bool.must.push({ exists: { field: 'pOk' } })
   s.includes('pMulti') && bool.must.push({ exists: { field: 'pMulti' } })
   s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
+  s.includes('htNM') && bool.must.push({ exists: { field: 'htNM' } })
   s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
   s.includes('PDGA') && bool.must.push({ exists: { field: 'PDGA' } })
   s.includes('nMR') && bool.must.push({ exists: { field: 'nMR' } })

@@ -93,6 +93,7 @@ Parse.Cloud.define('company-create', async ({
 
   const {
     name,
+    email,
     paymentType,
     dueDays,
     contractDefaults
@@ -100,6 +101,7 @@ Parse.Cloud.define('company-create', async ({
 
   const company = new Company({
     name,
+    email,
     paymentType,
     dueDays,
     contractDefaults,
