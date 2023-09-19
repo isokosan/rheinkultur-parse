@@ -1,3 +1,10 @@
+## [1.106.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.106.1...1.106.2) (2023-09-19)
+
+
+### Bug Fixes
+
+* cookie consent unique together ([e83ed22](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e83ed22814640643250dd0656702fe4fa2df658f))
+
 ## [1.106.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.106.0...1.106.1) (2023-09-19)
 
 
