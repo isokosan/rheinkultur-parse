@@ -1,3 +1,10 @@
+## [1.106.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.106.0...1.106.1) (2023-09-19)
+
+
+### Bug Fixes
+
+* email export attachments auth bug ([970ffaf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/970ffaf7279fb3f54129b4789f5fe08bbb9e93c5))
+
 # [1.106.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.105.1...1.106.0) (2023-09-18)
 
 
