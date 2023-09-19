@@ -325,7 +325,7 @@ const SERVICES = {
 }
 
 Parse.Cloud.beforeSave(CookieConsent, async ({ object: cookieConsent }) => {
-  await ensureUniqueField(cookieConsent, ['user', 'uuid'])
+  await ensureUniqueField(cookieConsent, 'user', 'uuid')
 })
 
 function getCurrentFromActivity (activity = {}) {
