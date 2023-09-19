@@ -509,7 +509,10 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
     attachments.push({
       filename: invoice.get('lexNo') + ' Rechnungs-Standorte.xlsx',
       contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      href: process.env.EXPORTS_SERVER_URL + '/invoice-summary?id=' + invoice.id
+      href: process.env.EXPORTS_SERVER_URL + '/invoice-summary?id=' + invoice.id,
+      httpHeaders: {
+        'x-exports-master-key': process.env.EXPORTS_MASTER_KEY
+      }
     })
   }
   for (const doc of invoice.get('docs') || []) {

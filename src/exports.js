@@ -20,15 +20,16 @@ const { CUBE_STATUSES, CUBE_FEATURES } = require('@/schema/enums')
 
 // validate session and attach user from Parse
 router.use(async (req, res, next) => {
+  req.master = ['/invoice-summary'].includes(req._parsedUrl.pathname) && req.headers['x-exports-master-key'] === process.env.EXPORTS_MASTER_KEY
   req.sessionToken = req.query.sid
   const session = req.query.sid && await $query(Parse.Session)
     .equalTo('sessionToken', req.sessionToken)
     .include('user')
     .first({ useMasterKey: true })
-  if (!session) {
+  req.user = session?.get('user')
+  if (!req.master && !req.user) {
     return res.status(401).send('Unbefügter Zugriff.')
   }
-  req.user = session.get('user')
   next()
 })
 
