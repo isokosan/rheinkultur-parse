@@ -96,6 +96,11 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
   return user
 }, { requireUser: true })
 
+Parse.Cloud.define('user-location', async ({ params: { latitude, longitude }, user }) => user
+  .set('gp', $geopoint(latitude, longitude))
+  .set('gpAt', new Date())
+  .save(null, { useMasterKey: true }), { requireUser: true })
+
 Parse.Cloud.define('user-update', async ({ params: { id, ...params }, user: auth }) => {
   const user = await $getOrFail(Parse.User, id, ['companyPerson'])
   const {
