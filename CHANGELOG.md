@@ -1,3 +1,11 @@
+# [1.107.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.106.2...1.107.0) (2023-09-20)
+
+
+### Features
+
+* finish control-reports ([7e09818](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7e09818a086080207145f19dcb928c757e8ee215))
+* finish v1 control reports ([f20861f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f20861f7127ee6beb11b1be77785c0ffca690cf9))
+
 ## [1.106.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.106.1...1.106.2) (2023-09-19)
 
 
