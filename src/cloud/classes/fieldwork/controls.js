@@ -431,10 +431,13 @@ Parse.Cloud.define('control-summary', async ({ params: { id: controlId }, user }
 Parse.Cloud.beforeSave(ControlReport, async ({ object: report }) => {
   await ensureUniqueField(report, 'control', 'company')
   const submissions = Object.values(report.get('submissions') || {})
-  const included = submissions.filter(x => x.status === 'include')
-  const pending = submissions.filter(x => !x.status)
-  report.set('total', included.reduce((acc, x) => round2(acc + (x.cost || 0)), 0))
-  report.set('status', pending.length === 0 ? 'complete' : null)
+  report.set('total', submissions.filter(x => x.status === 'include').reduce((acc, x) => round2(acc + (x.cost || 0)), 0))
+  report.set('counts', Object.values(submissions).reduce((acc, x) => {
+    acc[x.status || 'pending'] = (acc[x.status || 'pending'] || 0) + 1
+    acc.total = (acc.total || 0) + 1
+    return acc
+  }, {}))
+  report.set('status', !report.get('counts').pending ? 'complete' : null)
 })
 
 Parse.Cloud.define('control-generate-reports', async ({ params: { id: controlId }, user }) => {
@@ -506,6 +509,7 @@ Parse.Cloud.define('control-report-submission', async ({ params: { id: reportId,
   return {
     submissions: report.get('submissions'),
     total: report.get('total'),
+    counts: report.get('counts'),
     status: report.get('status')
   }
 }, $fieldworkManager)

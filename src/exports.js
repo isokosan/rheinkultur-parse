@@ -861,16 +861,15 @@ router.get('/disassemblies', handleErrorAsync(async (req, res) => {
   res.set('Content-Disposition', `attachment; filename=Demontage ${req.params.monthYear}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
-router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
-  const control = await $getOrFail('Control', req.params.controlId)
-
+router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
+  const report = await $getOrFail('ControlReport', req.params.reportId, ['control', 'company', 'company.tags'])
   const workbook = new excel.Workbook()
   const worksheet = workbook.addWorksheet('Report')
 
   const infos = [
-    { label: 'Kontrolle', content: control.get('name') || '-' },
-    { label: 'Total CityCubes', content: control.get('counts').total },
-    { label: 'Controlled CityCubes', content: control.get('counts').completed }
+    { label: 'Kontrolle', content: report.get('control').get('name') || '-' },
+    { label: 'Kunde/VP', content: report.get('company').get('name') || '-' },
+    { label: 'Reperaturen erforderlich', content: report.get('counts').include }
   ]
 
   let i = 1
@@ -884,51 +883,19 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
     i++
   }
   worksheet.addRow()
-  i++
 
   // prepare maps
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
-
-  async function getOrdersMap (orderKeys) {
-    const orderKeyArrs = await [...new Set(orderKeys)].map(key => key.split('$'))
-    const contractIds = orderKeyArrs.filter(([key]) => key === 'Contract').map(([, id]) => id)
-    const response = await $query('Contract')
-      .containedIn('objectId', contractIds)
-      .limit(contractIds.length)
-      .select(['no', 'company', 'motive'])
-      .include('company')
-      .find({ useMasterKey: true })
-      .then(contracts => contracts.reduce((dict, contract) => {
-        dict[`Contract$${contract.id}`] = {
-          no: contract.get('no'),
-          motive: contract.get('motive'),
-          companyName: contract.get('company')?.get('name')
-        }
-        return dict
-      }, {}))
-    const bookingIds = orderKeyArrs.filter(([key]) => key === 'Booking').map(([, id]) => id)
-    return $query('Booking')
-      .containedIn('objectId', bookingIds)
-      .limit(bookingIds.length)
-      .select(['no', 'company', 'motive'])
-      .include('company')
-      .find({ useMasterKey: true })
-      .then(bookings => bookings.reduce((dict, booking) => {
-        dict[`Booking$${booking.id}`] = {
-          no: booking.get('no'),
-          motive: booking.get('motive'),
-          companyName: booking.get('company')?.get('name')
-        }
-        return dict
-      }, response))
-  }
-  const ordersMap = await getOrdersMap(Object.values(control.get('cubeOrderKeys')))
+  const isAldiReport = (report.get('company').get('tags') || []).find(tag => tag.get('name') === 'ALDI')
 
   const { columns, headerRowValues } = getColumnHeaders({
     objectId: { header: 'CityCube ID', width: 20 },
     orderNo: { header: 'Auftragsnr.', width: 15 },
-    companyName: { header: 'Kunde', width: 30 },
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: isAldiReport ? 'VST' : 'Extern Auftragsnr.', width: 20 },
+    campaignNo: { header: isAldiReport ? 'Regionalgesellschaft' : 'Kampagnennr.', width: 20 },
+    media: { header: 'Size', width: 10 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     address: { header: 'Anschrift', width: 20 },
     plz: { header: 'PLZ', width: 10 },
@@ -936,13 +903,7 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
     stateName: { header: 'Bundesland', width: 20 },
     condition: { header: 'Zustand', width: 20 },
     comments: { header: 'Kommentar', width: 20 },
-    repairCost: { header: 'Reperaturkosten', width: 20 },
-    motive: { header: 'Motiv', width: 20 }
-    // start: { header: 'Startdatum', width: 12, style: dateStyle },
-    // end: { header: 'Enddatum', width: 12, style: dateStyle },
-    // duration: { header: 'Laufzeit', width: 10, style: alignRight },
-    // monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
-    // pp: { header: 'Belegungspaket', width: 20 },
+    cost: { header: 'Reperaturkosten', width: 20, style: priceStyle }
   })
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
@@ -953,39 +914,42 @@ router.get('/control-report/:controlId', handleErrorAsync(async (req, res) => {
     no_ad: 'Fehlt/Beschädigt',
     ill: 'Verschmutzt'
   }
-  await $query('TaskList')
-    .equalTo('control', control)
-    .include('submissions')
-    .eachBatch(async (taskLists) => {
-      for (const taskList of taskLists) {
-        const submissions = taskList.get('submissions').filter(s => REPORT_CONDITIONS[s.condition])
-        const cubeIds = taskList.get('cubeIds') || []
-        const cubes = await $query('Cube')
-          .containedIn('objectId', submissions.map(s => s.cube.id))
-          .limit(cubeIds.length)
-          .find({ useMasterKey: true })
-        for (const submission of submissions) {
-          const cube = cubes.find(c => c.id === submission.cube.id)
-          const orderKey = control.get('cubeOrderKeys')?.[cube.id]
-          const { no: orderNo, motive, companyName } = ordersMap[orderKey]
-          worksheet.addRow({
-            objectId: cube.id,
-            orderNo,
-            companyName,
-            htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
-            address: cube.get('str') + ' ' + cube.get('hsnr'),
-            plz: cube.get('plz'),
-            ort: cube.get('ort'),
-            stateName: states[cube.get('state')?.id]?.name || '',
-            condition: REPORT_CONDITIONS[submission.condition] || '',
-            comments: submission.comments || '',
-            motive
-          })
-        }
-      }
-    }, { useMasterKey: true })
+  const submissionIds = Object.keys(report.get('submissions'))
+    .filter(id => report.get('submissions')[id].status === 'include')
+  const submissions = await $query('ControlSubmission')
+    .containedIn('objectId', submissionIds)
+    .include(['orders'])
+    .limit(submissionIds.length)
+    .include('cube')
+    .find({ useMasterKey: true })
+  for (const submission of submissions) {
+    const cube = submission.get('cube')
+    const { no: orderNo, motive, externalOrderNo, campaignNo } = submission.get('order')
+    worksheet.addRow({
+      objectId: cube.id,
+      orderNo,
+      motive,
+      externalOrderNo,
+      campaignNo,
+      media: cube.get('media'),
+      htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
+      address: cube.get('str') + ' ' + cube.get('hsnr'),
+      plz: cube.get('plz'),
+      ort: cube.get('ort'),
+      stateName: states[cube.get('state')?.id]?.name || '',
+      condition: REPORT_CONDITIONS[submission.get('condition')] || '',
+      comments: report.get('submissions')[submission.id].comments || submission.comments || '',
+      cost: report.get('submissions')[submission.id].cost
+    })
+  }
 
-  const filename = safeName(control.get('name'))
+  const totalRow = worksheet.addRow({
+    cost: { formula: `SUM(INDIRECT(ADDRESS(${i + 2},COLUMN(),4)):INDIRECT(ADDRESS(${i + submissions.length + 1},COLUMN(),4)))` }
+  })
+  totalRow.height = 24
+  totalRow.font = { bold: true, size: 12 }
+
+  const filename = safeName(report.get('control').get('name'))
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
