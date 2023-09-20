@@ -461,5 +461,3 @@ Parse.Cloud.define('control-report-submission', async ({ params: { id: reportId,
     status: report.get('status')
   }
 }, $fieldworkManager)
-
-Parse.Cloud.run('control-generate-reports', { id: 'Ka3gIqrVrj' }, { useMasterKey: true })
