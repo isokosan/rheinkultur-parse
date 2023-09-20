@@ -1,3 +1,10 @@
+# [1.108.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.107.1...1.108.0) (2023-09-20)
+
+
+### Features
+
+* add orderType to control criteria ([d772e3c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d772e3c11b286293f49ac06cc9b1bc2b131a0895))
+
 ## [1.107.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.107.0...1.107.1) (2023-09-20)
 
 
