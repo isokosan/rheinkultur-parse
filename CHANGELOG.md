@@ -1,3 +1,10 @@
+# [1.112.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.111.0...1.112.0) (2023-09-20)
+
+
+### Features
+
+* testing out gp and gpAt saving in db with user-location ([8a153ce](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8a153ce35e0770db96d2a070039de9d3f3ae3d24))
+
 # [1.111.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.110.2...1.111.0) (2023-09-20)
 
 
