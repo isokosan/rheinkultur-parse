@@ -1,3 +1,10 @@
+## [1.112.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.112.0...1.112.1) (2023-09-20)
+
+
+### Bug Fixes
+
+* quotas completed count ([7dc41b8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7dc41b8c777943f4c6aaa958465b351336e53fc5))
+
 # [1.112.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.111.0...1.112.0) (2023-09-20)
 
 
