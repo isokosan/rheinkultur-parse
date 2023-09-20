@@ -377,6 +377,40 @@ Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
+Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
+  const control = await $getOrFail(Control, controlId)
+  if (control.get('status') !== 1) {
+    throw new Error('Nur geplante Kontrollen können zurückgezogen werden.')
+  }
+  const counts = control.get('counts')
+  if (counts.completed || counts.rejected) {
+    throw new Error('Kontrollen mit erledigten Listen können nicht zurückgezogen werden.')
+  }
+  await $query('TaskList')
+    .equalTo('control', control)
+    .select('statuses')
+    .eachBatch(async (taskLists) => {
+      for (const taskList of taskLists) {
+        if (Object.keys(taskList.get('statuses')).length) {
+          throw new Error('Kontrollen mit erledigten Listen können nicht zurückgezogen werden.')
+        }
+      }
+    }, { useMasterKey: true })
+
+  const taskListAudit = { user, fn: 'task-list-revert' }
+  await $query('TaskList')
+    .equalTo('control', control)
+    .notEqualTo('status', 0)
+    .eachBatch(async (taskLists) => {
+      for (const taskList of taskLists) {
+        await taskList.set('status', 0).save(null, { useMasterKey: true, context: taskListAudit })
+      }
+    }, { useMasterKey: true })
+
+  const audit = { user, fn: 'control-revert' }
+  return control.set({ status: 0 }).save(null, { useMasterKey: true, context: { audit } })
+}, $fieldworkManager)
+
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
   const control = await $getOrFail(Control, controlId)
   return control.destroy({ useMasterKey: true })

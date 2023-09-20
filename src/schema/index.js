@@ -629,6 +629,7 @@ const schemaDefinitions = {
       status: { type: 'Number', required: true },
 
       lastControlBefore: { type: 'Number' },
+      orderType: { type: 'String' },
       criteria: { type: 'Array' },
 
       docs: { type: 'Array' }

@@ -935,6 +935,7 @@ Parse.Cloud.define('task-list-retrieve-as-scout', async ({ params: { id: taskLis
     }
   }
   const submission = await $query(getSubmissionClass(task.get('type')))
+    .equalTo('taskList', $parsify('TaskList', taskListId))
     .equalTo('cube', $parsify('Cube', cubeId))
     .first({ sessionToken: user.getSessionToken() })
   return { task: task.toJSON(), submission: submission?.toJSON() }
