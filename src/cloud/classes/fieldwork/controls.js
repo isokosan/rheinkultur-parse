@@ -218,14 +218,6 @@ Parse.Cloud.beforeDelete(Control, async ({ object: control }) => {
 
 Parse.Cloud.afterDelete(Control, $deleteAudits)
 
-Parse.Cloud.beforeSave(ControlReport, async ({ object: report }) => {
-  await ensureUniqueField(report, 'control', 'company')
-  const total = Object.values(report.get('submissions') || {})
-    .filter(x => x.status === 'include')
-    .reduce((acc, x) => round2(acc + (x.cost || 0)), 0)
-  report.set({ total })
-})
-
 Parse.Cloud.define('control-create', async ({
   params: {
     name,
@@ -388,6 +380,15 @@ Parse.Cloud.define('control-summary', async ({ params: { id: controlId }, user }
   return summary
 }, $fieldworkManager)
 
+Parse.Cloud.beforeSave(ControlReport, async ({ object: report }) => {
+  await ensureUniqueField(report, 'control', 'company')
+  const submissions = Object.values(report.get('submissions') || {})
+  const included = submissions.filter(x => x.status === 'include')
+  const pending = submissions.filter(x => !x.status)
+  report.set('total', included.reduce((acc, x) => round2(acc + (x.cost || 0)), 0))
+  report.set('status', pending.length === 0 ? 'complete' : null)
+})
+
 Parse.Cloud.define('control-generate-reports', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
   if (control.get('status') < 4) {
@@ -456,8 +457,9 @@ Parse.Cloud.define('control-report-submission', async ({ params: { id: reportId,
   await report.set({ submissions }).save(null, { useMasterKey: true })
   return {
     submissions: report.get('submissions'),
-    total: report.get('total')
+    total: report.get('total'),
+    status: report.get('status')
   }
 }, $fieldworkManager)
 
-// Parse.Cloud.run('control-generate-reports', { id: 'e6Ut2nQZoF' }, { useMasterKey: true })
+Parse.Cloud.run('control-generate-reports', { id: 'Ka3gIqrVrj' }, { useMasterKey: true })
