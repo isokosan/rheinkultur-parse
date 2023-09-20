@@ -1,7 +1,9 @@
 const { isEqual } = require('lodash')
 const Control = Parse.Object.extend('Control')
+const ControlReport = Parse.Object.extend('ControlReport')
 const TaskList = Parse.Object.extend('TaskList')
 const { getStatusAndCounts } = require('./task-lists')
+const { ensureUniqueField, round2 } = require('@/utils')
 
 function getCubesQuery (control) {
   const { date, dueDate, lastControlBefore, criteria } = control.attributes
@@ -184,6 +186,7 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
       control.set('cubesQuery', getCubesQuery(control).toJSON())
     }
   }
+
   const pipeline = [
     { $match: { _p_control: { $in: controls.map(c => 'Control$' + c.id) } } },
     { $group: { _id: '$control', taskListCount: { $sum: 1 }, cubeCount: { $sum: '$cubeCount' } } }
@@ -365,14 +368,98 @@ Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, c
   return control.destroy({ useMasterKey: true })
 }, $fieldworkManager)
 
-Parse.Cloud.define('control-report', async ({ params: { id: controlId }, user }) => {
+Parse.Cloud.define('control-summary', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
-  const report = {}
+  const summary = {}
   await $query('TaskList')
     .equalTo('control', control)
     .select(['pk', 'results'])
     .each(async (taskList) => {
-      report[taskList.get('pk')] = taskList.get('results') || {}
+      summary[taskList.get('pk')] = taskList.get('results') || {}
     }, { useMasterKey: true })
-  return report
+  return summary
 }, $fieldworkManager)
+
+Parse.Cloud.beforeSave(ControlReport, async ({ object: report }) => {
+  await ensureUniqueField(report, 'control', 'company')
+  const submissions = Object.values(report.get('submissions') || {})
+  const included = submissions.filter(x => x.status === 'include')
+  const pending = submissions.filter(x => !x.status)
+  report.set('total', included.reduce((acc, x) => round2(acc + (x.cost || 0)), 0))
+  report.set('status', pending.length === 0 ? 'complete' : null)
+})
+
+Parse.Cloud.define('control-generate-reports', async ({ params: { id: controlId }, user }) => {
+  const control = await $getOrFail(Control, controlId)
+  if (control.get('status') < 4) {
+    throw new Error('Control was not yet completed!')
+  }
+  const companies = {}
+  const orderKeys = [...new Set(Object.values(control.get('cubeOrderKeys') || {}))]
+  const bookingIds = orderKeys.filter(x => x.startsWith('Booking')).map(x => x.split('$')[1])
+  if (bookingIds.length) {
+    for (const booking of await $query('Booking')
+      .containedIn('objectId', bookingIds)
+      .limit(bookingIds.length)
+      .select('company')
+      .find({ useMasterKey: true })) {
+      companies['Booking$' + booking.id] = booking.get('company')
+    }
+  }
+  const contractIds = orderKeys.filter(x => x.startsWith('Contract')).map(x => x.split('$')[1])
+  if (contractIds.length) {
+    for (const contract of await $query('Contract')
+      .containedIn('objectId', contractIds)
+      .limit(contractIds.length)
+      .select('company')
+      .find({ useMasterKey: true })) {
+      companies['Contract$' + contract.id] = contract.get('company')
+    }
+  }
+  const reports = {}
+  const taskListQuery = $query('TaskList').equalTo('control', control)
+  await $query('ControlSubmission')
+    .matchesQuery('taskList', taskListQuery)
+    .containedIn('condition', ['no_ad', 'ill'])
+    .select(['objectId', 'condition', 'orderKey'])
+    .eachBatch((submissions) => {
+      for (const submission of submissions) {
+        const companyId = companies[submission.get('orderKey')].id
+        if (!reports[companyId]) {
+          reports[companyId] = {
+            company: companies[submission.get('orderKey')].toPointer(),
+            submissions: {}
+          }
+        }
+        reports[companyId].submissions[submission.id] = {}
+      }
+    }, { useMasterKey: true })
+
+  for (const { company, submissions } of Object.values(reports)) {
+    const report = new ControlReport({ control, company, submissions })
+    await report.save(null, { useMasterKey: true }).catch(consola.error)
+  }
+}, $fieldworkManager)
+
+Parse.Cloud.define('control-report-submission', async ({ params: { id: reportId, submissionId, ...form }, user }) => {
+  const report = await $getOrFail(ControlReport, reportId)
+  const submissions = report.get('submissions')
+  const submission = submissions[submissionId]
+  if (!submission) {
+    throw new Error('Submission not found')
+  }
+  const { include, comments, cost } = form
+  submissions[submissionId] = {
+    comments: comments.trim(),
+    cost,
+    status: include ? 'include' : 'exclude'
+  }
+  await report.set({ submissions }).save(null, { useMasterKey: true })
+  return {
+    submissions: report.get('submissions'),
+    total: report.get('total'),
+    status: report.get('status')
+  }
+}, $fieldworkManager)
+
+Parse.Cloud.run('control-generate-reports', { id: 'Ka3gIqrVrj' }, { useMasterKey: true })

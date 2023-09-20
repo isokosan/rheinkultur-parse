@@ -634,6 +634,15 @@ const schemaDefinitions = {
       docs: { type: 'Array' }
     }
   },
+  ControlReport: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      control: { type: 'Pointer', targetClass: 'Control', required: true },
+      company: { type: 'Pointer', targetClass: 'Company', required: true },
+      submissions: { type: 'Object' },
+      status: { type: 'String' }
+    }
+  },
   Disassembly: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {

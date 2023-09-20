@@ -3,6 +3,31 @@ const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
+Parse.Cloud.afterFind(ControlSubmission, async ({ query, objects: submissions }) => {
+  if (query._include.includes('orders')) {
+    const orderKeys = [...new Set(submissions.map(submission => submission.get('orderKey')))]
+    const orders = {}
+    for (const className of ['Contract', 'Booking']) {
+      const ids = orderKeys.filter(key => key.startsWith(className)).map(key => key.split('$')[1])
+      const query = $query(className)
+        .containedIn('objectId', ids)
+        .limit(ids.length)
+        .select(['no', 'status', 'motive', 'externalOrderNo', 'campaignNo'])
+      for (const item of await query.find({ useMasterKey: true })) {
+        orders[[item.className, item.id].join('$')] = {
+          ...item.attributes,
+          objectId: item.id,
+          className
+        }
+      }
+    }
+    for (const submission of submissions) {
+      const order = orders[submission.get('orderKey')]
+      submission.set('order', order)
+    }
+  }
+})
+
 Parse.Cloud.afterSave(ControlSubmission, async ({ object: submission }) => {
   // cleanup unused cube photos
   const scopes = ['before', 'after'].map(type => ['control', type, 'TL', submission.get('taskList').id].join('-'))
