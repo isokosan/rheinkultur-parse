@@ -360,9 +360,9 @@ const checkScheduleHealth = async function () {
   const lateJobs = jobs.filter(({ late }) => late === 1)
   if (lateJobs.length) {
     let html = '<p>The following jobs have not successfully completed within their allowed durations:</p>'
-    html += lateJobs.map(({ key, notificationDuration, lastCompletedTime }) => {
+    html += lateJobs.map(({ key, notificationDuration, lastCompletedOn }) => {
       return `
-      <p><strong>${key}:</strong> (Hasn't run in the past ${notificationDuration} hour(s). Last completed on: ${lastCompletedTime ? lastCompletedTime.toString() : ''}</p>
+      <p><strong>${key}:</strong> (Hasn't run in the past ${notificationDuration} hour(s). Last completed on: ${lastCompletedOn ? moment(lastCompletedOn).format('DD.MM.YYYY HH:mm') : '-'}</p>
       `
     }).join('')
     return sendMail({
