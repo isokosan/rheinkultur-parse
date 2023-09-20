@@ -432,7 +432,7 @@ Parse.Cloud.beforeSave(ControlReport, async ({ object: report }) => {
   await ensureUniqueField(report, 'control', 'company')
   const submissions = Object.values(report.get('submissions') || {})
   report.set('total', submissions.filter(x => x.status === 'include').reduce((acc, x) => round2(acc + (x.cost || 0)), 0))
-  report.set('counts', Object.values(submissions).reduce((acc, x) => {
+  report.set('counts', submissions.reduce((acc, x) => {
     acc[x.status || 'pending'] = (acc[x.status || 'pending'] || 0) + 1
     acc.total = (acc.total || 0) + 1
     return acc
@@ -505,6 +505,7 @@ Parse.Cloud.define('control-report-submission', async ({ params: { id: reportId,
     cost,
     status: include ? 'include' : 'exclude'
   }
+  !submissions[submissionId].cost && delete submissions[submissionId].cost
   await report.set({ submissions }).save(null, { useMasterKey: true })
   return {
     submissions: report.get('submissions'),
