@@ -1,3 +1,10 @@
+# [1.110.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.109.0...1.110.0) (2023-09-20)
+
+
+### Features
+
+* control report excel exports ([246fa6b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/246fa6b8611c7a230f0fa1f50128f77526a60ae9))
+
 # [1.109.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.108.0...1.109.0) (2023-09-20)
 
 
