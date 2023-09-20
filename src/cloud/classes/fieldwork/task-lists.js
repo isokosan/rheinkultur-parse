@@ -175,6 +175,16 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
       for (const media of ['MFG', 'KVZ']) {
         quotasCompleted[media] = results[media]
       }
+      if (quotas) {
+        let completedQuotaCount = 0
+        for (const key of Object.keys(quotas)) {
+          let total = quotasCompleted[key] || 0
+          const quota = quotas[key]
+          total > quota && (total = quota)
+          completedQuotaCount += total
+        }
+        counts.completed = completedQuotaCount
+      }
       taskList.set({ results, quotasCompleted })
     }
 
