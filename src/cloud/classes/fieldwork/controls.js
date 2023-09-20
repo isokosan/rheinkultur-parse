@@ -6,7 +6,7 @@ const { getStatusAndCounts } = require('./task-lists')
 const { ensureUniqueField, round2 } = require('@/utils')
 
 function getCubesQuery (control) {
-  const { date, dueDate, lastControlBefore, criteria } = control.attributes
+  const { date, dueDate, lastControlBefore, orderType, criteria } = control.attributes
 
   const extendsDuringControlPeriod = $query('Cube')
     .equalTo('order.earlyCanceledAt', null) // not early canceled
@@ -20,7 +20,12 @@ function getCubesQuery (control) {
   let baseQuery = Parse.Query.or(extendsDuringControlPeriod, endDateAfterControlPeriod)
     .greaterThan('order.status', 2)
     .lessThan('order.startsAt', date)
-    // filter out cubes that were controlled in the last x months
+
+  if (orderType) {
+    baseQuery.equalTo('order.className', orderType)
+  }
+
+  // filter out cubes that were controlled in the last x months
   if (lastControlBefore) {
     const lastControlAt = moment(date).subtract(lastControlBefore, 'months').toDate()
     const lastControlQuery = Parse.Query.or(
@@ -222,13 +227,17 @@ Parse.Cloud.define('control-create', async ({
   params: {
     name,
     date,
-    dueDate
+    dueDate,
+    lastControlBefore,
+    orderType
   }, user
 }) => {
   const control = new Control({
     name,
     date,
-    dueDate
+    dueDate,
+    lastControlBefore,
+    orderType
   })
 
   const audit = { user, fn: 'control-create' }
@@ -255,13 +264,18 @@ Parse.Cloud.define('control-update', async ({
     name,
     date,
     dueDate,
+    lastControlBefore,
+    orderType,
     criteria
   }, user
 }) => {
+  // normalize
+  orderType === 'all' && (orderType = null)
+
   const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, dueDate })
+  const changes = $changes(control, { name, date, dueDate, lastControlBefore, orderType })
   changes.criteria = getCriteriaChanges(control.get('criteria'), criteria)
-  control.set({ name, date, dueDate, criteria })
+  control.set({ name, date, dueDate, lastControlBefore, orderType, criteria })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
