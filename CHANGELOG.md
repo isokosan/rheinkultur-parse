@@ -1,3 +1,10 @@
+# [1.109.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.108.0...1.109.0) (2023-09-20)
+
+
+### Features
+
+* add control revert ([21b8481](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/21b8481152ce8ade40e5c5e45f508fe55a3a685d))
+
 # [1.108.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.107.1...1.108.0) (2023-09-20)
 
 
