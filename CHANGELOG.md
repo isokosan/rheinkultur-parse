@@ -1,3 +1,10 @@
+## [1.107.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.107.0...1.107.1) (2023-09-20)
+
+
+### Bug Fixes
+
+* remove redundant control generation ([aec8440](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/aec84404aae77b44de8f8dc4ce6ef1c67b1467b6))
+
 # [1.107.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.106.2...1.107.0) (2023-09-20)
 
 
