@@ -1,5 +1,6 @@
 const { version } = require('@/../package.json')
 const { getCountries } = require('@/services/lex')
+const redis = require('@/services/redis')
 
 const {
   ACC_TYPES: accTypes,
@@ -112,3 +113,24 @@ Parse.Cloud.define('enums', () => ({
   fieldworkStatuses,
   PDGA: Object.keys($PDGA)
 }), { requireUser: true })
+
+Parse.Cloud.define('counts', async ({ user }) => {
+  let counts = await redis.hgetall('counts')
+  if (!Object.keys(counts).length) {
+    counts = {
+      invoices_not_sent: await $query('Invoice')
+        .equalTo('status', 2)
+        .equalTo('mailStatus', null)
+        .equalTo('postStatus', null)
+        .count({ useMasterKey: true }),
+      creditNotes_not_sent: await $query('CreditNote')
+        .equalTo('status', 2)
+        .equalTo('mailStatus', null)
+        .equalTo('postStatus', null)
+        .count({ useMasterKey: true })
+    }
+    await redis.hmset('counts', counts)
+    await redis.expire('counts', 60)
+  }
+  return counts
+}, $internOrAdmin)
