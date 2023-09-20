@@ -364,12 +364,13 @@ Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }
   if (control.get('status') > 0) {
     throw new Error('Control was already planned!')
   }
+  const taskListAudit = { user, fn: 'task-list-plan' }
   await $query('TaskList')
     .equalTo('control', control)
     .equalTo('status', 0)
     .eachBatch(async (records) => {
       for (const record of records) {
-        await record.set('status', 0.1).save(null, { useMasterKey: true })
+        await record.set('status', 0.1).save(null, { useMasterKey: true, context: { audit: taskListAudit } })
       }
     }, { useMasterKey: true })
   const audit = { user, fn: 'control-mark-as-planned' }
@@ -377,7 +378,7 @@ Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
-Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
   if (control.get('status') !== 1) {
     throw new Error('Nur geplante Kontrollen können zurückgezogen werden.')
@@ -403,7 +404,7 @@ Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user, c
     .notEqualTo('status', 0)
     .eachBatch(async (taskLists) => {
       for (const taskList of taskLists) {
-        await taskList.set('status', 0).save(null, { useMasterKey: true, context: taskListAudit })
+        await taskList.set('status', 0).save(null, { useMasterKey: true, context: { audit: taskListAudit } })
       }
     }, { useMasterKey: true })
 

@@ -178,17 +178,52 @@ Parse.Cloud.define('briefing-mark-as-planned', async ({ params: { id: briefingId
   if (briefing.get('status') > 0) {
     throw new Error('Briefing was already planned!')
   }
+  const taskListAudit = { user, fn: 'task-list-plan' }
   await $query('TaskList')
     .equalTo('briefing', briefing)
     .equalTo('status', 0)
     .eachBatch(async (records) => {
       for (const record of records) {
-        await record.set('status', 0.1).save(null, { useMasterKey: true })
+        await record.set('status', 0.1).save(null, { useMasterKey: true, context: { audit: taskListAudit } })
       }
     }, { useMasterKey: true })
   const audit = { user, fn: 'briefing-mark-as-planned' }
   briefing.set({ status: 1 })
   return briefing.save(null, { useMasterKey: true, context: { audit } })
+}, $fieldworkManager)
+
+Parse.Cloud.define('briefing-revert', async ({ params: { id: briefingId }, user }) => {
+  const briefing = await $getOrFail(Briefing, briefingId)
+  if (briefing.get('status') !== 1) {
+    throw new Error('Nur geplante Briefings können zurückgezogen werden.')
+  }
+  const counts = briefing.get('counts')
+  if (counts.completed || counts.rejected) {
+    throw new Error('Briefings mit erledigten Listen können nicht zurückgezogen werden.')
+  }
+  await $query('TaskList')
+    .equalTo('briefing', briefing)
+    .select('statuses')
+    .eachBatch(async (taskLists) => {
+      for (const taskList of taskLists) {
+        if (Object.keys(taskList.get('statuses')).length) {
+          throw new Error('Briefings mit erledigten Listen können nicht zurückgezogen werden.')
+        }
+      }
+    }, { useMasterKey: true })
+
+  const taskListAudit = { user, fn: 'task-list-revert' }
+  await $query('TaskList')
+    .equalTo('briefing', briefing)
+    .notEqualTo('status', 0)
+    .eachBatch(async (taskLists) => {
+      for (const taskList of taskLists) {
+        await taskList.set('status', 0).save(null, { useMasterKey: true, context: { audit: taskListAudit } })
+      }
+    }, { useMasterKey: true })
+
+  const audit = { user, fn: 'briefing-revert' }
+  return briefing.set({ status: 0 }).save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
 Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user, context: { seedAsId } }) => {
