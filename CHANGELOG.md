@@ -1,3 +1,10 @@
+## [1.110.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.110.1...1.110.2) (2023-09-20)
+
+
+### Bug Fixes
+
+* revert-audits ([bb3edce](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bb3edce5e2c10b81af2755d452cd4d91acff7101))
+
 ## [1.110.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.110.0...1.110.1) (2023-09-20)
 
 
