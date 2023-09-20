@@ -1,3 +1,10 @@
+# [1.111.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.110.2...1.111.0) (2023-09-20)
+
+
+### Features
+
+* start with counts for intern users ([8d75477](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8d754771ff3f50d1b5911b4a35e35b2ecbbc7e77))
+
 ## [1.110.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.110.1...1.110.2) (2023-09-20)
 
 
