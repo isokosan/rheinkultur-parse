@@ -1,3 +1,10 @@
+## [1.110.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.110.0...1.110.1) (2023-09-20)
+
+
+### Bug Fixes
+
+* control report submissions clean ([dc16a83](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dc16a830325e9d24f80df71308606e8668b16051))
+
 # [1.110.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.109.0...1.110.0) (2023-09-20)
 
 
