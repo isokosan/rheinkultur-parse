@@ -1,3 +1,10 @@
+# [1.113.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.112.2...1.113.0) (2023-09-21)
+
+
+### Features
+
+* add approvable to briefing task list counts ([af41286](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/af41286976c1f8113e88eb7da3287dd1678331ef))
+
 ## [1.112.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.112.1...1.112.2) (2023-09-21)
 
 
