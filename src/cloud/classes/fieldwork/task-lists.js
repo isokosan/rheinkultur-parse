@@ -55,6 +55,9 @@ async function getStatusAndCounts ({ briefing, control, disassembly }) {
     rejected: 0,
     completed: 0
   }
+  if (briefing) {
+    counts.approvable = 0
+  }
   await $query('TaskList')
     .equalTo('briefing', briefing)
     .equalTo('control', control)
@@ -97,6 +100,19 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     : await $query(submissionClass).equalTo('taskList', taskList).limit(cubeIds.length).find({ useMasterKey: true })
 
   const statuses = {}
+
+  // first get approvables if its a scout list
+  if (taskType === 'scout') {
+    const verifiedCubeIds = await $query('Cube')
+      .containedIn('objectId', cubeIds)
+      .notEqualTo('vAt', null)
+      .notEqualTo('media', null)
+      .distinct('objectId', { useMasterKey: true })
+    for (const cubeId of verifiedCubeIds) {
+      statuses[cubeId] = 'approvable'
+    }
+  }
+
   for (const submission of submissions) {
     const cubeId = submission.get('cube').id
     if (submission.get('status') === 'rejected') {
@@ -135,6 +151,10 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     rejected: statusVals.filter(x => x === 'rejected').length
   }
   counts.completed = parseInt(counts.pending + counts.approved)
+  // should only be consist of verified cubes that were not in admin approved cube ids and not scouted
+  if (taskType === 'scout') {
+    counts.approvable = statusVals.filter(x => x === 'approvable').length
+  }
 
   if (!taskList.isNew()) {
     // scout report and quota updates
