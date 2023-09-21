@@ -1,3 +1,10 @@
+## [1.112.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.112.1...1.112.2) (2023-09-21)
+
+
+### Bug Fixes
+
+* temp-fix for timeout on sync cube statuses job ([dea0c3a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dea0c3a8711de4237fd90762714d0675e9324458))
+
 ## [1.112.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.112.0...1.112.1) (2023-09-20)
 
 
