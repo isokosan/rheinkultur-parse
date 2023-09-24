@@ -373,3 +373,16 @@ const checkScheduleHealth = async function () {
   }
   return Promise.resolve(lateJobs)
 }
+
+Parse.Cloud.define('queue-jobs', async ({ params: { key } }) => {
+  const queue = updateQueues[key]
+  const jobs = await queue.getJobs(['active', 'failed', 'completed'], 0, 0)
+    .then(jobs => jobs.map((job) => {
+      delete job.opts
+      delete job.queue
+      return job
+    }))
+
+  consola.info(jobs)
+  return jobs
+}, $adminOnly)
