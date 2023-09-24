@@ -1,3 +1,10 @@
+# [1.114.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.113.0...1.114.0) (2023-09-24)
+
+
+### Features
+
+* add job inspection helper ([ec165a6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ec165a65526bb9d9898fb685807730d9f2772f13))
+
 # [1.113.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.112.2...1.113.0) (2023-09-21)
 
 
