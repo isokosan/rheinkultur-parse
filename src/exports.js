@@ -385,6 +385,7 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
   const quarter = req.params.quarter
   const { getQuarterStartEnd } = require('@/shared')
   const { start, end } = getQuarterStartEnd(quarter)
+  const states = await fetchStates()
 
   const workbook = new excel.Workbook()
   const company = await $getOrFail('Company', 'FNFCxMgEEr')
@@ -428,20 +429,44 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
   }
   async function getTotal (contract) {
     const cubeIds = contract.get('cubeIds')
-    const pkCountsMap = await $query('Cube')
+    const cubes = await $query('Cube')
       .containedIn('objectId', cubeIds)
       .limit(cubeIds.length)
-      .select(['ort', 'state'])
+      .select(['objectId', 'str', 'hsnr', 'ort', 'state'])
       .find({ useMasterKey: true })
-      .then(cubes => cubes.reduce((map, cube) => {
-        const pk = `${cube.get('state').id}:${cube.get('ort')}`
-        map[pk] = (map[pk] || 0) + 1
-        return map
-      }, {}))
-    return Object.keys(pkCountsMap).reduce((sum, pk) => {
+    const pkCountsMap = cubes.reduce((map, cube) => {
+      const pk = `${cube.get('state').id}:${cube.get('ort')}`
+      map[pk] = (map[pk] || 0) + 1
+      return map
+    }, {})
+
+    const rows = []
+    for (const cube of cubes) {
+      const pk = `${cube.get('state').id}:${cube.get('ort')}`
+      rows.push({
+        objectId: cube.id,
+        ...cube.attributes,
+        stateName: states[cube.get('state').id]?.name || '',
+        population: cityPopulations[pk],
+        total: getPrice(pk)
+      })
+    }
+
+    const total = Object.keys(pkCountsMap).reduce((sum, pk) => {
       return round2(sum + getPrice(pk) * pkCountsMap[pk])
     }, 0)
+    return { rows, total }
   }
+
+  const { columns: contractColumns, headerRowValues: contractHeaderRowValues } = getColumnHeaders({
+    objectId: { header: 'CityCube ID', width: 30 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hausnummer', width: 10 },
+    ort: { header: 'Ort', width: 20, style: alignRight },
+    stateName: { header: 'Bundesland', width: 20, style: alignRight },
+    population: { header: 'Einwohner', width: 13, style: numberStyle },
+    total: { header: 'Summe', width: 20, style: priceStyle }
+  })
 
   const rows = []
   await $query('Contract')
@@ -451,6 +476,21 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
     .lessThanOrEqualTo('endsAt', end)
     .eachBatch(async (contracts) => {
       for (const contract of contracts) {
+        const contractsheet = workbook.addWorksheet(safeName(contract.get('no')))
+        contractsheet.columns = contractColumns
+        const headerRow = contractsheet.addRow(contractHeaderRowValues)
+        headerRow.font = { name: 'Calibri', bold: true, size: 12 }
+        headerRow.height = 40
+        paintRow(headerRow, '##cecece', contractColumns.length)
+        const { total, rows: cubeRows } = await getTotal(contract)
+        contractsheet.addRows(cubeRows)
+        const contractTotalRow = contractsheet.addRow({
+          total: { formula: `SUM(G1:H${cubeRows.length})` }
+        })
+        contractTotalRow.height = 24
+        contractTotalRow.font = { bold: true, size: 12 }
+
+
         rows.push({
           endsAt: contract.get('endsAt'), // for sorting
           orderNo: contract.get('no'),
@@ -460,7 +500,7 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
           end: moment(contract.get('endsAt')).format('DD.MM.YYYY'),
           deadline: moment(contract.get('endsAt')).subtract(42, 'days').format('DD.MM.YYYY'),
           cubeCount: contract.get('cubeCount'),
-          total: await getTotal(contract)
+          total
         })
       }
     }, { useMasterKey: true })
