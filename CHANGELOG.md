@@ -1,3 +1,15 @@
+# [1.115.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.114.0...1.115.0) (2023-09-27)
+
+
+### Bug Fixes
+
+* reorder cube reindex job to end - temp fix for fixing overlap between sync_cube_statuses and cube_reindex (where index closing causes cube status update to fail) ([64ccfce](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/64ccfce6dcf5c8f6e114187c61ff4650aa580545))
+
+
+### Features
+
+* add wip-contract period gap find & generate fns ([d19e12e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d19e12e14373b4e50f104872f6d7fd4381097da2))
+
 # [1.114.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.113.0...1.114.0) (2023-09-24)
 
 
