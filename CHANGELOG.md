@@ -1,3 +1,10 @@
+## [1.117.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.0...1.117.1) (2023-09-27)
+
+
+### Bug Fixes
+
+* control criteria fetch with promise all ([eca1e97](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eca1e97491509ad7a49cf8869f06db10dd8b6b08))
+
 # [1.117.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.116.1...1.117.0) (2023-09-27)
 
 
