@@ -1,3 +1,10 @@
+## [1.116.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.116.0...1.116.1) (2023-09-27)
+
+
+### Bug Fixes
+
+* change population number ([30959b8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/30959b82d711a7b3696e778ad509a883ad0974cb))
+
 # [1.116.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.115.0...1.116.0) (2023-09-27)
 
 
