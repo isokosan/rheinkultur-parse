@@ -490,7 +490,6 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
         contractTotalRow.height = 24
         contractTotalRow.font = { bold: true, size: 12 }
 
-
         rows.push({
           endsAt: contract.get('endsAt'), // for sorting
           orderNo: contract.get('no'),

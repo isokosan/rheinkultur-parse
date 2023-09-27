@@ -180,13 +180,13 @@ Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
 
   if (query._include.includes('criteria')) {
     for (const control of controls) {
-      const criteria = control.get('criteria') || []
-      for (const item of criteria) {
+      const criteria = await Promise.all((control.get('criteria') || []).map(async (item) => {
         if (['State', 'Tag', 'Company', 'Contract', 'Booking', 'Cube'].includes(item.type)) {
           item.item = await $getOrFail(item.type, item.value)
             .then(obj => ({ ...obj.toJSON(), className: item.type }))
+          return item
         }
-      }
+      }))
       control.set('criteria', criteria)
       control.set('cubesQuery', getCubesQuery(control).toJSON())
     }
