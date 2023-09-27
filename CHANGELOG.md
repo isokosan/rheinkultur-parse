@@ -1,3 +1,10 @@
+# [1.117.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.116.1...1.117.0) (2023-09-27)
+
+
+### Features
+
+* add contnract sheets to export ([31c9865](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/31c9865b8b3f643fd0e04474afea30cf2e741230))
+
 ## [1.116.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.116.0...1.116.1) (2023-09-27)
 
 
