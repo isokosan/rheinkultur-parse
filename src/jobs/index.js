@@ -14,12 +14,6 @@ const updateJobs = {
     timeoutMinutes: 300,
     notificationDuration: 24
   },
-  reindex_cubes: {
-    name: 'Suchindex von CityCubes aktualisieren',
-    timeoutMinutes: 60,
-    cron: '0 5 * * *', // at 05:00 AM
-    notificationDuration: 24
-  },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
     timeoutMinutes: 60,
@@ -60,6 +54,12 @@ const updateJobs = {
     name: 'Demontage synchronizieren.',
     timeoutMinutes: 30,
     cron: '30 6 * * *', // at 06:30 AM
+    notificationDuration: 24
+  },
+  reindex_cubes: {
+    name: 'Suchindex von CityCubes aktualisieren',
+    timeoutMinutes: 60,
+    cron: '0 7 * * *', // at 07:00 AM
     notificationDuration: 24
   },
   system_status_vouchers: {
