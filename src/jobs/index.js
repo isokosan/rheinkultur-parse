@@ -27,7 +27,7 @@ const updateJobs = {
     notificationDuration: 24
   },
   reindex_fieldwork: {
-    name: 'Suchindex von Feldarbeit aktualisieren',
+    name: 'Suchindex von Dienseistungen aktualisieren',
     timeoutMinutes: 30,
     cron: '0 6 * * *', // at 06:00 AM
     notificationDuration: 24

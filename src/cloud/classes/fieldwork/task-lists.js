@@ -3,6 +3,8 @@ const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const TaskList = Parse.Object.extend('TaskList')
 
+const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
+
 const getSubmissionClass = type => capitalize(type) + 'Submission'
 
 async function getCenterOfCubes (cubeIds) {
@@ -249,6 +251,9 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     }
   }
   taskList.set({ statuses, counts })
+
+  // if archived but status is going back remove archive
+  taskList.get('status') < 4 && taskList.get('archivedAt') && taskList.set('archivedAt', null)
 })
 
 Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts, locationCleanup } }) => {
@@ -272,7 +277,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
         .equalTo('ort', taskList.get('ort'))
         .equalTo('state', taskList.get('state'))
         .equalTo('scouts', scout)
-        .containedIn('status', [2, 3])
+        .containedIn('status', TASK_LIST_IN_PROGRESS_STATUSES)
         .count({ useMasterKey: true })
       if (!count) {
         $query('Notification')
@@ -324,7 +329,7 @@ Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
       .greaterThanOrEqualTo('status', 1)
   }
   if (user.get('accType') === 'scout') {
-    query.equalTo('scouts', user).containedIn('status', [2, 3])
+    query.equalTo('scouts', user).containedIn('status', TASK_LIST_IN_PROGRESS_STATUSES)
   }
 })
 
@@ -469,7 +474,7 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
   }
   taskList.unset('scouts')
   const audit = { user, fn: 'task-list-update', data: { changes } }
-  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   return {
     data: { manager: taskList.get('manager'), scouts: taskList.get('scouts') },
     message: 'Manager gespeichert.'
@@ -494,7 +499,7 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
   if (taskList.get('status') > 1) {
     notifyScouts = scoutIds.filter(scoutId => !currentScoutIds.includes(scoutId))
   }
-  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts } })
+  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts, locationCleanup: true } })
   return {
     data: taskList.get('scouts'),
     message: 'Abfahrtsliste gespeichert.'
@@ -657,6 +662,22 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
   }
 }, { requireUser: true })
 
+Parse.Cloud.define('task-list-archive', async ({ params: { id: taskListId }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (!taskList.get('status')) { throw new Error('Draft task lists cannot be archived') }
+  const audit = { fn: 'task-list-archive', user }
+  await taskList.set('archivedAt', new Date()).save(null, { useMasterKey: true, context: { audit } })
+  return { message: 'Abfahrtsliste archiviert.' }
+}, $fieldworkManager)
+
+Parse.Cloud.define('task-list-unarchive', async ({ params: { id: taskListId }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (!taskList.get('archivedAt')) { throw new Error('Already unarchived') }
+  const audit = { fn: 'task-list-unarchive', user }
+  await taskList.unset('archivedAt').save(null, { useMasterKey: true, context: { audit } })
+  return { message: 'Abfahrtsliste unarchiviert.' }
+}, $fieldworkManager)
+
 Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (taskList.get('status')) { throw new Error('Only draft lists can be removed.') }
@@ -691,11 +712,16 @@ Parse.Cloud.define('task-list-unmark-complete', async ({ params: { id: taskListI
   }
 }, $fieldworkManager)
 
-async function getQueryFromSelection (selection, count) {
+async function getQueryFromSelection (selection, count, user) {
   const query = $query(TaskList)
   if (isArray(selection)) {
     query.containedIn('objectId', selection)
     return query
+  }
+
+  if (user && user.get('accType') === 'partner') {
+    selection.managerId = user.id
+    query.greaterThanOrEqualTo('status', 1)
   }
 
   // parent
@@ -728,7 +754,17 @@ async function getQueryFromSelection (selection, count) {
       query.equalTo('scouts', $parsify(Parse.User, selection.scoutId))
     }
   }
-  selection.status && query.containedIn('status', selection.status.split(',').filter(Boolean).map(parseFloat))
+  // hide drafts if not included in status filter explicity
+  if (selection.status) {
+    const status = selection.status.split(',').filter(Boolean).map(parseFloat)
+    status.includes(4) && status.push(4.1)
+    query.containedIn('status', status)
+  } else {
+    query.greaterThan('status', 0)
+  }
+
+  selection.sa !== true && query.equalTo('archivedAt', null)
+
   const queryCount = await query.count({ useMasterKey: true })
   if (count !== queryCount) {
     throw new Error(`Count mismatch should ${count} !== was ${queryCount}`)
@@ -737,8 +773,8 @@ async function getQueryFromSelection (selection, count) {
 }
 
 // mass updates
-Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection, count } }) => {
-  const query = await getQueryFromSelection(selection, count)
+Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection, count }, user }) => {
+  const query = await getQueryFromSelection(selection, count, user)
   const today = await $today()
   // return different previews based on action
   const response = {
@@ -773,7 +809,7 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
 }, { requireUser: true })
 
 Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selection, count, ...form }, user }) => {
-  const query = await getQueryFromSelection(selection, count)
+  const query = await getQueryFromSelection(selection, count, user)
   const today = await $today()
 
   // check if any of the task lists are not planned (in draft status)
@@ -784,6 +820,10 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
 
   if (action === 'remove' && await Parse.Query.and(query, $query('TaskList').greaterThan('status', 0)).count({ useMasterKey: true })) {
     throw new Error('There are task lists that are already planned in this selection that cannot be deleted.')
+  }
+
+  if (action === 'archive' && await Parse.Query.and(query, $query('TaskList').lessThan('status', 4)).count({ useMasterKey: true })) {
+    throw new Error('There are task lists that are not completed')
   }
 
   let runFn
@@ -814,8 +854,8 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
         taskList.set({ status: form.setStatus })
       }
       if (!$cleanDict(changes)) { return }
-      const audit = { user, fn: 'task-list-update', data: { changes, locationCleanup } }
-      return taskList.save(null, { useMasterKey: true, context: { audit } })
+      const audit = { user, fn: 'task-list-update', data: { changes } }
+      return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup } })
     }
   }
   if (action === 'scouts') {
@@ -878,7 +918,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       }
       if (!$cleanDict(changes)) { return }
       const audit = { user, fn: 'task-list-update', data: { changes } }
-      return taskList.save(null, { useMasterKey: true, context: { audit } })
+      return taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
     }
   }
   if (action === 'retract-assign') {
@@ -915,6 +955,15 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       if (taskList.get('status') === 0.1) { return }
       taskList.set({ status: 0.1 })
       const audit = { user, fn: 'task-list-unmark-complete' }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+  }
+  if (action === 'archive') {
+    runFn = async (taskList) => {
+      if (taskList.get('status') < 4) { return }
+      if (taskList.get('archivedAt')) { return }
+      taskList.set('archivedAt', new Date())
+      const audit = { user, fn: 'task-list-archive' }
       return taskList.save(null, { useMasterKey: true, context: { audit } })
     }
   }
@@ -956,7 +1005,7 @@ Parse.Cloud.define('task-list-retrieve-as-scout', async ({ params: { id: taskLis
       task.set('disabled', true)
       // show disassembly button if the scout is assigned
       const userIsScout = !!disassemblyTask.get('scouts')?.find(s => s.id === user.id)
-      if (userIsScout && [2, 3].includes(disassemblyTask.get('status'))) {
+      if (userIsScout && TASK_LIST_IN_PROGRESS_STATUSES.includes(disassemblyTask.get('status'))) {
         task = disassemblyTask
       }
       // TOTRANSLATE

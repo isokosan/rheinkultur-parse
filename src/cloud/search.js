@@ -128,6 +128,7 @@ const INDEXES = {
             type: 'scaled_float',
             scaling_factor: 10
           },
+          archived: { type: 'boolean' },
           ort: { type: 'keyword' },
           stateId: { type: 'keyword' },
           date: {
@@ -146,6 +147,7 @@ const INDEXES = {
       _id: taskList.id,
       doc: {
         objectId: taskList.id,
+        archived: !!taskList.get('archivedAt') || undefined,
         type: taskList.get('type'),
         ort: taskList.get('ort'),
         stateId: taskList.get('state')?.id,
@@ -585,11 +587,14 @@ Parse.Cloud.define('search-fieldwork', async ({
     managerId,
     scoutId,
     status,
+    sa, // showArchived
     from,
     pagination
   }, user, master
 }) => {
   status = status?.split(',').filter(Boolean).map(parseFloat)
+  status.includes(4) && status.push(4.1)
+
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
   const sort = ['_score']
@@ -603,6 +608,9 @@ Parse.Cloud.define('search-fieldwork', async ({
   stateId && bool.filter.push({ term: { stateId } })
 
   type && bool.filter.push({ term: { type } })
+
+  // hideArchived
+  !sa && bool.must_not.push({ term: { archived: true } })
 
   if (managerId) {
     managerId === 'none' && bool.must_not.push({ exists: { field: 'managerId' } })
@@ -637,6 +645,11 @@ Parse.Cloud.define('search-fieldwork', async ({
     sort.unshift({ stateId: 'asc' })
     sort.unshift({ dueDate: 'asc' })
   }
+
+  // consola.info('should', bool.should)
+  // consola.info('must', bool.must)
+  // consola.info('must_not', bool.must_not)
+  // consola.info('filter', bool.filter)
 
   const searchResponse = await client.search({
     index: 'rheinkultur-fieldwork',

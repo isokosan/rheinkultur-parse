@@ -142,6 +142,8 @@ module.exports.TASK_LIST_STATUSES = {
   4.1: 'Erledigt'
 }
 
+module.exports.TASK_LIST_IN_PROGRESS_STATUSES = [2, 3]
+
 // Briefing, Control, Disassembly
 module.exports.FIELDWORK_STATUSES = {
   0: 'Entwurf',

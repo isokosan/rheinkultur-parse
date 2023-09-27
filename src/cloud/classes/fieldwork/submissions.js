@@ -3,6 +3,8 @@ const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 
+const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
+
 Parse.Cloud.afterFind(ControlSubmission, async ({ query, objects: submissions }) => {
   if (query._include.includes('orders')) {
     const orderKeys = [...new Set(submissions.map(submission => submission.get('orderKey')))]
@@ -192,9 +194,10 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   }
   const audit = { user, fn: 'scout-submission-reject', data: { cubeId, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
-  taskList.get('status') !== 3 && taskList.set({ status: 3 })
+  // taskList.get('status') !== 3 && taskList.set({ status: 3 })
   await taskList.save(null, { useMasterKey: true, context: { audit } })
-  await notifySubmissionRejected('scout', submission, cube, rejectionReason)
+  // Notify scout if the list is in progress
+  TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('scout', submission, cube, rejectionReason)
   return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })
 
@@ -254,9 +257,9 @@ Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissio
   const cube = submission.get('cube')
   const audit = { user, fn: 'control-submission-reject', data: { cubeId: cube.id, rejectionReason } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
-  taskList.get('status') !== 3 && taskList.set({ status: 3 })
+  // taskList.get('status') !== 3 && taskList.set({ status: 3 })
   await taskList.save(null, { useMasterKey: true, context: { audit } })
-  await notifySubmissionRejected('control', submission, cube, rejectionReason)
+  TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('control', submission, cube, rejectionReason)
   return { message: 'Kontrolle abgelehnt.', data: submission }
 }, { requireUser: true })
 
@@ -335,8 +338,8 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
   const cube = submission.get('cube')
   const audit = { user, fn: 'disassembly-submission-reject', data: { cubeId: cube.id } }
   await submission.save(null, { useMasterKey: true, context: { audit } })
-  taskList.get('status') !== 3 && taskList.set({ status: 3 })
+  // taskList.get('status') !== 3 && taskList.set({ status: 3 })
   await taskList.save(null, { useMasterKey: true, context: { audit } })
-  await notifySubmissionRejected('disassembly', submission, cube, rejectionReason)
+  TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('disassembly', submission, cube, rejectionReason)
   return { message: 'Demontage abgelehnt.', data: submission }
 }, { requireUser: true })
