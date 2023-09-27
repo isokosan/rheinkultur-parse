@@ -341,6 +341,313 @@ async function getInvoicesPreview (contract) {
     .filter(({ total }) => Boolean(total))
 }
 
+// WIP: Replacement for getInvoicesPreview with early cancellations
+Parse.Cloud.define('contracts-wip-calculate-invoices', async ({ params: { contractId } }) => {
+  const contract = await $getOrFail(Contract, contractId, ['address', 'invoiceAddress', 'production', 'company'])
+
+  const invoicesPreview = []
+
+  const contractStart = moment(contract.get('startsAt'))
+  const contractEnd = moment(contract.get('endsAt'))
+  const billingCycle = contract.get('billingCycle') || 12
+  const earlyCancellations = contract.get('earlyCancellations') || {}
+
+  // INITIALIZE PRODUCTION DATA
+  const billing = contract.get('production')?.get('billing') || 0
+  const installments = billing > 1 ? billing : 0
+  let remainingInstallments = installments
+  const monthlies = contract.get('production')?.get('monthlies') || {}
+  const productionSum = contract.get('production')?.get('total')
+  let monthlyProductionTotal = 0
+  if (installments) {
+    for (const price of Object.values(monthlies || {})) {
+      monthlyProductionTotal += price
+    }
+  }
+
+  let periodStart = contractStart.clone()
+  let firstInvoice = true
+  let paidInstallments = 0
+
+  while (true) {
+    if (periodStart.isAfter(contractEnd)) {
+      break
+    }
+    const periodEnd = getPeriodEnd({ periodStart, billingCycle, contractStart, contractEnd, generating: true })
+
+    let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
+    if (periodStart.isAfter(invoiceDate, 'year')) {
+      invoiceDate = periodStart.clone().set('date', 2).format('YYYY-MM-DD')
+    }
+    // if invoicing period is at the end
+    if (contract.get('invoicingAt') === 'end') {
+      invoiceDate = periodEnd.clone().add(1, 'day').format('YYYY-MM-DD')
+      if (periodEnd.isBefore(invoiceDate, 'year')) {
+        invoiceDate = moment(invoiceDate).set('date', 2).format('YYYY-MM-DD')
+      }
+    }
+
+    // if invoice date is before wawi start skip generating invoice
+    if (moment(invoiceDate).isBefore($wawiStart, 'day')) {
+      periodStart = periodEnd.clone().add(1, 'days')
+      continue
+    }
+
+    const invoice = {
+      status: 1,
+      date: invoiceDate,
+      company: contract.get('company'),
+      address: contract.get('invoiceAddress') || contract.get('address'),
+      paymentType: contract.get('paymentType'),
+      dueDays: contract.get('dueDays'),
+      companyPerson: contract.get('companyPerson'),
+      contract,
+      tags: contract.get('tags'),
+      periodStart: periodStart.format('YYYY-MM-DD'),
+      periodEnd: periodEnd.format('YYYY-MM-DD'),
+      cubeCount: contract.get('cubeCount'),
+      agency: contract.get('agency')
+    }
+
+    const mediaItems = []
+    let mediaTotal = 0
+    let monthlyTotal = 0
+
+    if (contract.get('pricingModel') === 'gradual') {
+      const { gradualCount, gradualPrice } = await getPredictedCubeGradualPrice(contract, periodStart)
+      invoice.gradualCount = gradualCount
+      invoice.gradualPrice = gradualPrice
+    }
+
+    for (const cubeId of contract.get('cubeIds')) {
+      // if cube completely canceled skip
+      if (earlyCancellations[cubeId] === true) { continue }
+
+      // if cube is canceledEarly, and the early cancelation is before periodStart, skip
+      const cubeCanceledAt = earlyCancellations[cubeId] ? moment(earlyCancellations[cubeId]) : null
+      if (cubeCanceledAt && cubeCanceledAt.isBefore(periodStart)) {
+        continue
+      }
+
+      const monthly = invoice.gradualPrice || contract.get('monthlyMedia')?.[cubeId]
+      monthlyTotal += monthly
+
+      const { total, months } = getPeriodTotal(periodStart, cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd) ? cubeCanceledAt : periodEnd, monthly)
+      mediaTotal += total
+
+      const mediaItem = {
+        cubeId,
+        orderId: `C:${contract.id}`,
+        months,
+        monthly,
+        total
+      }
+      if (cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd)) {
+        mediaItem.periodEnd = cubeCanceledAt.format('YYYY-MM-DD')
+      }
+      mediaItems.push(mediaItem)
+    }
+
+    invoice.media = {
+      items: mediaItems,
+      monthlyTotal: round2(monthlyTotal),
+      total: round2(mediaTotal)
+    }
+
+    // only for production, if first non-installment production invoice or an installment invoice
+    if (billing && ((!installments && firstInvoice) || remainingInstallments > 0)) {
+      const production = contract.get('production')
+      let periodInstallments = remainingInstallments < contract.get('billingCycle')
+        ? remainingInstallments
+        : moment(periodEnd).add(1, 'days').diff(periodStart, 'months', true)
+      let productionTotal
+      if (monthlyProductionTotal && paidInstallments < installments) {
+        if (paidInstallments + periodInstallments > installments) {
+          periodInstallments = round5(installments - paidInstallments)
+        }
+        productionTotal = round5(periodInstallments * monthlyProductionTotal)
+      }
+      if (!installments) {
+        productionTotal = productionSum
+      }
+
+      const productionItems = []
+      for (const cubeId of Object.keys(production.get('printPackages'))) {
+        const total = production.get('totals')?.[cubeId] || 0
+        productionItems.push({
+          cubeId,
+          orderId: `C:${contract.id}`,
+          no: production.get('printPackages')?.[cubeId]?.no,
+          monthly: monthlies?.[cubeId],
+          total: installments ? round2(monthlies[cubeId] * periodInstallments) : total
+        })
+      }
+      invoice.production = {
+        id: production.id,
+        items: productionItems,
+        monthlyTotal: installments
+          ? round2(monthlyProductionTotal)
+          : undefined,
+        total: round2(productionTotal)
+      }
+      if (billing && installments) {
+        paidInstallments = round5(paidInstallments)
+        periodInstallments = round5(periodInstallments)
+        invoice.production.installments = installments
+        invoice.production.paidInstallments = paidInstallments
+        invoice.production.periodInstallments = periodInstallments
+        paidInstallments = round5(paidInstallments + periodInstallments)
+        remainingInstallments = round5(installments - paidInstallments)
+        invoice.production.remainingInstallments = remainingInstallments
+      }
+    }
+
+    invoice.lineItems = getInvoiceLineItems({ production: invoice.production, media: invoice.media })
+
+    invoicesPreview.push(invoice)
+    firstInvoice = false
+
+    if (periodEnd.format('YYYY-MM-DD') >= contractEnd.format('YYYY-MM-DD')) {
+      break
+    }
+    periodStart = periodEnd.clone().add(1, 'days')
+  }
+  return invoicesPreview
+    .map((invoice) => {
+      const { netTotal, taxTotal, total } = getDocumentTotals(invoice.address.get('lex').allowTaxFreeInvoices, invoice.lineItems, invoice.date)
+      invoice.netTotal = netTotal
+      invoice.taxTotal = taxTotal
+      invoice.total = total
+      // commissions
+      if (invoice.media?.total && invoice.agency) {
+        invoice.commissionRate = getContractCommissionForYear(contract, moment(invoice.date).year())
+        if (!invoice.commissionRate) {
+          delete invoice.agency
+          return invoice
+        }
+        const net = round2((invoice.commissionRate || 0) * invoice.media.total / 100)
+        invoice.commission = { net }
+      }
+      return invoice
+    })
+    .filter(({ total }) => Boolean(total))
+}, { requireMaster: true })
+// WIP: To check if there are missing periods in invoices
+Parse.Cloud.define('contracts-wip-find-missing-periods', async ({ params: { contractId, apply } }) => {
+  const missingPeriods = []
+
+  const contract = await $getOrFail(Contract, contractId)
+  const calculatedInvoices = await Parse.Cloud.run('contracts-wip-calculate-invoices', { contractId }, { useMasterKey: true })
+  const earlyCancellations = contract.get('earlyCancellations') || {}
+  // compare calculated to generated invoices to find date gaps
+  const generatedInvoices = await $query('Invoice')
+    .equalTo('contract', contract)
+    .containedIn('status', [1, 2])
+    .notEqualTo('media', null) // generated
+    .find({ useMasterKey: true })
+
+  for (const calculated of calculatedInvoices) {
+    const generated = generatedInvoices.find((issued) => issued.get('periodStart') === calculated.periodStart)
+    if (generated && generated.get('periodEnd') !== calculated.periodEnd) {
+      const periodStart = moment(generated.get('periodEnd')).add(1, 'days')
+      const periodEnd = moment(calculated.periodEnd)
+
+      // check if period is satisfied by other invoices (ONLY CHECKS SINGLE MATCHING INVOICE, NOT MULTIPLE)
+      const startsSame = generatedInvoices.find((issued) => issued.get('periodStart') === periodStart.format('YYYY-MM-DD'))
+      if (startsSame && startsSame.get('periodEnd') === periodEnd.format('YYYY-MM-DD')) {
+        continue
+      }
+
+      let invoiceDate = periodStart.clone().subtract(2, 'weeks').format('YYYY-MM-DD')
+      if (periodStart.isAfter(invoiceDate, 'year')) {
+        invoiceDate = periodStart.clone().set('date', 2).format('YYYY-MM-DD')
+      }
+      // if invoicing period is at the end
+      if (contract.get('invoicingAt') === 'end') {
+        invoiceDate = periodEnd.clone().add(1, 'day').format('YYYY-MM-DD')
+        if (periodEnd.isBefore(invoiceDate, 'year')) {
+          invoiceDate = moment(invoiceDate).set('date', 2).format('YYYY-MM-DD')
+        }
+      }
+
+      const invoice = {
+        ...calculated,
+        date: invoiceDate,
+        periodStart: periodStart.format('YYYY-MM-DD'),
+        periodEnd: periodEnd.format('YYYY-MM-DD')
+      }
+
+      const mediaItems = []
+      let monthlyTotal = 0
+      let mediaTotal = 0
+
+      for (const cubeId of contract.get('cubeIds')) {
+        // if cube completely canceled skip
+        if (earlyCancellations[cubeId] === true) { continue }
+
+        // if cube is canceledEarly, and the early cancelation is before periodStart, skip
+        const cubeCanceledAt = earlyCancellations[cubeId] ? moment(earlyCancellations[cubeId]) : null
+        if (cubeCanceledAt && cubeCanceledAt.isBefore(periodStart)) {
+          continue
+        }
+
+        const monthly = invoice.gradualPrice || contract.get('monthlyMedia')?.[cubeId]
+        monthlyTotal += monthly
+
+        const { total, months } = getPeriodTotal(periodStart, cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd) ? cubeCanceledAt : periodEnd, monthly)
+        mediaTotal += total
+
+        const mediaItem = {
+          cubeId,
+          orderId: `C:${contract.id}`,
+          months,
+          monthly,
+          total
+        }
+        if (cubeCanceledAt && cubeCanceledAt.isBefore(periodEnd)) {
+          mediaItem.periodEnd = cubeCanceledAt.format('YYYY-MM-DD')
+        }
+        mediaItems.push(mediaItem)
+      }
+
+      invoice.media = {
+        items: mediaItems,
+        monthlyTotal: round2(monthlyTotal),
+        total: round2(mediaTotal)
+      }
+
+      invoice.lineItems = getInvoiceLineItems({ media: invoice.media })
+      const { netTotal, taxTotal, total } = getDocumentTotals(invoice.address.get('lex').allowTaxFreeInvoices, invoice.lineItems, invoice.date)
+      invoice.netTotal = netTotal
+      invoice.taxTotal = taxTotal
+      invoice.total = total
+      // commissions
+      if (invoice.media?.total && invoice.agency) {
+        invoice.commissionRate = getContractCommissionForYear(contract, moment(invoice.date).year())
+        if (!invoice.commissionRate) {
+          delete invoice.agency
+          return invoice
+        }
+        const net = round2((invoice.commissionRate || 0) * invoice.media.total / 100)
+        invoice.commission = { net }
+      }
+
+      missingPeriods.push(invoice)
+    }
+  }
+  if (!apply) {
+    return missingPeriods
+  }
+  const generated = []
+  const Invoice = Parse.Object.extend('Invoice')
+  for (const item of missingPeriods) {
+    const invoice = new Invoice(item)
+    await invoice.save(null, { useMasterKey: true })
+    generated.push(invoice.id)
+  }
+  return generated
+}, { requireMaster: true })
+
 function validateProduction (production, cubeIds) {
   const printPackages = production.get('printPackages') || {}
   for (const cubeId of cubeIds) {
