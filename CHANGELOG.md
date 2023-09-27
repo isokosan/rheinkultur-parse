@@ -1,3 +1,10 @@
+# [1.116.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.115.0...1.116.0) (2023-09-27)
+
+
+### Features
+
+* add archive to task lists ([c544a6a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c544a6a132ba9c7e05050b6c18fa03faf8318811))
+
 # [1.115.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.114.0...1.115.0) (2023-09-27)
 
 
