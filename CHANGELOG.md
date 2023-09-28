@@ -1,3 +1,10 @@
+## [1.117.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.1...1.117.2) (2023-09-28)
+
+
+### Bug Fixes
+
+* control criteria bug ([23ceffd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/23ceffd60bbe5423be68d3475bc3271b3b5abf08))
+
 ## [1.117.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.0...1.117.1) (2023-09-27)
 
 
