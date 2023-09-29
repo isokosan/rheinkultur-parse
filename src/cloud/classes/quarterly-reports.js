@@ -27,45 +27,42 @@ Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
 
 async function checkIfQuarterIsReportable (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
-
   const issues = {}
-
-  const contracts = await $query('Contract')
+  issues.contracts = await $query('Contract')
     .equalTo('status', 3) // aktiv
     .lessThanOrEqualTo('endsAt', end)
     .count({ useMasterKey: true })
-  if (contracts) {
-    issues.contracts = contracts
-  }
 
-  const partnerQuarters = await $query('PartnerQuarter')
-    .equalTo('quarter', quarter)
-    .notEqualTo('status', 'finalized')
+  // make sure every partner has their quarter initialized
+  // TODO: limit
+  const partners = await $query('Company')
+    .notEqualTo('distributor', null)
     .find({ useMasterKey: true })
-  if (partnerQuarters.length) {
-    issues.partnerQuarters = partnerQuarters
-  }
+  issues.partnerQuarters = await Promise.all(partners.map(async (company) => {
+    const partnerQuarter = await Parse.Cloud.run('partner-quarter', { companyId: company.id, quarter }, { useMasterKey: true })
+    if (partnerQuarter.status === 'finalized') {
+      return null
+    }
+    return partnerQuarter
+    })).then(partnerQuarters => partnerQuarters.filter(Boolean))
 
-  const invoices = await $query('Invoice')
+  issues.invoices = await $query('Invoice')
     .lessThan('status', 2)
     .greaterThan('periodEnd', start)
     .lessThanOrEqualTo('periodStart', end)
     .count({ useMasterKey: true })
-  if (invoices) {
-    issues.invoices = invoices
-  }
 
-  const creditNotes = await $query('CreditNote')
+  issues.creditNotes = await $query('CreditNote')
     .lessThan('status', 2)
     .greaterThan('periodEnd', start)
     .lessThanOrEqualTo('periodStart', end)
     .count({ useMasterKey: true })
-  if (creditNotes) {
-    issues.creditNotes = creditNotes
+
+  for (const key of Object.keys(issues)) {
+    if (!issues[key].length) {
+      delete issues[key]
+    }
   }
-
-  // TODO: Check if Marc Asriel quarterly invoice is issued
-
   return Object.keys(issues).length ? { issues } : false
 }
 

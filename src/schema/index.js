@@ -556,7 +556,6 @@ const schemaDefinitions = {
       agencies: { type: 'Object' }, // Agencies
       regionals: { type: 'Object' }, // SKK, SKS
       lessors: { type: 'Object' } // TLK, TBS, etc
-
     }
   },
   PartnerQuarter: {

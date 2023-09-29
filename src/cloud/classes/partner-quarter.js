@@ -15,21 +15,37 @@ Parse.Cloud.beforeSave(PartnerQuarter, async ({ object: partnerQuarter }) => {
 })
 
 Parse.Cloud.beforeFind(PartnerQuarter, ({ query }) => {
+  query.include('company')
   !query._include.includes('rows') && query.exclude('rows')
 })
 
 Parse.Cloud.afterFind(PartnerQuarter, async ({ objects }) => {
   for (const partnerQuarter of objects) {
-    partnerQuarter.get('status') !== 'finalized' && partnerQuarter.set('pendingCount', await $query('Booking')
-      .equalTo('company', partnerQuarter.get('company'))
-      .equalTo('status', 3) // aktiv
-      .lessThanOrEqualTo('endsAt', getQuarterStartEnd(partnerQuarter.get('quarter')).end)
-      .count({ useMasterKey: true }))
+    if (partnerQuarter.get('status') !== 'finalized') {
+      partnerQuarter.set('pendingCount', await $query('Booking')
+        .equalTo('company', partnerQuarter.get('company'))
+        .equalTo('status', 3) // aktiv
+        .lessThanOrEqualTo('endsAt', getQuarterStartEnd(partnerQuarter.get('quarter')).end)
+        .count({ useMasterKey: true }))
+      if (partnerQuarter.get('company').get('distributor')?.periodicInvoicing) {
+        const periodicInvoice = await $query('Invoice')
+          .equalTo('company', partnerQuarter.get('company'))
+          .equalTo('periodicDistributorQuarter', partnerQuarter.get('quarter'))
+          .equalTo('status', 2)
+          .first({ useMasterKey: true })
+        if (!periodicInvoice) {
+          partnerQuarter.set('pendingInvoice', 1)
+        }
+      }
+    }
   }
 })
 
 const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
   const company = await $getOrFail('Company', companyId)
+  if (!company.get('distributor')) {
+    throw new Error('Only partners can have partner quarters')
+  }
   const partnerQuarter = await $query(PartnerQuarter)
     .equalTo('company', company)
     .equalTo('quarter', quarter)
@@ -44,6 +60,7 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
   const { start, end } = getQuarterStartEnd(quarter)
   const bookings = {}
   let total = 0
+  let count = 0
   await $query('Booking')
     .equalTo('company', company)
     .greaterThanOrEqualTo('status', 3) // active, canceled or ended
@@ -102,6 +119,7 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
 
         bookings[booking.id] = row
         total = round2(total + row.total)
+        count++
       }
     }, { useMasterKey: true })
 
@@ -139,7 +157,7 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
   partnerQuarter.set({
     rows,
     total,
-    count: rows.length
+    count
   })
 
   await partnerQuarter.save(null, { useMasterKey: true })

@@ -1,6 +1,7 @@
 module.exports = async function (job) {
   const extendBookingsQuery = $query('Booking')
     .equalTo('status', 3)
+    .notEqualTo('autoExtendsBy', null)
     .equalTo('request', null) // make sure no bookings with requests are extended
     .equalTo('canceledAt', null)
     .lessThan('autoExtendsAt', await $today())
