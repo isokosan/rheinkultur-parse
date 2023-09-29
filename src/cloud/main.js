@@ -89,7 +89,7 @@ global.$PDGA = {
   'NW:Monschau': true,
   'NW:Roetgen': true,
   'NW:Simmerath': true,
-  'NW:Stolberg': true,
+  'NW:Stolberg (Rhld.)': true,
   'NW:Würselen': true
 }
 
