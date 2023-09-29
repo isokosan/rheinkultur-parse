@@ -695,6 +695,8 @@ Parse.Cloud.define('search-bookings', async ({
     state: stateId,
     f,
     t,
+    endFrom,
+    endTo,
     sb,
     sd,
     from,
@@ -730,9 +732,8 @@ Parse.Cloud.define('search-bookings', async ({
   ort && bool.filter.push({ term: { 'cube.ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'cube.stateId.keyword': stateId } })
 
-  // TODO: Update the date filters to start from/to end from/to
-  t && bool.must.push({ range: { startsAt: { lte: t } } })
-  f && bool.must.push({ range: { endsAt: { gt: f } } })
+  endFrom && bool.must.push({ range: { endsAt: { gte: endFrom } } })
+  endTo && bool.must.push({ range: { endsAt: { lte: endTo } } })
 
   if (returnQuery) {
     return {

@@ -162,9 +162,10 @@ Parse.Cloud.define('partner-quarters', async ({ user }) => {
 }, { requireUser: true })
 
 Parse.Cloud.define('partner-quarter-close', async ({ params: { companyId, quarter }, user }) => {
-  const isPartner = user.get('accType') === 'partner'
-  if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings') || user.get('company')?.id !== companyId) {
-    throw new Error('Unbefugter Zugriff')
+  if (user.get('accType') !== 'admin') {
+    if (user.get('accType') !== 'partner' || user.get('company').id !== companyId) {
+      throw new Error('Unbefugter Zugriff')
+    }
   }
 
   // if there are any bookings that are ending / extending inside the quarter, throw an error here
