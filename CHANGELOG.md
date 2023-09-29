@@ -1,3 +1,10 @@
+## [1.117.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.2...1.117.3) (2023-09-29)
+
+
+### Bug Fixes
+
+* Stolberg ([4f1d58c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4f1d58c09255f5a687eb960f3768b1fc478c86fb))
+
 ## [1.117.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.1...1.117.2) (2023-09-28)
 
 
