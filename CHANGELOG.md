@@ -1,3 +1,10 @@
+# [1.118.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.3...1.118.0) (2023-09-29)
+
+
+### Features
+
+* add partner quarter admin close ([eece9ba](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eece9bab8bcc5b296c8e43727c85301996f7676f))
+
 ## [1.117.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.2...1.117.3) (2023-09-29)
 
 
