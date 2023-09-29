@@ -1,3 +1,10 @@
+# [1.119.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.118.0...1.119.0) (2023-09-29)
+
+
+### Features
+
+* add invoice checking to quarterly reports ([6d94016](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6d94016c0f20e822298fb7f60a97bf8c8c2573ea))
+
 # [1.118.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.117.3...1.118.0) (2023-09-29)
 
 
