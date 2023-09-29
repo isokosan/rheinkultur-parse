@@ -102,6 +102,7 @@ const INDEXES = {
         MBfD: cube.get('MBfD'),
         PG: cube.get('PG'),
         Agwb: cube.get('Agwb'),
+        SagO: cube.get('SagO'),
         TTMR: cube.get('TTMR'),
         htNM: cube.get('htNM'),
 
@@ -478,7 +479,9 @@ Parse.Cloud.define('search', async ({
         { exists: { field: 'nMR' } },
         { exists: { field: 'MBfD' } },
         { exists: { field: 'PG' } },
-        { exists: { field: 'Agwb' } }
+        { exists: { field: 'Agwb' } },
+        { exists: { field: 'htNM' } },
+        { exists: { field: 'SagO' } }
       ],
       minimum_should_match: 1
     }
@@ -508,6 +511,7 @@ Parse.Cloud.define('search', async ({
   s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
   s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })
   s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
+  s.includes('SagO') && bool.must.push({ exists: { field: 'SagO' } })
   // s.includes('nStov') && bool.must_not.push({ match: { stovDate: '2023-04-21' } })
 
   // address constraints

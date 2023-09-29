@@ -9,7 +9,7 @@ const Cube = Parse.Object.extend('Cube', {
     if (this.get('futureOrder')) { return 5 }
     if (this.get('pair')) { return 9 }
     if (this.get('dAt')) { return 8 }
-    if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb')) {
+    if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb') || this.get('SagO')) {
       return 7
     }
     // When doing so should change the query of availability, or mark this as 4 instead of 6
@@ -324,7 +324,7 @@ Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) 
 Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
   const cube = await $getOrFail(Cube, id)
   const updates = {}
-  for (const field of ['MBfD', 'nMR', 'TTMR', 'PG', 'Agwb']) {
+  for (const field of ['MBfD', 'nMR', 'TTMR', 'PG', 'Agwb', 'SagO']) {
     if (params[field] !== undefined) {
       updates[field] = params[field] || undefined
     }
