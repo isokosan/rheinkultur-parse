@@ -1,3 +1,11 @@
+# [1.120.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.119.0...1.120.0) (2023-09-29)
+
+
+### Features
+
+* add SagO warning ([97a4258](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/97a425896263de9c792f4b320962b8418486d243))
+* add the quarterly check to include periodic invoices of partners ([144371f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/144371fe798321f8f47d10b01d56baa6e48ee216))
+
 # [1.119.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.118.0...1.119.0) (2023-09-29)
 
 
