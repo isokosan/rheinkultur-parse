@@ -44,7 +44,7 @@ async function checkIfQuarterIsReportable (quarter) {
       return null
     }
     return partnerQuarter
-    })).then(partnerQuarters => partnerQuarters.filter(Boolean))
+  })).then(partnerQuarters => partnerQuarters.filter(Boolean))
 
   issues.invoices = await $query('Invoice')
     .lessThan('status', 2)

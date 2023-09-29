@@ -130,17 +130,18 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
       .equalTo('company', company)
       .include('lessor')
       .equalTo('periodicDistributorQuarter', quarter)
+      .equalTo('status', 2)
       .first({ useMasterKey: true })
+    const row = {
+      distributorId: company.id,
+      companyId: company.id,
+      companyName: company.get('name')
+    }
     if (invoice) {
-      const row = {
-        voucherNos: invoice.get('lexNo'),
-        lc: invoice.get('lessor').get('lessor').code,
-        distributorId: company.id,
-        companyId: company.id,
-        companyName: company.get('name'),
-        start: invoice.get('periodStart'),
-        end: invoice.get('periodEnd')
-      }
+      row.voucherNos = invoice.get('lexNo')
+      row.lc = invoice.get('lessor').get('lessor').code
+      row.start = invoice.get('periodStart')
+      row.end = invoice.get('periodEnd')
       row.periodStart = row.start > start ? row.start : start
       row.periodEnd = row.end < end ? row.end : end
       const duration = moment(row.end).add(1, 'days').diff(moment(row.start), 'months', true)
@@ -149,9 +150,12 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
       row.duration = round2(duration)
       row.months = months
       row.extraCols = invoice.get('extraCols')
-      rows.push(row)
-      total = round2(total + row.total)
+    } else {
+      row.total = periodicInvoicing.total
+      row.pendingInvoice = true
     }
+    rows.push(row)
+    total = round2(total + row.total)
   }
 
   partnerQuarter.set({
@@ -202,10 +206,15 @@ Parse.Cloud.define('partner-quarter-close', async ({ params: { companyId, quarte
   const partnerQuarter = await $query(PartnerQuarter)
     .equalTo('company', company)
     .equalTo('quarter', quarter)
+    .include('rows')
     .first({ useMasterKey: true })
-  partnerQuarter.set({
-    status: 'finalized'
-  })
+
+  // if partner quarter has a periodic invoice that is not yet invoiced, throw an error
+  if (partnerQuarter.get('rows').find(row => row.pendingInvoice === true)) {
+    throw new Error('Die vierteljährliche Rechnung ist für dieses Quartal noch nicht ausgestellt worden.')
+  }
+
+  partnerQuarter.set({ status: 'finalized' })
   await partnerQuarter.save(null, { useMasterKey: true })
   return {
     message: 'Quartal abgeschlossen',
