@@ -1,3 +1,10 @@
+## [1.120.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.2...1.120.3) (2023-10-02)
+
+
+### Bug Fixes
+
+* contract-extend pdf url ([363db34](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/363db34620cadc277756521d4c8f231543d1cd37))
+
 ## [1.120.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.1...1.120.2) (2023-10-02)
 
 
