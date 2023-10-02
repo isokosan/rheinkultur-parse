@@ -27,16 +27,16 @@ Parse.Cloud.afterFind(PartnerQuarter, async ({ objects }) => {
         .equalTo('status', 3) // aktiv
         .lessThanOrEqualTo('endsAt', getQuarterStartEnd(partnerQuarter.get('quarter')).end)
         .count({ useMasterKey: true }))
-      if (partnerQuarter.get('company').get('distributor')?.periodicInvoicing) {
-        const periodicInvoice = await $query('Invoice')
-          .equalTo('company', partnerQuarter.get('company'))
-          .equalTo('periodicDistributorQuarter', partnerQuarter.get('quarter'))
-          .equalTo('status', 2)
-          .first({ useMasterKey: true })
-        if (!periodicInvoice) {
-          partnerQuarter.set('pendingInvoice', 1)
-        }
-      }
+      // if (partnerQuarter.get('company').get('distributor')?.periodicInvoicing) {
+      //   const periodicInvoice = await $query('Invoice')
+      //     .equalTo('company', partnerQuarter.get('company'))
+      //     .equalTo('periodicDistributorQuarter', partnerQuarter.get('quarter'))
+      //     .equalTo('status', 2)
+      //     .first({ useMasterKey: true })
+      //   if (!periodicInvoice) {
+      //     partnerQuarter.set('pendingInvoice', 1)
+      //   }
+      // }
     }
   }
 })
@@ -56,7 +56,7 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
   if (partnerQuarter && partnerQuarter.get('status') === 'finalized') {
     return partnerQuarter.toJSON()
   }
-  const { pricingModel, commission, fixedPrice, fixedPriceMap, periodicInvoicing } = company.get('distributor')
+  const { pricingModel, commission, fixedPrice, fixedPriceMap } = company.get('distributor')
   const { start, end } = getQuarterStartEnd(quarter)
   const bookings = {}
   let total = 0
@@ -124,39 +124,39 @@ const getOrCalculatePartnerQuarter = async (companyId, quarter) => {
     }, { useMasterKey: true })
 
   const rows = Object.values(bookings).sort((a, b) => a.orderNo > b.orderNo ? 1 : -1)
-  if (periodicInvoicing?.total) {
-    // add row with invoice total
-    const invoice = await $query('Invoice')
-      .equalTo('company', company)
-      .include('lessor')
-      .equalTo('periodicDistributorQuarter', quarter)
-      .equalTo('status', 2)
-      .first({ useMasterKey: true })
-    const row = {
-      distributorId: company.id,
-      companyId: company.id,
-      companyName: company.get('name')
-    }
-    if (invoice) {
-      row.voucherNos = invoice.get('lexNo')
-      row.lc = invoice.get('lessor').get('lessor').code
-      row.start = invoice.get('periodStart')
-      row.end = invoice.get('periodEnd')
-      row.periodStart = row.start > start ? row.start : start
-      row.periodEnd = row.end < end ? row.end : end
-      const duration = moment(row.end).add(1, 'days').diff(moment(row.start), 'months', true)
-      const months = moment(row.periodEnd).add(1, 'days').diff(moment(row.periodStart), 'months', true)
-      row.total = invoice.get('netTotal') || 0
-      row.duration = round2(duration)
-      row.months = months
-      row.extraCols = invoice.get('extraCols')
-    } else {
-      row.total = periodicInvoicing.total
-      row.pendingInvoice = true
-    }
-    rows.push(row)
-    total = round2(total + row.total)
-  }
+  // if (periodicInvoicing?.total) {
+  //   // add row with invoice total
+  //   const invoice = await $query('Invoice')
+  //     .equalTo('company', company)
+  //     .include('lessor')
+  //     .equalTo('periodicDistributorQuarter', quarter)
+  //     .equalTo('status', 2)
+  //     .first({ useMasterKey: true })
+  //   const row = {
+  //     distributorId: company.id,
+  //     companyId: company.id,
+  //     companyName: company.get('name')
+  //   }
+  //   if (invoice) {
+  //     row.voucherNos = invoice.get('lexNo')
+  //     row.lc = invoice.get('lessor').get('lessor').code
+  //     row.start = invoice.get('periodStart')
+  //     row.end = invoice.get('periodEnd')
+  //     row.periodStart = row.start > start ? row.start : start
+  //     row.periodEnd = row.end < end ? row.end : end
+  //     const duration = moment(row.end).add(1, 'days').diff(moment(row.start), 'months', true)
+  //     const months = moment(row.periodEnd).add(1, 'days').diff(moment(row.periodStart), 'months', true)
+  //     row.total = invoice.get('netTotal') || 0
+  //     row.duration = round2(duration)
+  //     row.months = months
+  //     row.extraCols = invoice.get('extraCols')
+  //   } else {
+  //     row.total = periodicInvoicing.total
+  //     row.pendingInvoice = true
+  //   }
+  //   rows.push(row)
+  //   total = round2(total + row.total)
+  // }
 
   partnerQuarter.set({
     rows,

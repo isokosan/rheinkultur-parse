@@ -1586,7 +1586,10 @@ Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractI
   const attachments = [{
     filename: `${contract.get('no')} Verlängerung.pdf`,
     contentType: 'application/pdf',
-    href: process.env.EXPORTS_SERVER_URL + '/contract-extend-pdf/' + contract.id
+    href: process.env.EXPORTS_SERVER_URL + '/contract-extend-pdf/' + contract.id,
+    httpHeaders: {
+      'x-exports-master-key': process.env.EXPORTS_MASTER_KEY
+    }
   }]
   const template = 'contract-extend'
   const mailStatus = await sendMail({
