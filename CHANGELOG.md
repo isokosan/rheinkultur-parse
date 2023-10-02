@@ -1,3 +1,10 @@
+## [1.120.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.0...1.120.1) (2023-10-02)
+
+
+### Bug Fixes
+
+* add http headers to contract extend pdf email ([a2548c4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a2548c495b4c2731297a0e48cc8b8122f098e1e6))
+
 # [1.120.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.119.0...1.120.0) (2023-09-29)
 
 
