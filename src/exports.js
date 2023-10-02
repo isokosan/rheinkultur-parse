@@ -1609,9 +1609,8 @@ router.get('/bookings', handleErrorAsync(async (req, res) => {
   return res.send(buffer)
 }))
 
-router.get('/contract-extend-pdf/:contractId', handleErrorAsync(async (req, res) => {
-  const { contractId } = req.params
-  const contract = await $getOrFail('Contract', contractId)
+router.get('/contract-extend-pdf', handleErrorAsync(async (req, res) => {
+  const contract = await $getOrFail('Contract', req.query.id)
   const fileId = await generateContractExtend(contract)
   const response = await drive.files.export({ fileId, mimeType: 'application/pdf' }, { responseType: 'stream' })
   return response.data
