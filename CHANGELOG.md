@@ -1,3 +1,10 @@
+## [1.120.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.3...1.120.4) (2023-10-02)
+
+
+### Bug Fixes
+
+* regionId in regionals ([9080aae](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9080aaee9acfea82508f7b7df653c84e37e5eacd))
+
 ## [1.120.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.2...1.120.3) (2023-10-02)
 
 
