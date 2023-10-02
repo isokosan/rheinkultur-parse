@@ -20,7 +20,7 @@ const { CUBE_STATUSES, CUBE_FEATURES } = require('@/schema/enums')
 
 // validate session and attach user from Parse
 router.use(async (req, res, next) => {
-  req.master = ['/invoice-summary'].includes(req._parsedUrl.pathname) && req.headers['x-exports-master-key'] === process.env.EXPORTS_MASTER_KEY
+  req.master = ['/invoice-summary', '/contract-extend-pdf'].includes(req._parsedUrl.pathname) && req.headers['x-exports-master-key'] === process.env.EXPORTS_MASTER_KEY
   req.sessionToken = req.query.sid
   const session = req.query.sid && await $query(Parse.Session)
     .equalTo('sessionToken', req.sessionToken)
