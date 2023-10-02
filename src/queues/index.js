@@ -594,7 +594,7 @@ module.exports = async function (job) {
   const regionals = {}
   for (const region of await getOrCacheRegionalCommissions()) {
     regionals[region.regionId] = {
-      regionId: region,
+      regionId: region.regionId,
       name: region.name,
       total: 0,
       cubes: 0,
