@@ -1736,7 +1736,7 @@ Parse.Cloud.define('contract-change-invoice-address', async ({
       invoiceChanges.address = [invoice.get('address')?.get('name'), address?.get('name')]
       address ? invoice.set({ address }) : invoice.unset('address')
     }
-    if (!Object.keys(invoiceChanges).length) {
+    if (!$cleanDict(invoiceChanges)) {
       continue
     }
     const invoiceAudit = { user, fn: 'invoice-update', data: { changes: invoiceChanges } }
@@ -1828,7 +1828,7 @@ Parse.Cloud.define('contract-change-commission', async ({
     if (invoiceAgencyId !== invoice.get('agency')?.id) {
       invoiceChanges.agencyId = [invoice.get('agency')?.id, invoiceAgencyId]
     }
-    if (!Object.keys(invoiceChanges).length) {
+    if (!$cleanDict(invoiceChanges)) {
       continue
     }
     const invoiceAudit = { user, fn: 'invoice-update', data: { changes: invoiceChanges } }

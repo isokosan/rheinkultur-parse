@@ -149,9 +149,7 @@ Parse.Cloud.define('company-update-info', async ({
     contractDefaults
   })
 
-  if (!$cleanDict(changes)) {
-    throw new Error('Keine Änderungen')
-  }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
   company.set({ name, email, paymentType, dueDays, contractDefaults })
 
   const audit = { user, fn: 'company-update-info', data: { changes } }

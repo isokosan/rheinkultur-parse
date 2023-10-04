@@ -12,9 +12,7 @@ Parse.Cloud.define('item-responsibles', async ({ params: { itemId, itemClass, re
   if (removed.length) {
     data.removed = removed
   }
-  if (!Object.keys(data).length) {
-    throw new Error('Keine Änderungen')
-  }
+  if (!Object.keys(data).length) { throw new Error('Keine Änderungen') }
   responsibleIds.length
     ? item.set({ responsibles: responsibleIds.map(id => $pointer(Parse.User, id)) })
     : item.unset('responsibles')

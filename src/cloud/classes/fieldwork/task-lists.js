@@ -462,7 +462,7 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
     throw new Error('Sie können den Manager nicht ändern. Bitte ziehen Sie die Ernennung zuerst zurück.')
   }
   const { managerId } = normalizeFields(params)
-  if (managerId === taskList.get('manager')?.id) {
+  if (managerId === (taskList.get('manager')?.id || null)) {
     throw new Error('Keine Änderungen')
   }
   const changes = { managerId: [taskList.get('manager')?.id, managerId] }
@@ -514,9 +514,7 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
   const { quota, quotas } = normalizeFields({ ...params, type: taskList.get('type') })
 
   const changes = $changes(taskList, { quota, quotas })
-  if (!$cleanDict(changes)) {
-    throw new Error('Keine Änderungen')
-  }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
   quota ? taskList.set({ quota }) : taskList.unset('quota')
   quotas ? taskList.set({ quotas }) : taskList.unset('quotas')
 

@@ -270,6 +270,7 @@ Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) 
     throw new Error('Sie können nur Medien einstellen, wenn der Gehäusetyp unbekannt ist.')
   }
   const changes = $changes(cube, { media })
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   cube.set({ media })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
@@ -279,6 +280,7 @@ Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, use
   const cube = await $getOrFail(Cube, id)
   if (housingTypeId === 'htNM') {
     const changes = { htId: [cube.get('ht')?.id, 'htNM'] }
+    if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
     const audit = { user, fn: 'cube-update', data: { changes } }
     cube.unset('ht').set('htNM', true)
     return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
@@ -287,6 +289,7 @@ Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, use
   const currentHtId = cube.get('htNM') ? 'htNM' : (cube.get('ht')?.id || null)
   if (currentHtId === (housingTypeId || null)) { throw new Error('Keine Änderung.') }
   const changes = { htId: [cube.get('htNM') ? 'htNM' : cube.get('ht')?.id, housingTypeId] }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   cube.unset('htNM')
   housingTypeId
     ? cube.set({ ht, media: ht.get('media') })
@@ -302,6 +305,7 @@ Parse.Cloud.define('cube-update-address', async ({ params: { id, address: { str,
   if (state?.id !== cube.get('state')?.id) {
     changes.stateId = [cube.get('state')?.id, stateId]
   }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   cube.set({
     str: str?.trim() || null,
     hsnr: hsnr?.trim() || null,
@@ -316,6 +320,7 @@ Parse.Cloud.define('cube-update-address', async ({ params: { id, address: { str,
 Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) => {
   const cube = await $getOrFail(Cube, id)
   const changes = $changes(cube, { gp })
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   cube.set({ gp })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
@@ -330,9 +335,7 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
     }
   }
   const changes = $changes(cube, updates)
-  if (!$cleanDict(changes)) {
-    throw new Error('Keine Warnungen geändert.')
-  }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   for (const field of Object.keys(updates)) {
     updates[field] ? cube.set({ [field]: updates[field] }) : cube.unset(field)
   }
@@ -349,9 +352,7 @@ Parse.Cloud.define('cube-update-sides', async ({ params: { id, ...params }, user
     }
   }
   const changes = $changes(cube, { sides })
-  if (!$cleanDict(changes)) {
-    throw new Error('Keine Änderungen.')
-  }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   cube.set({ sides })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
@@ -364,9 +365,7 @@ Parse.Cloud.define('cube-update-scout-data', async ({ params: { id, ...params },
     scoutData[field] = params[field]
   }
   const changes = $changes(cube.get('scoutData') || {}, scoutData, true)
-  if (!$cleanDict(changes)) {
-    throw new Error('Keine Änderungen.')
-  }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   cube.set({ scoutData })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })

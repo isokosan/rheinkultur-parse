@@ -735,10 +735,7 @@ Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
     monthlyMedia,
     endPrices
   })
-  if (!$cleanDict(changes)) {
-    throw new Error('Keine Änderungen außer Bemerkung gefunden.')
-  }
-
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen außer Bemerkung gefunden.') }
   await validatePricing({
     company: booking.get('company'),
     cubeIds: booking.get('cubeIds'),
@@ -924,9 +921,11 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     const ht = null
     const media = request.media
     const changes = $changes(cube, { media, ht })
-    cube.set({ ht, media })
-    const audit = { user, fn: 'cube-update', data: { changes } }
-    await $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
+    if ($cleanDict(changes)) {
+      cube.set({ ht, media })
+      const audit = { user, fn: 'cube-update', data: { changes } }
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
+    }
   }
 
   request.status = 1

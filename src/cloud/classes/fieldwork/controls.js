@@ -275,6 +275,7 @@ Parse.Cloud.define('control-update', async ({
   const control = await $getOrFail(Control, controlId)
   const changes = $changes(control, { name, date, dueDate, lastControlBefore, orderType })
   changes.criteria = getCriteriaChanges(control.get('criteria'), criteria)
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
   control.set({ name, date, dueDate, lastControlBefore, orderType, criteria })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })

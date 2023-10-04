@@ -372,6 +372,7 @@ Parse.Cloud.define('invoice-update', async ({ params: { id: invoiceId, ...params
     changes.lessorRate = [invoice.get('lessorRate'), lessorRate]
     lessorRate ? invoice.set({ lessorRate }) : invoice.unset('lessorRate')
   }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
   const audit = { user, fn: 'invoice-update', data: { changes } }
   return invoice.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
@@ -380,6 +381,7 @@ Parse.Cloud.define('invoice-update-extra-cols', async ({ params: { id: invoiceId
   const { extraCols } = normalizeFields(params)
   const invoice = await $getOrFail(Invoice, invoiceId)
   const changes = $changes(invoice, { extraCols })
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
   invoice.set({ extraCols })
   const audit = { user, fn: 'invoice-update', data: { changes } }
   return invoice.save(null, { useMasterKey: true, context: { audit } })
@@ -572,9 +574,7 @@ Parse.Cloud.define('invoice-reset-introduction', async ({ params: { id: invoiceI
   }
   const introduction = await invoice.getIntroduction()
   const changes = $changes(invoice, { introduction })
-  if (!changes.introduction) {
-    throw new Error('Keine Änderungen')
-  }
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
   introduction ? invoice.set('introduction', introduction) : invoice.unset('introduction')
   const audit = { user, fn: 'invoice-update', data: { changes } }
   return invoice.save(null, { useMasterKey: true, context: { audit } })
