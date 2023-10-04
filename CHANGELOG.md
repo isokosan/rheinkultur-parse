@@ -1,3 +1,10 @@
+## [1.122.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.1...1.122.2) (2023-10-04)
+
+
+### Bug Fixes
+
+* empty audits ([3e63815](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3e638158583c1424fd45f90e7c84ef262b2a5c96))
+
 ## [1.122.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.0...1.122.1) (2023-10-04)
 
 
