@@ -1,3 +1,10 @@
+# [1.121.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.4...1.121.0) (2023-10-04)
+
+
+### Features
+
+* finish geolocation ([4106926](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4106926f6437d5f7ec9956308b151d047e80fe88))
+
 ## [1.120.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.3...1.120.4) (2023-10-02)
 
 
