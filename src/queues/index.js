@@ -18,7 +18,7 @@ async function processMediaInvoices (start, end) {
     .notEqualTo('media', null)
     .greaterThan('periodEnd', start)
     .lessThanOrEqualTo('periodStart', end)
-    .include(['company', 'contract', 'booking', 'bookings'])
+    .include(['company', 'contract', 'booking'])
   await invoicesQuery.each(async (invoice) => {
     const periodStart = invoice.get('periodStart') > start
       ? invoice.get('periodStart')
@@ -170,7 +170,7 @@ async function processCreditNotes (start, end) {
     .notEqualTo('mediaItems', null)
     .greaterThan('periodEnd', start)
     .lessThanOrEqualTo('periodStart', end)
-    .include(['company', 'contract', 'booking', 'bookings'])
+    .include(['company', 'contract', 'booking'])
   await creditNotesQuery.each(async (creditNote) => {
     const mediaItems = creditNote.get('mediaItems')
     const cubeIds = []
