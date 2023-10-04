@@ -48,6 +48,7 @@ Parse.Cloud.afterSave(Parse.User, async ({ object: user, context: { audit, clear
 Parse.Cloud.afterFind(Parse.User, ({ objects: users }) => {
   for (const user of users) {
     user.set('fullname', user.get('firstName') + ' ' + user.get('lastName'))
+    !user.get('lastOnlineAt') && user.set('lastOnlineAt', user.get('lastLoginAt'))
   }
   return users
 })
@@ -198,21 +199,6 @@ Parse.Cloud.define('user-location', async ({ params: { latitude, longitude, accu
       at: new Date()
     })
     .save(null, { useMasterKey: true })
-}, { requireUser: true })
-
-Parse.Cloud.define('user-locations', async ({ user }) => {
-  const query = $query(Parse.User)
-  user.get('company') && query.equalTo('company', user.get('company'))
-  return query
-    .select(['objectId', 'location'])
-    .notEqualTo('location.gp', null)
-    .greaterThan('location.at', moment().startOf('day').toDate())
-    .limit(1000)
-    .find({ useMasterKey: true })
-    .then(users => users.reduce((acc, user) => {
-      acc[user.id] = user.get('location')
-      return acc
-    }, {}))
 }, { requireUser: true })
 
 const fetchUsers = async function () {
