@@ -1,3 +1,10 @@
+## [1.122.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.0...1.122.1) (2023-10-04)
+
+
+### Bug Fixes
+
+* use cleanDict in control generate lists ([a64351b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a64351b60425196061b088a1ed5bfeb46072629e))
+
 # [1.122.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.121.0...1.122.0) (2023-10-04)
 
 
