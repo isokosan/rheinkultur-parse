@@ -149,7 +149,7 @@ Parse.Cloud.define('company-update-info', async ({
     contractDefaults
   })
 
-  if (!Object.keys(changes).length) {
+  if (!$cleanDict(changes)) {
     throw new Error('Keine Änderungen')
   }
   company.set({ name, email, paymentType, dueDays, contractDefaults })

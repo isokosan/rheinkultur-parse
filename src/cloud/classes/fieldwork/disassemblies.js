@@ -173,7 +173,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
   async function updateTaskListDates (taskList, date, dueDate, type) {
     const disassembly = await ensureDisassemblyExists(order, date, dueDate, type)
     const changes = $changes(taskList, { date, dueDate })
-    if (!changes) { return }
+    if (!$cleanDict(changes)) { return }
     let locationCleanup
     if ([2, 3].includes(taskList.get('status')) && date > today) {
       changes.status = [taskList.get('status', 1)]

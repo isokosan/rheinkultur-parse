@@ -735,7 +735,7 @@ Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
     monthlyMedia,
     endPrices
   })
-  if (!Object.keys(changes).length) {
+  if (!$cleanDict(changes)) {
     throw new Error('Keine Änderungen außer Bemerkung gefunden.')
   }
 

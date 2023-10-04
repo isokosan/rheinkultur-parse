@@ -340,7 +340,7 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
     const changes = $changes(taskList, { date, dueDate })
     const cubeChanges = $cubeChanges(taskList, cubeIds)
 
-    if (changes || cubeChanges) {
+    if ($cleanDict(changes) || cubeChanges) {
       taskList.set({ date, dueDate, cubeIds })
       const audit = { user, fn: 'task-list-update', data: { changes, cubeChanges } }
       await taskList.save(null, { useMasterKey: true, context: { audit } })

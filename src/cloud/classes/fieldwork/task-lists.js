@@ -514,7 +514,7 @@ Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId,
   const { quota, quotas } = normalizeFields({ ...params, type: taskList.get('type') })
 
   const changes = $changes(taskList, { quota, quotas })
-  if (!Object.keys(changes).length) {
+  if (!$cleanDict(changes)) {
     throw new Error('Keine Änderungen')
   }
   quota ? taskList.set({ quota }) : taskList.unset('quota')

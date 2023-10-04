@@ -330,7 +330,7 @@ Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, u
     }
   }
   const changes = $changes(cube, updates)
-  if (!Object.keys(changes).length) {
+  if (!$cleanDict(changes)) {
     throw new Error('Keine Warnungen geändert.')
   }
   for (const field of Object.keys(updates)) {
@@ -349,7 +349,7 @@ Parse.Cloud.define('cube-update-sides', async ({ params: { id, ...params }, user
     }
   }
   const changes = $changes(cube, { sides })
-  if (!Object.keys(changes).length) {
+  if (!$cleanDict(changes)) {
     throw new Error('Keine Änderungen.')
   }
   cube.set({ sides })
@@ -364,7 +364,7 @@ Parse.Cloud.define('cube-update-scout-data', async ({ params: { id, ...params },
     scoutData[field] = params[field]
   }
   const changes = $changes(cube.get('scoutData') || {}, scoutData, true)
-  if (!Object.keys(changes).length) {
+  if (!$cleanDict(changes)) {
     throw new Error('Keine Änderungen.')
   }
   cube.set({ scoutData })

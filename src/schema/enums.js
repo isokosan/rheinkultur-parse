@@ -2,7 +2,7 @@ const { camelCase } = require('lodash')
 
 module.exports.ACC_TYPES = {
   admin: 'Administrator',
-  intern: 'Benutzer',
+  intern: 'Intern Benutzer',
   scout: 'Scout',
   partner: 'Vertriebspartner'
 }
