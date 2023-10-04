@@ -1,3 +1,10 @@
+# [1.122.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.121.0...1.122.0) (2023-10-04)
+
+
+### Features
+
+* add user last online ats ([7647e42](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7647e42bb80a6b9f1033fe8a4dfb67b6c263f6c8))
+
 # [1.121.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.120.4...1.121.0) (2023-10-04)
 
 
