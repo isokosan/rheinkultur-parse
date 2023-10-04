@@ -1,3 +1,10 @@
+## [1.122.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.2...1.122.3) (2023-10-04)
+
+
+### Bug Fixes
+
+* remove autoExtendsAt when booking request removes autoExtendsBy ([4991ce5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4991ce57320712356439d41ab572657d8e1fa2ea))
+
 ## [1.122.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.1...1.122.2) (2023-10-04)
 
 
