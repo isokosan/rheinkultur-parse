@@ -69,3 +69,30 @@ Parse.Cloud.define('scout-manager-summary', async ({ user }) => {
     totals
   }
 }, { requireUser: true })
+
+Parse.Cloud.define('user-location', async ({ params: { latitude, longitude, accuracy, heading, speed }, user }) => {
+  user
+    .set('location', {
+      gp: $geopoint(latitude, longitude),
+      accuracy,
+      heading,
+      speed,
+      at: new Date()
+    })
+    .save(null, { useMasterKey: true })
+}, { requireUser: true })
+
+Parse.Cloud.define('scout-locations', async ({ user }) => {
+  const query = $query(Parse.User)
+  user.get('company') && query.equalTo('company', user.get('company'))
+  return query
+    .select(['objectId', 'location'])
+    .notEqualTo('location.gp', null)
+    .greaterThan('location.at', moment().startOf('day').toDate())
+    .limit(1000)
+    .find({ useMasterKey: true })
+    .then(users => users.reduce((acc, user) => {
+      acc[user.id] = user.get('location')
+      return acc
+    }, {}))
+}, { requireUser: true })
