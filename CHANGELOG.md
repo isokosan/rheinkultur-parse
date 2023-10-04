@@ -1,3 +1,10 @@
+## [1.122.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.3...1.122.4) (2023-10-04)
+
+
+### Bug Fixes
+
+* fieldwork map fn ([d940bda](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d940bdaef2cf71f4214a33b6063ea6a1f971779a))
+
 ## [1.122.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.2...1.122.3) (2023-10-04)
 
 
