@@ -92,7 +92,7 @@ Parse.Cloud.define('fieldwork-past-completed', async () => {
     return {
       key: m.format('MM-YYYY'),
       start: m.startOf('month').toDate(),
-      end: m.endOf('month').toDate(),
+      end: m.endOf('month').toDate()
     }
   })
   for (const { key, start, end } of months) {
