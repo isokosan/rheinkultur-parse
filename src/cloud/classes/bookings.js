@@ -951,6 +951,7 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     for (const field of Object.keys(request.changes)) {
       booking.set(field, request.changes[field][1])
     }
+    !booking.get('autoExtendsBy') && booking.set('autoExtendsAt', null)
     await checkIfCubesAreAvailable(booking)
     setCubeStatuses = true
     audit = { fn: 'booking-change-request-accept', user, data: { requestedBy: request.user, changes: request.changes } }
