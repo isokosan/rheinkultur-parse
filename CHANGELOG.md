@@ -1,3 +1,10 @@
+# [1.123.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.4...1.123.0) (2023-10-05)
+
+
+### Features
+
+* fieldwork wip ([bdfa5a1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bdfa5a1e0b1ec51cf1303ecada486ec7e3b7bc05))
+
 ## [1.122.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.3...1.122.4) (2023-10-04)
 
 
