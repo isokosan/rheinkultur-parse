@@ -76,7 +76,7 @@ Parse.Cloud.define('fieldwork-map', async ({ user }) => {
   return query
     .select(['objectId', 'location'])
     .notEqualTo('location.gp', null)
-    .greaterThan('location.at', moment().startOf('day').toDate())
+    // .greaterThan('location.at', moment().startOf('day').toDate())
     .limit(1000)
     .find({ useMasterKey: true })
     .then(users => users.reduce((acc, user) => {
@@ -85,12 +85,89 @@ Parse.Cloud.define('fieldwork-map', async ({ user }) => {
     }, {}))
 }, { requireUser: true })
 
-Parse.Cloud.define('fieldwork-past-completed', async () => {
+Parse.Cloud.define('fieldwork-outstanding', async () => {
   const response = {}
-  const months = [1, 2, 3].map((subtract) => {
+  const manager = null
+  // ongoing
+  const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
+  manager && taskListQuery.equalTo('manager', manager)
+  await taskListQuery
+    .select(['scouts', 'counts', 'type', 'gp'])
+    .eachBatch((lists) => {
+      for (const list of lists) {
+        const { completed, total } = list.get('counts')
+        const outstanding = total - completed
+        if (outstanding <= 0) { continue }
+        for (const scout of list.get('scouts')) {
+          if (!response[scout.id]) {
+            response[scout.id] = {
+              lists: [],
+              scout: 0,
+              control: 0,
+              disassembly: 0,
+              total: 0
+            }
+          }
+          response[scout.id].lists.push({
+            type: list.get('type'),
+            outstanding,
+            center: list.get('gp')
+          })
+          response[scout.id][list.get('type')] += outstanding
+          response[scout.id].total += outstanding
+        }
+      }
+    }, { useMasterKey: true })
+  return response
+}, { requireUser: true })
+
+Parse.Cloud.define('fieldwork-upcoming', async () => {
+  const reached = {
+    key: 'Erreicht',
+    end: moment().format('YYYY-MM-DD')
+  }
+  const months = [reached, ...[0, 1, 2, 3].map((add) => {
+    const m = moment().add(add, 'months')
+    return {
+      key: m.format('MMMM YYYY'),
+      start: m.startOf('month').format('YYYY-MM-DD'),
+      end: m.endOf('month').format('YYYY-MM-DD')
+    }
+  })]
+
+  const response = {}
+  // needs to be assigned
+  const getBaseQuery = () => $query('TaskList').equalTo('status', 1).select(['type', 'counts.total'])
+  for (const { key, start, end } of months) {
+    response[key] = {
+      scout: 0,
+      control: 0,
+      disassembly: 0,
+      total: 0
+    }
+    const query = getBaseQuery()
+    end && query.lessThanOrEqualTo('date', end)
+    start && query.greaterThanOrEqualTo('date', start)
+    console.log({ end, start })
+    await query.eachBatch((lists) => {
+      consola.info(lists)
+      for (const list of lists) {
+        const type = list.get('type')
+        const total = list.get('counts').total
+        response[key][type] += total
+        response[key].total += total
+      }
+    }, { useMasterKey: true })
+  }
+  return response
+}, $fieldworkManager)
+
+Parse.Cloud.define('fieldwork-approved-submissions', async () => {
+  const response = {}
+  const months = [0, 1, 2, 3].map((subtract) => {
     const m = moment().subtract(subtract, 'months')
     return {
-      key: m.format('MM-YYYY'),
+      key: m.format('MMMM YYYY'),
       start: m.startOf('month').toDate(),
       end: m.endOf('month').toDate()
     }
