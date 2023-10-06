@@ -1,3 +1,10 @@
+# [1.124.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.123.1...1.124.0) (2023-10-06)
+
+
+### Features
+
+* cache ([1279b05](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1279b0590a3bb4e56e0f0125fa64ab568bf191a4))
+
 ## [1.123.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.123.0...1.123.1) (2023-10-06)
 
 
