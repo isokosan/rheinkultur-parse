@@ -30,6 +30,7 @@ module.exports = {
     $pointer: true,
     $attr: true,
     $geopoint: true,
+    $cache: true,
     $query: true,
     $getOrFail: true,
     $price: true,

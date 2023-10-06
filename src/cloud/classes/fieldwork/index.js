@@ -92,7 +92,7 @@ Parse.Cloud.define('fieldwork-outstanding', async () => {
   const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
   manager && taskListQuery.equalTo('manager', manager)
   await taskListQuery
-    .select(['scouts', 'counts', 'type', 'gp'])
+    .select(['scouts', 'counts', 'type', 'gp', 'pk', 'briefing', 'control', 'disassembly'])
     .eachBatch((lists) => {
       for (const list of lists) {
         const { completed, total } = list.get('counts')
@@ -111,7 +111,9 @@ Parse.Cloud.define('fieldwork-outstanding', async () => {
           response[scout.id].lists.push({
             type: list.get('type'),
             outstanding,
-            center: list.get('gp')
+            center: list.get('gp'),
+            pk: list.get('pk'),
+            parentName: list.get('parent').get('name')
           })
           response[scout.id][list.get('type')] += outstanding
           response[scout.id].total += outstanding
@@ -121,82 +123,98 @@ Parse.Cloud.define('fieldwork-outstanding', async () => {
   return response
 }, { requireUser: true })
 
-Parse.Cloud.define('fieldwork-upcoming', async () => {
-  const reached = {
-    key: 'Erreicht',
-    end: moment().format('YYYY-MM-DD')
-  }
-  const months = [reached, ...[0, 1, 2, 3].map((add) => {
-    const m = moment().add(add, 'months')
-    return {
-      key: m.format('MMMM YYYY'),
-      start: m.startOf('month').format('YYYY-MM-DD'),
-      end: m.endOf('month').format('YYYY-MM-DD')
-    }
-  })]
+Parse.Cloud.define('fieldwork-upcoming', async ({ params: { force } }) => {
+  return $cache('fieldwork-upcoming', {
+    async cacheFn () {
+      const months = [0, 1, 2, 3].map((add) => {
+        const m = moment().add(add, 'months')
+        return {
+          key: m.format('MMMM YYYY'),
+          start: m.startOf('month').format('YYYY-MM-DD'),
+          end: m.endOf('month').format('YYYY-MM-DD')
+        }
+      })
 
-  const response = {}
-  // needs to be assigned
-  const getBaseQuery = () => $query('TaskList').equalTo('status', 1).select(['type', 'counts.total'])
-  for (const { key, start, end } of months) {
-    response[key] = {
-      scout: 0,
-      control: 0,
-      disassembly: 0,
-      total: 0
-    }
-    const query = getBaseQuery()
-    end && query.lessThanOrEqualTo('date', end)
-    start && query.greaterThanOrEqualTo('date', start)
-    console.log({ end, start })
-    await query.eachBatch((lists) => {
-      consola.info(lists)
-      for (const list of lists) {
-        const type = list.get('type')
-        const total = list.get('counts').total
-        response[key][type] += total
-        response[key].total += total
-      }
-    }, { useMasterKey: true })
-  }
-  return response
-}, $fieldworkManager)
-
-Parse.Cloud.define('fieldwork-approved-submissions', async () => {
-  const response = {}
-  const months = [0, 1, 2, 3].map((subtract) => {
-    const m = moment().subtract(subtract, 'months')
-    return {
-      key: m.format('MMMM YYYY'),
-      start: m.startOf('month').toDate(),
-      end: m.endOf('month').toDate()
-    }
-  })
-  for (const { key, start, end } of months) {
-    response[key] = {}
-    for (const type of ['Scout', 'Control', 'Disassembly']) {
-      await $query(type + 'Submission')
-        .greaterThanOrEqualTo('createdAt', start)
-        .lessThanOrEqualTo('createdAt', end)
-        .equalTo('status', 'approved')
-        .select('scout')
-        .eachBatch((submissions) => {
-          for (const submission of submissions) {
-            const scoutId = submission.get('scout').id
-            if (!response[key][scoutId]) {
-              response[key][scoutId] = {
-                scoutId,
-                scout: 0,
-                control: 0,
-                disassembly: 0,
-                total: 0
+      const response = {}
+      const getBaseQuery = () => $query('TaskList')
+        .greaterThan('status', 0)
+        .lessThan('status', 4)
+        .select(['type', 'counts.total', 'status', 'state'])
+      for (const { key, start, end } of months) {
+        response[key] = {}
+        const query = getBaseQuery()
+        end && query.lessThanOrEqualTo('date', end)
+        start && query.greaterThanOrEqualTo('date', start)
+        await query.eachBatch((lists) => {
+          for (const list of lists) {
+            const stateId = list.get('state').id
+            const type = list.get('type')
+            const status = list.get('status')
+            const total = list.get('counts').total
+            if (!response[key][stateId]) {
+              response[key][stateId] = {
+                stateId,
+                scout: {},
+                control: {},
+                disassembly: {},
+                total: {}
               }
             }
-            response[key][scoutId][type.toLowerCase()]++
-            response[key][scoutId].total++
+            response[key][stateId][type][status] = (response[key][stateId][type][status] || 0) + total
+            response[key][stateId][type].total = (response[key][stateId][type].total || 0) + total
+            response[key][stateId].total[status] = (response[key][stateId].total[status] || 0) + total
+            response[key][stateId].total.total = (response[key][stateId].total.total || 0) + total
           }
         }, { useMasterKey: true })
-    }
-  }
-  return response
+      }
+      return response
+    },
+    maxAge: [10, 'minutes'],
+    force
+  })
+}, $fieldworkManager)
+
+Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { force } }) => {
+  return $cache('fieldwork-approved-submissions', {
+    async cacheFn () {
+      const response = {}
+      const months = [0, 1, 2, 3].map((subtract) => {
+        const m = moment().subtract(subtract, 'months')
+        return {
+          key: m.format('MMMM YYYY'),
+          start: m.startOf('month').toDate(),
+          end: m.endOf('month').toDate()
+        }
+      })
+      for (const { key, start, end } of months) {
+        response[key] = {}
+        for (const type of ['Scout', 'Control', 'Disassembly']) {
+          await $query(type + 'Submission')
+            .greaterThanOrEqualTo('createdAt', start)
+            .lessThanOrEqualTo('createdAt', end)
+            .equalTo('status', 'approved')
+            .select('scout')
+            .eachBatch((submissions) => {
+              for (const submission of submissions) {
+                const scoutId = submission.get('scout').id
+                if (!response[key][scoutId]) {
+                  response[key][scoutId] = {
+                    scoutId,
+                    scout: 0,
+                    control: 0,
+                    disassembly: 0,
+                    total: 0
+                  }
+                }
+                response[key][scoutId][type.toLowerCase()]++
+                response[key][scoutId].total++
+              }
+            }, { useMasterKey: true })
+        }
+      }
+      return response
+    },
+    maxAge: [10, 'minutes'],
+    force
+  })
 }, $fieldworkManager)

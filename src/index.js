@@ -85,7 +85,7 @@ const initApp = async () => {
     verbose: false,
     schema: require('./schema'),
     liveQuery: {
-      classNames: ['Audit', 'Comment', 'TaskList', 'Notification'],
+      classNames: ['Audit', 'Cache', 'Comment', 'TaskList', 'Notification'],
       pubSubAdapter
     },
     filesAdapter: process.env.AWS_S3_BUCKET

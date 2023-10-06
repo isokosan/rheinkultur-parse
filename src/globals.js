@@ -22,6 +22,18 @@ global.$parsify = (className, objectId) => {
   return item
 }
 
+// cacheFn: async function that returns a value
+// maxAge: tuple with duration and unit (e.g. [1, 'day'])
+global.$cache = async (key, { cacheFn, maxAge, force }) => {
+  const Cache = Parse.Object.extend('Cache')
+  const cached = await $query('Cache').equalTo('key', key).first({ useMasterKey: true }) || new Cache({ key })
+  if (cached?.get('value') && !force && (!maxAge || moment(cached.updatedAt).isAfter(moment().subtract(...maxAge)))) {
+    return cached
+  }
+  const value = await cacheFn()
+  return cached.set('value', value).save(null, { useMasterKey: true })
+}
+
 // arg1: Either a list of coordinate pairs, an object with latitude, longitude, or the latitude or the point.
 // arg2: The longitude of the GeoPoint
 global.$geopoint = (...args) => new Parse.GeoPoint(...args)
