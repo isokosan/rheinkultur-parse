@@ -1,3 +1,10 @@
+## [1.123.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.123.0...1.123.1) (2023-10-06)
+
+
+### Bug Fixes
+
+* booking requests skip bug in search index ([f04dafb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f04dafba0a683dc509812abaec9b2c4cc3f680dc))
+
 # [1.123.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.122.4...1.123.0) (2023-10-05)
 
 
