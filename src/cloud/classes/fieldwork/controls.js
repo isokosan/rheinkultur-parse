@@ -289,7 +289,7 @@ Parse.Cloud.define('control-counts', async ({ params: { id: controlId } }) => {
     distinctOrderKeys
   ] = await Promise.all([
     cubesQuery.distinct('objectId', { useMasterKey: true }),
-    cubesQuery.distinct('caok', { useMasterKey: true }),
+    cubesQuery.distinct('caok', { useMasterKey: true })
   ])
   return { cubes: distinctCubeIds.length, orders: distinctOrderKeys.length }
 }, $fieldworkManager)
@@ -317,6 +317,8 @@ Parse.Cloud.define('control-counts-detailed', async ({ params: { id: controlId }
   for (const companyId of Object.keys(response)) {
     companyCounts[companyId] = {
       orders: Object.keys(response[companyId]).length,
+      bookings: Object.keys(response[companyId]).filter(no => no[0] === 'B').length,
+      contracts: Object.keys(response[companyId]).filter(no => no[0] === 'V').length,
       cubes: Object.values(response[companyId]).reduce((acc, cubes) => acc + cubes.length, 0)
     }
   }
