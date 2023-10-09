@@ -31,7 +31,7 @@ const NOTIFICATIONS = {
       .first({ useMasterKey: true })
   },
   'active-task-list-removed': {
-    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde gelösht.`,
+    message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde gelöscht.`,
     route: ({ type, orderClass, orderId }) => {
       if (type === 'disassembly') {
         const name = orderClass.toLowerCase()
