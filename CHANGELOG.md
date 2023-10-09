@@ -1,3 +1,10 @@
+# [1.126.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.125.1...1.126.0) (2023-10-09)
+
+
+### Features
+
+* add cube features to search and filter ([21913e1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/21913e15d2bb13394ab65d5c90033200cd156e64))
+
 ## [1.125.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.125.0...1.125.1) (2023-10-09)
 
 
