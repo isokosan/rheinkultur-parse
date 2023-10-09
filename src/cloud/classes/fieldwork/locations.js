@@ -43,11 +43,12 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
     .find({ sessionToken: user.get('sessionToken') })
 
   const STATUS_MAP = {
-    undefined: 0,
-    pending: 1,
-    approved: 1,
-    rejected: 2,
-    not_found: 3
+    undefined: 0, // added to list as is
+    approvable: 0, // added to list, admin-approvable
+    pending: 1, // form submitted, pending-approval
+    approved: 1, // form-approved or approvable-approved
+    rejected: 2, // form-rejected
+    not_found: 3 // cube not found
   }
 
   for (const taskList of taskLists) {

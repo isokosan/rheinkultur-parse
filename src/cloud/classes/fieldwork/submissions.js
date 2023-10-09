@@ -109,12 +109,7 @@ function removeRejectedNotifications (type, submission) {
 Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ScoutSubmission, submissionId)
   submission.set('status', 'pending')
-  !approve && submission.set('scout', user)
-
-  // update submission time if not submitted before or was rejected
-  if (!submission.get('lastSubmittedAt') || submission.get('status') === 'rejected') {
-    submission.set('lastSubmittedAt', new Date())
-  }
+  !approve && submission.set('scout', user).set('lastSubmittedAt', new Date())
 
   // make sure the cube is added to the list if found
   const cubeIds = taskList.get('cubeIds') || []
@@ -208,16 +203,10 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
     const orderKey = [cubeOrder.className, cubeOrder.objectId].join('$')
     submission.set('orderKey', orderKey)
   }
-  submission.set('status', 'pending')
-  !approve && submission.set('scout', user)
-  // update submission time if not submitted before or was rejected
-  if (!submission.get('lastSubmittedAt') || submission.get('status') === 'rejected') {
-    submission.set('lastSubmittedAt', new Date())
-  }
 
-  if (condition !== 'no_ad') {
-    comments = null
-  }
+  submission.set('status', 'pending')
+  !approve && submission.set('scout', user).set('lastSubmittedAt', new Date())
+
   let disassembly
   if (condition === 'disassembled' && disassemblyId) {
     disassembly = await $getOrFail('DisassemblySubmission', disassemblyId)
@@ -268,17 +257,9 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
   const disassembly = taskList.get('disassembly')
 
   submission.set('status', 'pending')
-  !approve && submission.set('scout', user)
-
-  // update submission time if not submitted before or was rejected
-  if (!submission.get('lastSubmittedAt') || submission.get('status') === 'rejected') {
-    submission.set('lastSubmittedAt', new Date())
-  }
+  !approve && submission.set('scout', user).set('lastSubmittedAt', new Date())
 
   let changes
-  if (condition === 'true') {
-    comments = null
-  }
   if (submission.id) {
     changes = $changes(submission, { condition, comments })
   }
