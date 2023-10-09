@@ -1,3 +1,10 @@
+## [1.124.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.124.0...1.124.1) (2023-10-09)
+
+
+### Bug Fixes
+
+* bug with comments nulling if clean ([f6bcb4b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f6bcb4b2144861bd0b29766411b29f4b5341b8f8))
+
 # [1.124.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.123.1...1.124.0) (2023-10-06)
 
 
