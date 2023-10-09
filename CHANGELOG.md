@@ -1,3 +1,10 @@
+# [1.125.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.124.1...1.125.0) (2023-10-09)
+
+
+### Features
+
+* add detailed control counts ([cdf4c97](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cdf4c97898066e0c7ee3cc70bfde186fbe1c351e))
+
 ## [1.124.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.124.0...1.124.1) (2023-10-09)
 
 
