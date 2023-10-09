@@ -1,3 +1,10 @@
+## [1.125.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.125.0...1.125.1) (2023-10-09)
+
+
+### Bug Fixes
+
+* add contract/booking level counts to detailed control counts ([807bfbe](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/807bfbec20cc0c4e88f933793c820348f29e1f30))
+
 # [1.125.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.124.1...1.125.0) (2023-10-09)
 
 
