@@ -284,9 +284,43 @@ Parse.Cloud.define('control-update', async ({
 Parse.Cloud.define('control-counts', async ({ params: { id: controlId } }) => {
   const control = await $getOrFail(Control, controlId)
   const cubesQuery = getCubesQuery(control)
-  const distinctCubeIds = await cubesQuery.distinct('objectId', { useMasterKey: true })
-  const distinctOrderKeys = await cubesQuery.distinct('caok', { useMasterKey: true })
+  const [
+    distinctCubeIds,
+    distinctOrderKeys
+  ] = await Promise.all([
+    cubesQuery.distinct('objectId', { useMasterKey: true }),
+    cubesQuery.distinct('caok', { useMasterKey: true }),
+  ])
   return { cubes: distinctCubeIds.length, orders: distinctOrderKeys.length }
+}, $fieldworkManager)
+
+Parse.Cloud.define('control-counts-detailed', async ({ params: { id: controlId } }) => {
+  const control = await $getOrFail(Control, controlId)
+  const cubesQuery = getCubesQuery(control)
+  const response = {}
+  await cubesQuery
+    .select('order')
+    .eachBatch((cubes) => {
+      for (const cube of cubes) {
+        const companyId = cube.get('order').company.id
+        const orderNo = cube.get('order').no
+        if (!response[companyId]) {
+          response[companyId] = {}
+        }
+        if (!response[companyId][orderNo]) {
+          response[companyId][orderNo] = []
+        }
+        response[companyId][orderNo].push(cube.id)
+      }
+    }, { useMasterKey: true })
+  const companyCounts = {}
+  for (const companyId of Object.keys(response)) {
+    companyCounts[companyId] = {
+      orders: Object.keys(response[companyId]).length,
+      cubes: Object.values(response[companyId]).reduce((acc, cubes) => acc + cubes.length, 0)
+    }
+  }
+  return companyCounts
 }, $fieldworkManager)
 
 // This is only for generation. For syncing (removing cubes, do a sync function)
