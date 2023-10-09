@@ -305,6 +305,7 @@ Parse.Cloud.define('search', async ({
     c,
     r,
     s,
+    sm,
     ml,
     cId,
     motive,
@@ -513,6 +514,20 @@ Parse.Cloud.define('search', async ({
   s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
   s.includes('SagO') && bool.must.push({ exists: { field: 'SagO' } })
   // s.includes('nStov') && bool.must_not.push({ match: { stovDate: '2023-04-21' } })
+
+  if (sm) {
+    const features = {}
+    for (const item of sm.split(',') || []) {
+      const [key, value] = item.split(':')
+      if (!features[key]) {
+        features[key] = []
+      }
+      features[key].push(value)
+    }
+    for (const key of Object.keys(features)) {
+      bool.must.push({ terms: { [`scoutData.${key}`]: features[key] } })
+    }
+  }
 
   // address constraints
   if (pk) {
