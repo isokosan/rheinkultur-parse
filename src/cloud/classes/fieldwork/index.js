@@ -1,75 +1,3 @@
-Parse.Cloud.define('scout-manager-summary', async ({ user }) => {
-  if (!user.get('permissions')?.includes('manage-scouts')) {
-    return
-  }
-  const today = await $today()
-  const getBaseQuery = () => $query('TaskList').equalTo('manager', user)
-  const needsToBeAssigned = await getBaseQuery()
-    .equalTo('status', 1)
-    .lessThanOrEqualTo('date', today)
-    .count({ useMasterKey: true })
-
-  const totals = {
-    lists: 0,
-    pending: 0,
-    rejected: 0,
-    approved: 0,
-    remaining: 0,
-    completed: 0,
-    total: 0,
-    scouts: {},
-    types: {
-      scout: 0,
-      control: 0,
-      disassembly: 0
-    }
-  }
-  await getBaseQuery()
-    .containedIn('status', [2, 3])
-    .select(['scouts', 'counts', 'type'])
-    .eachBatch((lists) => {
-      for (const list of lists) {
-        totals.lists++
-        const { rejected, pending, approved, completed, total } = list.get('counts')
-        totals.rejected += rejected || 0
-        totals.pending += pending || 0
-        totals.approved += approved || 0
-        totals.completed += completed || 0
-        totals.total += total || 0
-        const remaining = total - completed
-        totals.remaining += remaining
-        totals.types[list.get('type')] += total || 0
-        for (const scout of list.get('scouts')) {
-          !(totals.scouts[scout.id]) && (totals.scouts[scout.id] = 0)
-          totals.scouts[scout.id] += remaining
-        }
-      }
-    }, { useMasterKey: true })
-
-  totals.scouts = Object.keys(totals.scouts).reduce((scouts, scoutId) => {
-    scouts.push({
-      scoutId,
-      value: totals.scouts[scoutId]
-    })
-    return scouts
-  }, [])
-
-  totals.types = Object.keys(totals.types).reduce((types, type) => {
-    types.push({
-      type,
-      value: totals.types[type]
-    })
-    return types
-  }, [])
-
-  totals.completionPercentage = totals.total ? Math.round((totals.completed / totals.total) * 100) : 100
-
-  return {
-    needsToBeAssigned,
-    totals
-  }
-}, { requireUser: true })
-
 Parse.Cloud.define('fieldwork-map', async ({ user }) => {
   const query = $query(Parse.User)
   user.get('company') && query.equalTo('company', user.get('company'))
@@ -85,12 +13,9 @@ Parse.Cloud.define('fieldwork-map', async ({ user }) => {
     }, {}))
 }, { requireUser: true })
 
-Parse.Cloud.define('fieldwork-outstanding', async () => {
+Parse.Cloud.define('fieldwork-outstanding', async ({ user }) => {
   const response = {}
-  const manager = null
-  // ongoing
   const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
-  manager && taskListQuery.equalTo('manager', manager)
   await taskListQuery
     .select(['scouts', 'counts', 'type', 'gp', 'pk', 'briefing', 'control', 'disassembly'])
     .eachBatch((lists) => {
@@ -117,6 +42,73 @@ Parse.Cloud.define('fieldwork-outstanding', async () => {
           })
           response[scout.id][list.get('type')] += outstanding
           response[scout.id].total += outstanding
+        }
+      }
+    }, { useMasterKey: true })
+  return response
+}, $fieldworkManager)
+
+Parse.Cloud.define('fieldwork-ongoing', async ({ params: { companyId }, user }) => {
+  const isFieldworkManager = user.get('permissions').includes('manage-fieldwork')
+  const isScoutManager = user.get('permissions').includes('manage-scouts')
+  if (!isFieldworkManager && !isScoutManager) {
+    throw new Parse.Error(401, 'Unauthorized')
+  }
+  const response = {
+    totals: {
+      pending: 0,
+      rejected: 0,
+      approved: 0,
+      remaining: 0,
+      completed: 0,
+      total: 0
+    },
+    // per scout, type and state
+    scouts: {},
+    types: {},
+    states: {}
+  }
+  // ongoing
+  const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
+  let managerQuery
+  if (isFieldworkManager) {
+    if (companyId === 'intern') {
+      managerQuery = $query(Parse.User).equalTo('company', null)
+    } else if (companyId) {
+      managerQuery = $query(Parse.User).equalTo('company', $parsify('Company', companyId))
+    }
+  } else if (isScoutManager) {
+    managerQuery = $query(Parse.User).equalTo('company', user.get('company'))
+  }
+  managerQuery && taskListQuery.matchesQuery('manager', managerQuery)
+  await taskListQuery
+    .select(['scouts', 'counts', 'type', 'state'])
+    .eachBatch((lists) => {
+      for (const list of lists) {
+        const { rejected, pending, approved, completed, total } = list.get('counts')
+        const listCounts = {
+          rejected: rejected || 0,
+          pending: pending || 0,
+          approved: approved || 0,
+          completed: completed || 0,
+          total: total || 0
+        }
+        listCounts.remaining = listCounts.total - listCounts.completed
+        if (listCounts.remaining < 0) { listCounts.remaining = 0 }
+
+        const { type, state: { id: stateId } } = list.attributes
+        !(response.types[type]) && (response.types[type] = {})
+        !(response.states[stateId]) && (response.states[stateId] = {})
+        for (const scout of list.get('scouts')) {
+          !(response.scouts[scout.id]) && (response.scouts[scout.id] = {})
+        }
+        for (const key of ['rejected', 'pending', 'approved', 'completed', 'remaining', 'total']) {
+          response.totals[key] = (response.totals[key] || 0) + listCounts[key]
+          response.types[type][key] = (response.types[type][key] || 0) + listCounts[key]
+          response.states[stateId][key] = (response.states[stateId][key] || 0) + listCounts[key]
+          for (const scout of list.get('scouts')) {
+            response.scouts[scout.id][key] = (response.scouts[scout.id][key] || 0) + listCounts[key]
+          }
         }
       }
     }, { useMasterKey: true })
