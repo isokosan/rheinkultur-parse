@@ -1,3 +1,4 @@
+// SHOULD BE { c: 0, d: 0, s: 0 }
 require('./run')(async () => {
   let c = 0
   let d = 0

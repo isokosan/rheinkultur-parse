@@ -449,11 +449,14 @@ Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy 
   }
   extendBy = parseInt(extendBy)
 
+  const startsAt = booking.get('startsAt')
   const endsAt = booking.get('endsAt')
-  const newEndsAt = moment(endsAt).add(extendBy, 'months').format('YYYY-MM-DD')
+  const newExtendedDuration = (booking.get('extendedDuration') || 0) + extendBy
+  const newTotalDuration = booking.get('initialDuration') + newExtendedDuration
+  const newEndsAt = moment(startsAt).add(newTotalDuration, 'months').subtract(1, 'day').format('YYYY-MM-DD')
   booking.set({
     endsAt: newEndsAt,
-    extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
+    extendedDuration: newExtendedDuration
   })
 
   booking.get('autoExtendsBy') && booking.set('autoExtendsAt', newEndsAt)
@@ -799,8 +802,11 @@ Parse.Cloud.define('booking-extend-request', async ({ params, user }) => {
   }
   extendBy = parseInt(extendBy)
 
+  const startsAt = booking.get('startsAt')
+  const newExtendedDuration = (booking.get('extendedDuration') || 0) + extendBy
+  const newTotalDuration = booking.get('initialDuration') + newExtendedDuration
   const endsAt = booking.get('endsAt')
-  const newEndsAt = moment(endsAt).add(extendBy, 'months').format('YYYY-MM-DD')
+  const newEndsAt = moment(startsAt).add(newTotalDuration, 'months').subtract(1, 'day').format('YYYY-MM-DD')
   const changes = { extendBy, endsAt: [endsAt, newEndsAt] }
   const request = {
     type: 'extend',

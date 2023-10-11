@@ -736,7 +736,7 @@ Parse.Cloud.define('search-bookings', async ({
   }
 
   // booking
-  no && bool.must.push({ wildcard: { 'no.keyword': `*${no}*` } })
+  no && bool.must.push({ wildcard: { 'no.keyword': `*${no.trim()}*` } })
   status ? bool.filter.push({ term: { status: parseFloat(status) } }) : bool.must_not.push({ term: { status: -1 } })
   companyId && bool.must.push({ match: { companyId } })
   motive && bool.must.push({ match_phrase_prefix: { motive } })

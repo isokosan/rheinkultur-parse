@@ -12,8 +12,8 @@ async function clean (preview) {
         .count({ useMasterKey: true })
       if (!inProgress) {
         s++
+        console.log(notification.get('data'))
         if (preview) {
-          console.log(notification.get('data'))
           return
         }
         return notification.destroy({ useMasterKey: true })
@@ -22,4 +22,4 @@ async function clean (preview) {
   console.log({ s })
 }
 
-require('./run')(() => clean(true))
+require('./run')(() => clean())

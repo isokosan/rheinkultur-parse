@@ -1446,12 +1446,15 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email, 
   const billingCycle = contract.get('billingCycle') || 12
 
   const endsAt = contract.get('endsAt')
-  const newEndsAt = moment(endsAt).add(1, 'day').add(extendBy, 'months').subtract(1, 'day')
+  // get new ends at from the total extended duration
+  const newExtendedDuration = (contract.get('extendedDuration') || 0) + extendBy
+  const newTotalDuration = contract.get('initialDuration') + newExtendedDuration
+  const newEndsAt = moment(contract.get('startsAt')).add(newTotalDuration, 'months').subtract(1, 'day')
 
   contract.set({
     endsAt: newEndsAt.format('YYYY-MM-DD'),
     autoExtendsAt: newEndsAt.clone().subtract(contract.get('noticePeriod'), 'months').format('YYYY-MM-DD'),
-    extendedDuration: (contract.get('extendedDuration') || 0) + extendBy
+    extendedDuration: newExtendedDuration
   })
   let message = 'Vertrag wurde verlängert.'
 
