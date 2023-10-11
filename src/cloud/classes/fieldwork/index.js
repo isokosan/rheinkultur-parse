@@ -13,6 +13,7 @@ Parse.Cloud.define('fieldwork-map', async ({ user }) => {
     }, {}))
 }, { requireUser: true })
 
+// used on the map
 Parse.Cloud.define('fieldwork-outstanding', async ({ user }) => {
   const response = {}
   const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
@@ -48,71 +49,78 @@ Parse.Cloud.define('fieldwork-outstanding', async ({ user }) => {
   return response
 }, $fieldworkManager)
 
-Parse.Cloud.define('fieldwork-ongoing', async ({ params: { companyId }, user }) => {
+Parse.Cloud.define('fieldwork-ongoing', async ({ params: { companyId, force }, user }) => {
   const isFieldworkManager = user.get('permissions').includes('manage-fieldwork')
   const isScoutManager = user.get('permissions').includes('manage-scouts')
   if (!isFieldworkManager && !isScoutManager) {
     throw new Parse.Error(401, 'Unauthorized')
   }
-  const response = {
-    totals: {
-      pending: 0,
-      rejected: 0,
-      approved: 0,
-      remaining: 0,
-      completed: 0,
-      total: 0
-    },
-    // per scout, type and state
-    scouts: {},
-    types: {},
-    states: {}
-  }
-  // ongoing
-  const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
-  let managerQuery
-  if (isFieldworkManager) {
-    if (companyId === 'intern') {
-      managerQuery = $query(Parse.User).equalTo('company', null)
-    } else if (companyId) {
-      managerQuery = $query(Parse.User).equalTo('company', $parsify('Company', companyId))
-    }
-  } else if (isScoutManager) {
-    managerQuery = $query(Parse.User).equalTo('company', user.get('company'))
-  }
-  managerQuery && taskListQuery.matchesQuery('manager', managerQuery)
-  await taskListQuery
-    .select(['scouts', 'counts', 'type', 'state'])
-    .eachBatch((lists) => {
-      for (const list of lists) {
-        const { rejected, pending, approved, completed, total } = list.get('counts')
-        const listCounts = {
-          rejected: rejected || 0,
-          pending: pending || 0,
-          approved: approved || 0,
-          completed: completed || 0,
-          total: total || 0
-        }
-        listCounts.remaining = listCounts.total - listCounts.completed
-        if (listCounts.remaining < 0) { listCounts.remaining = 0 }
-
-        const { type, state: { id: stateId } } = list.attributes
-        !(response.types[type]) && (response.types[type] = {})
-        !(response.states[stateId]) && (response.states[stateId] = {})
-        for (const scout of list.get('scouts')) {
-          !(response.scouts[scout.id]) && (response.scouts[scout.id] = {})
-        }
-        for (const key of ['rejected', 'pending', 'approved', 'completed', 'remaining', 'total']) {
-          response.totals[key] = (response.totals[key] || 0) + listCounts[key]
-          response.types[type][key] = (response.types[type][key] || 0) + listCounts[key]
-          response.states[stateId][key] = (response.states[stateId][key] || 0) + listCounts[key]
-          for (const scout of list.get('scouts')) {
-            response.scouts[scout.id][key] = (response.scouts[scout.id][key] || 0) + listCounts[key]
-          }
-        }
+  const key = companyId ? 'fieldwork-ongoing-' + companyId : 'fieldwork-ongoing'
+  return $cache(key, {
+    async cacheFn () {
+      const response = {
+        totals: {
+          pending: 0,
+          rejected: 0,
+          approved: 0,
+          remaining: 0,
+          completed: 0,
+          total: 0
+        },
+        // per scout, type and state
+        scouts: {},
+        types: {},
+        states: {}
       }
-    }, { useMasterKey: true })
-  return response
+      // ongoing
+      const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
+      let managerQuery
+      if (isFieldworkManager) {
+        if (companyId === 'intern') {
+          managerQuery = $query(Parse.User).equalTo('company', null)
+        } else if (companyId) {
+          managerQuery = $query(Parse.User).equalTo('company', $parsify('Company', companyId))
+        }
+      } else if (isScoutManager) {
+        managerQuery = $query(Parse.User).equalTo('company', user.get('company'))
+      }
+      managerQuery && taskListQuery.matchesQuery('manager', managerQuery)
+      await taskListQuery
+        .select(['scouts', 'counts', 'type', 'state'])
+        .eachBatch((lists) => {
+          for (const list of lists) {
+            const { rejected, pending, approved, completed, total } = list.get('counts')
+            const listCounts = {
+              rejected: rejected || 0,
+              pending: pending || 0,
+              approved: approved || 0,
+              completed: completed || 0,
+              total: total || 0
+            }
+            listCounts.remaining = listCounts.total - listCounts.completed
+            if (listCounts.remaining < 0) { listCounts.remaining = 0 }
+
+            const { type, state: { id: stateId } } = list.attributes
+            !(response.types[type]) && (response.types[type] = {})
+            !(response.states[stateId]) && (response.states[stateId] = {})
+            for (const scout of list.get('scouts')) {
+              !(response.scouts[scout.id]) && (response.scouts[scout.id] = {})
+            }
+            for (const key of ['rejected', 'pending', 'approved', 'completed', 'remaining', 'total']) {
+              response.totals[key] = (response.totals[key] || 0) + listCounts[key]
+              response.types[type][key] = (response.types[type][key] || 0) + listCounts[key]
+              response.states[stateId][key] = (response.states[stateId][key] || 0) + listCounts[key]
+              for (const scout of list.get('scouts')) {
+                response.scouts[scout.id][key] = (response.scouts[scout.id][key] || 0) + listCounts[key]
+              }
+            }
+          }
+        }, { useMasterKey: true })
+      return response
+    },
+    maxAge: [2, 'minutes'],
+    force
+  })
 }, { requireUser: true })
 
 Parse.Cloud.define('fieldwork-upcoming', async ({ params: { force } }) => {
