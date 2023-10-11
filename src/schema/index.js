@@ -305,6 +305,7 @@ const schemaDefinitions = {
       SagO: { type: 'Boolean' }, // Boolean // Standort außerhalb geschlossener Ortschaft
       TTMR: { type: 'Boolean' }, // Boolean // Town Talker / Moskito Rahmen
       nMR: { type: 'String' }, // No Marketing Rights Reason, if any, in text format
+      // flyer: { type: 'Object' }, // For Sonderformate with start, end, companyId
 
       // photos
       p1: { type: 'Pointer', targetClass: 'CubePhoto' }, // Nauaufnahme
@@ -312,7 +313,7 @@ const schemaDefinitions = {
 
       // belegung possibility
       sides: { type: 'Object' }, // Which sides can be used
-      scoutData: { type: 'Object' }, // extra scouting data
+      scoutData: { type: 'Object' }, // extra scouting data (features)
 
       hti: { type: 'String' }, // housing type string from import
       importData: { type: 'Object' }, // Object

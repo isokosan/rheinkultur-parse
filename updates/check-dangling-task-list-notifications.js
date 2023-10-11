@@ -1,5 +1,5 @@
 // SHOULD RETURN 0 -> if not, errors in code leading to notifications dangling
-async function clean () {
+async function clean (preview) {
   let s = 0
   await $query('Notification')
     .containedIn('identifier', ['task-list-assigned', 'task-submission-rejected'])
@@ -12,10 +12,14 @@ async function clean () {
         .count({ useMasterKey: true })
       if (!inProgress) {
         s++
+        if (preview) {
+          console.log(notification.get('data'))
+          return
+        }
         return notification.destroy({ useMasterKey: true })
       }
     }, { useMasterKey: true })
   console.log({ s })
 }
 
-require('./run')(() => clean())
+require('./run')(() => clean(true))
