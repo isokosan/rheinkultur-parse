@@ -15,7 +15,4 @@ require('./run')(async () => {
   // const cube3 = await $query('Cube').notEqualTo('order.canceledAt', null).first({ useMasterKey: true })
   // console.log(cube3.get('order'))
 
-
 })
-
-
