@@ -1,3 +1,10 @@
+# [1.128.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.127.0...1.128.0) (2023-10-11)
+
+
+### Features
+
+* add caching to ongoing fieldwork ([30b48ba](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/30b48ba66292036021361d9b448f7be9181810ed))
+
 # [1.127.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.126.0...1.127.0) (2023-10-09)
 
 
