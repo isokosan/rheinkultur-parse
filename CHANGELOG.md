@@ -1,3 +1,11 @@
+## [1.128.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.128.0...1.128.1) (2023-10-11)
+
+
+### Bug Fixes
+
+* booking and contract extend dates ([ccc829b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ccc829b4ad0474a8d4c571ee0855b227f4e34a00))
+* cleanup of notificaitons ([36e5a42](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/36e5a4232f4243bfba04713a4608c0b6db7ef3e0))
+
 # [1.128.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.127.0...1.128.0) (2023-10-11)
 
 
