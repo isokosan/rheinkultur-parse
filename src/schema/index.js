@@ -653,6 +653,16 @@ const schemaDefinitions = {
       status: { type: 'String' }
     }
   },
+  // Assembly: {
+  //   CLP: { ...readAuthOnly, ...writeMasterOnly },
+  //   fields: {
+  //     contract: { type: 'Pointer', targetClass: 'Contract' },
+  //     booking: { type: 'Pointer', targetClass: 'Booking' },
+  //     date: { type: 'String', required: true },
+  //     dueDate: { type: 'String', required: true },
+  //     status: { type: 'Number', required: true }
+  //   }
+  // },
   Disassembly: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {

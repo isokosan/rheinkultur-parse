@@ -30,7 +30,7 @@ const getThumbnail = async (file) => {
     .resize({ height: 270, width: 270, fit: sharp.fit.inside })
     .webp({ nearLossless: true })
     .rotate() // !! withMetadata after webp does not get orientation so rotate fixes that
-    .withMetadata()
+    // .withMetadata()
     .toBuffer()
     .then(data => new Parse.File('thumb.webp', { base64: data.toString('base64') }, 'image/webp', { thumb: 'true' }))
     .catch((error) => {
@@ -47,7 +47,7 @@ const getSize1000 = async (file) => {
     .resize({ height: 1000, width: 1000, fit: sharp.fit.inside })
     .webp({ nearLossless: true })
     .rotate() // !! withMetadata after webp does not get orientation so rotate fixes that
-    .withMetadata()
+    // .withMetadata()
     .toBuffer()
     .then(data => data.toString('base64'))
     .catch((error) => {

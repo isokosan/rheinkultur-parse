@@ -489,6 +489,11 @@ Parse.Cloud.define('cube-photo-select', async ({ params: { id, place, photoId },
   return { message, p1: cube.get('p1'), p2: cube.get('p2') }
 }, { requireUser: true })
 
+Parse.Cloud.define('cube-photo-rethumb', async ({ params: { photoId } }) => {
+  const photo = await $getOrFail('CubePhoto', photoId)
+  return photo.save(null, { useMasterKey: true, context: { regenerateSize1000: true, regenerateThumb: true } })
+}, $internOrAdmin)
+
 Parse.Cloud.define('cube-photo-revert-original', async ({ params: { photoId } }) => {
   const photo = await $getOrFail('CubePhoto', photoId)
   const original = photo.get('original')
