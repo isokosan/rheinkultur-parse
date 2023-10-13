@@ -1,3 +1,10 @@
+# [1.129.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.128.1...1.129.0) (2023-10-13)
+
+
+### Features
+
+* autoExtendsAt as calculated value, updating while not canceled-voided ([0cc3521](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0cc35215c5c267541dd7c8b0feb8ae61ae8c8c91))
+
 ## [1.128.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.128.0...1.128.1) (2023-10-11)
 
 
