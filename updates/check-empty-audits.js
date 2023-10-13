@@ -1,4 +1,4 @@
-// SHOULD RETURN 0 -> if not, there are errors in code leading to empty audits
+// SHOULD RETURN 0 ERRORS -> if not, there are errors in code leading to empty audits
 
 const { cloneDeep } = require('lodash')
 async function cleanAudits (preview) {
