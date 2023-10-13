@@ -3,6 +3,7 @@ require('./run')(async () => {
   const issues = {}
   for (const className of ['Contract', 'Booking']) {
     await $query(className)
+      .equalTo('canceledAt', null)
       .equalTo('voidedAt', null)
       .select([
         'no',
@@ -10,6 +11,7 @@ require('./run')(async () => {
         'initialDuration',
         'extendedDuration',
         'autoExtendsBy',
+        'voidedAt',
         'canceledAt',
         'noticePeriod',
         'autoExtendsAt',
@@ -17,29 +19,15 @@ require('./run')(async () => {
       ])
       .eachBatch((records) => {
         for (const record of records) {
-          const { no, startsAt, initialDuration, extendedDuration, autoExtendsBy, autoExtendsAt, canceledAt, noticePeriod, endsAt } = record.attributes
-          const totalDuration = initialDuration + (extendedDuration || 0)
+          const autoExtendsAt = record.get('autoExtendsBy')
+            ? moment(record.get('endsAt')).subtract(record.get('noticePeriod') || 0, 'months').format('YYYY-MM-DD')
+            : null
 
-          const shouldEndAt = moment(startsAt).add(totalDuration, 'months').subtract(1, 'day').format('YYYY-MM-DD')
-          if (!canceledAt && endsAt !== shouldEndAt) {
-            issues[no] = { no, shouldEndAt, endsAt, extendedDuration }
-          }
-
-          if (!autoExtendsBy && !autoExtendsAt && canceledAt) {
-            // was early canceled but never had an extension
-            // continue
-          }
-          if (!autoExtendsBy && !canceledAt && autoExtendsAt) {
-            issues[no] = { no, error: 'autoExtendsAt without autoExtendsBy' }
-            continue
-          }
-          if (!autoExtendsAt && !canceledAt && autoExtendsBy) {
-            issues[no] = { no, error: 'autoExtendsBy without autoExtendsAt' }
-          }
-          if (autoExtendsBy && !canceledAt) {
-            const shouldAutoExtendAt = moment(endsAt).subtract(noticePeriod || 0, 'months').format('YYYY-MM-DD')
-            if (autoExtendsAt !== shouldAutoExtendAt) {
-              issues[no] = { no, autoExtendsAt, endsAt, noticePeriod, shouldAutoExtendAt, extendedDuration }
+          if ((record.get('autoExtendsAt') || null) !== autoExtendsAt) {
+            issues[record.get('no')] = {
+              ...issues[record.get('no')],
+              shouldAutoExtendAt: autoExtendsAt,
+              autoExtendsAt: record.get('autoExtendsAt')
             }
           }
         }

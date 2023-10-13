@@ -160,7 +160,6 @@ module.exports = {
       'invoiceAddress',
       'invoiceDescription',
       'invoicingAt',
-      'autoExtendsAt',
       'autoExtendsBy',
       'noticePeriod',
       'pricingModel',
@@ -210,7 +209,6 @@ module.exports = {
         },
         initialDuration: normalizeInt,
         billingCycle: normalizeInt,
-        autoExtendsAt: normalizeDateString,
         autoExtendsBy: normalizeInt,
         noticePeriod: normalizeInt,
         invoiceDescription: normalizeString,
@@ -238,7 +236,6 @@ module.exports = {
       if (!normalized.autoExtendsBy) {
         normalized.autoExtendsBy = null
         normalized.noticePeriod = null
-        normalized.autoExtendsAt = null
       }
       return normalized
     }
@@ -246,7 +243,6 @@ module.exports = {
   bookings: {
     UNSET_NULL_FIELDS: [
       'companyPerson',
-      'autoExtendsAt',
       'autoExtendsBy',
       'noticePeriod',
       'motive',
@@ -266,7 +262,6 @@ module.exports = {
         startsAt: normalizeDateString,
         endsAt: normalizeDateString,
         initialDuration: normalizeInt,
-        autoExtendsAt: normalizeDateString,
         autoExtendsBy: normalizeInt,
         noticePeriod: normalizeInt,
         disassemblyFromRMV: value => value === 'y'
@@ -278,7 +273,6 @@ module.exports = {
       if (!normalized.autoExtendsBy) {
         normalized.autoExtendsBy = null
         normalized.noticePeriod = null
-        normalized.autoExtendsAt = null
       }
       return normalized
     }

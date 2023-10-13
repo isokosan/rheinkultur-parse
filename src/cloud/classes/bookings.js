@@ -26,10 +26,8 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
   }
 
   booking.set('totalDuration', (booking.get('initialDuration') || 0) + (booking.get('extendedDuration') || 0))
-
-  if (booking.get('autoExtendsBy') && !booking.get('canceledAt')) {
-    booking.set('autoExtendsAt', booking.get('endsAt'))
-  }
+  const canceled = Boolean(booking.get('canceledAt') || booking.get('voidedAt'))
+  !canceled && booking.set('autoExtendsAt', booking.get('autoExtendsBy') ? moment(booking.get('endsAt')).format('YYYY-MM-DD') : null)
 
   // cubes
   !booking.get('cubeIds') && booking.set('cubeIds', [])
@@ -222,7 +220,6 @@ Parse.Cloud.define('booking-create', async ({ params, user, master, context: { s
     startsAt,
     initialDuration,
     endsAt,
-    autoExtendsAt,
     autoExtendsBy,
     disassemblyFromRMV
   } = normalizeFields(params)
@@ -236,7 +233,6 @@ Parse.Cloud.define('booking-create', async ({ params, user, master, context: { s
     startsAt,
     initialDuration: parseInt(initialDuration),
     endsAt,
-    autoExtendsAt,
     autoExtendsBy,
     responsibles: user ? [user] : undefined,
     disassembly: disassemblyFromRMV
@@ -289,7 +285,6 @@ Parse.Cloud.define('booking-update', async ({
     startsAt,
     initialDuration,
     endsAt,
-    autoExtendsAt,
     autoExtendsBy,
     disassemblyFromRMV
   } = normalizeFields(params)
@@ -325,7 +320,6 @@ Parse.Cloud.define('booking-update', async ({
     startsAt,
     initialDuration,
     endsAt,
-    autoExtendsAt,
     autoExtendsBy,
     monthlyMedia,
     endPrices
@@ -458,8 +452,6 @@ Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy 
     endsAt: newEndsAt,
     extendedDuration: newExtendedDuration
   })
-
-  booking.get('autoExtendsBy') && booking.set('autoExtendsAt', newEndsAt)
 
   const audit = { user, fn: 'booking-extend', data: { extendBy, endsAt: [endsAt, booking.get('endsAt')] } }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
@@ -651,7 +643,6 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     startsAt,
     initialDuration,
     endsAt,
-    autoExtendsAt,
     autoExtendsBy
   } = normalizeFields(params)
 
@@ -682,7 +673,6 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     startsAt,
     initialDuration: parseInt(initialDuration),
     endsAt,
-    autoExtendsAt,
     autoExtendsBy,
     endPrices,
     monthlyMedia
@@ -716,7 +706,6 @@ Parse.Cloud.define('booking-change-request', async ({ params, user }) => {
     startsAt,
     initialDuration,
     endsAt,
-    // autoExtendsAt, // TODO: make sure the right value is infered after changes are accepted
     autoExtendsBy
   } = normalizeFields(params)
 
@@ -957,7 +946,6 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     for (const field of Object.keys(request.changes)) {
       booking.set(field, request.changes[field][1])
     }
-    !booking.get('autoExtendsBy') && booking.set('autoExtendsAt', null)
     await checkIfCubesAreAvailable(booking)
     setCubeStatuses = true
     audit = { fn: 'booking-change-request-accept', user, data: { requestedBy: request.user, changes: request.changes } }
@@ -975,7 +963,6 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
       endsAt: newEndsAt,
       extendedDuration: (booking.get('extendedDuration') || 0) + extendBy
     })
-    booking.get('autoExtendsBy') && booking.get('autoExtendsAt') && booking.set('autoExtendsAt', newEndsAt)
     setCubeStatuses = true
     audit = { user, fn: 'booking-extend-request-accept', data: request.changes }
   }

@@ -13,17 +13,11 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
   contract.isNew() && !contract.get('no') && contract.set({ no: await getNewNo('V' + moment(await $today()).format('YY') + '-', Contract, 'no') })
   UNSET_NULL_FIELDS.forEach(field => !contract.get(field) && contract.unset(field))
 
-  // const shouldEndAt = moment(contract.get('startsAt')).add(contract.get('initialDuration'), 'months').add(contract.get('extendedDuration') || 0, 'months').subtract(1, 'day').format('YYYY-MM-DD')
-  // if (contract.get('canceledEndsAt')) {
-  // }
-
-  if (contract.get('pricingModel') === 'gradual') {
-    if (!contract.get('gradualPriceMap')) {
-      const company = contract.get('company')
-      await company.fetch({ useMasterKey: true })
-      const { gradualPriceMapId } = company.get('contractDefaults') || {}
-      contract.set('gradualPriceMap', await $getOrFail('GradualPriceMap', gradualPriceMapId))
-    }
+  if (contract.get('pricingModel') === 'gradual' && !contract.get('gradualPriceMap')) {
+    const company = contract.get('company')
+    await company.fetch({ useMasterKey: true })
+    const { gradualPriceMapId } = company.get('contractDefaults') || {}
+    contract.set('gradualPriceMap', await $getOrFail('GradualPriceMap', gradualPriceMapId))
   }
 
   if (contract.get('agency')) {
@@ -36,6 +30,8 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
   }
 
   contract.set('totalDuration', (contract.get('initialDuration') || 0) + (contract.get('extendedDuration') || 0))
+  const canceled = Boolean(contract.get('canceledAt') || contract.get('voidedAt'))
+  !canceled && contract.set('autoExtendsAt', contract.get('autoExtendsBy') ? moment(contract.get('endsAt')).subtract(contract.get('noticePeriod') || 0, 'months').format('YYYY-MM-DD') : null)
 
   // cubes
   !contract.get('cubeIds') && contract.set('cubeIds', [])
@@ -44,14 +40,12 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
 
 Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculatePlannedInvoices } }) => {
   setCubeStatuses && await setContractCubeStatuses(contract)
-  if (recalculatePlannedInvoices) {
-    Parse.Cloud.run(
-      'contract-update-planned-invoices',
-      { id: contract.id },
-      { useMasterKey: true }
-    )
-  }
   audit && $audit(contract, audit)
+  recalculatePlannedInvoices && Parse.Cloud.run(
+    'contract-update-planned-invoices',
+    { id: contract.id },
+    { useMasterKey: true }
+  )
 })
 
 Parse.Cloud.beforeFind(Contract, ({ query }) => {
@@ -75,7 +69,7 @@ Parse.Cloud.afterFind(Contract, async ({ objects: contracts, query }) => {
   const year = moment(await $today()).format('YYYY')
   for (const contract of contracts) {
     // get computed property willExtend
-    const willExtend = contract.get('autoExtendsAt') && !contract.get('canceledAt')
+    const willExtend = contract.get('autoExtendsBy') && !contract.get('canceledAt') && !contract.get('voidedAt')
     contract.set('willExtend', willExtend)
 
     if (query._include.includes('gradual') && contract.get('pricingModel') === 'gradual' && contract.get('status') < 2) {
@@ -728,7 +722,6 @@ Parse.Cloud.define('contract-create', async ({ params, user, master, context: { 
     billingCycle,
     endsAt,
     noticePeriod,
-    autoExtendsAt,
     autoExtendsBy,
     pricingModel,
     disassemblyFromRMV
@@ -754,7 +747,6 @@ Parse.Cloud.define('contract-create', async ({ params, user, master, context: { 
     endsAt,
     pricingModel,
     noticePeriod,
-    autoExtendsAt,
     autoExtendsBy,
     agency: agencyId ? await $getOrFail('Company', agencyId) : undefined,
     agencyPerson: agencyPersonId ? await $getOrFail('Person', agencyPersonId) : undefined,
@@ -847,7 +839,6 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
     initialDuration,
     endsAt,
     noticePeriod,
-    autoExtendsAt,
     autoExtendsBy,
     pricingModel,
     billingCycle,
@@ -915,7 +906,6 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
     invoiceDescription,
     noticePeriod,
     autoExtendsBy,
-    autoExtendsAt,
     monthlyMedia
   })
 
@@ -1133,7 +1123,7 @@ Parse.Cloud.define('contract-check-revertable', async ({ params: { id: contractI
 Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
   await checkIfContractRevertible(contract)
-  contract.set({ status: 2.1 })
+  contract.set({ cubeData: null, status: 2.1 })
   const audit = { user, fn: 'contract-undo-finalize' }
   await contract.save(null, { useMasterKey: true, context: { audit } })
   await $query('Invoice')
@@ -1453,7 +1443,6 @@ Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email, 
 
   contract.set({
     endsAt: newEndsAt.format('YYYY-MM-DD'),
-    autoExtendsAt: newEndsAt.clone().subtract(contract.get('noticePeriod'), 'months').format('YYYY-MM-DD'),
     extendedDuration: newExtendedDuration
   })
   let message = 'Vertrag wurde verlängert.'
