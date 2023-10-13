@@ -1,3 +1,10 @@
+# [1.130.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.129.0...1.130.0) (2023-10-13)
+
+
+### Features
+
+* enable rethumb and test no metadata ([47bea58](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/47bea5833a31322c573e9ced90fdea266bcd8a17))
+
 # [1.129.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.128.1...1.129.0) (2023-10-13)
 
 
