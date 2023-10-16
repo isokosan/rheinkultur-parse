@@ -1,3 +1,10 @@
+# [1.131.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.130.0...1.131.0) (2023-10-16)
+
+
+### Features
+
+* add ffok to cube saving ([9a629d1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9a629d14c4a96e26e39143b9cae78b8dc907ac01))
+
 # [1.130.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.129.0...1.130.0) (2023-10-13)
 
 
