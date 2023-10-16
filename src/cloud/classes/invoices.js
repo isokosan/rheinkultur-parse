@@ -1,6 +1,6 @@
 const { normalizeString, invoices: { normalizeFields } } = require('@/schema/normalizers')
 const { validateSystemStatus, getDocumentTotals, getTaxRatePercentage, getPeriodTotal } = require('@/shared')
-const { round2, priceString, durationString } = require('@/utils')
+const { round2, round5, priceString, durationString } = require('@/utils')
 const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
 const sendMail = require('@/services/email')
@@ -212,8 +212,8 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
     if (!invoice.get('commissionRate')) {
       throw new Error('Provisionssatz ist erforderlich, wenn die Rechnung eine Agentur enthält.')
     }
-    const netRate = 1 - (invoice.get('commissionRate') / 100)
-    const net = round2(invoice.get('media')?.total * netRate)
+    const agencyRatio = round5(invoice.get('commissionRate') / 100) || 0
+    const net = round2(invoice.get('media')?.total * agencyRatio)
     invoice.set('commission', { net })
   }
 
