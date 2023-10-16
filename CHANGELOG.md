@@ -1,3 +1,11 @@
+## [1.133.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.133.0...1.133.1) (2023-10-16)
+
+
+### Bug Fixes
+
+* agency commission rate invoice calculation (that is not really used) ([df63913](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/df6391353a45bd94079c0145c3b05cda815bcaf4))
+* typo ([efbd1e9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/efbd1e968cf25852591a3c46e2d2642648df238a))
+
 # [1.133.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.132.0...1.133.0) (2023-10-16)
 
 
