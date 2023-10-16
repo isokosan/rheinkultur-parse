@@ -107,7 +107,6 @@ const getCubeSummaries = function (cubeIds) {
     }, {}))
 }
 
-// TODO: Add start datum check, so that we can finalize orders between orders. Right now we check only the end date.
 async function checkIfCubesAreAvailable (order) {
   const cubeIds = order.get('cubeIds') || []
   if (!cubeIds.length) { return }
@@ -274,11 +273,11 @@ async function getFutureCubeOrder (cubeId) {
   return null
 }
 
-async function removeAllCubeReferencesToCaok (caok, cubeIds) {
+async function removeAllCubeReferencesToOrderKey (orderKey, cubeIds) {
   const removed = []
   await $query('Cube')
     .notContainedIn('objectId', cubeIds)
-    .equalTo('caok', caok)
+    .equalTo('caok', orderKey)
     .eachBatch(async (cubes) => {
       for (const cube of cubes) {
         cube.unset('order')
@@ -287,12 +286,9 @@ async function removeAllCubeReferencesToCaok (caok, cubeIds) {
         removed.push(cube.id)
       }
     }, { useMasterKey: true })
-  // TODO: Test removal of future orders
-  const [className, itemId] = caok.split('$')
   await $query('Cube')
     .notContainedIn('objectId', cubeIds)
-    .equalTo('futureOrder.className', className)
-    .equalTo('futureOrder.objectId', itemId)
+    .equalTo('ffok', orderKey)
     .eachBatch(async (cubes) => {
       for (const cube of cubes) {
         cube.unset('futureOrder')
@@ -312,7 +308,7 @@ async function setBookingCubeStatus (booking) {
   const cubeFutureOrder = cube.get('futureOrder')
 
   // remove all cubes that reference the booking despite the booking having them removed
-  const removedCubeIds = await removeAllCubeReferencesToCaok(caok, [cube.id])
+  const removedCubeIds = await removeAllCubeReferencesToOrderKey(caok, [cube.id])
   response.unset.push(...removedCubeIds)
 
   // remove cube associated with booking if draft or voided
@@ -373,45 +369,46 @@ async function setContractCubeStatuses (contract) {
   const response = { set: [], unset: [] }
   const today = moment(await $today())
   const order = getOrderSummary(contract)
-  const caok = ['Contract', contract.id].join('$')
+  const orderKey = ['Contract', contract.id].join('$')
   const { cubeIds, earlyCancellations } = contract.attributes
 
   // remove all cubes that reference the contract despite the contract not having them in cubeIds
-  const removedCubeIds = await removeAllCubeReferencesToCaok(caok, cubeIds)
+  const removedCubeIds = await removeAllCubeReferencesToOrderKey(orderKey, cubeIds)
   response.unset.push(...removedCubeIds)
 
   // remove all cubes associated with order if draft or voided
   if (order.status <= 2) {
     await $query('Cube')
-      .equalTo('order.className', order.className)
-      .equalTo('order.objectId', order.objectId)
-      .each(cube => {
-        cube.unset('order')
-        response.unset.push(cube.id)
-        // orderStatusCheck will check if any other active bookings or contracts reference this cube
-        return $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+      .equalTo('caok', orderKey)
+      .eachBatch(async (cubes) => {
+        for (const cube of cubes) {
+          cube.unset('order')
+          response.unset.push(cube.id)
+          // orderStatusCheck will check if any other active bookings or contracts reference this cube
+          await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
+        }
       }, { useMasterKey: true })
     // remove all cubes associated with future order if draft
     await $query('Cube')
-      .equalTo('futureOrder.className', order.className)
-      .equalTo('futureOrder.objectId', order.objectId)
-      .each(cube => {
-        cube.unset('futureOrder')
-        return $saveWithEncode(cube, null, { useMasterKey: true })
+      .equalTo('ffok', orderKey)
+      .eachBatch(async (cubes) => {
+        for (const cube of cubes) {
+          cube.unset('futureOrder')
+          await $saveWithEncode(cube, null, { useMasterKey: true })
+        }
       }, { useMasterKey: true })
     return response
   }
   const getBaseQuery = () => Parse.Query.or(
-    $query('Cube').equalTo('caok', caok),
-    $query('Cube').equalTo('order.className', order.className).equalTo('order.objectId', order.objectId),
+    $query('Cube').equalTo('caok', orderKey),
     $query('Cube').containedIn('objectId', cubeIds || [])
   )
   const started = today.isSameOrAfter(order.startsAt, 'day')
-  // if order hasnt started yet we save the order caok to future order, and unset order
+  // if order hasnt started yet we save the order to future order
   if (!started) {
     await getBaseQuery().eachBatch(async (cubes) => {
       for (const cube of cubes) {
-        if (cube.get('caok') === caok || orderPointerIsEqual(cube.get('order'), order)) {
+        if (cube.get('caok') === orderKey) {
           cube.unset('order')
           response.unset.push(cube.id)
           await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
@@ -432,7 +429,7 @@ async function setContractCubeStatuses (contract) {
 
   // if order started remove future order
   await getBaseQuery()
-    .equalTo('futureOrder.objectId', order.objectId)
+    .equalTo('ffok', orderKey)
     .eachBatch(async (cubes) => {
       for (const cube of cubes) {
         cube.unset('futureOrder')
@@ -453,7 +450,7 @@ async function setContractCubeStatuses (contract) {
       // if ended, and still set remove
       const earlyCanceledAndEnded = date === true || today.isAfter(date, 'day')
       if (earlyCanceledAndEnded) {
-        if (cube.get('caok') === caok || orderPointerIsEqual(cube.get('order'), order)) {
+        if (cube.get('caok') === orderKey || orderPointerIsEqual(cube.get('order'), order)) {
           response.unset.push(cube.id)
           cube.unset('order')
           // orderStatusCheck will check if any other active bookings or contracts reference this cube
@@ -488,7 +485,7 @@ async function setContractCubeStatuses (contract) {
   }
   // if the order has ended we unset and free the cubes
   await getBaseQuery()
-    .equalTo('caok', caok)
+    .equalTo('caok', orderKey)
     .eachBatch(async (cubes) => {
       for (const cube of cubes) {
         cube.unset('order')

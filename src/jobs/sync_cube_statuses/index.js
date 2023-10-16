@@ -5,7 +5,7 @@ module.exports = async function (job) {
   const cubeCountAggregate = [
     { $group: { _id: 'id', cubeCount: { $sum: '$cubeCount' } } }
   ]
-  // get all contracts and set their cube statuses
+  // get all contracts and bookings and set their cube statuses one by one
   const total = await Promise.all([
     $query('Contract').aggregate(cubeCountAggregate),
     $query('Booking').aggregate(cubeCountAggregate)
