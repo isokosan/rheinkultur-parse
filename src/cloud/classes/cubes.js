@@ -55,11 +55,9 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     const futureOrder = await getFutureCubeOrder(cube.id)
     futureOrder ? cube.set('futureOrder', futureOrder) : cube.unset('futureOrder')
   }
-  // caok: current order key
-  cube.get('order')
-    ? cube.set('caok', cube.get('order').className + '$' + cube.get('order').objectId)
-    : cube.unset('caok')
 
+  cube.get('order') ? cube.set('caok', cube.get('order').className + '$' + cube.get('order').objectId) : cube.unset('caok')
+  cube.get('futureOrder') ? cube.set('ffok', cube.get('futureOrder').className + '$' + cube.get('futureOrder').objectId) : cube.unset('ffok')
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
   await indexCubeBookings(cube)
