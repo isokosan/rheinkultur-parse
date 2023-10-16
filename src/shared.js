@@ -301,20 +301,20 @@ async function removeAllCubeReferencesToOrderKey (orderKey, cubeIds) {
 async function setBookingCubeStatus (booking) {
   const response = { set: [], unset: [] }
   const today = moment(await $today())
-  const caok = ['Booking', booking.id].join('$')
+  const orderKey = ['Booking', booking.id].join('$')
   const order = getOrderSummary(booking)
   const cube = booking.get('cube')
   const cubeOrder = cube.get('order')
   const cubeFutureOrder = cube.get('futureOrder')
 
   // remove all cubes that reference the booking despite the booking having them removed
-  const removedCubeIds = await removeAllCubeReferencesToOrderKey(caok, [cube.id])
+  const removedCubeIds = await removeAllCubeReferencesToOrderKey(orderKey, [cube.id])
   response.unset.push(...removedCubeIds)
 
   // remove cube associated with booking if draft or voided
   if (order.status <= 2) {
     // if the order has ended we unset and free the cubes
-    if (cube.get('caok') === caok || orderPointerIsEqual(cubeOrder, order)) {
+    if (cube.get('caok') === orderKey || orderPointerIsEqual(cubeOrder, order)) {
       cube.unset('order')
       response.unset.push(cube.id)
       await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
@@ -330,7 +330,7 @@ async function setBookingCubeStatus (booking) {
   // if order hasnt started yet we save the order caok to future order, and unset order
   if (!started) {
     // if the order has ended we unset and free the cubes
-    if (cube.get('caok') === caok || orderPointerIsEqual(cubeOrder, order)) {
+    if (cube.get('caok') === orderKey || orderPointerIsEqual(cubeOrder, order)) {
       cube.unset('order')
       response.unset.push(cube.id)
       await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
@@ -357,7 +357,7 @@ async function setBookingCubeStatus (booking) {
     cube.set({ order })
     response.set.push(cube.id)
     await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: true } })
-  } else if (!runningOrder && (cube.get('caok') === caok || orderPointerIsEqual(cubeOrder, order))) {
+  } else if (!runningOrder && (cube.get('caok') === orderKey || orderPointerIsEqual(cubeOrder, order))) {
     cube.unset('order')
     response.unset.push(cube.id)
     await $saveWithEncode(cube, null, { useMasterKey: true, context: { orderStatusCheck: true } })
