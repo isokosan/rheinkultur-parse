@@ -1,3 +1,10 @@
+# [1.132.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.131.0...1.132.0) (2023-10-16)
+
+
+### Features
+
+* finish orderKey updates for cube status sync ([cad810e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cad810e4df61ea351903c34ca58e123e2fdd76e4))
+
 # [1.131.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.130.0...1.131.0) (2023-10-16)
 
 
