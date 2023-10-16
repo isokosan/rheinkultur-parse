@@ -1,3 +1,10 @@
+# [1.133.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.132.0...1.133.0) (2023-10-16)
+
+
+### Features
+
+* add comments and notifications to booking-accept ([7a98d34](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7a98d347aada80234f036b40b9c668eecf7e1cb0))
+
 # [1.132.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.131.0...1.132.0) (2023-10-16)
 
 
