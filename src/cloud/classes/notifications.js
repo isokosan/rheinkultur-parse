@@ -51,14 +51,13 @@ const NOTIFICATIONS = {
     route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
   },
   'booking-request-accept-comments': {
-    mailSubject: () => 'Bitte lesen Sie die Bemerkungen zu Ihrer genehmigten Buchungsanfrage',
+    mailSubject: () => 'Bemerkungen zu Ihrer genehmigten Buchungsanfrage',
     mailContent: ({ no, cubeId, type, comments }) => `
       <p>Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong> wurde genehmight.</p>
       <p><strong>Art der Anfrage:</strong> ${BOOKING_REQUEST_TYPES[type]}</p>
       <p><strong>Bemerkungen zur Buchungsanfrage:</strong></p>
       <p>${comments.replace(/\n/g, '<br>')}</p>
     `,
-     // Bemerkungen zu Ihrer genehmigten Buchungsanfrage
     message: ({ no, cubeId, type, comments }) => `Bitte lesen Sie die folgenden Bemerkungen zu Ihrer genehmigten Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong>.`,
     route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
   }
