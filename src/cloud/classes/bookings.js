@@ -662,7 +662,15 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
       media: params.media,
       comments: normalizeString(params.comments) || undefined,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      motive,
+      externalOrderNo,
+      campaignNo,
+      startsAt,
+      initialDuration: parseInt(initialDuration),
+      endsAt,
+      autoExtendsBy,
+      monthlyMedia
     },
     status: 0,
     company: user.get('company'),
@@ -891,7 +899,7 @@ Parse.Cloud.define('booking-request-reject', async ({ params: { id, reason }, us
   return 'Anfrage abgelehnt.'
 }, $internBookingManager)
 
-Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) => {
+Parse.Cloud.define('booking-request-accept', async ({ params: { id, comments }, user }) => {
   const booking = await $getOrFail(Booking, id)
   const request = booking.get('request')
   if (!request) { throw new Error('Anfrage nicht gefunden.') }
@@ -927,6 +935,9 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
   request.acceptedBy = user
   request.acceptedAt = new Date()
   request.updatedAt = new Date()
+  if (comments) {
+    request.acceptComments = comments?.trim()
+  }
   const requestHistory = booking.get('requestHistory') || []
   requestHistory.push(request)
 
@@ -941,7 +952,6 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     setCubeStatuses = true
     audit = { user, fn: 'booking-create-request-accept' }
   }
-
   if (request.type === 'change') {
     for (const field of Object.keys(request.changes)) {
       booking.set(field, request.changes[field][1])
@@ -950,7 +960,6 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     setCubeStatuses = true
     audit = { fn: 'booking-change-request-accept', user, data: { requestedBy: request.user, changes: request.changes } }
   }
-
   if (request.type === 'extend') {
     const newEndsAt = request.changes?.endsAt?.[1]
     const extendBy = request.changes.extendBy
@@ -978,7 +987,6 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
     audit = { user, fn: 'booking-end-request-accept' }
     setCubeStatuses = true
   }
-
   if (request.type === 'cancel' || request.type === 'cancel-change') {
     const endsAt = request.changes?.endsAt?.[1] || request.endsAt || booking.get('endsAt')
     const cancelNotes = normalizeString(request.comments)
@@ -999,7 +1007,6 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
       endBooking = true
     }
   }
-
   if (request.type === 'cancel-cancel') {
     const endsAt = request.changes?.endsAt[1]
     const changes = $changes(booking, { endsAt })
@@ -1013,7 +1020,6 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
       message += ' Buchung status auf Aktiv gestellt. Bitte überprüfen Sie den Status der Buchung.'
     }
   }
-
   if (request.type === 'void') {
     const cancelNotes = normalizeString(request.comments)
     booking.set({
@@ -1028,5 +1034,10 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id }, user }) =>
 
   await booking.unset('request').set({ requestHistory }).save(null, { useMasterKey: true, context: { audit, setCubeStatuses } })
   endBooking && await Parse.Cloud.run('booking-end', { id: booking.id }, { useMasterKey: true })
+  request.acceptComments && await $notify({
+    user: request.user,
+    identifier: 'booking-request-accept-comments',
+    data: { bookingId: id, requestId: request.id, no: booking.get('no'), cubeId: booking.get('cube').id, type: request.type, comments: request.acceptComments }
+  })
   return message
 }, $internBookingManager)
