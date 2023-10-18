@@ -63,8 +63,8 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   if (production.get('assembly')) {
     const defaultDates = {
       dueDate: bookingOrContract.get('startsAt'),
-      printFilesDue: moment(bookingOrContract.get('startsAt')).subtract(1, 'months').format('YYYY-MM-DD'),
-      assemblyStart: moment(bookingOrContract.get('startsAt')).subtract(1, 'weeks').format('YYYY-MM-DD')
+      // printFilesDue: moment(bookingOrContract.get('startsAt')).subtract(1, 'month').format('YYYY-MM-DD'),
+      assemblyStart: moment(bookingOrContract.get('startsAt')).subtract(1, 'week').format('YYYY-MM-DD')
     }
     for (const key of Object.keys(defaultDates)) {
       !production.get(key) && production.set(key, defaultDates[key])

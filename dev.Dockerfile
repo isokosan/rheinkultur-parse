@@ -48,6 +48,9 @@ RUN ldconfig
 
 RUN apt-get install -y ghostscript graphicsmagick imagemagick
 
-RUN rm -rf node_modules
-RUN yarn install
+# This has no affect since the package.json is not yet inside the working directory as docker compose has not yet mapped the volume
+# RUN rm -rf node_modules
+# RUN npm install -g npm@10.2.0
+# RUN npm install -g node-gyp
+# RUN yarn install
 WORKDIR /app

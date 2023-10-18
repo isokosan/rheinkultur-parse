@@ -25,11 +25,17 @@ RUN apt-get update -y && \
         liborc-dev
 
 WORKDIR /usr/local/src
+
+# build the head of the stable 8.13 branch
 ARG VIPS_BRANCH=8.14
 ARG VIPS_URL=https://github.com/libvips/libvips/tarball
+
 RUN mkdir libvips-${VIPS_BRANCH} \
     && cd libvips-${VIPS_BRANCH} \
     && wget ${VIPS_URL}/${VIPS_BRANCH} -O - | tar xfz - --strip-components 1
+
+# "--libdir lib" makes it put the library in /usr/local/lib
+# we don't need GOI
 RUN cd libvips-${VIPS_BRANCH} \
     && rm -rf build \
     && meson build --libdir lib -Dintrospection=false --buildtype release \

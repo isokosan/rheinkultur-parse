@@ -42,3 +42,4 @@ dummy
 - connect to parse containers logs
 
 docker compose exec parse bash -c 'yarn install'
+docker compose run parse bash => to run commands inside the container

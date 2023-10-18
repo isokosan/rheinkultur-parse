@@ -1,7 +1,7 @@
 require('./run')(async () => {
   const trackUsers = [
     'taubethomas@icloud.com'
-    // 'rwe@rheinkultur-medien.de'
+    // 'denizar@gmail.com'
   ]
   await $query(Parse.User)
     .notEqualTo('logRocket', true)
