@@ -1058,7 +1058,7 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   // save cube data in time of finalization
   const cubeData = await $query('Cube')
     .containedIn('objectId', contract.get('cubeIds'))
-    .include(['hsnr', 'str', 'plz', 'ort', 'state', 'media', 'ht', 'hti'])
+    .select(['hsnr', 'str', 'plz', 'ort', 'state', 'media', 'ht', 'hti'])
     .limit(contract.get('cubeIds').length)
     .find({ useMasterKey: true })
     .then(cubes => cubes.reduce((acc, cube) => {
