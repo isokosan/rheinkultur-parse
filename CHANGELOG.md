@@ -1,3 +1,10 @@
+# [1.134.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.133.2...1.134.0) (2023-10-18)
+
+
+### Features
+
+* add gravatars ([dcaa0e5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dcaa0e50c6ca6be62d4b5122062f9db6621ae323))
+
 ## [1.133.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.133.1...1.133.2) (2023-10-18)
 
 
