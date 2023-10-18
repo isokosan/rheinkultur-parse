@@ -1,3 +1,10 @@
+## [1.134.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.134.0...1.134.1) (2023-10-18)
+
+
+### Bug Fixes
+
+* remove gravatar ([e2161e3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e2161e32e2befb0b73f9bc2e8254717fe0388214))
+
 # [1.134.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.133.2...1.134.0) (2023-10-18)
 
 
