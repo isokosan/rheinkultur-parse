@@ -270,11 +270,13 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
       })
     }
   }
-  // if locationCleanup is an array, it is an array of the scouts of the before state of the saved task list
+  // if locationCleanup is an array, it is an array of the scoutIds of the before state of the saved task list
   // in this case we iterate over these, or all the scouts, to remove any dangling notifications in the area.
   if (locationCleanup) {
-    const beforeScoutIds = locationCleanup === true ? (taskList.get('scouts') || []) : locationCleanup
-    for (const scout of beforeScoutIds) {
+    const beforeScouts = locationCleanup === true
+      ? (taskList.get('scouts') || [])
+      : locationCleanup.map(id => $parsify(Parse.User, id))
+    for (const scout of beforeScouts) {
       // in any case we remove all "rejected" notifications that have the task list id
       $query('Notification')
         .equalTo('user', scout)

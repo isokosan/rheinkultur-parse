@@ -24,4 +24,4 @@
 //   }, { useMasterKey: true })
 // }
 
-// require('./run')(() => switchCube(contractNo, fromCubeId, toCubeId))
+// require('./run')(() => switchCube('V20-0651', 'TLK-82822A38', 'TLK-82822A41'))
