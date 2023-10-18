@@ -1,3 +1,10 @@
+## [1.133.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.133.1...1.133.2) (2023-10-18)
+
+
+### Bug Fixes
+
+* location cleanup scouts objects instead of ids ([a9c1a78](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a9c1a7848bf4430af1611d53b8a359014576b125))
+
 ## [1.133.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.133.0...1.133.1) (2023-10-16)
 
 
