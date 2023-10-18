@@ -1,3 +1,5 @@
+const { createHash } = require('crypto')
+
 const { generateToken, generatePassword, generateDarkColorHex } = require('@/utils')
 const { normalizeUsernameFromEmail, users: { normalizeFields, UNSET_NULL_FIELDS } } = require('@/schema/normalizers')
 const sendMail = require('@/services/email')
@@ -22,8 +24,9 @@ Parse.Cloud.beforeSave(Parse.User, async ({ object: user, master }) => {
     user.set('invitationMailStatus', mailStatus)
   }
   user.get('lastLoginAt') && user.unset('inviteToken')
-  if (!user.get('avatar') && !user.get('color')) {
-    user.set('color', generateDarkColorHex())
+  if (!user.get('avatar')) {
+    !user.get('gravatar') && user.set('gravatar', createHash('sha256').update(user.get('email').trim().toLowerCase()).digest('hex'))
+    !user.get('color') && user.set('color', generateDarkColorHex())
   }
 }, {
   fields: {
