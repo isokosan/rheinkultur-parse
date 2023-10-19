@@ -11,9 +11,10 @@ async function initializeForDevelopment () {
   // update user passwords
   await $query(Parse.User).each(async (user) => {
     user.set('password', '123456')
+    user.unset('logRocket')
     await user.save(null, { useMasterKey: true })
   }, { useMasterKey: true })
-  console.info('set user passwords')
+  console.info('set user passwords, unset logging')
   // sync lex accounts with dev lex
   await $query('Address').notEqualTo('lex', null).each(async (address) => {
     await new Promise(resolve => setTimeout(resolve, 200))
