@@ -1,3 +1,10 @@
+# [1.135.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.134.1...1.135.0) (2023-10-20)
+
+
+### Features
+
+* add excel order details export ([e3e791d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e3e791dd409cc68c07ebe7f95e8ec5e8468cf65e))
+
 ## [1.134.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.134.0...1.134.1) (2023-10-18)
 
 
