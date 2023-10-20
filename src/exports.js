@@ -88,14 +88,46 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   const fields = {
     objectId: { header: 'CityCube ID', width: 30 },
     verified: { header: 'Verifiziert', width: 20 },
+
+    companyName: { header: 'Kunde/VP', width: 40 },
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnennr.', width: 20 },
+
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 15 },
     hsnr: { header: 'Hausnummer', width: 15 },
     plz: { header: 'PLZ', width: 10 },
     ort: { header: 'Ort', width: 15 },
     stateName: { header: 'Bundesland', width: 20 },
+
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    autoExtends: { header: 'Autoverl.', width: 10, style: alignCenter },
+
     lat: { header: 'Breite', width: 13 },
     lon: { header: 'Länge', width: 13 }
+  }
+
+  const companyIdNameMap = {}
+  if (!req.query.s?.split(',').includes('5')) {
+    delete fields.companyName
+    delete fields.motive
+    delete fields.externalOrderNo
+    delete fields.campaignNo
+    delete fields.start
+    delete fields.end
+    delete fields.duration
+    delete fields.autoExtends
+  } else {
+    await $query('Company')
+      .select('name')
+      .eachBatch((companies) => {
+        for (const company of companies) {
+          companyIdNameMap[company.id] = company.get('name')
+        }
+      }, { useMasterKey: true })
   }
   for (const cubeFeature of Object.keys(CUBE_FEATURES)) {
     fields[cubeFeature] = { header: CUBE_FEATURES[cubeFeature].label, width: 30 }
@@ -142,6 +174,19 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
         for (const key of Object.keys(CUBE_FEATURES)) {
           doc[key] = CUBE_FEATURES[key].values[doc.scoutData[key]] || ''
         }
+      }
+
+      // Todo: update duration when early canceled
+      const order = doc.order || doc.futureOrder
+      if (order) {
+        doc.companyName = companyIdNameMap[order.company.objectId]
+        doc.motive = order.motive
+        doc.externalOrderNo = order.externalOrderNo
+        doc.campaignNo = order.campaignNo
+        doc.start = dateString(order.startsAt)
+        doc.end = dateString(order.earlyCanceledAt || order.endsAt)
+        doc.duration = order.initialDuration + (order.extendedDuration ? '+' + order.extendedDuration : '')
+        doc.autoExtends = order.autoExtendsBy ? 'Ja' : 'Nein'
       }
       return doc
     })) {
