@@ -1,3 +1,10 @@
+# [1.136.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.135.0...1.136.0) (2023-10-23)
+
+
+### Features
+
+* add rate limiting to lex office api service ([03b6a04](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/03b6a04313a3656529806a6a0e44350a2fbf2a47))
+
 # [1.135.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.134.1...1.135.0) (2023-10-20)
 
 
