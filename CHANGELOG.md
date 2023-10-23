@@ -1,3 +1,10 @@
+## [1.136.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.136.0...1.136.1) (2023-10-23)
+
+
+### Bug Fixes
+
+* add housing type not marketable into status 7 ([83e7b7d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/83e7b7dfcb2ec5862270ab0e77b6eb73115d2f03))
+
 # [1.136.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.135.0...1.136.0) (2023-10-23)
 
 
