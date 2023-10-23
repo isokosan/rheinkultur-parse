@@ -16,50 +16,50 @@ const updateJobs = {
   },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
-    timeoutMinutes: 60,
+    timeoutMinutes: 30,
     cron: '0 4 * * *', // at 04:00 AM
     notificationDuration: 24
   },
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // at 04:00 AM
+    timeoutMinutes: 10,
+    cron: '30 4 * * *', // at 04:30 AM
     notificationDuration: 24
   },
   reindex_fieldwork: {
     name: 'Suchindex von Dienseistungen aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // at 04:00 AM
+    timeoutMinutes: 20,
+    cron: '40 4 * * *', // at 04:40 AM
     notificationDuration: 24
   },
   reindex_bookings: {
     name: 'Suchindex von Buchungen aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // at 04:00 AM
+    timeoutMinutes: 10,
+    cron: '0 5 * * *', // at 05:00 AM
     notificationDuration: 24
   },
   reindex_booking_requests: {
     name: 'Suchindex von Buchungsanfragen aktualisieren',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // at 04:00 AM
+    timeoutMinutes: 10,
+    cron: '10 5 * * *', // at 05:10 AM
     notificationDuration: 24
   },
   recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
-    timeoutMinutes: 30,
-    cron: '0 4 * * *', // at 04:00 AM
+    timeoutMinutes: 10,
+    cron: '20 5 * * *', // at 05:20 AM
     notificationDuration: 24
   },
   sync_disassemblies: {
     name: 'Demontage synchronizieren.',
     timeoutMinutes: 30,
-    cron: '30 4 * * *', // at 04:30 AM
+    cron: '30 5 * * *', // at 05:30 AM
     notificationDuration: 24
   },
   reindex_cubes: {
     name: 'Suchindex von CityCubes aktualisieren',
     timeoutMinutes: 120,
-    cron: '0 5 * * *', // at 05:00 AM
+    cron: '0 6 * * *', // at 06:00 AM
     notificationDuration: 24
   },
   system_status_vouchers: {
