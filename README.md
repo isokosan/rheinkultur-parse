@@ -42,4 +42,8 @@ dummy
 - connect to parse containers logs
 
 docker compose exec parse bash -c 'yarn install'
+docker compose exec parse bash -c 'yarn lint --fix'
 docker compose run parse bash => to run commands inside the container
+
+### ngrok
+./ngrok http --domain=porpoise-related-weekly.ngrok-free.app 1337

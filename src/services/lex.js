@@ -1,4 +1,5 @@
 const request = require('request')
+const redis = require('@/services/redis')
 const Authorization = `Bearer ${process.env.LEX_ACCESS_TOKEN}`
 const headers = {
   Authorization,
@@ -9,7 +10,15 @@ const callbackUrl = process.env.WEBHOOKS_URL + '/lex'
 
 const htmlEncode = val => val.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;').replace(/"/g, '&quot;')
 
-const lexApi = async (resourceurl, method = 'GET', body = {}) => {
+const getLexRateLimiterLock = async (ms = 1000) => {
+  while (await redis.get('lexoffice:rate-limit')) {
+    await new Promise(resolve => setTimeout(resolve, ms))
+  }
+  return redis.set('lexoffice:rate-limit', true, 'PX', 600)
+}
+
+const lexApi = async (resourceurl, method = 'GET', body = {}, retries = 0) => {
+  await getLexRateLimiterLock()
   return new Promise((resolve, reject) => {
     return request({
       url: 'https://api.lexoffice.io/v1' + resourceurl,
@@ -18,27 +27,38 @@ const lexApi = async (resourceurl, method = 'GET', body = {}) => {
       json: true,
       headers,
       timeout: 30000
-    }, function (error, response, body) {
+    }, function (error, response, responseBody) {
       if (error) {
         if (error.status === 404) {
           return reject(new Error('Lexoffice Ressource nicht gefunden'))
         }
-        consola.info(error, body)
+        consola.info(error, responseBody)
         return reject(new Error('LexApi error: ' + error.message))
       }
-      return resolve(body)
+      if (responseBody.message === 'Rate limit exceeded') {
+        if (retries > 2) {
+          return reject(new Error('LexApi error: ' + responseBody.message))
+        }
+        retries++
+        consola.warn('Lex Office rate limit reached, retrying:', retries)
+        return lexApi(resourceurl, method, body, retries).then(resolve).catch(reject)
+      }
+      return resolve(responseBody)
     })
   })
 }
 
-const getLexFile = documentId => Parse.Cloud.httpRequest({
-  url: 'https://api.lexoffice.io/v1/files/' + documentId,
-  method: 'GET',
-  headers: {
-    Authorization,
-    Accept: 'application/pdf'
-  }
-})
+const getLexFile = async (documentFileId) => {
+  await getLexRateLimiterLock(300)
+  return Parse.Cloud.httpRequest({
+    url: 'https://api.lexoffice.io/v1/files/' + documentFileId,
+    method: 'GET',
+    headers: {
+      Authorization,
+      Accept: 'application/pdf'
+    }
+  })
+}
 
 const getLexInvoiceDocument = async (lexId) => {
   // Must be triggered to make sure lex has rendered the document
@@ -52,42 +72,45 @@ const getLexCreditNoteDocument = async (lexId) => {
   return lexApi('/credit-notes/' + lexId, 'GET')
 }
 
-const getLexFileAsAttachment = (documentId) => {
-  return {
-    contentType: 'application/pdf',
-    href: 'https://api.lexoffice.io/v1/files/' + documentId,
-    httpHeaders: { Authorization }
-  }
+const getSubscriptions = async () => {
+  await getLexRateLimiterLock(300)
+  return Parse.Cloud.httpRequest({
+    url: 'https://api.lexoffice.io/v1/event-subscriptions',
+    method: 'GET',
+    headers
+  })
+    .then(response => response.data?.content)
+    .catch(error => {
+      consola.error(error)
+      throw new Error('Lexoffice unreachable')
+    })
 }
 
-const getSubscriptions = async () => Parse.Cloud.httpRequest({
-  url: 'https://api.lexoffice.io/v1/event-subscriptions',
-  method: 'GET',
-  headers
-}).then(response => response.data?.content).catch(error => {
-  consola.error(error)
-  throw new Error('Lexoffice unreachable')
-})
-
-const subscribe = async eventType => Parse.Cloud.httpRequest({
-  url: 'https://api.lexoffice.io/v1/event-subscriptions',
-  method: 'POST',
-  headers,
-  body: { eventType, callbackUrl }
-})
-  .catch(response => ({ eventType, ...response }))
-  .then(response => ({ eventType, ...response.data }))
-
-const unsubscribe = async subscriptionId => Parse.Cloud.httpRequest({
-  url: 'https://api.lexoffice.io/v1/event-subscriptions/' + subscriptionId,
-  method: 'DELETE',
-  headers
-})
-  .catch((response) => {
-    consola.error(response.data)
-    return response
+const subscribe = async eventType => {
+  await getLexRateLimiterLock(300)
+  return Parse.Cloud.httpRequest({
+    url: 'https://api.lexoffice.io/v1/event-subscriptions',
+    method: 'POST',
+    headers,
+    body: { eventType, callbackUrl }
   })
-  .then(response => response.data)
+    .catch(response => ({ eventType, ...response }))
+    .then(response => ({ eventType, ...response.data }))
+}
+
+const unsubscribe = async subscriptionId => {
+  await getLexRateLimiterLock(300)
+  return Parse.Cloud.httpRequest({
+    url: 'https://api.lexoffice.io/v1/event-subscriptions/' + subscriptionId,
+    method: 'DELETE',
+    headers
+  })
+    .catch((response) => {
+      consola.error(response.data)
+      return response
+    })
+    .then(response => response.data)
+}
 
 const clearSubscriptions = async () => {
   const subscriptions = await getSubscriptions()
@@ -95,6 +118,7 @@ const clearSubscriptions = async () => {
     return unsubscribe(subscriptionId)
   }))
 }
+
 const EVENTS = [
   'contact.changed',
   // 'contact.deleted', // TODO: add a deleted from lex office flag
@@ -123,6 +147,7 @@ const fetchCountries = async () => {
   // set and retrieve countries from Parse.Config
   const config = await Parse.Config.get()
   if (config.get('countries')) { return config.get('countries') }
+  await getLexRateLimiterLock()
   const countries = await Parse.Cloud.httpRequest({
     url: 'https://api.lexoffice.io/v1/countries',
     method: 'GET',
@@ -148,7 +173,8 @@ const getCountries = async () => {
   return $countries
 }
 
-const getContacts = ({ params: { name, number } } = { name: {} }) => {
+const getContacts = async ({ params: { name, number } } = { name: {} }) => {
+  await getLexRateLimiterLock()
   return Parse.Cloud.httpRequest({
     url: 'https://api.lexoffice.io/v1/contacts',
     method: 'GET',
@@ -207,7 +233,6 @@ module.exports.test = async () => {
 module.exports.getLexFile = getLexFile
 module.exports.getLexInvoiceDocument = getLexInvoiceDocument
 module.exports.getLexCreditNoteDocument = getLexCreditNoteDocument
-module.exports.getLexFileAsAttachment = getLexFileAsAttachment
 module.exports.getCountries = getCountries
 module.exports.getContacts = getContacts
 module.exports.subscribe = subscribe

@@ -2,9 +2,6 @@ const { round } = require('lodash')
 const { v4: uuidv4 } = require('uuid')
 const { exec } = require('child_process')
 
-const sleep = (waitTimeInMs) => new Promise(resolve => setTimeout(resolve, waitTimeInMs))
-const wait = seconds => new Promise(resolve => setTimeout(resolve, seconds * 1000))
-
 const asyncExec = command => new Promise((resolve, reject) => {
   exec(command, (err, stdout, stderr) => err ? reject(err) : resolve())
 })
@@ -104,10 +101,8 @@ const replaceLocalIp = function (url) {
 }
 
 module.exports = {
-  sleep,
   asyncExec,
   replaceLocalIp,
-  wait,
   batch,
   chunk,
   ensureUniqueField,

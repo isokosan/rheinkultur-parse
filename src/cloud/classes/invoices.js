@@ -1,12 +1,15 @@
 const { normalizeString, invoices: { normalizeFields } } = require('@/schema/normalizers')
 const { validateSystemStatus, getDocumentTotals, getTaxRatePercentage, getPeriodTotal } = require('@/shared')
 const { round2, round5, priceString, durationString } = require('@/utils')
-const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
+const { lexApi } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
 const sendMail = require('@/services/email')
 const { addressAudit } = require('@/cloud/classes/addresses')
 
 const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
+
+const getLexDocumentFileId = lexId => lexApi('/invoices/' + lexId + '/document', 'GET')
+  .then(({ documentFileId }) => documentFileId)
 
 const Invoice = Parse.Object.extend('Invoice', {
   getTotalText () {
@@ -127,12 +130,6 @@ async function validateInvoiceDate (dateOfNewInvoice) {
   }
 }
 
-// Need to fetch documents here, as otherwise Lex might not generate the document
-async function getLexDocumentId (lexId) {
-  return lexApi('/invoices/' + lexId + '/document', 'GET')
-    .then(({ documentFileId }) => documentFileId)
-}
-
 function updateGradualInvoice (invoice, gradualCount, gradualPrice) {
   if (gradualCount === invoice.get('gradualCount') && gradualPrice === invoice.get('gradualPrice')) {
     return false
@@ -226,12 +223,15 @@ Parse.Cloud.beforeSave(Invoice, async ({ object: invoice, context: { rewriteIntr
     invoice.set({ netTotal, taxTotal, total })
   }
 
-  if (invoice.get('lexId') && !invoice.get('lexNo')) {
-    const { voucherNumber, voucherStatus } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
-    invoice.set({ lexNo: voucherNumber, voucherStatus })
+  if (invoice.get('lexId')) {
+    if (!invoice.get('lexNo')) {
+      const { voucherNumber, voucherStatus } = await lexApi('/invoices/' + invoice.get('lexId'), 'GET')
+      invoice.set({ lexNo: voucherNumber, voucherStatus })
+    }
+    if (!invoice.get('lexDocumentFileId')) {
+      invoice.set('lexDocumentFileId', await getLexDocumentFileId(invoice.get('lexId')))
+    }
   }
-
-  invoice.unset('lexDocument')
 })
 
 Parse.Cloud.afterSave(Invoice, ({ object: invoice, context: { audit } }) => { $audit(invoice, audit) })
@@ -498,15 +498,17 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
   const invoice = await $query(Invoice)
     .include(['company', 'docs'])
     .get(invoiceId, { useMasterKey: true })
-  if (invoice.get('status') < 2) {
+  if (invoice.get('status') < 2 || !invoice.get('lexId') || !invoice.get('lexNo')) {
     throw new Error('Can\'t mail draft invoice')
   }
-  const attachments = []
-  const lexDocumentId = await getLexDocumentId(invoice.get('lexId'))
-  lexDocumentId && attachments.push({
+  const attachments = [{
     filename: invoice.get('lexNo') + '.pdf',
-    ...getLexFileAsAttachment(lexDocumentId)
-  })
+    contentType: 'application/pdf',
+    href: process.env.EXPORTS_SERVER_URL + '/invoice-pdf?id=' + invoice.get('lexId'),
+    httpHeaders: {
+      'x-exports-master-key': process.env.EXPORTS_MASTER_KEY
+    }
+  }]
   if (invoice.get('media') || invoice.get('production')) {
     attachments.push({
       filename: invoice.get('lexNo') + ' Rechnungs-Standorte.xlsx',

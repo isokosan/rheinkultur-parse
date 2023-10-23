@@ -368,6 +368,7 @@ const schemaDefinitions = {
       // LEX
       lexNo: { type: 'String' },
       lexId: { type: 'String' },
+      lexDocumentFileId: { type: 'String' },
       lexUri: { type: 'String' },
       voucherStatus: { type: 'String' },
 
@@ -427,6 +428,7 @@ const schemaDefinitions = {
       // LEX
       lexNo: { type: 'String' },
       lexId: { type: 'String' },
+      lexDocumentFileId: { type: 'String' },
       lexUri: { type: 'String' },
       voucherStatus: { type: 'String' }, // lex office status
 

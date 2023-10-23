@@ -18,9 +18,15 @@ const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
 const { CUBE_STATUSES, CUBE_FEATURES } = require('@/schema/enums')
 
-// validate session and attach user from Parse
+// validate session and attach user from Parse,
+const EXPORT_MASTER_ROUTES = [
+  '/invoice-pdf',
+  '/credit-note-pdf',
+  '/invoice-summary',
+  '/contract-extend-pdf'
+]
 router.use(async (req, res, next) => {
-  req.master = ['/invoice-summary', '/contract-extend-pdf'].includes(req._parsedUrl.pathname) && req.headers['x-exports-master-key'] === process.env.EXPORTS_MASTER_KEY
+  req.master = EXPORT_MASTER_ROUTES.includes(req._parsedUrl.pathname) && req.headers['x-exports-master-key'] === process.env.EXPORTS_MASTER_KEY
   req.sessionToken = req.query.sid
   const session = req.query.sid && await $query(Parse.Session)
     .equalTo('sessionToken', req.sessionToken)
@@ -1667,19 +1673,61 @@ router.get('/contract-extend-pdf', handleErrorAsync(async (req, res) => {
       drive.files.delete({ fileId })
     })
 }))
-router.get('/invoice-pdf/:resourceId', handleErrorAsync(async (req, res) => {
-  const lexDocument = await getLexInvoiceDocument(req.params.resourceId)
-  const response = await getLexFile(lexDocument.files.documentFileId)
-  res.set('Content-Type', 'application/pdf')
-  res.set('Content-Disposition', `inline; filename="${lexDocument.voucherNumber}.pdf"`)
-  return res.send(response.buffer)
+
+router.get('/invoice-pdf', handleErrorAsync(async (req, res) => {
+  const invoice = await $query('Invoice').equalTo('lexId', req.query.id).first({ useMasterKey: true })
+  if (!invoice) {
+    throw new Error('Rechnung nicht gefunden')
+  }
+  let lexNo = invoice.get('lexNo')
+  let lexDocumentFileId = invoice.get('lexDocumentFileId')
+
+  while (!lexNo || !lexDocumentFileId) {
+    const lexDocument = await getLexInvoiceDocument(req.query.id)
+    if (lexDocument) {
+      if (lexDocument.status === 404) {
+        throw new Error('Rechnungsdokument nicht gefunden')
+      }
+      lexNo = lexDocument.voucherNumber
+      lexDocumentFileId = lexDocument.files?.documentFileId
+    }
+  }
+  try {
+    const response = await getLexFile(lexDocumentFileId)
+    res.set('Content-Type', 'application/pdf')
+    res.set('Content-Disposition', `inline; filename="${lexNo}.pdf"`)
+    return res.send(response.buffer)
+  } catch (error) {
+    throw new Error(error.data.message)
+  }
 }))
-router.get('/credit-note-pdf/:resourceId', handleErrorAsync(async (req, res) => {
-  const lexDocument = await getLexCreditNoteDocument(req.params.resourceId)
-  const response = await getLexFile(lexDocument.files.documentFileId)
-  res.set('Content-Type', 'application/pdf')
-  res.set('Content-Disposition', `inline; filename="${lexDocument.voucherNumber}.pdf"`)
-  return res.send(response.buffer)
+
+router.get('/credit-note-pdf', handleErrorAsync(async (req, res) => {
+  const creditNote = await $query('CreditNote').equalTo('lexId', req.query.id).first({ useMasterKey: true })
+  if (!creditNote) {
+    throw new Error('Gutschrift nicht gefunden')
+  }
+  let lexNo = creditNote.get('lexNo')
+  let lexDocumentFileId = creditNote.get('lexDocumentFileId')
+
+  while (!lexNo || !lexDocumentFileId) {
+    const lexDocument = await getLexCreditNoteDocument(req.query.id)
+    if (lexDocument) {
+      if (lexDocument.status === 404) {
+        throw new Error('Gutschriftsdokument nicht gefunden')
+      }
+      lexNo = lexDocument.voucherNumber
+      lexDocumentFileId = lexDocument.files?.documentFileId
+    }
+  }
+  try {
+    const response = await getLexFile(lexDocumentFileId)
+    res.set('Content-Type', 'application/pdf')
+    res.set('Content-Disposition', `inline; filename="${lexNo}.pdf"`)
+    return res.send(response.buffer)
+  } catch (error) {
+    throw new Error(error.data.message)
+  }
 }))
 
 module.exports = router

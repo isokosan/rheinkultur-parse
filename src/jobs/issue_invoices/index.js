@@ -14,6 +14,8 @@ module.exports = async function (job) {
     }
     // when email is true the email from invoice address will be used
     await Parse.Cloud.run('invoice-issue', { id: invoice.id, email: !DEVELOPMENT }, { useMasterKey: true })
+    // wait 2 seconds
+    await new Promise(resolve => setTimeout(resolve, 2000))
     consola.info('issued invoice', invoice.id)
     i++
     job.progress(round(100 * i / total))

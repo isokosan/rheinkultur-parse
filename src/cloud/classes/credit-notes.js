@@ -7,11 +7,14 @@
 const { normalizeString, creditNotes: { normalizeFields } } = require('@/schema/normalizers')
 const { validateSystemStatus, getDocumentTotals, getTaxRatePercentage } = require('@/shared')
 const { durationString } = require('@/utils')
-const { lexApi, getLexFileAsAttachment } = require('@/services/lex')
+const { lexApi } = require('@/services/lex')
 const sendMail = require('@/services/email')
 const { addressAudit } = require('@/cloud/classes/addresses')
 
 const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
+
+const getLexDocumentFileId = lexId => lexApi('/credit-notes/' + lexId + '/document', 'GET')
+  .then(({ documentFileId }) => documentFileId)
 
 const CreditNote = Parse.Object.extend('CreditNote', {
   async getCompanyPersonSupplement () {
@@ -125,12 +128,6 @@ async function validateCreditNoteDate (dateOfNewCreditNote) {
   }
 }
 
-// Need to fetch documents here, as otherwise Lex might not generate the document
-async function getLexDocumentId (lexId) {
-  return lexApi('/credit-notes/' + lexId + '/document', 'GET')
-    .then(({ documentFileId }) => documentFileId)
-}
-
 Parse.Cloud.beforeFind(CreditNote, async ({ query }) => {
   query.include(['contract', 'invoices'])
   if (query._include.includes('all')) {
@@ -170,9 +167,14 @@ Parse.Cloud.beforeSave(CreditNote, async ({ object: creditNote, context: { rewri
     creditNote.set({ netTotal, taxTotal, total })
   }
 
-  if (creditNote.get('lexId') && !creditNote.get('lexNo')) {
-    const { voucherNumber, voucherStatus } = await lexApi('/credit-notes/' + creditNote.get('lexId'), 'GET')
-    creditNote.set({ lexNo: voucherNumber, voucherStatus })
+  if (creditNote.get('lexId')) {
+    if (!creditNote.get('lexNo')) {
+      const { voucherNumber, voucherStatus } = await lexApi('/credit-notes/' + creditNote.get('lexId'), 'GET')
+      creditNote.set({ lexNo: voucherNumber, voucherStatus })
+    }
+    if (!creditNote.get('lexDocumentFileId')) {
+      creditNote.set('lexDocumentFileId', await getLexDocumentFileId(creditNote.get('lexId')))
+    }
   }
 })
 
@@ -390,15 +392,17 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
   const creditNote = await $query(CreditNote)
     .include(['company', 'docs'])
     .get(creditNoteId, { useMasterKey: true })
-  if (creditNote.get('status') < 2) {
+  if (creditNote.get('status') < 2 || !creditNote.get('lexId') || !creditNote.get('lexNo')) {
     throw new Error('Can\'t mail draft creditNote')
   }
-  const attachments = []
-  const lexDocumentId = await getLexDocumentId(creditNote.get('lexId'))
-  lexDocumentId && attachments.push({
+  const attachments = [{
     filename: creditNote.get('lexNo') + '.pdf',
-    ...getLexFileAsAttachment(lexDocumentId)
-  })
+    contentType: 'application/pdf',
+    href: process.env.EXPORTS_SERVER_URL + '/credit-note-pdf?id=' + creditNote.get('lexId'),
+    httpHeaders: {
+      'x-exports-master-key': process.env.EXPORTS_MASTER_KEY
+    }
+  }]
   for (const doc of creditNote.get('docs') || []) {
     attachments.push({
       filename: doc.get('name'),
