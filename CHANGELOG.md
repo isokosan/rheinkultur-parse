@@ -1,3 +1,11 @@
+# [1.137.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.136.1...1.137.0) (2023-10-25)
+
+
+### Features
+
+* add company filter and check to approved fieldwork ([d873586](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d873586276ec050468ab8480722c67a89979aa54))
+* manual-entries ([460d7c4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/460d7c4c2981ac2ace9365279ec03f719d2dac7f))
+
 ## [1.136.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.136.0...1.136.1) (2023-10-23)
 
 
