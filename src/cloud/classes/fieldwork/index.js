@@ -50,13 +50,14 @@ Parse.Cloud.define('fieldwork-outstanding', async ({ user }) => {
 }, $fieldworkManager)
 
 Parse.Cloud.define('fieldwork-ongoing', async ({ params: { companyId, force }, user }) => {
+  user.get('company') && (companyId = user.get('company').id)
   const isFieldworkManager = user.get('permissions').includes('manage-fieldwork')
   const isScoutManager = user.get('permissions').includes('manage-scouts')
   if (!isFieldworkManager && !isScoutManager) {
     throw new Parse.Error(401, 'Unauthorized')
   }
-  const key = companyId ? 'fieldwork-ongoing-' + companyId : 'fieldwork-ongoing'
-  return $cache(key, {
+  const cacheKey = companyId ? 'fieldwork-ongoing-' + companyId : 'fieldwork-ongoing'
+  return $cache(cacheKey, {
     async cacheFn () {
       const response = {
         totals: {
@@ -174,8 +175,15 @@ Parse.Cloud.define('fieldwork-upcoming', async ({ params: { force } }) => {
   })
 }, $fieldworkManager)
 
-Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { force } }) => {
-  return $cache('fieldwork-approved-submissions', {
+Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { companyId, force }, user }) => {
+  user.get('company') && (companyId = user.get('company').id)
+  const isFieldworkManager = user.get('permissions').includes('manage-fieldwork')
+  const isScoutManager = user.get('permissions').includes('manage-scouts')
+  if (!isFieldworkManager && !isScoutManager) {
+    throw new Parse.Error(401, 'Unauthorized')
+  }
+  const cacheKey = companyId ? 'fieldwork-approved-submissions-' + companyId : 'fieldwork-approved-submissions'
+  return $cache(cacheKey, {
     async cacheFn () {
       const response = {}
       const months = [0, 1, 2, 3].map((subtract) => {
@@ -186,10 +194,19 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { force } 
           end: m.endOf('month').toDate()
         }
       })
+
+      let scoutsQuery
+      if (companyId === 'intern') {
+        scoutsQuery = $query(Parse.User).equalTo('company', null)
+      } else if (companyId) {
+        scoutsQuery = $query(Parse.User).equalTo('company', $parsify('Company', companyId))
+      }
       for (const { key, start, end } of months) {
         response[key] = {}
         for (const type of ['Scout', 'Control', 'Disassembly']) {
-          await $query(type + 'Submission')
+          const query = $query(type + 'Submission')
+          scoutsQuery && query.matchesQuery('scout', scoutsQuery)
+          await query
             .greaterThanOrEqualTo('createdAt', start)
             .lessThanOrEqualTo('createdAt', end)
             .equalTo('status', 'approved')
@@ -217,4 +234,4 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { force } 
     maxAge: [10, 'minutes'],
     force
   })
-}, $fieldworkManager)
+}, { requireUser: true })
