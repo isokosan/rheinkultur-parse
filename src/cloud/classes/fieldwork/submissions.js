@@ -106,10 +106,26 @@ function removeRejectedNotifications (type, submission) {
     .each(record => record.destroy({ useMasterKey: true }), { useMasterKey: true })
 }
 
+// scout manager or fieldworkmanager
+function validateApprove (user) {
+  const isFieldworkManager = user?.get('permissions').includes('manage-fieldwork')
+  const isScoutManager = user?.get('permissions').includes('manage-scouts')
+  if (!isFieldworkManager && !isScoutManager) {
+    throw new Error('Nur Fieldwork Manager oder Scout Manager können genehmigen.')
+  }
+}
+
 Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, approve }, user }) => {
+  approve && validateApprove(user)
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ScoutSubmission, submissionId)
   submission.set('status', 'pending')
-  !approve && submission.set('scout', user).set('lastSubmittedAt', new Date())
+
+  // !approve is for the case where scouts are using the scout app, in which case the scout should always be updated
+  // in the other case, the submission is new so no scout is present, as the approving admin will set as the  scout
+  const manual = (approve && !submission.id) || undefined
+  if (manual || !approve) {
+    submission.set('scout', user).set('lastSubmittedAt', new Date())
+  }
 
   // make sure the cube is added to the list if found
   const cubeIds = taskList.get('cubeIds') || []
@@ -132,13 +148,18 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
   submission.set({ form, condition, photos })
 
   await submission.save(null, { useMasterKey: true })
+  const audit = { fn: 'scout-submission-submit', data: { cubeId, changes, manual, approved: approve || undefined } }
+  if (approve) {
+    return Parse.Cloud.run('scout-submission-approve', { id: submission.id, auditCarry: audit }, { sessionToken: user.getSessionToken() })
+  }
+  audit.user = user
   taskList.set({ status: 3 })
-  const audit = { user, fn: 'scout-submission-submit', data: { cubeId, changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return { message: 'Scouting erfolgreich.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submissionId }, user }) => {
+Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submissionId, auditCarry }, user }) => {
+  validateApprove(user)
   const submission = await $getOrFail(ScoutSubmission, submissionId, ['taskList', 'cube', 'photos'])
   const cube = submission.get('cube')
   const cubeId = cube.id
@@ -167,11 +188,15 @@ Parse.Cloud.define('scout-submission-approve', async ({ params: { id: submission
   }
 
   submission.set({ status: 'approved' })
-  const audit = { user, fn: 'scout-submission-approve', data: { cubeId } }
+  const audit = auditCarry || { fn: 'scout-submission-approve', data: { cubeId } }
+  audit.user = user
   await submission.save(null, { useMasterKey: true })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   await removeRejectedNotifications('scout', submission)
-  return { message: 'Scouting genehmigt.', data: submission }
+  return {
+    message: auditCarry ? 'Scouting gespeichert und genehmigt.' : 'Scouting genehmigt.',
+    data: submission
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
@@ -199,13 +224,21 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
 Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoIds, afterPhotoIds, comments, disassemblyId, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ControlSubmission, submissionId)
   if (!submission.get('orderKey')) {
-    const cubeOrder = await $query('Cube').select('order').equalTo('objectId', cubeId).first({ useMasterKey: true }).then(cube => cube.get('order'))
-    const orderKey = [cubeOrder.className, cubeOrder.objectId].join('$')
+    // find orderKey from control
+    const orderKey = submission.get('taskList').get('control').get('cubeOrderKeys')?.[cubeId]
+    if (!orderKey) {
+      consola.error(`Cannot find cube order key in control submission ${submissionId}, approve: ${approve}`)
+    }
     submission.set('orderKey', orderKey)
   }
 
   submission.set('status', 'pending')
-  !approve && submission.set('scout', user).set('lastSubmittedAt', new Date())
+  // !approve is for the case where scouts are using the scout app, in which case the scout should always be updated
+  // in the other case, the submission is new so no scout is present, as the approving admin will set as the  scout
+  const manual = (approve && !submission.id) || undefined
+  if (manual || !approve) {
+    submission.set('scout', user).set('lastSubmittedAt', new Date())
+  }
 
   let disassembly
   if (condition === 'disassembled' && disassemblyId) {
@@ -222,21 +255,30 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
   submission.set('beforePhotos', pointerPhotos(beforePhotoIds))
   submission.set('afterPhotos', pointerPhotos(afterPhotoIds))
   await submission.save(null, { useMasterKey: true })
+  const audit = { fn: 'control-submission-submit', data: { cubeId, changes, manual, approved: approve || undefined } }
+  if (approve) {
+    return Parse.Cloud.run('control-submission-approve', { id: submission.id, auditCarry: audit }, { sessionToken: user.getSessionToken() })
+  }
+  audit.user = user
   taskList.set({ status: 3 })
-  const audit = { user, fn: 'control-submission-submit', data: { cubeId, changes } }
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   return { message: 'Kontrolle erfolgreich.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissionId }, user }) => {
+Parse.Cloud.define('control-submission-approve', async ({ params: { id: submissionId, auditCarry }, user }) => {
+  validateApprove(user)
   const submission = await $getOrFail(ControlSubmission, submissionId, ['taskList', 'cube'])
-  submission.set({ status: 'approved' })
   const cubeId = submission.get('cube').id
-  const audit = { user, fn: 'control-submission-approve', data: { cubeId } }
+  submission.set({ status: 'approved' })
+  const audit = auditCarry || { fn: 'control-submission-approve', data: { cubeId } }
+  audit.user = user
   await submission.save(null, { useMasterKey: true })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   await removeRejectedNotifications('control', submission)
-  return { message: 'Kontrolle genehmigt.', data: submission }
+  return {
+    message: auditCarry ? 'Kontrolle gespeichert und genehmigt.' : 'Kontrolle genehmigt.',
+    data: submission
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('control-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
@@ -257,7 +299,12 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
   const disassembly = taskList.get('disassembly')
 
   submission.set('status', 'pending')
-  !approve && submission.set('scout', user).set('lastSubmittedAt', new Date())
+  // !approve is for the case where scouts are using the scout app, in which case the scout should always be updated
+  // in the other case, the submission is new so no scout is present, as the approving admin will set as the  scout
+  const manual = (approve && !submission.id) || undefined
+  if (manual || !approve) {
+    submission.set('scout', user).set('lastSubmittedAt', new Date())
+  }
 
   let changes
   if (submission.id) {
@@ -265,11 +312,8 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
   }
   const photos = await $query('CubePhoto').containedIn('objectId', photoIds).find({ useMasterKey: true })
   submission.set({ condition, photos, comments })
-  const audit = { user, fn: 'disassembly-submission-submit', data: { cubeId, changes } }
   await submission.save(null, { useMasterKey: true })
 
-  taskList.set({ status: 3 })
-  await taskList.save(null, { useMasterKey: true, context: { audit } })
   // control-disassembled
   const order = disassembly.get('order')
   const orderKey = [order.className, order.id].join('$')
@@ -282,34 +326,44 @@ Parse.Cloud.define('disassembly-submission-submit', async ({ params: { id: taskL
     .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
     .equalTo('cubeIds', cubeId)
     .equalTo(`statuses.${cubeId}`, null) // no activity yet
-    .each(async (list) => {
-      await Parse.Cloud.run('control-submission-submit', {
-        id: list.id,
-        cubeId,
-        condition: 'disassembled',
-        disassemblyId: submission.id
-      }, { sessionToken: user.getSessionToken() })
-    }, { useMasterKey: true })
+    .each(list => Parse.Cloud.run('control-submission-submit', {
+      id: list.id,
+      cubeId,
+      condition: 'disassembled',
+      disassemblyId: submission.id,
+      approve
+    }, { sessionToken: user.getSessionToken() }), { useMasterKey: true })
+
+  const audit = { fn: 'disassembly-submission-submit', data: { cubeId, changes, manual, approved: approve || undefined } }
+  if (approve) {
+    return Parse.Cloud.run('disassembly-submission-approve', { id: submission.id, auditCarry: audit }, { sessionToken: user.getSessionToken() })
+  }
+  audit.user = user
+  taskList.set({ status: 3 })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
   return { message: 'Demontage erfolgreich.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: submissionId }, user }) => {
+Parse.Cloud.define('disassembly-submission-approve', async ({ params: { id: submissionId, auditCarry }, user }) => {
+  validateApprove(user)
   const submission = await $getOrFail(DisassemblySubmission, submissionId, ['taskList', 'cube', 'disassembly.contract', 'disassembly.booking'])
   submission.set({ status: 'approved' })
   const cubeId = submission.get('cube').id
-  const audit = { user, fn: 'disassembly-submission-approve', data: { cubeId } }
+  const audit = auditCarry || { fn: 'disassembly-submission-approve', data: { cubeId } }
+  audit.user = user
   await submission.save(null, { useMasterKey: true })
   await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
   await removeRejectedNotifications('disassembly', submission)
 
   // control-disassembled
-  const controlSubmission = await $query(ControlSubmission)
+  await $query(ControlSubmission)
     .equalTo('disassembly', submission)
-    .first({ useMasterKey: true })
-  controlSubmission && await Parse.Cloud.run('control-submission-approve', {
-    id: controlSubmission.id
-  }, { sessionToken: user.getSessionToken() })
-  return { message: 'Demontage genehmigt.', data: submission }
+    .notEqualTo('status', 'approved')
+    .each(controlSubmission => Parse.Cloud.run('control-submission-approve', { id: controlSubmission.id }, { sessionToken: user.getSessionToken() }), { useMasterKey: true })
+  return {
+    message: auditCarry ? 'Demontage gespeichert und genehmigt.' : 'Demontage genehmigt.',
+    data: submission
+  }
 }, { requireUser: true })
 
 Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {

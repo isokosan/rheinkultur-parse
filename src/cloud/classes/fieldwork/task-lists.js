@@ -94,6 +94,11 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     taskList.get(cubeIdField) && taskList.set(cubeIdField, intersection([...new Set(taskList.get(cubeIdField))], cubeIds))
   }
 
+  // remove markedDisassembledCubeIds from adminApprovedCubeIds
+  if (taskList.get('adminApprovedCubeIds')?.length && taskList.get('markedDisassembledCubeIds')?.length) {
+    taskList.set('adminApprovedCubeIds', difference(taskList.get('adminApprovedCubeIds'), taskList.get('markedDisassembledCubeIds')))
+  }
+
   const taskType = taskList.get('type')
 
   const submissionClass = getSubmissionClass(taskType)
@@ -627,7 +632,6 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
 
   taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
   const audit = { user, fn: taskList.get('type') + '-submission-preapprove', data: { cubeId, approved } }
-  await taskList.save(null, { useMasterKey: true, context: { audit } })
 
   // update statuses if disassembly
   if (taskList.get('disassembly')) {
@@ -671,6 +675,7 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
           await list.save(null, { useMasterKey: true, context: { audit } })
         }, { useMasterKey: true })
   }
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
 Parse.Cloud.define('task-list-archive', async ({ params: { id: taskListId }, user }) => {
@@ -1002,16 +1007,38 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
   return { updated, errors }
 }, { requireUser: true })
 
+async function findStartedDisassemblyForControlTask (cubeId, taskListId) {
+  const taskList = await $getOrFail('TaskList', taskListId)
+  const control = taskList.get('control')
+  const orderKey = control.get('cubeOrderKeys')[cubeId]
+  const disassemblyIdPrefix = orderKey.replace('$', '-')
+  const disassembliesQuery = $query('Disassembly').startsWith('objectId', disassemblyIdPrefix)
+  // When do we match a disassembly task to a control task?
+  // If the disassembly has started (date is less than or equal to today)
+  // If the disassembly task starts before the control end date
+  const query = Parse.Query.or(
+    $query('TaskList').lessThanOrEqualTo('date', await $today()),
+    $query('TaskList').lessThanOrEqualTo('date', control.get('dueDate'))
+  )
+  const disassemblyTask = await query
+    .equalTo('type', 'disassembly')
+    .matchesQuery('disassembly', disassembliesQuery)
+    .equalTo('cubeIds', cubeId)
+    .first({ useMasterKey: true })
+  return { orderKey, disassemblyTask }
+}
+
+Parse.Cloud.define('task-list-get-control-order-status', ({ params: { cubeId, taskListId } }) => {
+  return findStartedDisassemblyForControlTask(cubeId, taskListId)
+}, { requireUser: true })
+
 // what scout sees on location map when clicking on a cube
 Parse.Cloud.define('task-list-retrieve-as-scout', async ({ params: { id: taskListId, cubeId }, user }) => {
   let task = await $query('TaskList').get(taskListId, { sessionToken: user.getSessionToken() })
   // control has disassembly within the control dates
   if (task.get('type') === 'control') {
-    const disassemblyTask = await $query('TaskList')
-      .equalTo('type', 'disassembly')
-      .equalTo('cubeIds', cubeId)
-      .lessThanOrEqualTo('date', task.get('dueDate'))
-      .first({ useMasterKey: true })
+    // check if there is a disassembly with the order key
+    const { disassemblyTask } = await findStartedDisassemblyForControlTask(cubeId, taskListId)
     if (disassemblyTask) {
       // disable the control task
       task.set('disabled', true)
@@ -1020,9 +1047,8 @@ Parse.Cloud.define('task-list-retrieve-as-scout', async ({ params: { id: taskLis
       if (userIsScout && TASK_LIST_IN_PROGRESS_STATUSES.includes(disassemblyTask.get('status'))) {
         task = disassemblyTask
       }
-      // TOTRANSLATE
       const dateDisplay = moment(disassemblyTask.get('dueDate')).format('DD.MM.YYYY')
-      task.set('information', `Diese CityCube wird bis zum ${dateDisplay} ohnehin abgebaut.`)
+      task.set('information', `Diese CityCube wird bis zum ${dateDisplay} ohnehin demontiert.`)
     }
   }
   const submission = await $query(getSubmissionClass(task.get('type')))
