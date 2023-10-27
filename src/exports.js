@@ -1430,7 +1430,7 @@ router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
   const worksheet = workbook.addWorksheet('Quartalsbericht')
   const fields = {
     orderNo: { header: 'Auftragsnr.', width: 15 },
-    motive: { header: 'Motiv', width: 20 },
+    motive: { header: 'Motiv', width: 30 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
     campaignNo: { header: 'Kampagnennr.', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
@@ -1460,6 +1460,21 @@ router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
     return null
   }
 
+  const extraFields = await $query('Booking')
+    .containedIn('no', partnerQuarter.get('rows').map(row => row.orderNo))
+    .select(['no', 'externalOrderNo', 'campaignNo'])
+    .limit(partnerQuarter.get('rows').length)
+    .find({ useMasterKey: true })
+    .then(orders => orders.reduce((dict, order) => {
+      dict[order.get('no')] = {
+        externalOrderNo: order.get('externalOrderNo'),
+        campaignNo: order.get('campaignNo')
+      }
+      return dict
+    }, {}))
+
+  consola.info(extraFields)
+
   const rows = partnerQuarter.get('rows').map((row) => {
     row.start = dateString(row.start)
     row.end = dateString(row.end)
@@ -1474,6 +1489,8 @@ router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
         row[fieldKey] = value
       }
     }
+    row.externalOrderNo = extraFields[row.orderNo]?.externalOrderNo
+    row.campaignNo = extraFields[row.orderNo]?.campaignNo
     return row
   })
 
