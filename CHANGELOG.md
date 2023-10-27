@@ -1,3 +1,10 @@
+## [1.137.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.137.0...1.137.1) (2023-10-27)
+
+
+### Bug Fixes
+
+* extra fields in partner-quarter export ([3c17430](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3c17430b082cecc38e89e0c8e428e176573ceaf9))
+
 # [1.137.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.136.1...1.137.0) (2023-10-25)
 
 
