@@ -1011,6 +1011,9 @@ async function findStartedDisassemblyForControlTask (cubeId, taskListId) {
   const taskList = await $getOrFail('TaskList', taskListId)
   const control = taskList.get('control')
   const orderKey = control.get('cubeOrderKeys')[cubeId]
+  if (!orderKey) {
+    throw new Error('Für diesen CityCube kann kein laufender Auftrag innerhalb des Kontrols gefunden werden.')
+  }
   const disassemblyIdPrefix = orderKey.replace('$', '-')
   const disassembliesQuery = $query('Disassembly').startsWith('objectId', disassemblyIdPrefix)
   // When do we match a disassembly task to a control task?
