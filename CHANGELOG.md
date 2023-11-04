@@ -1,3 +1,10 @@
+## [1.137.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.137.1...1.137.2) (2023-11-04)
+
+
+### Bug Fixes
+
+* temporary fix for missing orderKey in control ([8e12dce](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8e12dce4c2a11c5701799bef84a835f82795e86f))
+
 ## [1.137.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.137.0...1.137.1) (2023-10-27)
 
 
