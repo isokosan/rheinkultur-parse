@@ -5,6 +5,7 @@ Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MAS
 require('./../src/globals')
 
 async function initializeForDevelopment () {
+  console.log('development reset fn')
   const today = moment().format('YYYY-MM-DD')
   await Parse.Config.save({ today })
   console.info('set today to', today)

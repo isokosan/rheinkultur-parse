@@ -24,6 +24,11 @@ Parse.Cloud.afterDelete(PLZ, ({ object: plz }) => {
 })
 
 // add all plzs to blacklisted-plzs upon pod start
-$query('PLZ').equalTo('nMR', true).distinct('objectId', { useMasterKey: true })
-  .then(plzs => redis.sadd('blacklisted-plzs', plzs))
-  .then(() => consola.info('synced blacklisted-plzs'))
+// const cacheBlacklistedPlzs = () => $query('PLZ')
+//   .equalTo('nMR', true)
+//   .distinct('objectId', { useMasterKey: true })
+//   .then(async (plzs) => {
+//     consola.info('syncing blacklisted-plzs cache', plzs)
+//     if (!plzs.length) return
+//     return redis.sadd('blacklisted-plzs', plzs)
+//   })

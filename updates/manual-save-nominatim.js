@@ -1,8 +1,10 @@
 require('./run')(async () => {
   let i = 0
-  await $query('Cube')
+  const query = $query('Cube')
     .notEqualTo('gp', null)
-    .equalTo('nominatim', null)
+    .equalTo('nominatimAddress', null)
+  const remaining = await query.count({ useMasterKey: true })
+  await query
     .select('gp')
     .eachBatch(async (cubes) => {
       for (const cube of cubes) {
@@ -15,7 +17,7 @@ require('./run')(async () => {
         await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
         i++
       }
-      console.log(i)
+      console.log('saved', i, 'out of', remaining)
     }, { useMasterKey: true })
   console.log('DONE', i)
 })
