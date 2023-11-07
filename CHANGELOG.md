@@ -1,3 +1,10 @@
+## [1.138.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.138.0...1.138.1) (2023-11-07)
+
+
+### Bug Fixes
+
+* enable requried vAt for approved in public media types ([0c902d1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0c902d15f6222af35ac4cda7838cbf5d5698dd0f))
+
 # [1.138.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.137.2...1.138.0) (2023-11-07)
 
 
