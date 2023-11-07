@@ -554,6 +554,7 @@ Parse.Cloud.define('search', async ({
     includes = [
       'objectId',
       'media',
+      'vAt',
       'str',
       'hsnr',
       'plz',
