@@ -56,6 +56,13 @@ const schemaDefinitions = {
       permissions: { type: 'Array' }
     }
   },
+  ApiToken: {
+    CLP: { ...readAuthOnly, ...writeAuthOnly },
+    fields: {
+      token: { type: 'String', required: true },
+      company: { type: 'Pointer', targetClass: 'Company' } // required in before-save
+    }
+  },
   Cache: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {

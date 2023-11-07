@@ -100,6 +100,7 @@ const initApp = async () => {
   app.disable('x-powered-by')
   app.use(expressLogger)
   app.use('/parse', parseServer.app)
+  app.use('/api', require('./api'))
   app.use('/exports', require('./exports'))
   app.use('/webhooks', require('./webhooks'))
   app.use('/test-services', require('./services/tests'))
