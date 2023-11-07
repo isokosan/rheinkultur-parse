@@ -1,3 +1,10 @@
+# [1.138.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.137.2...1.138.0) (2023-11-07)
+
+
+### Features
+
+* init api ([1eb7cbd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1eb7cbd1c5f28e6b1211773e4cdad38580caec00))
+
 ## [1.137.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.137.1...1.137.2) (2023-11-04)
 
 
