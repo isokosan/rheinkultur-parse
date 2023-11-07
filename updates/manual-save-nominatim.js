@@ -13,11 +13,15 @@ require('./run')(async () => {
           lat: latitude,
           lon: longitude
         })
+        if (nominatim.error) {
+          console.error(nominatim.error)
+          continue
+        }
         cube.set('nominatimAddress', nominatim.address)
         await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
         i++
       }
       console.log('saved', i, 'out of', remaining)
     }, { useMasterKey: true })
-  console.log('DONE', i)
+  console.log('Done saving nominatim addresses', i)
 })

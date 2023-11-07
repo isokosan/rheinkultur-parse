@@ -1747,4 +1747,81 @@ router.get('/credit-note-pdf', handleErrorAsync(async (req, res) => {
   }
 }))
 
+router.get('/cube-mismatches', handleErrorAsync(async (req, res) => {
+  const workbook = new excel.Workbook()
+  const fields = {
+    cubeId: { header: 'Gehäusetyp', width: 20 },
+    // str: { header: 'Straße', width: 15 },
+    // hsnr: { header: 'Hausnummer', width: 15 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 25 },
+    stateName: { header: 'Bundesland', width: 20 },
+    nominatimState: { header: 'Geo Bundesland', width: 20 },
+    taskListCount: { header: 'Abfahrtsliste', width: 20 }
+  }
+  const { columns, headerRowValues } = getColumnHeaders(fields)
+
+  const states = await $query('State').find({ useMasterKey: true })
+
+  function getStateName ({ state, 'ISO3166-2-lvl4': isoCode }) {
+    if (state) {
+      return state
+    }
+    if (isoCode) {
+      return states.find(({ id }) => id === isoCode.split('-')[1]).get('name')
+    }
+    return null
+  }
+
+  for (const state of states) {
+    const stateName = state.get('name')
+    const isoCode = 'DE-' + state.id
+    const worksheet = workbook.addWorksheet(stateName)
+    worksheet.columns = columns
+    const headerRow = worksheet.addRow(headerRowValues)
+    headerRow.font = { name: 'Calibri', bold: true, size: 9 }
+    headerRow.height = 24
+
+    const stateMismatchQuery = Parse.Query.or(
+      $query('Cube').notEqualTo('nominatimAddress.ISO3166-2-lvl4', null).notEqualTo('nominatimAddress.ISO3166-2-lvl4', isoCode),
+      $query('Cube').notEqualTo('nominatimAddress.state', null).notEqualTo('nominatimAddress.state', stateName)
+    )
+
+    let i = 0
+    let tl = 0
+    await stateMismatchQuery
+      .equalTo('state', state)
+      .notEqualTo('nominatimAddress', null)
+      .select(['plz', 'ort', 'state', 'nominatimAddress'])
+      .eachBatch(async (cubes) => {
+        for (const cube of cubes) {
+          const nominatimAddress = cube.get('nominatimAddress')
+          const shouldState = getStateName(nominatimAddress)
+          if (shouldState === stateName) { continue }
+          const taskListIds = await $query('TaskList').equalTo('cubeIds', cube.id).distinct('objectId', { useMasterKey: true })
+          taskListIds.length && consola.warn(taskListIds.length)
+          worksheet.addRow({
+            cubeId: cube.id,
+            ...cube.attributes,
+            stateName,
+            nominatimState: shouldState,
+            taskListCount: `${taskListIds.length || ''}`
+          })
+          taskListIds.length && (tl += taskListIds.length)
+          i++
+        }
+      }, { useMasterKey: true })
+    if (i === 0) {
+      workbook.removeWorksheet(worksheet.id)
+      continue
+    }
+    console.log(stateName, tl)
+    worksheet.name = `${stateName} ${i}` + (tl ? ` (${tl})` : '')
+  }
+  const filename = 'Wrong Bundesländer'
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
 module.exports = router
