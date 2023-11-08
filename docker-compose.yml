@@ -17,6 +17,7 @@ services:
       - redis
       - elastic
       - kibana
+      - html-to-pdf
     volumes:
      - ./:/app
     command: yarn dev
@@ -65,6 +66,13 @@ services:
     #   - es-network
     depends_on:
       - elastic
+  html-to-pdf:
+    container_name: html-to-pdf
+    image: muehlemannpopp/html-to-pdf
+    restart: always
+    ports:
+      - "4000:4000"
+
 networks:
   default:
     name: wawi-dev-network

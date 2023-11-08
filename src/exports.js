@@ -1752,7 +1752,7 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
   const production = await $getOrFail('Production', req.query.production)
   const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung.pdf'
   const url = `${process.env.WEBAPP_URL}/assembly-instructions/${production.id}?sid=${req.sessionToken}`
-  const fetchResponse = await fetch('https://wawi-api.isokosan.com/html-to-pdf', {
+  const fetchResponse = await fetch(process.env.HTML_TO_PDF_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
