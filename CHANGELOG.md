@@ -1,3 +1,10 @@
+## [1.139.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.139.0...1.139.1) (2023-11-08)
+
+
+### Bug Fixes
+
+* set pdf timeout to 10 minutes ([ea7847f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ea7847fca7444f2a41bbb5e9da8dae946eff628e))
+
 # [1.139.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.138.1...1.139.0) (2023-11-08)
 
 
