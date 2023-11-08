@@ -1751,10 +1751,17 @@ router.get('/credit-note-pdf', handleErrorAsync(async (req, res) => {
 router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
   const production = await $getOrFail('Production', req.query.production)
   const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung.pdf'
-  const webappUrl = 'https://wawi.rheinkultur-medien.de'
-  const url = 'https://wawi-api.isokosan.com/html-to-pdf?url=' + `${webappUrl}/assembly-instructions/${production.id}?sid=${req.sessionToken}`
-
-  const fetchResponse = await fetch(url)
+  const url = `${process.env.WEBAPP_URL}/assembly-instructions/${production.id}?sid=${req.sessionToken}`
+  const fetchResponse = await fetch('https://wawi-api.isokosan.com/html-to-pdf', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url,
+      pdfOptions: {
+        timeout: 10 * 60 * 1000 // 10 minutes
+      }
+    })
+  })
   if (fetchResponse.ok) {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     res.setHeader('Content-Type', 'application/pdf')
