@@ -1,3 +1,10 @@
+# [1.139.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.138.1...1.139.0) (2023-11-08)
+
+
+### Features
+
+* add html-to-pdf core ([3ffe6f7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3ffe6f707eb83896c10a4eeb6d064b6e048c5e5a))
+
 ## [1.138.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.138.0...1.138.1) (2023-11-07)
 
 
