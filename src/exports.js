@@ -7,6 +7,7 @@ Parse.serverURL = process.env.PUBLIC_SERVER_URL
 Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MASTER_KEY)
 
 const excel = require('exceljs')
+const fetch = require('node-fetch')
 
 const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
@@ -1745,6 +1746,22 @@ router.get('/credit-note-pdf', handleErrorAsync(async (req, res) => {
   } catch (error) {
     throw new Error(error.data.message)
   }
+}))
+
+router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
+  const production = await $getOrFail('Production', req.query.production)
+  const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung.pdf'
+  const webappUrl = 'https://wawi.rheinkultur-medien.de'
+  const url = 'https://wawi-api.isokosan.com/html-to-pdf?url=' + `${webappUrl}/assembly-instructions/${production.id}?sid=${req.sessionToken}`
+
+  const fetchResponse = await fetch(url)
+  if (fetchResponse.ok) {
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.setHeader('Content-Type', 'application/pdf')
+    fetchResponse.body.pipe(res)
+    return
+  }
+  res.status(fetchResponse.status).send('Failed to fetch the PDF.')
 }))
 
 router.get('/cube-mismatches', handleErrorAsync(async (req, res) => {
