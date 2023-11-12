@@ -1,3 +1,10 @@
+# [1.140.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.139.1...1.140.0) (2023-11-12)
+
+
+### Features
+
+* finish cube-data and flags ([b5f6e7b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b5f6e7bb38383dd36cb63061359bf66934ee64e6))
+
 ## [1.139.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.139.0...1.139.1) (2023-11-08)
 
 
