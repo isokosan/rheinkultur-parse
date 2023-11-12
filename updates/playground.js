@@ -1,4 +1,4 @@
-require('./run')(async () => {
+require('./run')(() => {
   // const key = 'sync_cube_statuses'
   // const key = 'reindex_cubes'
   // await Parse.Cloud.run('queue-jobs', { key }, { useMasterKey: true })
@@ -15,4 +15,5 @@ require('./run')(async () => {
   // const cube3 = await $query('Cube').notEqualTo('order.canceledAt', null).first({ useMasterKey: true })
   // console.log(cube3.get('order'))
 
+  return Parse.Cloud.run('play').then(console.log)
 })

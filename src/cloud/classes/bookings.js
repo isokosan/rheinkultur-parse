@@ -74,9 +74,11 @@ Parse.Cloud.beforeFind(Booking, ({ query, user }) => {
   query._include.includes('all') && query.include([
     'company',
     'companyPerson',
+    'cubeData',
     'production',
     'docs'
   ])
+  !query._include.includes('cubeData') && query.exclude('cubeData')
 })
 
 Parse.Cloud.afterFind(Booking, async ({ objects: bookings, query }) => {
@@ -397,9 +399,24 @@ Parse.Cloud.define('booking-update', async ({
 
 Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-  const booking = await $getOrFail(Booking, bookingId)
+  const booking = await $getOrFail(Booking, bookingId, 'cube')
   await validateBookingActivate(booking)
-  booking.set({ status: 3 })
+
+  // save cube data in time of finalization
+  const cube = booking.get('cube')
+  const cubeData = {
+    [cube.id]: {
+      hsnr: cube.get('hsnr'),
+      str: cube.get('str'),
+      plz: cube.get('plz'),
+      ort: cube.get('ort'),
+      stateId: cube.get('state').id,
+      media: cube.get('media'),
+      htId: cube.get('ht')?.id
+    }
+  }
+
+  booking.set({ status: 3, cubeData })
   const audit = { user, fn: 'booking-activate' }
   return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
@@ -409,6 +426,7 @@ Parse.Cloud.define('booking-set-cube-statuses', async ({ params: { id: bookingId
   return setBookingCubeStatus(booking)
 }, $internOrAdmin)
 
+// TODO: Make sure to give option to update cube data
 Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
   booking.set({ status: 2.1 })

@@ -153,6 +153,9 @@ const schemaDefinitions = {
       tags: { type: 'Array' },
       responsibles: { type: 'Array' },
 
+      // stored
+      cubeData: { type: 'Object' },
+
       // calculated
       cubeCount: { type: 'Number' },
       totalDuration: { type: 'Number' },
@@ -162,6 +165,11 @@ const schemaDefinitions = {
       monthlyMedia: { type: 'Object' }, // Monthly prices are set only when the company has no pricing model
 
       request: { type: 'Object' } // VP requests
+    },
+    indexes: {
+      noIndex: { no: 1 },
+      cubeIdsIndex: { cubeIds: 1 },
+      cubeIdsWithStatusIndex: { status: 1, cubeIds: 1 }
     }
   },
   Comment: {
@@ -278,6 +286,11 @@ const schemaDefinitions = {
       // calculated
       cubeCount: { type: 'Number' },
       totalDuration: { type: 'Number' }
+    },
+    indexes: {
+      noIndex: { no: 1 },
+      cubeIdsIndex: { cubeIds: 1 },
+      cubeIdsWithStatusIndex: { status: 1, cubeIds: 1 }
     }
   },
   Cube: {
@@ -304,14 +317,15 @@ const schemaDefinitions = {
       // hAt: { type: 'Date' }, // hiddenAt Date (has pair or other reason)
       pair: { type: 'Pointer', targetClass: 'Cube' }, // Cube pair, if filled this one will be hidden
 
-      // warnings
-      MBfD: { type: 'Boolean' }, // Boolean // promoted location (göferderter Standort)
-      PG: { type: 'Boolean' }, // Boolean // Privates Grundstück
-      Agwb: { type: 'Boolean' }, // Boolean // Aus grau wird bunt
-      htNM: { type: 'Boolean' }, // Boolean // Housing Type  nicht vermarktbar
-      SagO: { type: 'Boolean' }, // Boolean // Standort außerhalb geschlossener Ortschaft
-      TTMR: { type: 'Boolean' }, // Boolean // Town Talker / Moskito Rahmen
-      nMR: { type: 'String' }, // No Marketing Rights Reason, if any, in text format
+      flags: { type: 'Array' }, // testing out array format for warnings
+      // warnings (to be deprecated)
+      // MBfD: { type: 'Boolean' }, // Boolean // promoted location (göferderter Standort)
+      // PG: { type: 'Boolean' }, // Boolean // Privates Grundstück
+      // Agwb: { type: 'Boolean' }, // Boolean // Aus grau wird bunt
+      // htNM: { type: 'Boolean' }, // Boolean // Housing Type  nicht vermarktbar
+      // SagO: { type: 'Boolean' }, // Boolean // Standort außerhalb geschlossener Ortschaft
+      // TTMR: { type: 'Boolean' }, // Boolean // Town Talker / Moskito Rahmen
+      // nMR: { type: 'String' }, // No Marketing Rights Reason, if any, in text format
       // flyer: { type: 'Object' }, // For Sonderformate with start, end, companyId
 
       // photos
@@ -328,7 +342,8 @@ const schemaDefinitions = {
     },
     indexes: {
       orderKeyIndex: { caok: 1 },
-      futureOrderKeyIndex: { ffok: 1 }
+      futureOrderKeyIndex: { ffok: 1 },
+      flagsIndex: { flags: 1 }
     }
   },
   CubePhoto: {

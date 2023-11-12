@@ -1,4 +1,5 @@
 const client = require('@/services/elastic')
+const { errorFlagKeys } = require('@/cloud/cube-flags')
 
 const INDEXES = {
   'rheinkultur-streets-autocomplete': {
@@ -95,16 +96,8 @@ const INDEXES = {
           ? true
           : undefined,
 
-        // warnings
-        bPLZ: cube.get('bPLZ'),
-        PDGA: cube.get('PDGA'),
-        nMR: cube.get('nMR'),
-        MBfD: cube.get('MBfD'),
-        PG: cube.get('PG'),
-        Agwb: cube.get('Agwb'),
-        SagO: cube.get('SagO'),
-        TTMR: cube.get('TTMR'),
-        htNM: cube.get('htNM'),
+        // flags
+        flags: cube.get('flags'),
 
         scoutData: cube.get('scoutData'),
         klsId: cube.get('importData')?.klsId,
@@ -305,6 +298,7 @@ Parse.Cloud.define('search', async ({
     c,
     r,
     s,
+    flags,
     sm,
     ml,
     cId,
@@ -336,6 +330,7 @@ Parse.Cloud.define('search', async ({
   }
 
   s = s ? s.split(',').filter(Boolean) : []
+  flags = flags ? flags.split(',').filter(Boolean) : []
 
   // normalize media/htId
   if (htId === 'KVZ' || htId === 'MFG') {
@@ -343,7 +338,7 @@ Parse.Cloud.define('search', async ({
     htId = undefined
   }
   if (htId === 'htNM') {
-    s.push('htNM')
+    flags.push('htNM')
     htId = undefined
   }
 
@@ -475,15 +470,7 @@ Parse.Cloud.define('search', async ({
   // Nicht vermarktungsfähig
   s.includes('7') && bool.must.push({
     bool: {
-      should: [
-        { exists: { field: 'bPLZ' } },
-        { exists: { field: 'nMR' } },
-        { exists: { field: 'MBfD' } },
-        { exists: { field: 'PG' } },
-        { exists: { field: 'Agwb' } },
-        { exists: { field: 'htNM' } },
-        { exists: { field: 'SagO' } }
-      ],
+      should: errorFlagKeys.map(key => ({ term: { 'flags.keyword': key } })),
       minimum_should_match: 1
     }
   })
@@ -504,16 +491,10 @@ Parse.Cloud.define('search', async ({
   s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('pOk') && bool.must.push({ exists: { field: 'pOk' } })
   s.includes('pMulti') && bool.must.push({ exists: { field: 'pMulti' } })
-  s.includes('TTMR') && bool.must.push({ exists: { field: 'TTMR' } })
-  s.includes('htNM') && bool.must.push({ exists: { field: 'htNM' } })
-  s.includes('bPLZ') && bool.must.push({ exists: { field: 'bPLZ' } })
-  s.includes('PDGA') && bool.must.push({ exists: { field: 'PDGA' } })
-  s.includes('nMR') && bool.must.push({ exists: { field: 'nMR' } })
-  s.includes('MBfD') && bool.must.push({ exists: { field: 'MBfD' } })
-  s.includes('PG') && bool.must.push({ exists: { field: 'PG' } })
-  s.includes('Agwb') && bool.must.push({ exists: { field: 'Agwb' } })
-  s.includes('SagO') && bool.must.push({ exists: { field: 'SagO' } })
-  // s.includes('nStov') && bool.must_not.push({ match: { stovDate: '2023-04-21' } })
+
+  for (const key of flags) {
+    bool.must.push({ term: { 'flags.keyword': key } })
+  }
 
   if (sm) {
     const features = {}
@@ -880,7 +861,7 @@ Parse.Cloud.define('booked-cubes', async () => {
 // Before is only defined if address is changing
 const indexCubes = async (cubes) => {
   const dataset = INDEXES['rheinkultur-cubes'].datasetMap(cubes)
-  consola.info('indexing:', dataset.length, dataset[0]._id)
+  consola.info('indexing:', dataset.length, 'cubes')
   if (!dataset.length) { return }
   return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-cubes', _id } }, doc]) })
 }

@@ -1006,42 +1006,6 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   return contract.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('contract-finalize-preview', async ({ params: { id: contractId } }) => {
-  const contract = await $getOrFail(Contract, contractId)
-  await validateContractFinalize(contract)
-  const cubeIds = contract.get('cubeIds')
-  const otherOrders = {}
-  for (const cubeId of cubeIds) {
-    const contracts = await $query('Contract')
-      .notEqualTo('objectId', contractId)
-      .equalTo('cubeIds', cubeId)
-      .greaterThan('status', 0)
-      .lessThan('status', 3)
-      .find({ useMasterKey: true })
-    for (const contract of contracts) {
-      const orderNo = contract.get('no')
-      if (!otherOrders[orderNo]) {
-        otherOrders[orderNo] = { contract, cubeIds: [] }
-      }
-      otherOrders[orderNo].cubeIds.push(cubeId)
-    }
-    const bookings = await $query('Booking')
-      .equalTo('cubeIds', cubeId)
-      .greaterThan('status', 0)
-      .lessThan('status', 3)
-      .find({ useMasterKey: true })
-    for (const booking of bookings) {
-      const orderNo = booking.get('no')
-      if (!otherOrders[orderNo]) {
-        otherOrders[orderNo] = { booking, cubeIds: [] }
-      }
-      otherOrders[orderNo].cubeIds.push(cubeId)
-    }
-  }
-
-  return { otherOrders: Object.values(otherOrders) }
-}, $internOrAdmin)
-
 Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, user, context: { seedAsId, skipCubeValidations } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
@@ -1058,7 +1022,7 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
   // save cube data in time of finalization
   const cubeData = await $query('Cube')
     .containedIn('objectId', contract.get('cubeIds'))
-    .select(['hsnr', 'str', 'plz', 'ort', 'state', 'media', 'ht', 'hti'])
+    .select(['hsnr', 'str', 'plz', 'ort', 'state', 'media', 'ht'])
     .limit(contract.get('cubeIds').length)
     .find({ useMasterKey: true })
     .then(cubes => cubes.reduce((acc, cube) => {
@@ -1120,10 +1084,11 @@ Parse.Cloud.define('contract-check-revertable', async ({ params: { id: contractI
     .catch((error) => ({ error: error.message }))
 }, $internOrAdmin)
 
+// TODO: Make sure to give option to update cube data
 Parse.Cloud.define('contract-undo-finalize', async ({ params: { id: contractId }, user }) => {
   const contract = await $getOrFail(Contract, contractId, 'company')
   await checkIfContractRevertible(contract)
-  contract.set({ cubeData: null, status: 2.1 })
+  contract.set({ status: 2.1 })
   const audit = { user, fn: 'contract-undo-finalize' }
   await contract.save(null, { useMasterKey: true, context: { audit } })
   await $query('Invoice')

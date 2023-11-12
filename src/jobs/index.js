@@ -108,6 +108,10 @@ const updateJobs = {
     name: 'Versenden von E-Mails mit ausgestellten Rechnungen.',
     description: 'Sends emails with issued invoices, that have an email but none were sent. (Past 3 days)',
     timeoutMinutes: 120
+  },
+  sync_flags: {
+    name: 'Sync Flags',
+    timeoutMinutes: 120
   }
 }
 

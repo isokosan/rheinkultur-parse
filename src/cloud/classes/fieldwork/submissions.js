@@ -90,7 +90,7 @@ async function fetchSubmission (taskListId, cubeId, SubmissionClass, submissionI
 }
 
 async function notifySubmissionRejected (type, taskList, submission, cube, rejectionReason) {
-  const placeKey = [cube.get('state').id, cube.get('ort')].join(':')
+  const placeKey = cube.get('pk')
   return Promise.all((taskList.get('scouts') || []).map((scout) => $notify({
     user: scout,
     identifier: 'task-submission-rejected',

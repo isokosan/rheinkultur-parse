@@ -31,7 +31,8 @@ const {
     tags: { fetchTags },
     'housing-types': { fetchHousingTypes },
     'gradual-price-maps': { fetchGradualPriceMaps }
-  }
+  },
+  'cube-flags': { CUBE_FLAGS: cubeFlags }
 } = require('require-dir')('./', {
   recurse: true
 })
@@ -79,20 +80,6 @@ Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
   return dictionary
 })
 
-// TOLATER: Save this in database and make editable
-global.$PDGA = {
-  'NW:Aachen': true,
-  'NW:Alsdorf': true,
-  'NW:Baesweiler': true,
-  'NW:Eschweiler': true,
-  'NW:Herzogenrath': true,
-  'NW:Monschau': true,
-  'NW:Roetgen': true,
-  'NW:Simmerath': true,
-  'NW:Stolberg (Rhld.)': true,
-  'NW:Würselen': true
-}
-
 Parse.Cloud.define('enums', () => ({
   version,
   accTypes,
@@ -111,7 +98,7 @@ Parse.Cloud.define('enums', () => ({
   interestRates,
   taskListStatuses,
   fieldworkStatuses,
-  PDGA: Object.keys($PDGA)
+  cubeFlags
 }), { requireUser: true })
 
 Parse.Cloud.define('counts', async ({ user }) => {
@@ -134,3 +121,32 @@ Parse.Cloud.define('counts', async ({ user }) => {
   }
   return counts
 }, $internOrAdmin)
+
+Parse.Cloud.define('play', async () => {
+  consola.warn('here')
+  const cubeId = 'TLK-22431A11'
+  // const members = await redis.smembers(cubeId)
+  // consola.info(members)
+  const response = []
+  const contracts = await $query('Contract')
+    .equalTo('cubeIds', cubeId)
+    .select(['no', 'status'])
+    .find({ useMasterKey: true })
+  const bookings = await $query('Booking')
+    .equalTo('cubeIds', cubeId)
+    .select(['no', 'status'])
+    .find({ useMasterKey: true })
+
+  for (const item of [...contracts, ...bookings]) {
+    response.push({
+      id: item.id,
+      no: item.get('no'),
+      status: item.get('status')
+      // startsAt: item.get('startsAt'),
+      // endsAt: item.get('endsAt')
+    })
+  }
+  return response
+  // await redis.sadd(cubeId, ...response.map(item => item.id))
+  // consola.success('OK')
+})

@@ -342,7 +342,7 @@ async function processOccupiedCubes (start, end) {
   consola.info(`Processed ${PG.length} PG cubes`)
 
   const Agwb = await $query('Cube')
-    .notEqualTo('Agwb', null)
+    .equalTo('flags', 'Agwb')
     .equalTo('order', null)
     .distinct('objectId', { useMasterKey: true })
   const AgwbCubeSummaries = await getCubeSummaries(Agwb)

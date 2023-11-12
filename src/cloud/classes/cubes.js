@@ -1,6 +1,7 @@
 const { getNewNo, getActiveCubeOrder, getFutureCubeOrder } = require('@/shared')
 const redis = require('@/services/redis')
 const { indexCube, unindexCube, indexCubeBookings } = require('@/cloud/search')
+const { PDGA, errorFlagKeys, warningFlagKeys, editableFlagKeys } = require('@/cloud/cube-flags')
 
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
@@ -9,16 +10,23 @@ const Cube = Parse.Object.extend('Cube', {
     if (this.get('futureOrder')) { return 5 }
     if (this.get('pair')) { return 9 }
     if (this.get('dAt')) { return 8 }
-    if (this.get('bPLZ') || this.get('nMR') || this.get('MBfD') || this.get('PG') || this.get('Agwb') || this.get('htNM') || this.get('SagO')) {
+    const flags = this.get('flags') || []
+    if (errorFlagKeys.some(key => flags.includes(key))) {
       return 7
     }
-    // When doing so should change the query of availability, or mark this as 4 instead of 6
-    // if (this.get('TTMR') || this.get('PDGA')) {
-    //   return 4
-    // }
+    if (warningFlagKeys.some(key => this.get(key))) {
+      return 4
+    }
     return 0
   }
 })
+
+function setFlag (flags = [], flag, flagged) {
+  if (flagged) {
+    return [...flags, flag]
+  }
+  return flags.filter(f => f !== flag)
+}
 
 Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating, orderStatusCheck } }) => {
   if (!(/^[A-Za-z0-9ÄÖÜäöüß*_/()-]+$/.test(cube.id))) {
@@ -41,11 +49,8 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     cube.set('media', ht.get('media'))
   }
 
-  if (cube.get('lc') === 'TLK') {
-    await redis.sismember('blacklisted-plzs', cube.get('plz')) ? cube.set('bPLZ', true) : cube.unset('bPLZ')
-    const placeKey = [cube.get('state')?.id, cube.get('ort')].join(':')
-    $PDGA[placeKey] ? cube.set('PDGA', true) : cube.unset('PDGA')
-  }
+  // unique flags
+  cube.get('flags')?.length ? cube.set('flags', [...new Set(cube.get('flags'))]) : cube.unset('flags')
 
   if (updating === true) { return }
 
@@ -56,13 +61,17 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     futureOrder ? cube.set('futureOrder', futureOrder) : cube.unset('futureOrder')
   }
 
+  if (cube.get('lc') === 'TLK') {
+    cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz')))))
+    cube.set('flags', setFlag(cube.get('flags'), 'PDGA', Boolean(PDGA[cube.get('pk')])))
+  }
+
   cube.get('order') ? cube.set('caok', cube.get('order').className + '$' + cube.get('order').objectId) : cube.unset('caok')
   cube.get('futureOrder') ? cube.set('ffok', cube.get('futureOrder').className + '$' + cube.get('futureOrder').objectId) : cube.unset('ffok')
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
   await indexCubeBookings(cube)
-  // make sure computed values are unset and not persisted in DB
-  cube.unset('s').unset('bPLZ').unset('PDGA').unset('klsId')
+  cube.unset('s').unset('klsId')
 })
 
 function getARPair (cubeId) {
@@ -141,19 +150,19 @@ Parse.Cloud.beforeFind(Cube, async ({ query, user, master }) => {
 const PUBLIC_FIELDS = ['media', 'hti', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2', 'vAt']
 Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   const isPublic = !user && !master
+  // everything that is set here is necessary for indexing when the cube is saved
   for (const cube of cubes) {
     if (cube.get('lc') === 'TLK') {
       cube.set('klsId', cube.get('importData')?.klsId)
-      await redis.sismember('blacklisted-plzs', cube.get('plz')) ? cube.set('bPLZ', true) : cube.unset('bPLZ')
-      const placeKey = [cube.get('state')?.id, cube.get('ort')].join(':')
-      $PDGA[placeKey] ? cube.set('PDGA', true) : cube.unset('PDGA')
+      cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz')))))
+      cube.set('flags', setFlag(cube.get('flags'), 'PDGA', Boolean(PDGA[cube.get('pk')])))
     }
 
     cube.set('s', cube.getStatus())
     if (cube.get('hti') && ['59', '82', '82 A', '82 B', '82 C', '83', '92'].includes(cube.get('hti'))) {
       cube.set('hti', `KVZ ${cube.get('hti')}`)
     }
-    cube.get('htNM') && cube.set('hti', 'Nicht vermarktbar')
+    cube.get('flags')?.includes('htNM') && cube.set('hti', 'Nicht vermarktbar')
     if (isPublic) {
       for (const key of Object.keys(cube.attributes)) {
         if (!PUBLIC_FIELDS.includes(key)) {
@@ -162,6 +171,31 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
       }
       cube.get('s') === 5 ? cube.set('s', 7) : cube.set('s', 0)
       continue
+    }
+
+    if (query._include.includes('draftOrders')) {
+      const contracts = await $query('Contract')
+        .equalTo('cubeIds', cube.id)
+        .greaterThanOrEqualTo('status', 0)
+        .lessThanOrEqualTo('status', 2.1)
+        .find({ useMasterKey: true })
+        .then(contracts => contracts.map(contract => ({
+          className: 'Contract',
+          ...contract.toJSON(),
+          earlyCanceledAt: contract.get('earlyCancellations')?.[cube.id]
+        })))
+      const bookings = await $query('Booking')
+        .equalTo('cubeIds', cube.id)
+        .greaterThanOrEqualTo('status', 0)
+        .lessThanOrEqualTo('status', 2.1)
+        .notEqualTo(`earlyCancellations.${cube.id}`, true)
+        .find({ useMasterKey: true })
+        .then(bookings => bookings.map(booking => ({
+          className: 'Booking',
+          ...booking.toJSON(),
+          earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id]
+        })))
+      cube.set('draftOrders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
     }
 
     if (query._include.includes('orders')) {
@@ -183,6 +217,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
           earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id]
         })))
       cube.set('orders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
+      cube.set('draftOrders', cube.get('orders').filter(order => order.status >= 0 && order.status <= 2.1))
     }
 
     if (query._include.includes('scoutSubmissions')) {
@@ -275,20 +310,24 @@ Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) 
 }, $internOrAdmin)
 
 Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, user }) => {
+  // LEFT HERE: testing ht updates
   const cube = await $getOrFail(Cube, id)
   if (housingTypeId === 'htNM') {
     const changes = { htId: [cube.get('ht')?.id, 'htNM'] }
-    if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
     const audit = { user, fn: 'cube-update', data: { changes } }
-    cube.unset('ht').set('htNM', true)
+    cube.unset('ht')
+    const flags = cube.get('flags') || []
+    flags.push('htNM')
+    cube.set({ flags })
     return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
   }
+  const htNM = cube.get('flags')?.includes('htNM')
   const ht = housingTypeId ? await $getOrFail('HousingType', housingTypeId) : null
-  const currentHtId = cube.get('htNM') ? 'htNM' : (cube.get('ht')?.id || null)
+  const currentHtId = htNM ? 'htNM' : (cube.get('ht')?.id || null)
   if (currentHtId === (housingTypeId || null)) { throw new Error('Keine Änderung.') }
-  const changes = { htId: [cube.get('htNM') ? 'htNM' : cube.get('ht')?.id, housingTypeId] }
+  const changes = { htId: [htNM ? 'htNM' : cube.get('ht')?.id, housingTypeId] }
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
-  cube.unset('htNM')
+  cube.set('flags', (cube.get('flags') || []).filter(flag => flag !== 'htNM'))
   housingTypeId
     ? cube.set({ ht, media: ht.get('media') })
     : cube.unset('ht')
@@ -324,19 +363,20 @@ Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) 
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('cube-update-warnings', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('cube-update-flags', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
   const cube = await $getOrFail(Cube, id)
-  const updates = {}
-  for (const field of ['MBfD', 'nMR', 'TTMR', 'PG', 'Agwb', 'SagO']) {
-    if (params[field] !== undefined) {
-      updates[field] = params[field] || undefined
+  let flags = cube.get('flags') || []
+  const changes = {}
+  for (const key of editableFlagKeys) {
+    const wasFlagged = flags.includes(key) || undefined
+    const isFlagged = params[key] || undefined
+    if (wasFlagged !== isFlagged) {
+      changes[key] = [wasFlagged, isFlagged]
+      isFlagged ? flags.push(key) : (flags = flags.filter(flag => flag !== key))
     }
   }
-  const changes = $changes(cube, updates)
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
-  for (const field of Object.keys(updates)) {
-    updates[field] ? cube.set({ [field]: updates[field] }) : cube.unset(field)
-  }
+  cube.set({ flags })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
@@ -377,7 +417,7 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   if (cube.get('dAt')) {
     throw new Error('CityCube kann nicht verifiziert werden, weil er ausgeblendet ist. ')
   }
-  if (!cube.get('ht') && !cube.get('htNM')) {
+  if (!cube.get('ht') && !cube.get('flags')?.includes('htNM')) {
     throw new Error('Bitte Gehäusetyp auswählen.')
   }
   const { state, str, plz, ort } = cube.attributes
@@ -389,33 +429,38 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('cube-undo-verify', async ({ params: { id, force }, user }) => {
-  const cube = await $getOrFail(Cube, id)
+Parse.Cloud.define('cube-undo-verify-preview', async ({ params: { id }, user }) => {
+  const cube = await $getOrFail(Cube, id, 'orders')
   if (!cube.get('vAt')) { throw new Error('CityCube ist nicht verifiziert.') }
   // do not allow unverifying if the cube was in a past production with assembly, or contract etc (temporary)
 
-  if (cube.get('order') && !force) {
-    const { className, objectId } = cube.get('order')
-    const order = await $getOrFail(className, objectId, 'production')
-    if (className === 'Contract' && order.get('pricingModel') === 'fixed') {
-      throw new Error('CityCubes that are contracted with fixed pricing cannot be unverified. Please contact an administrator.')
-    }
-    if (order.get('production')) {
-      throw new Error('CityCubes that are in active contracts/bookings which have production cannot be unverified. Please contact an administrator.')
-    }
+  const orders = []
+  for (const item of cube.get('orders')) {
+    const order = await $getOrFail(item.className, item.objectId, ['production', 'company', 'cubeData'])
+    const fixedContractPricing = item.className === 'Contract' && order.get('pricingModel') === 'fixed'
+    // TOTEST: media based fixed pricing
+    const fixedBookingPricing = item.className === 'Booking' && order.get('company').get('distributor')
+    console.log(order.get('company').get('distributor'))
+    const hasProduction = Boolean(order.get('production'))
+    const hasPrintPackage = hasProduction && Boolean(order.get('production').get('printPackages')?.[cube.id])
+    const hasPrintFile = hasPrintPackage && Boolean(order.get('production').get('printFiles')?.[cube.id])
+    orders.push({
+      className: order.className,
+      ...order.toJSON(),
+      savedData: order.get('cubeData')?.[cube.id],
+      fixedContractPricing,
+      fixedBookingPricing,
+      hasProduction,
+      hasPrintPackage,
+      hasPrintFile
+    })
   }
-  if (cube.get('futureOrder') && !force) {
-    const { className, objectId } = cube.get('futureOrder')
-    const order = await $getOrFail(className, objectId, 'production')
-    console.log(order)
-    if (className === 'Contract' && order.get('pricingModel') === 'fixed') {
-      throw new Error('CityCubes that are contracted with fixed pricing cannot be unverified. Please contact an administrator.')
-    }
-    if (order.get('production')) {
-      throw new Error('CityCubes that are in active contracts/bookings which have production cannot be unverified. Please contact an administrator.')
-    }
-  }
+  return orders.length ? orders : true
+}, $internOrAdmin)
 
+Parse.Cloud.define('cube-undo-verify', async ({ params: { id, force }, user }) => {
+  const cube = await $getOrFail(Cube, id)
+  if (!cube.get('vAt')) { throw new Error('CityCube ist bereits nicht verifiziert.') }
   cube.set('vAt', null)
   const audit = { user, fn: 'cube-undo-verify' }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
@@ -424,7 +469,7 @@ Parse.Cloud.define('cube-undo-verify', async ({ params: { id, force }, user }) =
 Parse.Cloud.define('cube-hide', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id)
   if (cube.get('vAt') || cube.get('contract')) {
-    throw new Error('CityCube kann nicht ausgeblendet werden, weil er verifiziert oder in einem Vertrag ist.')
+    throw new Error(`CityCube ${id} kann nicht ausgeblendet werden, weil er verifiziert oder in einem Vertrag ist.`)
   }
   cube.set({ dAt: new Date() })
   const audit = { user, fn: 'cube-hide' }

@@ -44,8 +44,6 @@ module.exports = {
     $pk: true,
     $parsePk: true,
     // global variables in memory
-    $bPLZ: true,
-    $PDGA: true,
     $countries: true
   },
   // add your custom rules here
