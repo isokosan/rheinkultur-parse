@@ -1,7 +1,7 @@
 const { sum } = require('lodash')
 const { normalizeDateString, normalizeString, contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const { round2, round5, priceString } = require('@/utils')
-const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setContractCubeStatuses } = require('@/shared')
+const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setContractCubeStatuses, getLastRemovedCubeIds } = require('@/shared')
 const { generateContract } = require('@/docs')
 const sendMail = require('@/services/email')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
@@ -60,7 +60,8 @@ Parse.Cloud.beforeFind(Contract, ({ query }) => {
     'production',
     'docs',
     'tags',
-    'gradual'
+    'gradual',
+    'lastRemovedCubeIds'
   ])
   !query._include.includes('cubeData') && query.exclude('cubeData')
 })
@@ -77,6 +78,9 @@ Parse.Cloud.afterFind(Contract, async ({ objects: contracts, query }) => {
     }
     if (query._include.includes('production')) {
       contract.set('production', await $query('Production').equalTo('contract', contract).first({ useMasterKey: true }))
+    }
+    if (query._include.includes('lastRemovedCubeIds') && contract.get('status') >= 0 && contract.get('status') <= 2.1) {
+      contract.set('lastRemovedCubeIds', await getLastRemovedCubeIds('Contract', contract.id))
     }
     contract.set('commissionRate', getContractCommissionForYear(contract, year))
   }
@@ -834,7 +838,7 @@ Parse.Cloud.define('contract-rate-selection', async ({ params: { id: contractId,
   return contract.save(null, { useMasterKey: true })
 }, $internOrAdmin)
 
-Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthlyMedia, production, ...params }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthlyMedia, production, printNotes, ...params }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
   const {
@@ -981,22 +985,28 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   if (production) {
     const { billing, printPackages, interestRate, prices, extras, totals } = production
     const cubeIds = contract.get('cubeIds') || []
-    // clean print packages for missing cubes in contract
+    // clean print packages and printNotes for missing cubes in contract
     for (const cubeId of Object.keys(printPackages || {})) {
       if (!cubeIds.includes(cubeId)) {
         delete printPackages[cubeId]
+      }
+    }
+    for (const cubeId of Object.keys(printNotes || {})) {
+      if (!cubeIds.includes(cubeId)) {
+        delete printNotes[cubeId]
       }
     }
     productionChanges = existingProduction
       ? $changes(existingProduction, {
         billing,
         printPackages,
+        printNotes,
         prices: billing ? prices : null,
         extras: billing ? extras : null
       })
       : { added: true }
     production = existingProduction || new (Parse.Object.extend('Production'))()
-    production.set({ contract, billing, printPackages, interestRate: null, prices: null, extras: null, totals: null })
+    production.set({ contract, billing, printPackages, printNotes, interestRate: null, prices: null, extras: null, totals: null })
     if (billing) {
       const installments = billing > 1 ? billing : null
       let productionTotal = 0

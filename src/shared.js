@@ -514,6 +514,22 @@ async function validateSystemStatus () {
   }
 }
 
+async function getLastRemovedCubeIds(className, objectId) {
+  const removedCubeIds = []
+  const lastAudits = await $query('Audit')
+    .equalTo('itemClass', className)
+    .equalTo('itemId', objectId)
+    .notEqualTo('data.cubeChanges.removed', null)
+    .select('data')
+    .limit(10)
+    .descending('createdAt')
+    .find({ useMasterKey: true })
+  for (const audit of lastAudits) {
+    removedCubeIds.push(...audit.get('data').cubeChanges.removed)
+  }
+  return [...new Set(removedCubeIds)]
+}
+
 module.exports = {
   getDocumentTotals,
   getTaxRatePercentage,
@@ -527,5 +543,6 @@ module.exports = {
   getFutureCubeOrder,
   setContractCubeStatuses,
   setBookingCubeStatus,
-  validateSystemStatus
+  validateSystemStatus,
+  getLastRemovedCubeIds
 }
