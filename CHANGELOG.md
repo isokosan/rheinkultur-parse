@@ -1,3 +1,10 @@
+# [1.141.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.140.0...1.141.0) (2023-11-13)
+
+
+### Features
+
+* add cube features to contract and company exports ([4533cc1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4533cc1a7b2c4d1a2e8f1c738933a76bfa48f235))
+
 # [1.140.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.139.1...1.140.0) (2023-11-12)
 
 
