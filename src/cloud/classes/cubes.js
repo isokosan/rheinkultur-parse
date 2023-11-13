@@ -431,15 +431,11 @@ Parse.Cloud.define('cube-verify', async ({ params: { id }, user }) => {
 Parse.Cloud.define('cube-undo-verify-preview', async ({ params: { id }, user }) => {
   const cube = await $getOrFail(Cube, id, 'orders')
   if (!cube.get('vAt')) { throw new Error('CityCube ist nicht verifiziert.') }
-  // do not allow unverifying if the cube was in a past production with assembly, or contract etc (temporary)
-
   const orders = []
   for (const item of cube.get('orders')) {
     const order = await $getOrFail(item.className, item.objectId, ['production', 'company', 'cubeData'])
     const fixedContractPricing = item.className === 'Contract' && order.get('pricingModel') === 'fixed'
-    // TOTEST: media based fixed pricing
-    const fixedBookingPricing = item.className === 'Booking' && order.get('company').get('distributor')
-    console.log(order.get('company').get('distributor'))
+    // const fixedBookingPricing = item.className === 'Booking' && order.get('company').get('distributor')
     const hasProduction = Boolean(order.get('production'))
     const hasPrintPackage = hasProduction && Boolean(order.get('production').get('printPackages')?.[cube.id])
     const hasPrintFile = hasPrintPackage && Boolean(order.get('production').get('printFiles')?.[cube.id])
@@ -448,7 +444,7 @@ Parse.Cloud.define('cube-undo-verify-preview', async ({ params: { id }, user }) 
       ...order.toJSON(),
       savedData: order.get('cubeData')?.[cube.id],
       fixedContractPricing,
-      fixedBookingPricing,
+      // fixedBookingPricing,
       hasProduction,
       hasPrintPackage,
       hasPrintFile

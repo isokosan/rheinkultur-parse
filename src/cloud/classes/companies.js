@@ -168,6 +168,25 @@ Parse.Cloud.define('company-update-distributor', async ({
   }, user, context: { seedAsId }
 }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
+  fixedPriceMap = $cleanDict(fixedPriceMap)
+  if (pricingModel === 'default') {
+    pricingModel = undefined
+    fixedPrice = undefined
+    fixedPriceMap = undefined
+    commission = undefined
+    periodicInvoicing = undefined
+  }
+
+  if (pricingModel !== 'fixed') {
+    fixedPrice = undefined
+    fixedPriceMap = undefined
+  }
+  if (pricingModel !== 'commission') {
+    commission = undefined
+  }
+  if (pricingModel !== 'zero') {
+    periodicInvoicing = undefined
+  }
 
   // cleanup period invoice object
   if (periodicInvoicing?.extraCols) {
@@ -201,13 +220,7 @@ Parse.Cloud.define('company-update-distributor', async ({
   // TODO: Check audits
   if (distributor && isDistributor) {
     audit.fn = 'company-update-distributor'
-    const data = {}
-    for (const field of Object.keys(form)) {
-      if (!isEqual(distributor[field], form[field])) {
-        data[field] = [cloneDeep(distributor[field]), form[field]]
-        distributor[field] = form[field]
-      }
-    }
+    const data = { changes: $changes(distributor, form, true) }
     company.set({ distributor: form })
     audit.data = data
   }
