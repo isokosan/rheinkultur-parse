@@ -1,3 +1,11 @@
+# [1.142.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.141.1...1.142.0) (2023-11-13)
+
+
+### Features
+
+* add selection ratings ([529363c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/529363cbb22b9c612ce515d86cd82c629776bfc0))
+* get last removed cube ids in contract all requests with no status ([a0474e0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a0474e0342cc819ab8182a5e77651375c7998a1d))
+
 ## [1.141.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.141.0...1.141.1) (2023-11-13)
 
 
