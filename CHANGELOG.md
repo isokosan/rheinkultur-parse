@@ -1,3 +1,10 @@
+## [1.141.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.141.0...1.141.1) (2023-11-13)
+
+
+### Bug Fixes
+
+* distributor settings audits ([5bf1146](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5bf114606dd316adaea94b67e35f536c705e5f90))
+
 # [1.141.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.140.0...1.141.0) (2023-11-13)
 
 
