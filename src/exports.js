@@ -56,6 +56,12 @@ function getColumnHeaders (headers) {
   }
   return { columns, headerRowValues }
 }
+
+const parseCubeFeatures = (features = {}) => Object.keys(features).reduce((acc, key) => {
+  acc[key] = CUBE_FEATURES[key].values[features[key]] || ''
+  return acc
+}, {})
+
 const alignCenter = { alignment: { horizontal: 'center' } }
 const alignRight = { alignment: { horizontal: 'right' } }
 const dateStyle = { numFmt: 'dd.mm.yyyy', ...alignRight }
@@ -136,9 +142,12 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
         }
       }, { useMasterKey: true })
   }
+
+  // Add cube features
   for (const cubeFeature of Object.keys(CUBE_FEATURES)) {
     fields[cubeFeature] = { header: CUBE_FEATURES[cubeFeature].label, width: 30 }
   }
+
   const { columns, headerRowValues } = getColumnHeaders(fields)
   worksheet.columns = columns
 
@@ -323,7 +332,8 @@ async function getContractRows (contract, { housingTypes, states }, exportCubeId
       autoExtends,
       monthly,
       pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(Boolean).join(': '),
-      canceledEarly
+      canceledEarly,
+      ...parseCubeFeatures(cube.get('scoutData'))
     })
   }
   return rows
@@ -335,7 +345,7 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
   const states = await fetchStates()
   const workbook = new excel.Workbook()
 
-  const { columns, headerRowValues } = getColumnHeaders({
+  const fields = {
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
     campaignNo: { header: 'Kampagnennr.', width: 20 },
@@ -351,7 +361,14 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
     duration: { header: 'Laufzeit', width: 10, style: alignRight },
     monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
     pp: { header: 'Belegungspaket', width: 20 }
-  })
+  }
+
+  // Add cube features
+  for (const cubeFeature of Object.keys(CUBE_FEATURES)) {
+    fields[cubeFeature] = { header: CUBE_FEATURES[cubeFeature].label, width: 30 }
+  }
+
+  const { columns, headerRowValues } = getColumnHeaders(fields)
 
   const contract = await $getOrFail('Contract', req.params.contractId)
   const cubeIds = req.query.cubeIds ? decodeURIComponent(req.query.cubeIds || '').split(',') : null
@@ -381,7 +398,8 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
   const workbook = new excel.Workbook()
 
   const company = await $getOrFail('Company', req.params.companyId)
-  const { columns, headerRowValues } = getColumnHeaders({
+
+  const fields = {
     orderNo: { header: 'Auftragsnr.', width: 20 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
@@ -399,8 +417,14 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     autoExtends: { header: 'Autoverl.', width: 15, style: alignRight },
     monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
     pp: { header: 'Belegungspaket', width: 20 }
-  })
+  }
 
+  // Add cube features
+  for (const cubeFeature of Object.keys(CUBE_FEATURES)) {
+    fields[cubeFeature] = { header: CUBE_FEATURES[cubeFeature].label, width: 30 }
+  }
+
+  const { columns, headerRowValues } = getColumnHeaders(fields)
   const worksheet = workbook.addWorksheet(safeName(company.get('name')))
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
