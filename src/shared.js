@@ -514,7 +514,7 @@ async function validateSystemStatus () {
   }
 }
 
-async function getLastRemovedCubeIds(className, objectId) {
+async function getLastRemovedCubeIds (className, objectId) {
   const removedCubeIds = []
   const lastAudits = await $query('Audit')
     .equalTo('itemClass', className)
