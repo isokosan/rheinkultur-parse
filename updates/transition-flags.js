@@ -66,34 +66,41 @@ const dict = {
 }
 
 require('./run')(async () => {
-  const boolKeys = [
-    'MBfD',
-    'bPLZ',
-    'SSgB',
-    'PG',
-    'DS',
-    'Agwb',
-    // nMR
-    'htNM',
-    'SagO',
-    // warnings
-    'TTMR',
-    'PDGA',
-    'SaeK'
-  ]
-  const pendingBoolsQuery = Parse.Query.or(...boolKeys.map(key => $query('Cube').equalTo(key, true)))
-    .equalTo('flags', null)
-  const remaining = await pendingBoolsQuery.count({ useMasterKey: true })
-  let i = 0
-  await pendingBoolsQuery.eachBatch(async (cubes) => {
-    for (const cube of cubes) {
-      cube.set('flags', boolKeys.filter(key => cube.get(key)))
-      await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
-      i++
-    }
-    console.log('transitioned', i, 'bools out of', remaining)
-  }, { useMasterKey: true })
-  console.log('DONE BOOLS')
+  // const boolKeys = [
+  //   'MBfD',
+  //   // 'bPLZ',
+  //   'SSgB',
+  //   'PG',
+  //   'DS',
+  //   'Agwb',
+  //   // nMR    'htNM',
+  //   'SagO',
+  //   // warnings
+  //   'TTMR',
+  //   'PDGA',
+  //   'SaeK'
+  // ]
+
+  // const pendingBoolsQuery = Parse.Query.or(...boolKeys.map(key => $query('Cube').equalTo(key, true)))
+  //   .notEqualTo('flagsDone', true)
+  // // const pendingBoolsQuery = $query('Cube')
+  // //   .equalTo('SagO', true)
+  // //   .notEqualTo('flagsDone', true)
+  // const remaining = await pendingBoolsQuery.count({ useMasterKey: true })
+  // console.log('flagsDone to transition:', remaining)
+  // let i = 0
+  // await pendingBoolsQuery.eachBatch(async (cubes) => {
+  //   for (const cube of cubes) {
+  //     const addFlags = boolKeys.filter(key => cube.get(key))
+  //     const flags = cube.get('flags') || []
+  //     cube.set('flags', [...flags, ...addFlags])
+  //     cube.set('flagsDone', true)
+  //     await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
+  //     i++
+  //   }
+  //   console.log('transitioned', i, 'SagO out of', remaining)
+  // }, { useMasterKey: true })
+  // console.log('DONE BOOLS')
 
   const pendingStrsQuery = $query('Cube').notEqualTo('nMR', null)
   // await pendingStrsQuery.distinct('nMR', { useMasterKey: true }).then(console.log)
@@ -229,7 +236,6 @@ require('./run')(async () => {
     }
   }, { useMasterKey: true })
   console.log('DONE concealeds, count:', concealedCount)
-
   // The rest of the reasons we want to save as comments and mark as kVR
   // const rest = Object.keys(dict).filter(key => !key)
 })

@@ -310,7 +310,6 @@ Parse.Cloud.define('cube-update-media', async ({ params: { id, media }, user }) 
 }, $internOrAdmin)
 
 Parse.Cloud.define('cube-update-ht', async ({ params: { id, housingTypeId }, user }) => {
-  // LEFT HERE: testing ht updates
   const cube = await $getOrFail(Cube, id)
   if (housingTypeId === 'htNM') {
     const changes = { htId: [cube.get('ht')?.id, 'htNM'] }

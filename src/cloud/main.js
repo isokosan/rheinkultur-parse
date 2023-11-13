@@ -121,32 +121,3 @@ Parse.Cloud.define('counts', async ({ user }) => {
   }
   return counts
 }, $internOrAdmin)
-
-Parse.Cloud.define('play', async () => {
-  consola.warn('here')
-  const cubeId = 'TLK-22431A11'
-  // const members = await redis.smembers(cubeId)
-  // consola.info(members)
-  const response = []
-  const contracts = await $query('Contract')
-    .equalTo('cubeIds', cubeId)
-    .select(['no', 'status'])
-    .find({ useMasterKey: true })
-  const bookings = await $query('Booking')
-    .equalTo('cubeIds', cubeId)
-    .select(['no', 'status'])
-    .find({ useMasterKey: true })
-
-  for (const item of [...contracts, ...bookings]) {
-    response.push({
-      id: item.id,
-      no: item.get('no'),
-      status: item.get('status')
-      // startsAt: item.get('startsAt'),
-      // endsAt: item.get('endsAt')
-    })
-  }
-  return response
-  // await redis.sadd(cubeId, ...response.map(item => item.id))
-  // consola.success('OK')
-})
