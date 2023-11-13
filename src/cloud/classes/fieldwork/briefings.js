@@ -295,28 +295,39 @@ Parse.Cloud.define('briefing-report', async ({ params: { id: briefingId }, user 
 Parse.Cloud.define('briefing-generate-contract', async ({ params: { id: briefingId }, user }) => {
   const briefing = await $getOrFail('Briefing', briefingId, ['company'])
   const company = briefing.get('company')
-  const taskListsQuery = $query('TaskList').equalTo('briefing', briefing)
+  const getTaskListsQuery = () => $query('TaskList').equalTo('briefing', briefing)
 
   // pre-approved verified cubes
-  const adminApprovedCubeIds = await taskListsQuery.distinct('adminApprovedCubeIds', { useMasterKey: true })
+  const adminApprovedCubeIds = await getTaskListsQuery().distinct('adminApprovedCubeIds', { useMasterKey: true })
 
   // approved submissions
   const approvedCubeIds = await $query('ScoutSubmission')
-    .matchesQuery('taskList', taskListsQuery)
+    .matchesQuery('taskList', getTaskListsQuery())
     .equalTo('status', 'approved')
     .notEqualTo('form.media', null)
     .distinct('cube', { useMasterKey: true })
     .then(cubes => cubes.map(cube => cube.objectId))
 
-  // return { adminApprovedCubeIds, approvedCubeIds }
+  let selectionRatings = {}
+  await getTaskListsQuery().select('selectionRatings').eachBatch((lists) => {
+    for (const list of lists) {
+      selectionRatings = {
+        ...selectionRatings,
+        ...(list.get('selectionRatings') || {})
+      }
+    }
+  }, { useMasterKey: true })
+
   const Contract = Parse.Object.extend('Contract')
   const contract = new Contract({
     cubeIds: [...adminApprovedCubeIds, ...approvedCubeIds].sort(),
+    selectionRatings,
     status: 2,
     company,
     briefing,
     campaignNo: briefing.get('name')
   })
+
   if (company) {
     const { paymentType, dueDays } = company.attributes
     const { billingCycle, pricingModel, invoicingAt } = company.get('contractDefaults') || {}

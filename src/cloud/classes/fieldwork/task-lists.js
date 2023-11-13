@@ -459,6 +459,22 @@ Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, 
   return taskList.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
+// used in marklists to rate selections
+Parse.Cloud.define('task-list-rate-selection', async ({ params: { id: taskListId, cubeId, selectionRating }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  const selectionRatings = await taskList.get('selectionRatings') || {}
+  if (selectionRatings[cubeId] === selectionRating) {
+    throw new Error('Selektion bereits gesetzt.')
+  }
+  if (selectionRating === '⚪') {
+    delete selectionRatings[cubeId]
+  } else {
+    selectionRatings[cubeId] = selectionRating
+  }
+  taskList.set({ selectionRatings })
+  return taskList.save(null, { useMasterKey: true })
+}, $internOrAdmin)
+
 // Used in RkFieldworkTable to display counts
 Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, objectId } } }) => {
   return $query('TaskList')

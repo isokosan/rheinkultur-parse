@@ -252,6 +252,7 @@ const schemaDefinitions = {
       cancelNotes: { type: 'String' },
 
       cubeIds: { type: 'Array', default: [] },
+      selectionRatings: { type: 'Object' }, // used to store info on how good a selected cube is
 
       // contract specific
       address: { type: 'Pointer', targetClass: 'Address', required: true },
@@ -717,6 +718,7 @@ const schemaDefinitions = {
       status: { type: 'Number', required: true },
       cubeIds: { type: 'Array', default: [] },
       cubeCount: { type: 'Number', default: 0 },
+      selectionRatings: { type: 'Object' }, // used to store info on how good a selected cube is
 
       // only for scout and parent briefing
       scoutAddedCubeIds: { type: 'Array' }, // // case for briefings when scout adds extra cube (briefings)

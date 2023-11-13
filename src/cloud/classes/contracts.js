@@ -816,6 +816,24 @@ Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, .
   return contract.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
+Parse.Cloud.define('contract-rate-selection', async ({ params: { id: contractId, cubeId, selectionRating }, user }) => {
+  const contract = await $getOrFail(Contract, contractId)
+  if (contract.get('status') >= 3) {
+    throw new Error('Selektionen von finalisierte Verträge können nicht mehr geändert werden.')
+  }
+  const selectionRatings = await contract.get('selectionRatings') || {}
+  if (selectionRatings[cubeId] === selectionRating) {
+    throw new Error('Selektion bereits gesetzt.')
+  }
+  if (selectionRating === '⚪') {
+    delete selectionRatings[cubeId]
+  } else {
+    selectionRatings[cubeId] = selectionRating
+  }
+  contract.set({ selectionRatings })
+  return contract.save(null, { useMasterKey: true })
+}, $internOrAdmin)
+
 Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthlyMedia, production, ...params }, user, context: { seedAsId } }) => {
   if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
 
