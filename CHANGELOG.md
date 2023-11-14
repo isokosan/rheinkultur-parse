@@ -1,3 +1,10 @@
+## [1.142.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.142.1...1.142.2) (2023-11-14)
+
+
+### Bug Fixes
+
+* control report comment trim bug ([93dbd3e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/93dbd3e7215e0ec4c8b5bcf2b51cdd3c02ee7791))
+
 ## [1.142.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.142.0...1.142.1) (2023-11-14)
 
 
