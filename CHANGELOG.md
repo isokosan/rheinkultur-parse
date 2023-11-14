@@ -1,3 +1,10 @@
+## [1.142.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.142.0...1.142.1) (2023-11-14)
+
+
+### Bug Fixes
+
+* last removed cubes limit ([0155a9d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0155a9dc4b75b66054ab34bd65a96345f6fcab83))
+
 # [1.142.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.141.1...1.142.0) (2023-11-13)
 
 
