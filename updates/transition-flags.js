@@ -7,11 +7,14 @@ const dict = {
   'Außerhalb geschlossener Ortschaft!': 'SagO',
   'Standort außerhalb geschlossener Ortschaften': 'SagO',
   'außerhalb geschlossener Ortschaft': 'SagO',
+  'Cube steht an der Landstraße': 'SagO',
+  'Standort befindet sich an einer Bundesstraße': 'SagO',
 
   // DENKMALSCHUTZ: we make a new reason
   'reines Wohngebiet - Denkmalschutz': 'DS',
   Denkmalschutz: 'DS',
   'Denkmalschutz !!': 'DS',
+  'Anlage ist nicht vermarktungsfähig (Beschwerde Ordnungsamt)': 'DS',
   'möglicher Denkmalgeschützter Bereich!': 'DS', // http://localhost:8080/cubes/list?id=96612A46#cube=TLK-96612A46
 
   // PRIVATES GRUNDSTUCK
@@ -28,16 +31,17 @@ const dict = {
   'Gehäusetyp nicht belegbar.': 'htNM',
   'Kasten nicht belegbar.': 'htNM',
   'Werbefläche zu klein': 'htNM',
+  KVZ92: 'htNM', // ???
 
   // SHOULD BE MARKED NOT FOUND
   'Kasten nicht auffindbar': 'dAt',
   'Nicht auffindbar': 'dAt',
 
   // KASTEN NICHT BELEGBAR / NUTZBAR? should we make a new reason?
-  'Standortqualität nicht empfehlenswert!': '',
-  'Werblich nicht nutzbar!': '',
-  'Kasten ist eingezäunt': '',
-  'Nicht belegbar': '',
+  'Standortqualität nicht empfehlenswert!': 'Swnn',
+  'Werblich nicht nutzbar!': 'Swnn',
+  'Kasten ist eingezäunt': 'Swnn',
+  'Nicht belegbar': 'Swnn',
 
   // NICHT EINSEHBAR ?
   'Cube ist nicht einsehbar.': 'concealed', // SHOULD BE MARKED FEATURE: visibility bad
@@ -45,24 +49,20 @@ const dict = {
   'Cube nicht einsehbar.': 'concealed', // SHOULD BE MARKED FEATURE: visibility bad
   'Nicht einsehbar': 'concealed', // SHOULD BE MARKED FEATURE: visibility bad
 
-  // WHAT IS THIS?
-  KVZ92: '', // ???
-
   // NO REASON
-  'Anlage ist nicht vermarktungsfähig': 'nMR',
-  'Anlage nicht vermarktungsfähig': 'nMR',
+  'Anlage ist nicht vermarktungsfähig': 'Swnn',
+  'Anlage nicht vermarktungsfähig': 'Swnn',
 
   // CUSTOM REASON
-  'Anlage ist nicht vermarktungsfähig (Beschwerde Ordnungsamt)': 'nMR',
-  'Standort soll seitens der Telekom aus der werblichen Vermarktung genommen werden': 'nMR',
   'nicht vermarktungsfähig (Beschwerde Ordnungsamt)': 'nMR',
   'Bei der Telekom unter der Hs-Nr. 29 verzeichnet // Martina Simhardt 07.03.22': 'nMR',
   'Beseitigungsforderung der Stadt Lübeck von dem 09.08.2022': 'nMR',
   'lt. Telekom Standort der Stadt': 'nMR',
-  'Cube steht an der Landstraße': 'nMR',
   '06/04/22: Stadt Espelkamp hat Werberecht': 'nMR',
   'Dez. 2021: Befindet sich lt. Telekom-Mitarbeiter an der Freiherr-vom-Stein Str. 1 ggü': 'nMR',
-  'Keine Anlage der Telekom!!! Gehört der DOKOM Gesellschaft für Telekommunikation mbH': 'nMR'
+  'Keine Anlage der Telekom!!! Gehört der DOKOM Gesellschaft für Telekommunikation mbH': 'nMR',
+
+  'Standort soll seitens der Telekom aus der werblichen Vermarktung genommen werden': 'delete'
 }
 
 require('./run')(async () => {
@@ -106,6 +106,7 @@ require('./run')(async () => {
   // await pendingStrsQuery.distinct('nMR', { useMasterKey: true }).then(console.log)
   const pendingCount = await pendingStrsQuery.count({ useMasterKey: true })
   console.log('nMRs to transition:', pendingCount)
+  if (!pendingCount) { return }
   console.log(await pendingStrsQuery.select('nMR').find({ useMasterKey: true }).then(cubes => cubes.reduce((dict, cube) => {
     dict[cube.id] = cube.get('nMR')
     return dict
@@ -172,6 +173,21 @@ require('./run')(async () => {
   }, { useMasterKey: true })
   console.log('DONE SagOs, count:', SagOsCount)
 
+  // Swnns
+  let SwnnsCount = 0
+  const Swnns = Object.keys(dict).filter(key => dict[key] === 'Swnn')
+  const SwnnsQuery = $query('Cube').containedIn('nMR', Swnns)
+  await SwnnsQuery.eachBatch(async (cubes) => {
+    for (const cube of cubes) {
+      const flags = cube.get('flags') || []
+      flags.push('Swnn')
+      cube.set('flags', flags).unset('nMR')
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
+      SwnnsCount++
+    }
+  }, { useMasterKey: true })
+  console.log('DONE Swnns, count:', SwnnsCount)
+
   // TTMRs
   let TTMRsCount = 0
   const TTMRs = Object.keys(dict).filter(key => dict[key] === 'TTMR')
@@ -236,6 +252,33 @@ require('./run')(async () => {
     }
   }, { useMasterKey: true })
   console.log('DONE concealeds, count:', concealedCount)
-  // The rest of the reasons we want to save as comments and mark as kVR
-  // const rest = Object.keys(dict).filter(key => !key)
+
+  // delete
+  let deleteCount = 0
+  const deletes = Object.keys(dict).filter(key => dict[key] === 'delete')
+  const deletesQuery = $query('Cube').containedIn('nMR', deletes)
+  await deletesQuery.eachBatch(async (cubes) => {
+    for (const cube of cubes) {
+      cube.unset('nMR')
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
+      deleteCount++
+    }
+  }, { useMasterKey: true })
+  console.log('DONE deletes, count:', deleteCount)
+
+  // The rest of the reasons we want to save as comments and mark as SF (Sonderfall)
+  let nMRsCount = 0
+  const nMRs = Object.keys(dict).filter(key => dict[key] === 'nMR')
+  const nMRsQuery = $query('Cube').containedIn('nMR', nMRs)
+  await nMRsQuery.eachBatch(async (cubes) => {
+    for (const cube of cubes) {
+      await Parse.Cloud.run('comment-create', { itemClass: 'Cube', itemId: cube.id, text: cube.get('nMR') }, { useMasterKey: true })
+      const flags = cube.get('flags') || []
+      flags.push('SF')
+      cube.set('flags', flags).unset('nMR')
+      await $saveWithEncode(cube, null, { useMasterKey: true })
+      nMRsCount++
+    }
+  }, { useMasterKey: true })
+  console.log('DONE nMRs, count:', nMRsCount)
 })

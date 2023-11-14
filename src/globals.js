@@ -5,10 +5,15 @@ global.moment = require('moment')
 moment.locale('de')
 const { difference, isEqual } = require('lodash')
 
-global.$cleanDict = (dict) => {
+// dict: dictionary to clean
+// allowedKeys: if populated removes all keys that dont match (eg used in cleaning cubeIds that were removed)
+global.$cleanDict = (dict, allowedKeys) => {
   if (!dict) { return null }
-  for (const key in dict) {
+  for (const key of Object.keys(dict)) {
     if (dict[key] === undefined) {
+      delete dict[key]
+    }
+    if (allowedKeys && !allowedKeys.includes(key)) {
       delete dict[key]
     }
   }

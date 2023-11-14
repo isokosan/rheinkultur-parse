@@ -887,14 +887,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   if (pricingModel === 'gradual') {
     monthlyMedia = null
   }
-  if (Object.keys(monthlyMedia || {}).length) {
-    for (const cubeId of Object.keys(monthlyMedia || {})) {
-      if (!cubeIds.includes(cubeId)) {
-        delete monthlyMedia[cubeId]
-      }
-    }
-  }
-  monthlyMedia = monthlyMedia && Object.keys(monthlyMedia).length ? monthlyMedia : null
+  monthlyMedia = $cleanDict(monthlyMedia, cubeIds)
 
   const changes = $changes(contract, {
     invoicingAt,
@@ -1046,6 +1039,9 @@ Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, use
     const invoice = new Invoice(item)
     await invoice.save(null, { useMasterKey: true, context: { audit: { fn: 'invoice-generate' } } })
   }
+
+  // cleanup selectionRatings
+  contract.set('selectionRatings', $cleanDict(contract.get('selectionRatings'), contract.get('cubeIds')))
 
   // save cube data in time of finalization
   const cubeData = await $query('Cube')

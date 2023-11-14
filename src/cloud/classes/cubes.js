@@ -25,7 +25,7 @@ function setFlag (flags = [], flag, flagged) {
   if (flagged) {
     return [...flags, flag]
   }
-  return flags.filter(f => f !== flag)
+  return [...new Set(flags.filter(f => f !== flag))]
 }
 
 Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating, orderStatusCheck } }) => {
@@ -362,13 +362,13 @@ Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) 
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('cube-update-flags', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('cube-update-flags', async ({ params: { id, flags: form }, user, context: { seedAsId } }) => {
   const cube = await $getOrFail(Cube, id)
   let flags = cube.get('flags') || []
   const changes = {}
   for (const key of editableFlagKeys) {
     const wasFlagged = flags.includes(key) || undefined
-    const isFlagged = params[key] || undefined
+    const isFlagged = form.includes(key) || undefined
     if (wasFlagged !== isFlagged) {
       changes[key] = [wasFlagged, isFlagged]
       isFlagged ? flags.push(key) : (flags = flags.filter(flag => flag !== key))

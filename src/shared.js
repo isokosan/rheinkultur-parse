@@ -514,8 +514,8 @@ async function validateSystemStatus () {
   }
 }
 
-async function getLastRemovedCubeIds (className, objectId) {
-  const removedCubeIds = []
+async function getLastRemovedCubeIds (className, objectId, limit = 25) {
+  let removedCubeIds = []
   const lastAudits = await $query('Audit')
     .equalTo('itemClass', className)
     .equalTo('itemId', objectId)
@@ -525,9 +525,13 @@ async function getLastRemovedCubeIds (className, objectId) {
     .descending('createdAt')
     .find({ useMasterKey: true })
   for (const audit of lastAudits) {
-    removedCubeIds.push(...audit.get('data').cubeChanges.removed)
+    removedCubeIds = [...new Set([...removedCubeIds, ...audit.get('data').cubeChanges.removed])]
+    if (removedCubeIds.length > limit) {
+      removedCubeIds = removedCubeIds.slice(0, limit - 1)
+      break
+    }
   }
-  return [...new Set(removedCubeIds)]
+  return removedCubeIds
 }
 
 module.exports = {

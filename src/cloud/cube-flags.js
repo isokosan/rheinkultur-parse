@@ -16,6 +16,7 @@ const CUBE_FLAGS = {
   MBfD: {
     value: 'MBfD',
     label: 'geförderter Standort (MBfD)',
+    description: 'Standort durch Landesmittel finanziert. Werbliche Nutzung untersagt.',
     level: 'error',
     editable: true
   },
@@ -23,14 +24,28 @@ const CUBE_FLAGS = {
     value: 'bPLZ',
     label: 'PLZ auf der Blacklist',
     level: 'error',
-    editable: false
+    lessors: ['TLK'],
+    description: 'Vermarktungsrecht liegt nicht bei RMV. Angabe könnte falsch sein.',
+    editable: false,
+    disabled: true
   },
   SSgB: {
     value: 'SSgB',
     label: 'Ströer Stadtgebiet Berlin',
     level: 'error',
     lessors: ['TLK'],
-    description: 'CityCubes from TLK can only be marketed to Kinetic.'
+    description: 'Vermarktungsrecht liegt bei Ströer.',
+    editable: false,
+    disabled: true
+  },
+  PDGA: {
+    value: 'PDGA',
+    label: 'PDG Aachen',
+    level: 'error',
+    lessors: ['TLK'],
+    description: 'PDG ist der Vermarkter. Standorte vor Belegung PDG melden.: \n' + Object.keys(PDGA).map($parsePk).map(({ ort }) => ort).join(', '),
+    editable: false,
+    disabled: true
   },
   PG: {
     value: 'PG',
@@ -50,18 +65,28 @@ const CUBE_FLAGS = {
     level: 'error',
     editable: true
   },
-  // WORK IN PROGRESS
-  // kVr: {
-  //   value: 'kVr',
-  //   label: 'kein Vermarktungsrecht',
-  //   level: 'error',
-  //   editable: true
-  // },
-  // NOT MARKETABLE
+  SF: {
+    value: 'SF',
+    label: 'Sonderfall',
+    description: 'Beispiele: Verfügung Stadt, Ornungsamt, Telekom Vertrag mit Stadt, etc. - Bitte Kommentarfeld beachten.',
+    level: 'error',
+    editable: true
+  },
+
+  Swnn: {
+    value: 'Swnn',
+    label: 'Standort werblich nicht nutzbar.',
+    description: 'Beispiele: Standort in Hecke, unterirdisch, eingezäunt, etc. - Bitte Kommentarfeld beachten.',
+    editable: true,
+    level: 'error'
+  },
   htNM: {
     value: 'htNM',
     label: 'Gehäusetyp nicht vermarktbar',
-    level: 'error'
+    description: 'Gehäusetyp ungeeignet für Werbezwecke. Eintrag manuell erfolgt.',
+    level: 'error',
+    editable: null,
+    disabled: true
   },
   SagO: {
     value: 'SagO',
@@ -75,21 +100,17 @@ const CUBE_FLAGS = {
     value: 'TTMR',
     label: 'Moskito Rahmen (Town Talker)',
     level: 'warning',
-    editable: true,
-    description: 'Moskito Rahmen need to be removed from a CityCube before it can be marketed.'
-  },
-  PDGA: {
-    value: 'PDGA',
-    label: 'PDG Aachen',
-    level: 'warning',
-    description: 'CityCubes in the following territories should be first consulted: \n' + Object.keys(PDGA).map($parsePk).map(({ ort }) => ort).join('\n')
+    lessors: ['TLK'],
+    description: 'Nach Buchung sofort Meldung an TT, Rahmen muss von TT entfernt werden.',
+    editable: true
   },
   SaeK: {
     value: 'SaeK',
-    label: 'Steht auf einem Kreisverkehr',
+    label: 'Steht in einem Kreisverkehr',
     level: 'warning',
-    editable: true,
-    description: 'CityCubes from TLK can only be marketed to Kinetic.'
+    lessors: ['TLK'],
+    description: 'CityCubes können ausschließlich von Kinetic gebucht werden.',
+    editable: true
   }
 }
 

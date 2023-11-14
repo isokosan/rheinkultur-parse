@@ -23,13 +23,7 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
     'printFiles',
     'printNotes'
   ]) {
-    const obj = production.get(key) || {}
-    for (const cubeId of Object.keys(obj)) {
-      if (!cubeIds.includes(cubeId)) {
-        delete obj[cubeId]
-      }
-    }
-    production.set(key, obj)
+    production.set(key, $cleanDict(production.get(key), cubeIds))
   }
 
   const total = round2(sum(Object.values(production.get('totals') || {})))
