@@ -364,6 +364,10 @@ Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) 
 
 Parse.Cloud.define('cube-update-flags', async ({ params: { id, flags: form }, user, context: { seedAsId } }) => {
   const cube = await $getOrFail(Cube, id)
+  // TODO: Make sure paired flags are synced
+  if (cube.get('pair')) {
+    throw new Error('Please update the pair instead.')
+  }
   let flags = cube.get('flags') || []
   const changes = {}
   for (const key of editableFlagKeys) {

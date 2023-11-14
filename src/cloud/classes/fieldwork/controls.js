@@ -539,7 +539,7 @@ Parse.Cloud.define('control-report-submission', async ({ params: { id: reportId,
   }
   const { include, comments, cost } = form
   submissions[submissionId] = {
-    comments: comments.trim(),
+    comments: comments?.trim(),
     cost,
     status: include ? 'include' : 'exclude'
   }
