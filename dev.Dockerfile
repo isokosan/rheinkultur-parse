@@ -48,6 +48,8 @@ RUN ldconfig
 
 RUN apt-get install -y ghostscript graphicsmagick imagemagick
 
+RUN npm i -g node-gyp@latest && npm config set node_gyp "/usr/local/lib/node_modules/node-gyp/bin/node-gyp.js"
+
 # This has no affect since the package.json is not yet inside the working directory as docker compose has not yet mapped the volume
 # RUN rm -rf node_modules
 # RUN npm install -g npm@10.2.0

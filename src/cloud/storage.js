@@ -20,7 +20,7 @@ const getThumbnail = async (file) => {
       quality: 70,
       density: 36
     }
-    const base64 = await fromBase64(await file.getData(), options).bulk(-1, true)
+    const base64 = await fromBase64(await file.getData(), options).bulk(-1, { responseType: 'base64' })
       .then(pages => pages.map(page => page.base64))
       .then(mergeImages)
     return new Parse.File('thumb.png', { base64 }, 'image/png', { thumb: 'true' })
