@@ -1,3 +1,10 @@
+# [1.144.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.143.0...1.144.0) (2023-11-15)
+
+
+### Features
+
+* fieldwork-parent archive status ([6e83ae7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6e83ae7e36142c0f4ffd901bb508ea86715ade41))
+
 # [1.143.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.142.2...1.143.0) (2023-11-14)
 
 
