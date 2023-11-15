@@ -60,11 +60,13 @@ async function getStatusAndCounts ({ briefing, control, disassembly }) {
   if (briefing) {
     counts.approvable = 0
   }
+
+  let allArchived = null
   await $query('TaskList')
     .equalTo('briefing', briefing)
     .equalTo('control', control)
     .equalTo('disassembly', disassembly)
-    .select(['status', 'counts'])
+    .select(['status', 'counts', 'archivedAt'])
     .eachBatch((taskLists) => {
       for (const taskList of taskLists) {
         const status = taskList.get('status')
@@ -73,9 +75,12 @@ async function getStatusAndCounts ({ briefing, control, disassembly }) {
         for (const key of Object.keys(counts)) {
           counts[key] += listCounts[key] || 0
         }
+        if (allArchived === false) { continue }
+        allArchived == null && (allArchived = true)
+        allArchived === true && !taskList.get('archivedAt') && (allArchived = false)
       }
     }, { useMasterKey: true })
-  const status = getParentStatus(briefing || control || disassembly, statuses)
+  const status = allArchived ? 5 : getParentStatus(briefing || control || disassembly, statuses)
   return { status, counts }
 }
 
@@ -261,7 +266,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.get('status') < 4 && taskList.get('archivedAt') && taskList.set('archivedAt', null)
 })
 
-Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts, locationCleanup } }) => {
+Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, notifyScouts, locationCleanup, skipSyncParentStatus } }) => {
   await indexTaskList(taskList)
   $audit(taskList, audit)
   const placeKey = taskList.get('pk')
@@ -331,6 +336,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
     await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   }
   // Not sure if this will degrade performance
+  if (skipSyncParentStatus) { return }
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')
   await parent.save(null, { useMasterKey: true, context: { syncStatus: true } })
 })
@@ -694,11 +700,11 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
   await taskList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('task-list-archive', async ({ params: { id: taskListId }, user }) => {
+Parse.Cloud.define('task-list-archive', async ({ params: { id: taskListId, skipSyncParentStatus }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (!taskList.get('status')) { throw new Error('Draft task lists cannot be archived') }
   const audit = { fn: 'task-list-archive', user }
-  await taskList.set('archivedAt', new Date()).save(null, { useMasterKey: true, context: { audit } })
+  await taskList.set('archivedAt', new Date()).save(null, { useMasterKey: true, context: { audit, skipSyncParentStatus } })
   return { message: 'Abfahrtsliste archiviert.' }
 }, $fieldworkManager)
 
@@ -718,12 +724,12 @@ Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) =>
 }, $fieldworkManager)
 
 // check if location has tasks remaining
-Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId }, user }) => {
+Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId, skipSyncParentStatus }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   const changes = { taskStatus: [taskList.get('status'), 4.1] }
   taskList.set({ status: 4.1 })
   const audit = { user, fn: 'task-list-mark-complete', data: { changes } }
-  await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+  await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true, skipSyncParentStatus } })
   return {
     data: taskList.get('status'),
     message: 'Liste als erledigt markiert.'

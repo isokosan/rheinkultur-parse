@@ -235,3 +235,42 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { companyI
     force
   })
 }, { requireUser: true })
+
+Parse.Cloud.define('fieldwork-parent-statuses', async ({ params: { itemClass, itemId }, user }) => {
+  const parent = await $getOrFail(itemClass, itemId)
+  const getTaskListsQuery = () => $query('TaskList').equalTo(itemClass.toLowerCase(), parent)
+  const statuses = {}
+  await getTaskListsQuery()
+    .select('status')
+    .eachBatch(async (lists) => {
+      for (const list of lists) {
+        const status = list.get('status')
+        statuses[status] = (statuses[status] || 0) + 1
+      }
+    }, { useMasterKey: true })
+  return statuses
+}, $fieldworkManager)
+
+Parse.Cloud.define('fieldwork-parent-archive', async ({ params: { itemClass, itemId }, user }) => {
+  const parent = await $getOrFail(itemClass, itemId)
+  let i = 0
+  const getTaskListsQuery = () => $query('TaskList').equalTo(itemClass.toLowerCase(), parent)
+
+  if (await getTaskListsQuery().equalTo('status', 0).count({ useMasterKey: true })) {
+    throw new Parse.Error(400, 'Draft task lists cannot be archived')
+  }
+  const sessionToken = user.getSessionToken()
+  await getTaskListsQuery()
+    .equalTo('archivedAt', null)
+    .select('objectId')
+    .eachBatch(async (lists) => {
+      for (const list of lists) {
+        await Parse.Cloud.run('task-list-mark-complete', { id: list.id, skipSyncParentStatus: true }, { sessionToken })
+        await Parse.Cloud.run('task-list-archive', { id: list.id, skipSyncParentStatus: true }, { sessionToken })
+        i++
+      }
+    }, { useMasterKey: true })
+  const audit = { fn: 'fieldwork-parent-archive', user, data: { i } }
+  await parent.save(null, { useMasterKey: true, context: { audit, syncStatus: true } })
+  return i
+}, $fieldworkManager)

@@ -150,7 +150,8 @@ module.exports.FIELDWORK_STATUSES = {
   1: 'Geplant',
   2: 'Vorbereitet',
   3: 'In Bearbeitung',
-  4: 'Erledigt'
+  4: 'Erledigt',
+  5: 'Archiviert'
 }
 
 module.exports.CUBE_FEATURES = {
