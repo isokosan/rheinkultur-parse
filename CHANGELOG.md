@@ -1,3 +1,10 @@
+## [1.145.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.0...1.145.1) (2023-11-17)
+
+
+### Bug Fixes
+
+* remove all flag remnants ([dc0584a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dc0584a03398ad4f57053cd6b18ec34bcb750784))
+
 # [1.145.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.144.0...1.145.0) (2023-11-17)
 
 
