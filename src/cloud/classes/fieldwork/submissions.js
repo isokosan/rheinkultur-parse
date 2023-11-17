@@ -14,7 +14,7 @@ Parse.Cloud.afterFind(ControlSubmission, async ({ query, objects: submissions })
       const query = $query(className)
         .containedIn('objectId', ids)
         .limit(ids.length)
-        .select(['no', 'status', 'motive', 'externalOrderNo', 'campaignNo'])
+        .select(['no', 'status', 'motive', 'externalOrderNo', 'campaignNo', 'startsAt', 'endsAt', 'initialDuration', 'extendedDuration', 'earlyCancellations'])
       for (const item of await query.find({ useMasterKey: true })) {
         orders[[item.className, item.id].join('$')] = {
           ...item.attributes,

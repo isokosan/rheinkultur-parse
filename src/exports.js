@@ -272,8 +272,7 @@ router.get('/hts', handleErrorAsync(async (req, res) => {
 
 const startOfUtcDate = val => val ? moment.utc(val).startOf('day').toDate() : undefined
 
-function getCubeOrderDates (cube, order) {
-  const { startsAt, endsAt, earlyCancellations, initialDuration, extendedDuration } = order.attributes
+function getCubeOrderDates (cube, { startsAt, endsAt, earlyCancellations, initialDuration, extendedDuration }) {
   const earlyCanceledAt = earlyCancellations?.[cube.id]
   const canceledEarly = Boolean(earlyCanceledAt)
   if (earlyCanceledAt === true) {
@@ -308,7 +307,7 @@ async function getContractRows (contract, { housingTypes, states }, exportCubeId
   exportCubeIds = exportCubeIds ? exportCubeIds.filter(id => cubeIds.includes(id)) : cubeIds
   const cubes = await $query('Cube').containedIn('objectId', exportCubeIds).limit(exportCubeIds.length).find({ useMasterKey: true })
   for (const cube of cubes) {
-    const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract)
+    const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract.attributes)
     const monthly = getCubeMonthlyMedia(cube, contract)
     const autoExtends = contract.get('autoExtendsBy')
       ? ((contract.get('canceledAt') || canceledEarly) ? 'nein (gekündigt)' : 'ja')
@@ -1016,6 +1015,7 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
     plz: { header: 'PLZ', width: 10 },
     ort: { header: 'Ort', width: 20 },
     stateName: { header: 'Bundesland', width: 20 },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
     condition: { header: 'Zustand', width: 20 },
     comments: { header: 'Kommentar', width: 20 },
     cost: { header: 'Reperaturkosten', width: 20, style: priceStyle }
@@ -1040,6 +1040,7 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
   for (const submission of submissions) {
     const cube = submission.get('cube')
     const { no: orderNo, motive, externalOrderNo, campaignNo } = submission.get('order')
+    console.log(submission.get('order'))
     worksheet.addRow({
       objectId: cube.id,
       orderNo,
@@ -1052,6 +1053,7 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
       plz: cube.get('plz'),
       ort: cube.get('ort'),
       stateName: states[cube.get('state')?.id]?.name || '',
+      ...getCubeOrderDates(cube, submission.get('order')),
       condition: REPORT_CONDITIONS[submission.get('condition')] || '',
       comments: report.get('submissions')[submission.id].comments || submission.comments || '',
       cost: report.get('submissions')[submission.id].cost
@@ -1064,7 +1066,7 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
   totalRow.height = 24
   totalRow.font = { bold: true, size: 12 }
 
-  const filename = safeName(report.get('control').get('name'))
+  const filename = safeName('Schadenlist ' + report.get('control').get('name'))
   res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
@@ -1637,7 +1639,7 @@ router.get('/bookings', handleErrorAsync(async (req, res) => {
         ...booking.get('cube').attributes,
         htCode: housingTypes[booking.get('cube').get('ht')?.id]?.name || booking.get('cube').get('hti') || booking.get('cube').get('media') || '',
         stateName: states[booking.get('cube').get('state').id]?.name || '',
-        ...getCubeOrderDates(booking.get('cube'), booking),
+        ...getCubeOrderDates(booking.get('cube'), booking.attributes),
         periodStart: dateString(req.query.f),
         periodEnd: dateString(req.query.t),
         autoExtends: booking.get('autoExtendsBy')
