@@ -328,7 +328,7 @@ async function processCustomContracts (start, end) {
 async function processOccupiedCubes (start, end) {
   const response = []
   const PG = await $query('Cube')
-    .notEqualTo('PG', null)
+    .equalTo('flags', 'PG')
     .equalTo('order', null)
     .distinct('objectId', { useMasterKey: true })
   const PGCubeSummaries = await getCubeSummaries(PG)

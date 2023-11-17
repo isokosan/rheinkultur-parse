@@ -703,9 +703,7 @@ Parse.Cloud.define('contract-invoices-preview', async ({ params: { id: contractI
  * Creates a contract with the basic settings.
  * Cubes and amounts are handled later
  */
-Parse.Cloud.define('contract-create', async ({ params, user, master, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('contract-create', async ({ params, user, master }) => {
   const {
     companyId,
     addressId,
@@ -838,9 +836,7 @@ Parse.Cloud.define('contract-rate-selection', async ({ params: { id: contractId,
   return contract.save(null, { useMasterKey: true })
 }, $internOrAdmin)
 
-Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthlyMedia, production, printNotes, ...params }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthlyMedia, production, printNotes, ...params }, user }) => {
   const {
     cubeIds,
     companyId,
@@ -1027,9 +1023,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
   return contract.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, user, context: { seedAsId, skipCubeValidations } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('contract-finalize', async ({ params: { id: contractId }, user, context: { skipCubeValidations } }) => {
   const contract = await $getOrFail(Contract, contractId)
 
   await validateContractFinalize(contract, skipCubeValidations)
@@ -1406,9 +1400,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
  */
 // email: true (the email defined in invoice address will be used) | string (the custom email will be used) | false (no email will be send)
 // TODO: Make sure double running or so of this function somehow does not created duplicated invoices (as has happened once with V22-0433)
-Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email, extendBy }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('contract-extend', async ({ params: { id: contractId, email, extendBy }, user }) => {
   const contract = await $getOrFail(Contract, contractId, ['company', 'address', 'invoiceAddress'])
   if (contract.get('status') !== 3) {
     throw new Error('Nur laufende Verträge können verlängert werden.')

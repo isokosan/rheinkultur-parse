@@ -182,9 +182,7 @@ Parse.Cloud.afterSave(CreditNote, ({ object: creditNote, context: { audit } }) =
 
 Parse.Cloud.afterDelete(CreditNote, $deleteAudits)
 
-Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('credit-note-create', async ({ params, user }) => {
   const {
     companyId,
     addressId,
@@ -220,9 +218,7 @@ Parse.Cloud.define('credit-note-create', async ({ params, user, context: { seedA
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ...params }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('credit-note-update', async ({ params: { id: creditNoteId, ...params }, user }) => {
   const {
     companyId,
     addressId,
@@ -297,8 +293,7 @@ Parse.Cloud.define('credit-note-remove', async ({ params: { id: creditNoteId } }
   return creditNote.destroy({ useMasterKey: true })
 }, $internOrAdmin)
 
-Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, email }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
+Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, email }, user }) => {
   const creditNote = await $getOrFail(CreditNote, creditNoteId, ['company', 'address', 'companyPerson', 'invoices'])
   if (creditNote.get('status') > 1 || creditNote.get('voucherDate')) {
     // TO TRANSLATE

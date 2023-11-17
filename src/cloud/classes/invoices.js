@@ -244,9 +244,7 @@ Parse.Cloud.beforeDelete(Invoice, ({ object: invoice }) => {
 
 Parse.Cloud.afterDelete(Invoice, $deleteAudits)
 
-Parse.Cloud.define('invoice-create', async ({ params, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('invoice-create', async ({ params, user }) => {
   const {
     companyId,
     addressId,
@@ -293,9 +291,7 @@ Parse.Cloud.define('invoice-create', async ({ params, user, context: { seedAsId 
   return invoice.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('invoice-update', async ({ params: { id: invoiceId, ...params }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('invoice-update', async ({ params: { id: invoiceId, ...params }, user }) => {
   const {
     companyId,
     addressId,
@@ -396,9 +392,7 @@ Parse.Cloud.define('invoice-remove', async ({ params: { id: invoiceId } }) => {
 }, $internOrAdmin)
 
 // email: true (the email defined in invoice address will be used) | string (the custom email will be used) | false (no email will be send)
-Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, user }) => {
   let invoice = await $getOrFail(Invoice, invoiceId, ['company', 'address', 'companyPerson'])
   if (invoice.get('status') > 1 || invoice.get('voucherDate')) {
     throw new Error('Diese Rechnung wurde bereits ausgestellt.')
@@ -642,7 +636,7 @@ Parse.Cloud.define('invoice-delete-lex', async ({ params: { resourceId: lexId } 
 Parse.Cloud.define('invoice-recalculate-gradual-prices', async ({
   params: {
     id: invoiceId
-  }, user, context: { seedAsId }
+  }, user
 }) => {
   const invoice = await $getOrFail(Invoice, invoiceId)
   if (invoice.get('contract').get('pricingModel') !== 'gradual') {

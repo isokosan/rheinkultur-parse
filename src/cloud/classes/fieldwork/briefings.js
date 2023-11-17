@@ -226,7 +226,7 @@ Parse.Cloud.define('briefing-revert', async ({ params: { id: briefingId }, user 
   return briefing.set({ status: 0 }).save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
-Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   return briefing.destroy({ useMasterKey: true })
 }, $fieldworkManager)

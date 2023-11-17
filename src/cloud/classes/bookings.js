@@ -210,9 +210,7 @@ Parse.Cloud.define('booking-generate', async ({ params, user }) => {
  * Creates a booking with the basic settings.
  * Cubes and amounts are handled later
  */
-Parse.Cloud.define('booking-create', async ({ params, user, master, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('booking-create', async ({ params, user, master }) => {
   const {
     companyId,
     companyPersonId,
@@ -273,10 +271,8 @@ Parse.Cloud.define('booking-update', async ({
     monthlyMedia,
     production,
     ...params
-  }, user, context: { seedAsId }
+  }, user
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
   const {
     cubeIds,
     companyId,
@@ -397,8 +393,7 @@ Parse.Cloud.define('booking-update', async ({
   return booking.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
+Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId, 'cube')
   await validateBookingActivate(booking)
 
@@ -440,9 +435,7 @@ Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, use
  *   the booking end date is updated
  *   extended years is incremented
  */
-Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy }, user, master, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
+Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy }, user, master }) => {
   if (!master) {
     if (!['intern', 'admin'].includes(user.get('accType'))) {
       if (!(user.get('accType') === 'partner' && user.get('permissions').includes('manage-bookings'))) {

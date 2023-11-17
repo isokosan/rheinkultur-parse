@@ -87,10 +87,8 @@ Parse.Cloud.define('company-create', async ({
     tagIds,
     // form data
     ...params
-  }, user, master, context: { seedAsId }
+  }, user, master
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
   const {
     name,
     email,
@@ -128,10 +126,8 @@ Parse.Cloud.define('company-update-info', async ({
   params: {
     id: companyId,
     ...params
-  }, user, context: { seedAsId }
+  }, user
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
   const {
     name,
     email,
@@ -165,9 +161,8 @@ Parse.Cloud.define('company-update-distributor', async ({
     fixedPriceMap,
     commission,
     periodicInvoicing
-  }, user, context: { seedAsId }
+  }, user
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
   fixedPriceMap = $cleanDict(fixedPriceMap)
   if (pricingModel === 'default') {
     pricingModel = undefined
@@ -258,10 +253,8 @@ Parse.Cloud.define('company-update-agency', async ({
     isAgency,
     earningsVia,
     commissions: commissionsInput
-  }, user, context: { seedAsId }
+  }, user
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
   const company = await $query(Company).get(companyId, { useMasterKey: true })
   const agency = cloneDeep(company.get('agency'))
   const commissions = {}
@@ -297,10 +290,8 @@ Parse.Cloud.define('company-update-lessor', async ({
     rate,
     cycle,
     exceptions
-  }, user, context: { seedAsId }
+  }, user
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
-
   const company = await $getOrFail(Company, companyId)
 
   const lessor = cloneDeep(company.get('lessor'))

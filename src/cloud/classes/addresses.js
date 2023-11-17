@@ -51,8 +51,7 @@ Parse.Cloud.afterFind(Address, ({ objects: addresses }) => {
   }
 })
 
-Parse.Cloud.define('address-save', async ({ params: { id: addressId, ...params }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
+Parse.Cloud.define('address-save', async ({ params: { id: addressId, ...params }, user }) => {
   const {
     lex,
     companyId,

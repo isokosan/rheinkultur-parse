@@ -449,7 +449,7 @@ Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user })
   return control.set({ status: 0 }).save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
-Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
   return control.destroy({ useMasterKey: true })
 }, $fieldworkManager)

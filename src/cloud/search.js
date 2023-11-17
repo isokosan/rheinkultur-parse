@@ -1,4 +1,5 @@
 const client = require('@/services/elastic')
+const redis = require('@/services/redis')
 const { errorFlagKeys } = require('@/cloud/cube-flags')
 
 const INDEXES = {
@@ -823,12 +824,17 @@ Parse.Cloud.define('search-booking-requests', async ({
 }, { requireUser: true, validateMasterKey: true })
 
 Parse.Cloud.define('booked-cubes', async () => {
+  const cached = await redis.get('booked-cube-geojson')
+  if (cached) {
+    return JSON.parse(cached)
+  }
   const keepAlive = '1m'
   const size = 5000
   // Sorting should be by _shard_doc or at least include _shard_doc
   const index = ['rheinkultur-cubes']
   const sort = [{ _shard_doc: 'desc' }]
-  const query = { bool: { must: [{ term: { s: 5 } }] } }
+  // const query = { bool: { must: [{ term: { s: 5 } }] } }
+  const query = { bool: { must_not: [{ terms: { s: [8, 9] } }] } }
   let searchAfter
   let pointInTimeId = (await client.openPointInTime({ index, keep_alive: keepAlive })).id
   const cubes = []
@@ -845,7 +851,7 @@ Parse.Cloud.define('booked-cubes', async () => {
         sort,
         search_after: searchAfter
       },
-      _source: { includes: ['objectId', 's', 'gp'] }
+      _source: { includes: ['gp'] }
     })
     if (!hits?.length) { break }
     pointInTimeId = pit_id
@@ -855,7 +861,21 @@ Parse.Cloud.define('booked-cubes', async () => {
     const lastHit = hits[hits.length - 1]
     searchAfter = lastHit.sort
   }
-  return cubes
+  const geojson = {
+    type: 'FeatureCollection',
+    features: cubes.map(cube => ({
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [cube.gp.longitude, cube.gp.latitude]
+      },
+      properties: {
+        id: cube.objectId
+      }
+    }))
+  }
+  await redis.set('booked-cube-geojson', JSON.stringify(geojson))
+  return geojson
 }, $adminOnly)
 
 // Before is only defined if address is changing

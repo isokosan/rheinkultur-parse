@@ -362,7 +362,7 @@ Parse.Cloud.define('cube-update-geopoint', async ({ params: { id, gp }, user }) 
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('cube-update-flags', async ({ params: { id, flags: form }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('cube-update-flags', async ({ params: { id, flags: form }, user }) => {
   const cube = await $getOrFail(Cube, id)
   // TODO: Make sure paired flags are synced
   if (cube.get('pair')) {
@@ -384,7 +384,7 @@ Parse.Cloud.define('cube-update-flags', async ({ params: { id, flags: form }, us
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('cube-update-sides', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('cube-update-sides', async ({ params: { id, ...params }, user }) => {
   const cube = await $getOrFail(Cube, id)
   const sides = {}
   for (const field of ['front', 'left', 'right', 'back']) {
@@ -399,7 +399,7 @@ Parse.Cloud.define('cube-update-sides', async ({ params: { id, ...params }, user
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('cube-update-scout-data', async ({ params: { id, ...params }, user, context: { seedAsId } }) => {
+Parse.Cloud.define('cube-update-scout-data', async ({ params: { id, ...params }, user }) => {
   const cube = await $getOrFail(Cube, id)
   const scoutData = {}
   for (const field of ['obstructionLevel', 'nearTrafficLights', 'angleToTraffic']) {

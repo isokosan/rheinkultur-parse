@@ -54,9 +54,8 @@ Parse.Cloud.define('media-update-prices', async ({
   params: {
     id: mediaId,
     prices
-  }, user, context: { seedAsId }
+  }, user
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
   const media = await $getOrFail(Media, mediaId)
   media.set({ prices })
   const audit = { user, fn: 'media-update-prices' }

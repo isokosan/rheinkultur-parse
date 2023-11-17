@@ -15,9 +15,8 @@ Parse.Cloud.define('comment-create', async ({
     itemId,
     source,
     text
-  }, user, context: { seedAsId }
+  }, user
 }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
   const comment = new Comment({
     itemId,
     itemClass,

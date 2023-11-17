@@ -15,8 +15,7 @@ Parse.Cloud.afterFind(Person, ({ objects: persons }) => {
   }
 })
 
-Parse.Cloud.define('person-save', async ({ params: { id: personId, ...params }, user, context: { seedAsId } }) => {
-  if (seedAsId) { user = $parsify(Parse.User, seedAsId) }
+Parse.Cloud.define('person-save', async ({ params: { id: personId, ...params }, user }) => {
   const {
     companyId,
     prefix,

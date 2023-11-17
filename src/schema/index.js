@@ -319,14 +319,6 @@ const schemaDefinitions = {
       pair: { type: 'Pointer', targetClass: 'Cube' }, // Cube pair, if filled this one will be hidden
 
       flags: { type: 'Array' }, // testing out array format for warnings
-      // warnings (to be deprecated)
-      // MBfD: { type: 'Boolean' }, // Boolean // promoted location (göferderter Standort)
-      // PG: { type: 'Boolean' }, // Boolean // Privates Grundstück
-      // Agwb: { type: 'Boolean' }, // Boolean // Aus grau wird bunt
-      // htNM: { type: 'Boolean' }, // Boolean // Housing Type  nicht vermarktbar
-      // SagO: { type: 'Boolean' }, // Boolean // Standort außerhalb geschlossener Ortschaft
-      // TTMR: { type: 'Boolean' }, // Boolean // Town Talker / Moskito Rahmen
-      // nMR: { type: 'String' }, // No Marketing Rights Reason, if any, in text format
       // flyer: { type: 'Object' }, // For Sonderformate with start, end, companyId
 
       // photos

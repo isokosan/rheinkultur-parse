@@ -40,7 +40,6 @@ const {
 require('@/jobs')
 DEVELOPMENT && require('@/queues')
 DEVELOPMENT && require('@/development')
-process.env.SEED && require('@/seed/fieldwork')
 
 Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
   if (!user) { keys = ['states'] }
