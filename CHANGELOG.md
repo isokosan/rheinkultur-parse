@@ -1,3 +1,10 @@
+# [1.145.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.144.0...1.145.0) (2023-11-17)
+
+
+### Features
+
+* add end-datum to control-report exports ([6c44ea0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6c44ea0e47a7a2ee512117b68c615c14128cf6c6))
+
 # [1.144.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.143.0...1.144.0) (2023-11-15)
 
 
