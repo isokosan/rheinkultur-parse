@@ -1,3 +1,10 @@
+## [1.145.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.1...1.145.2) (2023-11-17)
+
+
+### Bug Fixes
+
+* revert all-booked-cubes changes ([164d3fb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/164d3fb02301e68b6226b87f9b78c1c75752faf5))
+
 ## [1.145.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.0...1.145.1) (2023-11-17)
 
 
