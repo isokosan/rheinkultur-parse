@@ -918,9 +918,9 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
 }))
 router.get('/disassemblies', handleErrorAsync(async (req, res) => {
   const { start: from, end: to } = req.query
-
+  const name = safeName(`Demontage ${[moment(from).format('DD.MM.YYYY'), moment(to).format('DD.MM.YYYY')].join('-')}`)
   const workbook = new excel.Workbook()
-  const worksheet = workbook.addWorksheet(safeName(`Demontageliste ${[moment(from).format('DD.MM.YYYY'), moment(to).format('DD.MM.YYYY')].join('-')}`))
+  const worksheet = workbook.addWorksheet(name)
 
   const { columns, headerRowValues } = getColumnHeaders({
     orderNo: { header: 'Auftragsnr.', width: 20 },
@@ -972,7 +972,7 @@ router.get('/disassemblies', handleErrorAsync(async (req, res) => {
 
   // add all to rows
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=Demontage ${req.params.monthYear}.xlsx`)
+  res.set('Content-Disposition', `attachment; filename=${name}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
