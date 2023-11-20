@@ -1,3 +1,10 @@
+## [1.145.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.2...1.145.3) (2023-11-20)
+
+
+### Bug Fixes
+
+* disassembly exports filename ([0fe67f1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0fe67f12f8f1044fa012f83ba8d9f9d6e594f0ed))
+
 ## [1.145.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.1...1.145.2) (2023-11-17)
 
 
