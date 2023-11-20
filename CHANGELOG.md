@@ -1,3 +1,10 @@
+## [1.146.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.0...1.146.1) (2023-11-20)
+
+
+### Bug Fixes
+
+* task-list location cleanup iterate over all placekey notifications ([378718b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/378718b8b42a325ae21e917d66d5e331771d2d67))
+
 # [1.146.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.3...1.146.0) (2023-11-20)
 
 
