@@ -725,7 +725,9 @@ Parse.Cloud.define('search-bookings', async ({
   motive && bool.must.push({ match_phrase_prefix: { motive } })
   externalOrderNo && bool.must.push({ match_phrase_prefix: { externalOrderNo } })
   autoExtends && bool.must.push({ term: { autoExtends: autoExtends === 'true' } })
-  disassemblyFromRMV && bool.must.push({ exists: { field: 'disassemblyFromRMV' } })
+
+  disassemblyFromRMV === 'true' && bool.must.push({ exists: { field: 'disassemblyFromRMV' } })
+  disassemblyFromRMV === 'false' && bool.must_not.push({ exists: { field: 'disassemblyFromRMV' } })
 
   cubeId && bool.must.push({ wildcard: { 'cube.objectId.keyword': `*${cubeId}*` } })
   str && bool.filter.push({ term: { 'cube.str.keyword': str } })
