@@ -1,3 +1,15 @@
+# [1.146.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.3...1.146.0) (2023-11-20)
+
+
+### Bug Fixes
+
+* disassembly filter in bookings search ([498eac2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/498eac2bd63c9790335380433020e5cd8ee38794))
+
+
+### Features
+
+* add monthly stats ([ad74dd4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ad74dd4d210dcb8966a4edf8c894d90f6680188c))
+
 ## [1.145.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.145.2...1.145.3) (2023-11-20)
 
 
