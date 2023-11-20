@@ -724,7 +724,6 @@ const schemaDefinitions = {
       counts: { type: 'Object' },
       statuses: { type: 'Object' },
       quotasCompleted: { type: 'Object' } // only for parent briefing
-
     }
   },
   ScoutSubmission: {

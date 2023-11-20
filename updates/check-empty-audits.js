@@ -46,4 +46,4 @@ async function cleanAudits (preview) {
   console.info('DONE', { cleaned: c, removed: r })
 }
 
-require('./run')(() => cleanAudits())
+require('./run')(() => cleanAudits(true))

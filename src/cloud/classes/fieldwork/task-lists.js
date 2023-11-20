@@ -280,35 +280,21 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
       })
     }
   }
-  // if locationCleanup is an array, it is an array of the scoutIds of the before state of the saved task list
-  // in this case we iterate over these, or all the scouts, to remove any dangling notifications in the area.
-  if (locationCleanup) {
-    const beforeScouts = locationCleanup === true
-      ? (taskList.get('scouts') || [])
-      : locationCleanup.map(id => $parsify(Parse.User, id))
-    for (const scout of beforeScouts) {
-      // in any case we remove all "rejected" notifications that have the task list id
-      $query('Notification')
-        .equalTo('user', scout)
-        .equalTo('identifier', 'task-submission-rejected')
-        .equalTo('data.taskListId', taskList.id)
-        .each(notification => notification.destroy({ useMasterKey: true }), { useMasterKey: true })
-      // then we check to see if the scout has other task lists in the location, if not we remove the "assigned" notification
-      const count = await $query('TaskList')
-        .equalTo('ort', taskList.get('ort'))
-        .equalTo('state', taskList.get('state'))
-        .equalTo('scouts', scout)
-        .containedIn('status', TASK_LIST_IN_PROGRESS_STATUSES)
+  // in this case we iterate over all task-list related notifications in this place.
+  // TOLATER: throw this into a queue job
+  locationCleanup && await $query('Notification')
+    .containedIn('identifier', ['task-list-assigned', 'task-submission-rejected'])
+    .equalTo('data.placeKey', placeKey)
+    .each(async (notification) => {
+      const inProgress = await $query('TaskList')
+        .equalTo('pk', placeKey)
+        .equalTo('scouts', notification.get('user'))
+        .containedIn('status', [2, 3])
         .count({ useMasterKey: true })
-      if (!count) {
-        $query('Notification')
-          .equalTo('user', scout)
-          .equalTo('identifier', 'task-list-assigned')
-          .equalTo('data.placeKey', placeKey)
-          .each(notification => notification.destroy({ useMasterKey: true }), { useMasterKey: true })
+      if (!inProgress) {
+        return notification.destroy({ useMasterKey: true })
       }
-    }
-  }
+    }, { useMasterKey: true })
 
   // check if date or cubes changes for an active task list (and status did not change)
   if (audit?.data && taskList.get('status') >= 1) {
@@ -510,7 +496,7 @@ Parse.Cloud.define('task-list-update-manager', async ({ params: { id: taskListId
   const currentScoutIds = (taskList.get('scouts') || []).map(s => s.id)
   if (currentScoutIds.length) {
     changes.scoutIds = [currentScoutIds, []]
-    locationCleanup = currentScoutIds
+    locationCleanup = true
   }
   taskList.unset('scouts')
   const audit = { user, fn: 'task-list-update', data: { changes } }
@@ -539,7 +525,7 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
   if (taskList.get('status') > 1) {
     notifyScouts = scoutIds.filter(scoutId => !currentScoutIds.includes(scoutId))
   }
-  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts, locationCleanup: currentScoutIds } })
+  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts, locationCleanup: true } })
   return {
     data: taskList.get('scouts'),
     message: 'Abfahrtsliste gespeichert.'
@@ -914,7 +900,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       }
       if (!form.unsetScouts && (difference(form.scoutIds, currentScoutIds).length || difference(currentScoutIds, form.scoutIds).length)) {
         changes.scoutIds = [currentScoutIds, form.scoutIds]
-        locationCleanup = currentScoutIds
+        locationCleanup = true
         taskList.set({ scouts })
       }
       let notifyScouts
