@@ -1,3 +1,10 @@
+## [1.146.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.2...1.146.3) (2023-11-21)
+
+
+### Bug Fixes
+
+* stats ([fd4da5b](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fd4da5b486b79439cbd935059ad69c80330f7362))
+
 ## [1.146.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.1...1.146.2) (2023-11-21)
 
 
