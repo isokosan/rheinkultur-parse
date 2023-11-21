@@ -209,12 +209,10 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
         })))
       const bookings = await $query('Booking')
         .equalTo('cubeIds', cube.id)
-        .notEqualTo(`earlyCancellations.${cube.id}`, true)
         .find({ useMasterKey: true })
         .then(bookings => bookings.map(booking => ({
           className: 'Booking',
-          ...booking.toJSON(),
-          earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id]
+          ...booking.toJSON()
         })))
       cube.set('orders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
       cube.set('draftOrders', cube.get('orders').filter(order => order.status >= 0 && order.status <= 2.1))

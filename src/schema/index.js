@@ -138,7 +138,6 @@ const schemaDefinitions = {
       autoExtendsBy: { type: 'Number', default: 12 },
       noticePeriod: { type: 'Number' },
       extendedDuration: { type: 'Number' },
-      earlyCancellations: { type: 'Object' },
 
       voidedAt: { type: 'Date' },
       canceledAt: { type: 'Date' },
@@ -246,6 +245,7 @@ const schemaDefinitions = {
       noticePeriod: { type: 'Number' },
       extendedDuration: { type: 'Number' },
       earlyCancellations: { type: 'Object' },
+      freeExtensions: { type: 'Object' },
 
       voidedAt: { type: 'Date' },
       canceledAt: { type: 'Date' },

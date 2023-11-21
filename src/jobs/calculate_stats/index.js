@@ -80,15 +80,16 @@ async function calculateStats (startOfMonth, endOfMonth) {
       stats.bookings.ending += booking.get('endsAt') < endOfMonth ? 1 : 0
     }), { useMasterKey: true })
 
+  const verifiedQuery = $query('Cube')
+    .notEqualTo('vAt', null)
+    .notEqualTo('p1', null)
+    .notEqualTo('p2', null)
+    .lessThanOrEqualTo('vAt', moment(endOfMonth).endOf('day').toDate())
+
   stats.verified = {
-    new: await $query('Cube')
-      .notEqualTo('vAt', null)
-      .lessThanOrEqualTo('vAt', moment(endOfMonth).endOf('day').toDate())
+    total: await verifiedQuery.count({ useMasterKey: true }),
+    new: await verifiedQuery
       .greaterThanOrEqualTo('vAt', moment(startOfMonth).startOf('day').toDate())
-      .count({ useMasterKey: true }),
-    total: await $query('Cube')
-      .notEqualTo('vAt', null)
-      .lessThanOrEqualTo('vAt', moment(endOfMonth).endOf('day').toDate())
       .count({ useMasterKey: true })
   }
   return stats

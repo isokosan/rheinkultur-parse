@@ -17,7 +17,8 @@ const updateJobs = {
   calculate_stats: {
     name: 'Monatliche Statistiken',
     cron: '0 4 * * *', // at 04:00 AM
-    timeoutMinutes: 10
+    timeoutMinutes: 30,
+    notificationDuration: 24
   },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
