@@ -1,3 +1,10 @@
+# [1.147.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.4...1.147.0) (2023-11-21)
+
+
+### Features
+
+* update deps ([f5ae623](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f5ae62386614e0fbf05636cff7f5f54b59878d4e))
+
 ## [1.146.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.3...1.146.4) (2023-11-21)
 
 
