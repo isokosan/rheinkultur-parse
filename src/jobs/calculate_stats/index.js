@@ -3,9 +3,12 @@ const { round2 } = require('@/utils')
 
 async function calculateStats (startOfMonth, endOfMonth) {
   const kinetic = await $getOrFail('Company', 'FNFCxMgEEr')
+  const distributorIds = await $query('Company').notEqualTo('distributor', null).distinct('objectId', { useMasterKey: true })
   const stats = {
     invoices: { count: 0, total: 0 },
     creditNotes: { count: 0, total: 0 },
+    revenue: {}, // companyId keys
+    distributors: {}, // companyId keys
     contracts: { count: 0, cubes: 0, starting: 0, ending: 0 },
     kinetic: { count: 0, cubes: 0, starting: 0, ending: 0 },
     bookings: { count: 0, starting: 0, ending: 0 }
@@ -14,19 +17,31 @@ async function calculateStats (startOfMonth, endOfMonth) {
     .equalTo('status', 2)
     .greaterThanOrEqualTo('date', startOfMonth)
     .lessThanOrEqualTo('date', endOfMonth)
-    .select('total')
+    .select(['total', 'company'])
     .eachBatch(batch => batch.forEach((invoice) => {
+      const total = invoice.get('total')
       stats.invoices.count++
-      stats.invoices.total = round2(stats.invoices.total + invoice.get('total'))
+      stats.invoices.total = round2(stats.invoices.total + total)
+      const companyId = invoice.get('company').id
+      stats.revenue[companyId] = round2((stats.revenue[companyId] || 0) + total)
+      if (distributorIds.includes(companyId)) {
+        stats.distributors[companyId] = round2((stats.distributors[companyId] || 0) + total)
+      }
     }), { useMasterKey: true })
   await $query('CreditNote')
     .equalTo('status', 2)
     .greaterThanOrEqualTo('date', startOfMonth)
     .lessThanOrEqualTo('date', endOfMonth)
-    .select('total')
+    .select(['total', 'company'])
     .eachBatch(batch => batch.forEach((creditNote) => {
+      const total = creditNote.get('total')
       stats.creditNotes.count++
-      stats.creditNotes.total = round2(stats.creditNotes.total + creditNote.get('total'))
+      stats.creditNotes.total = round2(stats.creditNotes.total + total)
+      const companyId = creditNote.get('company').id
+      stats.revenue[companyId] = round2((stats.revenue[companyId] || 0) - total)
+      if (distributorIds.includes(companyId)) {
+        stats.distributors[companyId] = round2((stats.distributors[companyId] || 0) - total)
+      }
     }), { useMasterKey: true })
   await $query('Contract')
     .greaterThan('status', 2)
@@ -62,6 +77,7 @@ async function calculateStats (startOfMonth, endOfMonth) {
       stats.bookings.starting += booking.get('startsAt') > startOfMonth ? 1 : 0
       stats.bookings.ending += booking.get('endsAt') < endOfMonth ? 1 : 0
     }), { useMasterKey: true })
+
   return stats
 }
 
