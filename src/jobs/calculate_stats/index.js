@@ -1,5 +1,6 @@
 const redis = require('@/services/redis')
 const { round2 } = require('@/utils')
+const { errorFlagKeys } = require('@/cloud/cube-flags')
 
 async function calculateStats (startOfMonth, endOfMonth) {
   const kinetic = await $getOrFail('Company', 'FNFCxMgEEr')
@@ -8,6 +9,7 @@ async function calculateStats (startOfMonth, endOfMonth) {
     invoices: { count: 0, total: 0 },
     creditNotes: { count: 0, total: 0 },
     revenue: {}, // companyId keys
+    customers: {}, // active customers
     distributors: {}, // companyId keys
     contracts: { count: 0, cubes: 0, starting: 0, ending: 0 },
     kinetic: { count: 0, cubes: 0, starting: 0, ending: 0 },
@@ -78,11 +80,22 @@ async function calculateStats (startOfMonth, endOfMonth) {
       stats.bookings.ending += booking.get('endsAt') < endOfMonth ? 1 : 0
     }), { useMasterKey: true })
 
+  stats.verified = {
+    new: await $query('Cube')
+      .notEqualTo('vAt', null)
+      .lessThanOrEqualTo('vAt', moment(endOfMonth).endOf('day').toDate())
+      .greaterThanOrEqualTo('vAt', moment(startOfMonth).startOf('day').toDate())
+      .count({ useMasterKey: true }),
+    total: await $query('Cube')
+      .notEqualTo('vAt', null)
+      .lessThanOrEqualTo('vAt', moment(endOfMonth).endOf('day').toDate())
+      .count({ useMasterKey: true })
+  }
   return stats
 }
 
 module.exports = async function (job) {
-  let i = 0
+  let m = 0
   const carry = moment('2023-01-01')
   const today = await $today()
   const months = moment(carry).diff(today, 'months')
@@ -91,10 +104,35 @@ module.exports = async function (job) {
     const start = moment(month).startOf('month').format('YYYY-MM-DD')
     const end = moment(month).endOf('month').format('YYYY-MM-DD')
     const stats = await calculateStats(start, end)
-    await redis.hset('stats', month, JSON.stringify(stats))
-    i++
+    await redis.hset('stats:monthlies', month, JSON.stringify(stats))
+    m++
     carry.add(1, 'month')
-    job.progress(parseInt(100 * i / months))
+    job.progress(parseInt(90 * m / months))
   }
-  return Promise.resolve({ i })
+
+  // latest totals
+  const getBaseQuery = () => $query('Cube').equalTo('dAt', null).equalTo('pair', null)
+  const total = await getBaseQuery().count({ useMasterKey: true })
+  const marketable = await getBaseQuery()
+    .notContainedIn('flags', errorFlagKeys)
+    .count({ useMasterKey: true })
+  const scout = await getBaseQuery()
+    .notContainedIn('flags', errorFlagKeys)
+    .notEqualTo('vAt', null)
+    .notEqualTo('p1', null)
+    .notEqualTo('p2', null)
+    .count({ useMasterKey: true })
+  const marketed = await Parse.Query.and(
+    getBaseQuery(),
+    Parse.Query.or(
+      $query('Cube').notEqualTo('order', null),
+      $query('Cube').notEqualTo('futureOrder', null)
+    )
+  ).count({ useMasterKey: true })
+  await redis.hset('stats:cube-totals', 'total', total)
+  await redis.hset('stats:cube-totals', 'marketable', marketable)
+  await redis.hset('stats:cube-totals', 'scout', scout)
+  await redis.hset('stats:cube-totals', 'marketed', marketed)
+  job.progress(100)
+  return Promise.resolve({ m })
 }

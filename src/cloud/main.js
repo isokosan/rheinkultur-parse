@@ -121,12 +121,14 @@ Parse.Cloud.define('counts', async ({ user }) => {
   return counts
 }, $internOrAdmin)
 
-Parse.Cloud.define('monthly-stats', () => {
-  return redis.hgetall('stats')
-    .then(stats => Object.keys(stats).reduce((acc, monthKey) => {
-      acc[monthKey] = JSON.parse(stats[monthKey])
+Parse.Cloud.define('stats', async () => {
+  const monthlies = await redis.hgetall('stats:monthlies')
+    .then(stats => Object.keys(stats).reduce((acc, key) => {
+      acc[key] = JSON.parse(stats[key])
       return acc
     }, {}))
+  const cubeTotals = await redis.hgetall('stats:cube-totals')
+  return { monthlies, cubeTotals }
 }, $adminOnly)
 
 Parse.Cloud.define('counts', async ({ user }) => {
