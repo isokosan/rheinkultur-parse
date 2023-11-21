@@ -1,3 +1,10 @@
+## [1.146.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.3...1.146.4) (2023-11-21)
+
+
+### Bug Fixes
+
+* remove earlyCancellations from bookings ([4c83226](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4c832265a5c6f3cf38fa69dbb54cc8fa64da90a9))
+
 ## [1.146.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.2...1.146.3) (2023-11-21)
 
 
