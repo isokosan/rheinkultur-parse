@@ -1,3 +1,10 @@
+## [1.149.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.149.0...1.149.1) (2023-11-23)
+
+
+### Bug Fixes
+
+* update unavailable public s to 7 ([d32d2c3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d32d2c313455f2fa8fae7c4b1f4e9842921ef236))
+
 # [1.149.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.148.0...1.149.0) (2023-11-23)
 
 
