@@ -569,7 +569,7 @@ Parse.Cloud.define('search', async ({
   if (isPublic) {
     results = results.map(result => {
       if (result.s >= 5) {
-        result.s = 9
+        result.s = 7
       }
       return result
     })
