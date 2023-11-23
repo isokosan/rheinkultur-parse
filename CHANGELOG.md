@@ -1,3 +1,10 @@
+# [1.149.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.148.0...1.149.0) (2023-11-23)
+
+
+### Features
+
+* finish moving cubeData to features ([62c718e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/62c718e0a583c94ab051e0a08166a859fead4954))
+
 # [1.148.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.147.0...1.148.0) (2023-11-23)
 
 
