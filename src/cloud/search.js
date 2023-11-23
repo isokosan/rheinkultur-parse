@@ -506,16 +506,7 @@ Parse.Cloud.define('search', async ({
       features[key].push(value)
     }
     for (const key of Object.keys(features)) {
-      // bool.must.push({ terms: { [`features.${key}`]: features[key] } })
-      bool.must.push({
-        bool: {
-          should: [
-            { terms: { [`features.${key}`]: features[key] } },
-            { terms: { [`scoutData.${key}`]: features[key] } }
-          ],
-          minimum_should_match: 1
-        }
-      })
+      bool.must.push({ terms: { [`features.${key}`]: features[key] } })
     }
   }
 

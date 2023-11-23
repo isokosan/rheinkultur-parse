@@ -164,9 +164,6 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
     }
     cube.get('flags')?.includes('htNM') && cube.set('hti', 'Nicht vermarktbar')
 
-    // TODO: Remove scoutData
-    !cube.get('features') && cube.get('scoutData') && cube.set('features', cube.get('scoutData'))
-
     if (isPublic) {
       for (const key of Object.keys(cube.attributes)) {
         if (!PUBLIC_FIELDS.includes(key)) {
@@ -410,20 +407,6 @@ Parse.Cloud.define('cube-update-features', async ({ params: { id, ...params }, u
   const changes = $changes(cube.get('features') || {}, features, true)
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
   cube.set({ features })
-  const audit = { user, fn: 'cube-update', data: { changes } }
-  return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
-}, $internOrAdmin)
-
-// TODO: Remove this
-Parse.Cloud.define('cube-update-scout-data', async ({ params: { id, ...params }, user }) => {
-  const cube = await $getOrFail(Cube, id)
-  const features = {}
-  for (const field of ['obstructionLevel', 'nearTrafficLights', 'angleToTraffic']) {
-    features[field] = params[field]
-  }
-  const changes = $changes(cube.get('features') || {}, features, true)
-  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
-  cube.set({ features, scoutData: features })
   const audit = { user, fn: 'cube-update', data: { changes } }
   return $saveWithEncode(cube, null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)

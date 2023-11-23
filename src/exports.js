@@ -186,11 +186,9 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
       doc.stateName = states[doc.stateId]?.name || ''
       doc.lat = doc.gp.latitude
       doc.lon = doc.gp.longitude
-      // TODO: Remove after migration
-      const features = doc.features || doc.scoutData
-      if (features) {
+      if (doc.features) {
         for (const key of Object.keys(CUBE_FEATURES)) {
-          doc[key] = CUBE_FEATURES[key].values[features[key]] || ''
+          doc[key] = CUBE_FEATURES[key].values[doc.features[key]] || ''
         }
       }
 
