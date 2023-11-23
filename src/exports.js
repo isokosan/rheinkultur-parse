@@ -186,9 +186,11 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
       doc.stateName = states[doc.stateId]?.name || ''
       doc.lat = doc.gp.latitude
       doc.lon = doc.gp.longitude
-      if (doc.scoutData) {
+      // TODO: Remove after migration
+      const features = doc.features || doc.scoutData
+      if (features) {
         for (const key of Object.keys(CUBE_FEATURES)) {
-          doc[key] = CUBE_FEATURES[key].values[doc.scoutData[key]] || ''
+          doc[key] = CUBE_FEATURES[key].values[features[key]] || ''
         }
       }
 
@@ -332,7 +334,7 @@ async function getContractRows (contract, { housingTypes, states }, exportCubeId
       monthly,
       pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(Boolean).join(': '),
       canceledEarly,
-      ...parseCubeFeatures(cube.get('scoutData'))
+      ...parseCubeFeatures(cube.get('features'))
     })
   }
   return rows

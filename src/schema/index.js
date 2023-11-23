@@ -327,7 +327,7 @@ const schemaDefinitions = {
 
       // belegung possibility
       sides: { type: 'Object' }, // Which sides can be used
-      scoutData: { type: 'Object' }, // extra scouting data (features)
+      features: { type: 'Object' }, // extra scouting data (features)
 
       hti: { type: 'String' }, // housing type string from import
       importData: { type: 'Object' }, // Object

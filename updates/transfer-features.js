@@ -24,16 +24,16 @@ const LEGACY_ANSWERS = {
 async function check () {
   const query = $query('Cube')
     .notEqualTo(`legacyScoutResults.${LEGACY_KEYS.angleToTraffic}`, null)
-    .equalTo('scoutData.angleToTraffic', null)
+    .equalTo('features.angleToTraffic', null)
   await query.count({ useMasterKey: true }).then(console.log)
   return query.eachBatch(async (batch) => {
     for (const cube of batch) {
       const legacyScoutResults = cube.get('legacyScoutResults') || {}
-      const scoutData = cube.get('scoutData') || {}
-      scoutData.angleToTraffic = LEGACY_ANSWERS.angleToTraffic[legacyScoutResults[LEGACY_KEYS.angleToTraffic]]
-      scoutData.nearTrafficLights = LEGACY_ANSWERS.nearTrafficLights[legacyScoutResults[LEGACY_KEYS.nearTrafficLights]]
-      scoutData.obstructionLevel = LEGACY_ANSWERS.obstructionLevel[legacyScoutResults[LEGACY_KEYS.obstructionLevel]]
-      cube.set('scoutData', scoutData)
+      const features = cube.get('features') || {}
+      features.angleToTraffic = LEGACY_ANSWERS.angleToTraffic[legacyScoutResults[LEGACY_KEYS.angleToTraffic]]
+      features.nearTrafficLights = LEGACY_ANSWERS.nearTrafficLights[legacyScoutResults[LEGACY_KEYS.nearTrafficLights]]
+      features.obstructionLevel = LEGACY_ANSWERS.obstructionLevel[legacyScoutResults[LEGACY_KEYS.obstructionLevel]]
+      cube.set('features', features)
       await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
       console.log(cube.id)
     }

@@ -97,10 +97,9 @@ const INDEXES = {
           ? true
           : undefined,
 
-        // flags
         flags: cube.get('flags'),
+        features: cube.get('features'),
 
-        scoutData: cube.get('scoutData'),
         klsId: cube.get('importData')?.klsId,
         stovDate: cube.get('importData')?.date,
         ms: Boolean(cube.get('legacyScoutResults')),
@@ -486,8 +485,8 @@ Parse.Cloud.define('search', async ({
   s.includes('sAt') && bool.must.push({ exists: { field: 'sAt' } })
   s.includes('vAt') && bool.must.push({ exists: { field: 'vAt' } })
   s.includes('nV') && bool.must_not.push({ exists: { field: 'vAt' } })
-  s.includes('sM') && bool.must.push({ exists: { field: 'scoutData' } })
-  s.includes('sM-') && bool.must_not.push({ exists: { field: 'scoutData' } })
+  s.includes('sM') && bool.must.push({ exists: { field: 'features' } })
+  s.includes('sM-') && bool.must_not.push({ exists: { field: 'features' } })
   s.includes('ms') && bool.must.push({ term: { ms: true } })
   s.includes('nP') && bool.must_not.push({ exists: { field: 'pOk' } })
   s.includes('pOk') && bool.must.push({ exists: { field: 'pOk' } })
@@ -507,7 +506,16 @@ Parse.Cloud.define('search', async ({
       features[key].push(value)
     }
     for (const key of Object.keys(features)) {
-      bool.must.push({ terms: { [`scoutData.${key}`]: features[key] } })
+      // bool.must.push({ terms: { [`features.${key}`]: features[key] } })
+      bool.must.push({
+        bool: {
+          should: [
+            { terms: { [`features.${key}`]: features[key] } },
+            { terms: { [`scoutData.${key}`]: features[key] } }
+          ],
+          minimum_should_match: 1
+        }
+      })
     }
   }
 
