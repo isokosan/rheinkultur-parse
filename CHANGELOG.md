@@ -1,3 +1,10 @@
+# [1.148.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.147.0...1.148.0) (2023-11-23)
+
+
+### Features
+
+* rename scoutData to features ([7453cc7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7453cc72c064ed137bb10b610f5568176a550d93))
+
 # [1.147.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.146.4...1.147.0) (2023-11-21)
 
 
