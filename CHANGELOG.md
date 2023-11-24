@@ -1,3 +1,10 @@
+# [1.150.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.149.1...1.150.0) (2023-11-24)
+
+
+### Features
+
+* update cube limit to 5000 ([2f6895f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2f6895ff0ae5c16409c45a447c90222754501235))
+
 ## [1.149.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.149.0...1.149.1) (2023-11-23)
 
 
