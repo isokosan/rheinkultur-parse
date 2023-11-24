@@ -456,14 +456,33 @@ Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user })
 
 Parse.Cloud.define('control-summary', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
-  const summary = {}
+  const locations = {}
+  const states = {}
+  const totalResults = {}
   await $query('TaskList')
     .equalTo('control', control)
-    .select(['pk', 'results'])
+    .select(['pk', 'counts', 'results'])
     .each(async (taskList) => {
-      summary[taskList.get('pk')] = taskList.get('results') || {}
+      const pk = taskList.get('pk')
+      const stateId = pk.split(':')[0]
+      const counts = taskList.get('counts') || {}
+      const results = taskList.get('results') || {}
+      results.bad = parseInt(results.no_ad || 0 + results.ill || 0)
+      locations[pk] = { pk, counts, results }
+      !states[stateId] && (states[stateId] = { stateId, counts: {}, results: {} })
+      for (const key of Object.keys(counts)) {
+        states[stateId].counts[key] = (states[stateId].counts[key] || 0) + counts[key]
+      }
+      for (const key of Object.keys(results)) {
+        states[stateId].results[key] = (states[stateId].results[key] || 0) + results[key]
+        totalResults[key] = (totalResults[key] || 0) + results[key]
+      }
     }, { useMasterKey: true })
-  return summary
+  return {
+    locations: Object.values(locations).sort((a, b) => a.pk.localeCompare(b.pk)),
+    states: Object.values(states).sort((a, b) => a.stateId.localeCompare(b.stateId)),
+    totalResults
+  }
 }, $fieldworkManager)
 
 Parse.Cloud.beforeSave(ControlReport, async ({ object: report }) => {
