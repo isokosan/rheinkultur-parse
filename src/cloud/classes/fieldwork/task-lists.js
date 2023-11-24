@@ -423,13 +423,6 @@ async function validateAppointAssign (taskList) {
   if (cubes.some(cube => cube.get('ort') !== ort || cube.get('state').id !== stateId)) {
     throw new Error('Es gibt CityCubes außerhalb des Einsatzortes dieser Liste.')
   }
-
-  // reject booked cubes
-  if (taskList.get('type') === 'scout') {
-    for (const cube of cubes) {
-      if (cube.get('order') || cube.get('futureOrder')) { throw new Error('Diese Liste hat bereits vermarkteten CityCubes.') }
-    }
-  }
 }
 
 // Used in marklist store component to save manual cube changes

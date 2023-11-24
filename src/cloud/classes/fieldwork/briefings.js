@@ -140,7 +140,7 @@ Parse.Cloud.define('briefing-add-lists', async ({ params: { id: briefingId, list
   return true
 }, $fieldworkManager)
 
-Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, placeKey }, user }) => {
+Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, placeKey, withCubes }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   const date = briefing.get('date')
   const dueDate = briefing.get('dueDate')
@@ -150,25 +150,46 @@ Parse.Cloud.define('briefing-add-location', async ({ params: { id: briefingId, p
 
   const [stateId, ort] = placeKey.split(':')
   const state = $pointer('State', stateId)
-  if (await $query('TaskList')
+  let taskList = await $query('TaskList')
     .equalTo('briefing', briefing)
     .equalTo('ort', ort)
     .equalTo('state', state)
-    .first({ useMasterKey: true })) {
-    throw new Error('Location already exists!')
+    .first({ useMasterKey: true })
+
+  const cubeIds = withCubes && await $query('Cube')
+    .equalTo('ort', ort)
+    .equalTo('state', state)
+    .equalTo('dAt', null)
+    .equalTo('pair', null)
+    .distinct('objectId', { useMasterKey: true })
+
+  if (taskList) {
+    if (!cubeIds) {
+      throw new Error('Ort bereits hinzugefügt.')
+    }
+    const cubeChanges = $cubeChanges(taskList, cubeIds)
+    if (!cubeChanges) {
+      throw new Error('Ort bereits hinzugefügt, keine Änderungen.')
+    }
+    taskList.set({ cubeIds })
+    const audit = { user, fn: 'task-list-update', data: { cubeChanges } }
+    return {
+      message: `${cubeIds.length} CityCubes in ${ort} hinzugefügt.`,
+      data: await taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
   }
-  const taskList = new TaskList({
+  taskList = new TaskList({
     type: 'scout',
     briefing,
     ort,
     state,
     date,
     dueDate,
-    cubeIds: []
+    cubeIds: cubeIds || []
   })
   const audit = { user, fn: 'task-list-generate' }
   return {
-    message: `${ort} added.`,
+    message: cubeIds ? `${ort} mit ${cubeIds.length} CityCubes hinzugefügt.` : `${ort} hinzugefügt.`,
     data: await taskList.save(null, { useMasterKey: true, context: { audit } })
   }
 }, $fieldworkManager)

@@ -103,7 +103,7 @@ global.$today = async () => DEVELOPMENT
   ? await Parse.Config.get().then(config => config.get('today') || moment().format('YYYY-MM-DD'))
   : moment().format('YYYY-MM-DD')
 
-const CUBE_LIMIT = 1000
+const CUBE_LIMIT = 5000
 global.$cubeLimit = (count) => {
   if (count > CUBE_LIMIT) {
     throw new Error('Sie dürfen nicht mehr als ' + CUBE_LIMIT + ' CityCubes hinterlegen.')
