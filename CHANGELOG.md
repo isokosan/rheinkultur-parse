@@ -1,3 +1,10 @@
+# [1.151.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.150.0...1.151.0) (2023-11-24)
+
+
+### Features
+
+* add bundesland into control-summary ([87b9a88](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/87b9a8873de141f5b53f171e32f95fe7dfdf9560))
+
 # [1.150.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.149.1...1.150.0) (2023-11-24)
 
 
