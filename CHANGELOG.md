@@ -1,3 +1,10 @@
+## [1.152.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.152.0...1.152.1) (2023-11-27)
+
+
+### Bug Fixes
+
+* cube limit on task list submissions afterfind populator ([113e3f3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/113e3f3202b991a2b4bc601e049fd07221569bb0))
+
 # [1.152.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.151.0...1.152.0) (2023-11-27)
 
 
