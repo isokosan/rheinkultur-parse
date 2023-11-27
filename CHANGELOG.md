@@ -1,3 +1,10 @@
+# [1.152.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.151.0...1.152.0) (2023-11-27)
+
+
+### Features
+
+* add task-list-mass-preapprove fn, update pods to 6 ([4b76c80](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4b76c803a304cdc35aaf60459d6a66b1c3c8978a))
+
 # [1.151.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.150.0...1.151.0) (2023-11-24)
 
 
