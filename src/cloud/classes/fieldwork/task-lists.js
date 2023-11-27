@@ -623,7 +623,7 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
   const taskList = await $getOrFail(TaskList, taskListId)
   await validateScoutManagerOrFieldworkManager(taskList, user)
   const cube = await $getOrFail('Cube', cubeId)
-  if (taskList.get('type') === 'scout' && !cube.get('vAt')) {
+  if (taskList.get('type') === 'scout' && approved && !cube.get('vAt')) {
     throw new Error('Nur verifizierte CityCubes können als gescouted markiert werden.')
   }
   let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
@@ -679,6 +679,75 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
   await taskList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
+Parse.Cloud.define('task-list-mass-preapprove', async ({ params: { id: taskListId, cubeIds, approved }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  await validateScoutManagerOrFieldworkManager(taskList, user)
+  if (taskList.get('type') === 'scout' && approved) {
+    // check if any cubes that are not verified exist
+    if (await $query('Cube').containedIn('objectId', cubeIds).equalTo('vAt', null).count({ useMasterKey: true })) {
+      throw new Error('Nur verifizierte CityCubes können als gescouted markiert werden.')
+    }
+  }
+  let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
+  cubeIds = approved
+    ? cubeIds.filter(id => !adminApprovedCubeIds.includes(id))
+    : cubeIds.filter(id => adminApprovedCubeIds.includes(id))
+  if (!cubeIds.length) { throw new Error('Keine Änderungen') }
+  adminApprovedCubeIds = approved
+    ? [...adminApprovedCubeIds, ...cubeIds]
+    : adminApprovedCubeIds.filter(id => !cubeIds.includes(id))
+  taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
+  const audit = { user, fn: taskList.get('type') + '-submission-preapprove', data: { cubeIds, approved } }
+
+  // update statuses if disassembly
+  if (taskList.get('disassembly')) {
+    await taskList.get('disassembly').fetchWithInclude(['contract', 'booking'], { useMasterKey: true })
+    const order = taskList.get('disassembly').get('order')
+    const disassembly = order.get('disassembly')
+    const statuses = disassembly.statuses || {}
+    for (const cubeId of cubeIds) {
+      approved
+        ? (statuses[cubeId] = 'marked')
+        : (delete statuses[cubeId])
+    }
+    disassembly.statuses = $cleanDict(statuses)
+    await order.set({ disassembly }).save(null, { useMasterKey: true })
+
+    // control-disassembled
+    const orderKey = [order.className, order.id].join('$')
+    for (const cubeId of cubeIds) {
+      const controlIds = await $query('Control')
+        .greaterThan('status', 0)
+        .equalTo(`cubeOrderKeys.${cubeId}`, orderKey)
+        .distinct('objectId', { useMasterKey: true })
+      if (!controlIds) { return }
+      approved
+        ? await $query('TaskList')
+          .equalTo('type', 'control')
+          .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
+          .equalTo('cubeIds', cubeId)
+          .equalTo(`statuses.${cubeId}`, null) // no activity yet
+          .each(async (list) => {
+            const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
+            markedDisassembledCubeIds.push(cubeId)
+            list.set('markedDisassembledCubeIds', markedDisassembledCubeIds)
+            await list.save(null, { useMasterKey: true, context: { audit } })
+          }, { useMasterKey: true })
+        : await $query('TaskList')
+          .equalTo('type', 'control')
+          .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
+          .equalTo('cubeIds', cubeId)
+          .equalTo('markedDisassembledCubeIds', cubeId)
+          .each(async (list) => {
+            const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
+            list.set('markedDisassembledCubeIds', markedDisassembledCubeIds.filter(id => id !== cubeId))
+            await list.save(null, { useMasterKey: true, context: { audit } })
+          }, { useMasterKey: true })
+    }
+  }
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+}, { requireUser: true })
+
 Parse.Cloud.define('task-list-archive', async ({ params: { id: taskListId, skipSyncParentStatus }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (!taskList.get('status')) { throw new Error('Draft task lists cannot be archived') }
@@ -705,6 +774,12 @@ Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) =>
 // check if location has tasks remaining
 Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId, skipSyncParentStatus }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
+  if (taskList.get('status') === 4.1) {
+    return {
+      data: taskList.get('status'),
+      message: 'Liste bereits als erledigt markiert.'
+    }
+  }
   const changes = { taskStatus: [taskList.get('status'), 4.1] }
   taskList.set({ status: 4.1 })
   const audit = { user, fn: 'task-list-mark-complete', data: { changes } }
