@@ -647,11 +647,6 @@ Parse.Cloud.define('search-fieldwork', async ({
     sort.unshift({ dueDate: 'asc' })
   }
 
-  // consola.info('should', bool.should)
-  // consola.info('must', bool.must)
-  // consola.info('must_not', bool.must_not)
-  // consola.info('filter', bool.filter)
-
   const searchResponse = await client.search({
     index: 'rheinkultur-fieldwork',
     body: {

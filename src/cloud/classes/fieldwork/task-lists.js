@@ -348,8 +348,8 @@ Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
     taskList.set('dueDays', moment(taskList.get('dueDate')).diff(today, 'days'))
     if (query._include.includes('submissions')) {
       const submissionClass = getSubmissionClass(taskList.get('type'))
-      // TODO: Go around limit
-      taskList.set('submissions', await $query(submissionClass).equalTo('taskList', taskList).limit(10000).find({ useMasterKey: true }))
+      // submission limit cannot be more than cube limit
+      taskList.set('submissions', await $query(submissionClass).equalTo('taskList', taskList).limit(CUBE_LIMIT).find({ useMasterKey: true }))
     }
     if (taskList.get('type') === 'scout') {
       if (taskList.get('quotas')) {

@@ -15,6 +15,7 @@ module.exports = {
     Parse: true,
     consola: true,
     BASE_DIR: true,
+    CUBE_LIMIT: true,
     DEVELOPMENT: true,
     moment: true,
     sendMail: true,
