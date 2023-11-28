@@ -24,8 +24,8 @@ ingress:
 resources:
   limits: {}
   requests:
-    cpu: 500m
-    memory: 1Gi
+    cpu: 750m
+    memory: 2Gi
 
 maxUnavailable: 1
 
