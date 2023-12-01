@@ -1,3 +1,10 @@
+## [1.152.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.152.1...1.152.2) (2023-12-01)
+
+
+### Bug Fixes
+
+* use kinetic id instead of company name ([78587bd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/78587bda64c1ca09ef629ad7c018802d89799a8b))
+
 ## [1.152.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.152.0...1.152.1) (2023-11-27)
 
 
