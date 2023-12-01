@@ -1,5 +1,5 @@
 module.exports = async function (job) {
-  const kinetic = await $query('Company').equalTo('name', 'Kinetic Germany GmbH').first({ useMasterKey: true })
+  const kinetic = await $getOrFail('Company', 'FNFCxMgEEr')
   const extendContractsQuery = $query('Contract')
     .equalTo('status', 3)
     .equalTo('canceledAt', null)

@@ -370,11 +370,7 @@ async function getOrCacheRegionalCommissions () {
       .select('objectId')
       .first({ useMasterKey: true })
       .then(company => company.id)
-    const kineticId = await $query('Company')
-      .equalTo('name', 'Kinetic Germany GmbH')
-      .select('objectId')
-      .first({ useMasterKey: true })
-      .then(company => company.id)
+    const kineticId = 'FNFCxMgEEr'
     REGIONAL_COMMISSIONS = [
       {
         regionId: 'SKS',
