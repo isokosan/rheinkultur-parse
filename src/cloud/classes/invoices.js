@@ -68,10 +68,11 @@ const Invoice = Parse.Object.extend('Invoice', {
 
     // if kinetic, add a few more custom lines
     if (this.get('company')?.id === 'FNFCxMgEEr') {
+      await this.get('company').fetch({ useMasterKey: true })
       contract?.get('startsAt') && (orderDurationText = 'Rüsttermin: ' + moment(contract.get('startsAt')).format('DD.MM.YYYY'))
       lines.push(...[
         'Kunde: Telekom Deutschland GmbH',
-        'Auftraggeber: Kinetic Germany GmbH',
+        'Auftraggeber: ' + this.get('company').get('name'),
         'Produkt/Medium: CityCube',
         'Belegungsart:  Frontbelegung des jeweiligen Schaltschrankes'
       ])
