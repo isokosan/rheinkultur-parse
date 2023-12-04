@@ -1,3 +1,10 @@
+## [1.152.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.152.2...1.152.3) (2023-12-04)
+
+
+### Bug Fixes
+
+* update credit note invoice auftraggeber description ([1e6209f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1e6209f1a16e1874d32b78e8e30deb743916c458))
+
 ## [1.152.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.152.1...1.152.2) (2023-12-01)
 
 
