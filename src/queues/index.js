@@ -244,7 +244,6 @@ async function processPartnerQuarters (quarter) {
   const response = []
   await $query('PartnerQuarter')
     .equalTo('quarter', quarter)
-    .equalTo('status', 'finalized')
     .include(['rows', 'company'])
     .each((partnerQuarter) => {
       const companyName = partnerQuarter.get('company').get('name')
@@ -499,6 +498,7 @@ async function getLessorCommissionRate ({ lc, stateId, ort, companyId, lessorRat
 
 module.exports = async function (job) {
   const { id } = job.data
+  job.progress('Bericht wird generiert...')
   const quarterlyReport = await $getOrFail('QuarterlyReport', id)
   const quarter = quarterlyReport.get('quarter')
 
@@ -506,26 +506,24 @@ module.exports = async function (job) {
     throw new Error('This report has been finalized.')
   }
 
-  consola.warn('STARTING JOB', id, quarter)
-
   await getOrCacheRegionalCommissions()
   await getOrCacheLessorCommissions()
 
   quarterlyReport.set('status', 'generating').set('jobId', job.id).save(null, { useMasterKey: true })
-  job.progress('Getting quarterly data...')
+  job.progress('Quartalsdaten werden geladen...')
   const { start, end } = getQuarterStartEnd(quarter)
-  job.progress('Processing media invoices...')
+  job.progress('Pachtrelevant Rechnungen werden verarbeitet...')
   const mediaInvoices = await processMediaInvoices(start, end)
-  job.progress('Processing custom invoices...')
   const customInvoices = await processCustomInvoices(start, end)
+  job.progress('Vertriebspartner Quartale werden verarbeitet...')
   const partnerBookings = await processPartnerQuarters(quarter)
-  job.progress('Processing 0€ contracts...')
+  job.progress('Fullservicepreis/Geschenke Verträge werden verarbeitet...')
   const zeroContracts = await processCustomContracts(start, end)
-  job.progress('Processing occupied cubes...')
+  job.progress('Ausschlusskritierien werden verarbeitet...')
   const occupiedCubes = await processOccupiedCubes(start, end)
-  // job.progress('Processing media credit notes...')
+  job.progress('Pachtrelevant Gutschriften werden verarbeitet...')
   const creditNotes = await processCreditNotes(start, end)
-  job.progress('Formatting data into rows...')
+  job.progress('Daten werden formatiert...')
   const rows = await Promise.all([
     ...mediaInvoices,
     ...customInvoices,
@@ -652,7 +650,7 @@ module.exports = async function (job) {
     }
   }
 
-  job.progress('Almost done. Finalizing reports...')
+  job.progress('Bericht wird gespeichert...')
   rheinkultur.orders = Object.keys(rheinkultur.orders).length
   for (const distributorId in distributors) {
     distributors[distributorId].orders = Object.keys(distributors[distributorId].orders).length
@@ -666,7 +664,6 @@ module.exports = async function (job) {
   for (const lessorCode in lessors) {
     lessors[lessorCode].orders = Object.keys(lessors[lessorCode].orders).length
   }
-  job.progress('Done!')
   await quarterlyReport
     .set({
       status: 'draft',

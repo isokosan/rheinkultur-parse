@@ -25,7 +25,7 @@ Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
   !query._include.includes('rows') && query.exclude('rows')
 })
 
-async function checkIfQuarterIsReportable (quarter) {
+async function getReportFinalizeIssues (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
   const issues = {}
   issues.contracts = await $query('Contract')
@@ -63,18 +63,19 @@ async function checkIfQuarterIsReportable (quarter) {
       delete issues[key]
     }
   }
-  return Object.keys(issues).length ? { issues } : false
+  return $cleanDict(issues)
 }
 
 Parse.Cloud.define('quarterly-report-retrieve', async ({ params: { quarter } }) => {
   const report = await $query(QuarterlyReport)
     .equalTo('quarter', quarter)
     .descending('createdAt')
-    .first({ useMasterKey: true })
-  if (!report) {
-    return await checkIfQuarterIsReportable(quarter) || { report: await new QuarterlyReport({ quarter }).save(null, { useMasterKey: true }) }
+    .first({ useMasterKey: true }) || await new QuarterlyReport({ quarter }).save(null, { useMasterKey: true })
+  if (report.get('status') !== 'finalized') {
+    report.set('issues', await getReportFinalizeIssues(quarter))
+    await report.save(null, { useMasterKey: true })
   }
-  return { report }
+  return report
 }, $adminOnly)
 
 Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) => {
@@ -101,6 +102,9 @@ Parse.Cloud.define('quarterly-report-finalize', async ({ params: { quarter } }) 
   if (!report) { throw new Error('Report not found') }
   if (report.get('status') !== 'draft') {
     throw new Error('Cannot finalize report in non-draft status')
+  }
+  if (report.get('issues')) {
+    throw new Error('Report has issues')
   }
   report.set('status', 'finalized')
   await report.save(null, { useMasterKey: true })
