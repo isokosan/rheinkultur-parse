@@ -1,3 +1,15 @@
+# [1.153.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.152.3...1.153.0) (2023-12-05)
+
+
+### Bug Fixes
+
+* quarterly reports structure ([34f169f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/34f169f12b515e8871112e86c2edb06f05709e73))
+
+
+### Features
+
+* finish pre-assign ([44a59dc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/44a59dc70c7b855222ebfda6b39007986f3b051a))
+
 ## [1.152.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.152.2...1.152.3) (2023-12-04)
 
 
