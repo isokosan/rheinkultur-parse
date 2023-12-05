@@ -44,6 +44,7 @@
     "moment": "2.29.4",
     "ndjson": "2.0.0",
     "onesignal-node": "3.4.0",
+    "openai": "^4.20.1",
     "parse-server": "5.4.3",
     "parse-smtp-template": "2.2.2",
     "pdf2pic": "3.1.0",
