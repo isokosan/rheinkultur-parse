@@ -1,3 +1,4 @@
+const { isEqual } = require('lodash')
 const sendPush = require('@/services/push')
 const sendMail = require('@/services/email')
 
@@ -113,7 +114,12 @@ const notifyUser = async ({ user, identifier, data }) => {
   const notification = new Notification({ user, identifier, data })
   const related = await resolveRelated(notification)
   if (related) {
-    return related.set({ readAt: null }).save(null, { useMasterKey: true })
+    if (isEqual(related.get('data'), notification.get('data'))) {
+      // no changes
+      return
+    }
+    // set read at to null if the data has changed
+    return related.set({ readAt: null, data }).save(null, { useMasterKey: true })
   }
   return notification.save(null, { useMasterKey: true })
 }

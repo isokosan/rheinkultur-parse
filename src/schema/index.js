@@ -245,7 +245,7 @@ const schemaDefinitions = {
       noticePeriod: { type: 'Number' },
       extendedDuration: { type: 'Number' },
       earlyCancellations: { type: 'Object' },
-      freeExtensions: { type: 'Object' },
+      // freeExtensions: { type: 'Object' }, // to be used if we want to allow per contract free extensions
 
       voidedAt: { type: 'Date' },
       canceledAt: { type: 'Date' },

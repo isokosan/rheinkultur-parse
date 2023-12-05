@@ -1,33 +1,63 @@
 // LOCATIONS INDEX ON SCOUT APP
 Parse.Cloud.define('tasks-locations', async ({ user }) => {
-  const taskLists = await $query('TaskList')
+  const locations = {}
+  await $query('TaskList')
     .equalTo('scouts', user)
     .containedIn('status', [2, 3])
-    .find({ sessionToken: user.get('sessionToken') })
-  const locations = {}
-  for (const taskList of taskLists) {
-    const { ort, state, gp, type, counts } = taskList.attributes
-    const placeKey = [state.id, ort].join(':')
-    if (!locations[placeKey]) {
-      locations[placeKey] = {
-        placeKey,
-        ort,
-        state,
-        gp,
-        tasks: {}
+    .lessThanOrEqualTo('date', await $today())
+    .eachBatch((taskLists) => {
+      for (const taskList of taskLists) {
+        const { pk: placeKey, ort, state, gp, type, counts } = taskList.attributes
+        if (!locations[placeKey]) {
+          locations[placeKey] = {
+            placeKey,
+            ort,
+            state,
+            gp,
+            tasks: {}
+          }
+        }
+        if (!locations[placeKey].tasks[type]) {
+          locations[placeKey].tasks[type] = {
+            completed: 0,
+            total: 0
+          }
+        }
+        locations[placeKey].tasks[type].total += (counts.total || 0)
+        locations[placeKey].tasks[type].completed += (counts.completed || 0)
       }
-    }
-    if (!locations[placeKey].tasks[type]) {
-      locations[placeKey].tasks[type] = {
-        completed: 0,
-        total: 0
-      }
-    }
-    locations[placeKey].tasks[type].total += (counts.total || 0)
-    locations[placeKey].tasks[type].completed += (counts.completed || 0)
-  }
+    }, { sessionToken: user.get('sessionToken') })
   return Object.values(locations)
 })
+
+Parse.Cloud.define('tasks-upcoming-locations', async ({ user }) => $query('TaskList')
+  .equalTo('scouts', user)
+  .containedIn('status', [2, 3])
+  .greaterThan('date', await $today())
+  .lessThan('date', moment(await $today()).add(1, 'week').format('YYYY-MM-DD'))
+  .ascending('date')
+  .find({ sessionToken: user.get('sessionToken') })
+  .then((taskLists) => taskLists.map((taskList) => {
+    const { pk: placeKey, gp, ort, state, date, type, counts } = taskList.attributes
+    return {
+      placeKey,
+      date,
+      gp,
+      ort,
+      state,
+      type,
+      counts
+    }
+  }))
+  .then((locations) => locations.reduce((acc, location) => {
+    const { date } = location
+    delete location.date
+    if (!acc[date]) {
+      acc[date] = []
+    }
+    acc[date].push(location)
+    return acc
+  }, {})))
 
 // LOCATION VIEW ON SCOUT APP
 Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
@@ -40,6 +70,7 @@ Parse.Cloud.define('tasks-location', async ({ params: { placeKey }, user }) => {
     .equalTo('state', state)
     .equalTo('scouts', user)
     .containedIn('status', [2, 3])
+    .lessThanOrEqualTo('date', await $today())
     .find({ sessionToken: user.get('sessionToken') })
 
   const STATUS_MAP = {

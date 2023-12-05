@@ -68,6 +68,12 @@ const updateJobs = {
     cron: '0 6 * * *', // at 06:00 AM
     notificationDuration: 24
   },
+  notify_scouts: {
+    name: 'Benachrichtigung von Scouts in Abfahrslisten die heute starten',
+    timeoutMinutes: 120,
+    cron: '0 8 * * *', // at 06:00 AM
+    notificationDuration: 24
+  },
   system_status_vouchers: {
     name: 'Überprüfung von Nummernkreisen',
     timeoutMinutes: 2,

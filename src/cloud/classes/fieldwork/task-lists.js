@@ -271,12 +271,19 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
   $audit(taskList, audit)
   const placeKey = taskList.get('pk')
 
+  const today = await $today()
   for (const scout of taskList.get('scouts') || []) {
-    if (notifyScouts === true || notifyScouts?.includes(scout.id)) {
+    if (notifyScouts === true || notifyScouts?.includes?.(scout.id)) {
+      const listIds = await $query('TaskList')
+        .equalTo('pk', placeKey)
+        .equalTo('scouts', scout)
+        .containedIn('status', [2, 3])
+        .lessThanOrEqualTo('date', today)
+        .distinct('objectId', { useMasterKey: true })
       await $notify({
         user: scout,
         identifier: 'task-list-assigned',
-        data: { placeKey }
+        data: { placeKey, listIds }
       })
     }
   }
@@ -290,6 +297,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
         .equalTo('pk', placeKey)
         .equalTo('scouts', notification.get('user'))
         .containedIn('status', [2, 3])
+        .lessThanOrEqualTo('date', await $today())
         .count({ useMasterKey: true })
       if (!inProgress) {
         return notification.destroy({ useMasterKey: true })
@@ -515,7 +523,7 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
   taskList.set('scouts', scoutIds ? scoutIds.map(id => $parsify(Parse.User, id)) : null)
   const audit = { user, fn: 'task-list-update', data: { changes } }
   let notifyScouts
-  if (taskList.get('status') > 1) {
+  if (taskList.get('status') > 1 && taskList.get('date') <= await $today()) {
     notifyScouts = scoutIds.filter(scoutId => !currentScoutIds.includes(scoutId))
   }
   await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts, locationCleanup: true } })
@@ -574,14 +582,11 @@ Parse.Cloud.define('task-list-assign', async ({ params: { id: taskListId }, user
   if (!(taskList.get('scouts') || []).length) {
     throw new Error('Bitte wählen Sie zuerst Scouts aus.')
   }
-  if (moment(taskList.get('date')).isAfter(await $today(), 'day')) {
-    throw new Error(`You can assign this task only from ${moment(taskList.get('date')).format('DD.MM.YYYY')}`)
-  }
   await validateAppointAssign(taskList)
   const changes = { taskStatus: [taskList.get('status'), 2] }
   taskList.set({ status: 2 })
   const audit = { user, fn: 'task-list-assign', data: { changes } }
-  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts: true } })
+  await taskList.save(null, { useMasterKey: true, context: { audit, notifyScouts: taskList.get('date') <= await $today() } })
   return {
     data: taskList.get('status'),
     message: 'Abfahrtslist beauftragt.'
@@ -972,17 +977,14 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
         taskList.set({ scouts })
       }
       let notifyScouts
-      if (taskList.get('status') > 1) {
+      if (taskList.get('status') > 1 && taskList.get('date') <= today) {
         notifyScouts = form.scoutIds.filter(scoutId => !currentScoutIds.includes(scoutId))
       }
       if (form.setStatus !== undefined && form.setStatus !== null && taskList.get('status') !== form.setStatus) {
         changes.taskStatus = [taskList.get('status'), form.setStatus]
         taskList.set({ status: form.setStatus })
         if (form.setStatus === 2) {
-          if (taskList.get('date') > today) {
-            throw new Error(`You can assign this task only from ${moment(taskList.get('date')).format('DD.MM.YYYY')}`)
-          }
-          notifyScouts = true
+          notifyScouts = taskList.get('date') <= today
         } else {
           locationCleanup = true
         }

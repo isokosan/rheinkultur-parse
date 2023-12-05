@@ -16,7 +16,9 @@ Parse.Cloud.define('fieldwork-map', async ({ user }) => {
 // used on the map
 Parse.Cloud.define('fieldwork-outstanding', async ({ user }) => {
   const response = {}
-  const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
+  const taskListQuery = $query('TaskList')
+    .containedIn('status', [2, 3])
+    .lessThanOrEqualTo('date', await $today())
   await taskListQuery
     .select(['scouts', 'counts', 'type', 'gp', 'pk', 'briefing', 'control', 'disassembly'])
     .eachBatch((lists) => {
@@ -74,7 +76,9 @@ Parse.Cloud.define('fieldwork-ongoing', async ({ params: { companyId, force }, u
         states: {}
       }
       // ongoing
-      const taskListQuery = $query('TaskList').containedIn('status', [2, 3])
+      const taskListQuery = $query('TaskList')
+        .containedIn('status', [2, 3])
+        .lessThanOrEqualTo('date', await $today())
       let managerQuery
       if (isFieldworkManager) {
         if (companyId === 'intern') {
