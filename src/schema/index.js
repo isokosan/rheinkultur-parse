@@ -181,6 +181,7 @@ const schemaDefinitions = {
       delete: { requiresAuthentication: true }
     },
     fields: {
+      createdBy: { type: 'Pointer', targetClass: '_User' },
       itemClass: { type: 'String', required: true },
       itemId: { type: 'String', required: true },
       text: { type: 'String', required: true },
@@ -643,6 +644,7 @@ const schemaDefinitions = {
       dueDate: { type: 'String', required: true },
       status: { type: 'Number', required: true },
 
+      responsibles: { type: 'Array' },
       docs: { type: 'Array' }
     }
   },
@@ -658,6 +660,7 @@ const schemaDefinitions = {
       orderType: { type: 'String' },
       criteria: { type: 'Array' },
 
+      responsibles: { type: 'Array' },
       docs: { type: 'Array' }
     }
   },

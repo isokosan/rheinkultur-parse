@@ -192,7 +192,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
         }
       }
 
-      // Todo: update duration when early canceled
+      // TODO: update duration when early canceled
       const order = doc.order || doc.futureOrder
       if (order) {
         doc.companyName = companyIdNameMap[order.company.objectId]

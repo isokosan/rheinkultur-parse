@@ -497,6 +497,7 @@ async function getLessorCommissionRate ({ lc, stateId, ort, companyId, lessorRat
 }
 
 module.exports = async function (job) {
+  const startedAt = moment()
   const { id } = job.data
   job.progress('Bericht wird generiert...')
   const quarterlyReport = await $getOrFail('QuarterlyReport', id)
@@ -676,6 +677,6 @@ module.exports = async function (job) {
       lessors,
       rows
     }).save(null, { useMasterKey: true })
-  consola.success('QUARTER COMPLETE', quarter)
-  return Promise.resolve({})
+  const took = moment().diff(startedAt, 'seconds')
+  return Promise.resolve({ took })
 }
