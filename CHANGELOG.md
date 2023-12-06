@@ -1,3 +1,10 @@
+# [1.154.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.153.2...1.154.0) (2023-12-06)
+
+
+### Features
+
+* do not get quarter issues if did not end ([c578825](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c578825790282784f2d1049d99ec25fe4888877c))
+
 ## [1.153.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.153.1...1.153.2) (2023-12-06)
 
 
