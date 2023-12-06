@@ -27,6 +27,8 @@ Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
 
 async function getReportFinalizeIssues (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
+  // if quarter did not end, return empty issues
+  if (moment(end).isAfter(moment(await $today()), 'day')) { return null  }
   const issues = {
     contracts: await $query('Contract')
       .equalTo('status', 3) // aktiv
