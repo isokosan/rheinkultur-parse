@@ -107,7 +107,7 @@ const schemaDefinitions = {
       itemClass: { type: 'String', required: true },
       itemId: { type: 'String', required: true },
       user: { type: 'Pointer', targetClass: '_User' },
-      fn: { type: 'String', required: true }, // which cloud function triggered this audit
+      fn: { type: 'String', required: true },
       data: { type: 'Object' }
     }
   },
