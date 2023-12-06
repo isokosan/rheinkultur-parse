@@ -1,3 +1,10 @@
+## [1.153.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.153.1...1.153.2) (2023-12-06)
+
+
+### Bug Fixes
+
+* quarterly report issues fetching ([9bcecdc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9bcecdc7eb6e5edb21642f2123842736a886de7f))
+
 ## [1.153.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.153.0...1.153.1) (2023-12-06)
 
 
