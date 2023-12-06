@@ -27,41 +27,39 @@ Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
 
 async function getReportFinalizeIssues (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
-  const issues = {}
-  issues.contracts = await $query('Contract')
-    .equalTo('status', 3) // aktiv
-    .lessThanOrEqualTo('endsAt', end)
-    .count({ useMasterKey: true })
-
-  // make sure every partner has their quarter initialized
-  // TODO: limit
-  const partners = await $query('Company')
-    .notEqualTo('distributor', null)
-    .find({ useMasterKey: true })
-  issues.partnerQuarters = await Promise.all(partners.map(async (company) => {
-    const partnerQuarter = await Parse.Cloud.run('partner-quarter', { companyId: company.id, quarter }, { useMasterKey: true })
-    if (partnerQuarter.status === 'finalized') {
-      return null
-    }
-    return partnerQuarter
-  })).then(partnerQuarters => partnerQuarters.filter(Boolean))
-
-  issues.invoices = await $query('Invoice')
-    .lessThan('status', 2)
-    .greaterThan('periodEnd', start)
-    .lessThanOrEqualTo('periodStart', end)
-    .count({ useMasterKey: true })
-
-  issues.creditNotes = await $query('CreditNote')
-    .lessThan('status', 2)
-    .greaterThan('periodEnd', start)
-    .lessThanOrEqualTo('periodStart', end)
-    .count({ useMasterKey: true })
-
+  const issues = {
+    contracts: await $query('Contract')
+      .equalTo('status', 3) // aktiv
+      .lessThanOrEqualTo('endsAt', end)
+      .count({ useMasterKey: true }),
+    invoices: await $query('Invoice')
+      .lessThan('status', 2)
+      .greaterThan('periodEnd', start)
+      .lessThanOrEqualTo('periodStart', end)
+      .count({ useMasterKey: true }),
+    creditNotes: await $query('CreditNote')
+      .lessThan('status', 2)
+      .greaterThan('periodEnd', start)
+      .lessThanOrEqualTo('periodStart', end)
+      .count({ useMasterKey: true })
+  }
   for (const key of Object.keys(issues)) {
-    if (!issues[key].length) {
+    if (!issues[key]) {
       delete issues[key]
     }
+  }
+  const partnerQuarters = await $query('Company')
+    .notEqualTo('distributor', null)
+    .distinct('objectId', { useMasterKey: true })
+    .then(partnerIds => Promise.all(partnerIds.map(async (companyId) => {
+      const partnerQuarter = await Parse.Cloud.run('partner-quarter', { companyId, quarter }, { useMasterKey: true })
+      if (partnerQuarter.status === 'finalized') {
+        return null
+      }
+      return partnerQuarter
+    })).then(partnerQuarters => partnerQuarters.filter(Boolean)))
+  if (partnerQuarters.length) {
+    issues.partnerQuarters = partnerQuarters
   }
   return $cleanDict(issues)
 }
