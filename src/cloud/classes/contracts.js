@@ -1,4 +1,4 @@
-const { sum } = require('lodash')
+const { sum, isEqual } = require('lodash')
 const { normalizeDateString, normalizeString, contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const { round2, round5, priceString } = require('@/utils')
 const { getNewNo, getDocumentTotals, getPeriodTotal, checkIfCubesAreAvailable, setContractCubeStatuses, getLastRemovedCubeIds } = require('@/shared')
@@ -1227,6 +1227,11 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
       })
       const audit = { user, fn: 'invoice-regenerate', data: { changes, replanned } }
       await invoice.save(null, { useMasterKey: true, context: { rewriteIntroduction: true, audit } })
+      updated = true
+    } else if (!isEqual(mediaItems, invoice.get('media').items)) {
+      // sometimes mediaItems change when cubes are switched, in which case we want to only update media items
+      invoice.set({ media })
+      await invoice.save(null, { useMasterKey: true })
       updated = true
     }
 
