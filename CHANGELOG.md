@@ -1,3 +1,10 @@
+## [1.154.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.0...1.154.1) (2023-12-07)
+
+
+### Bug Fixes
+
+* handle invoice updates with media items when switching cube ([d08c4dc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d08c4dc19e65fc4b6d7da9d6b8780d2b9d841733))
+
 # [1.154.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.153.2...1.154.0) (2023-12-06)
 
 
