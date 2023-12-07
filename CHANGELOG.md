@@ -1,3 +1,10 @@
+## [1.154.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.1...1.154.2) (2023-12-07)
+
+
+### Bug Fixes
+
+* separate address col into str and hsnr ([0fd603d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0fd603d8f4c034b95c27f4aec878e7f9e28cd932))
+
 ## [1.154.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.0...1.154.1) (2023-12-07)
 
 
