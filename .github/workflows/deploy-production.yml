@@ -203,19 +203,3 @@ jobs:
 
       - name: Deploy ${{ env.RELEASE_NAME }}
         run: helm upgrade -f ./.github/values.yaml ${{ env.RELEASE_NAME }} ${{ env.HELM_CHART }} -n ${{ env.NAMESPACE }} --set image.tag="${{ fromJSON(steps.meta.outputs.json).labels['org.opencontainers.image.version'] }}" --create-namespace --install --atomic --wait --timeout=5m0s
-
-  notification:
-    runs-on: ubuntu-latest
-    name: Notify PagerDuty
-    needs: [deploy]
-    if: always()
-    steps:
-      # make deploy job status available
-      # see https://github.com/marketplace/actions/workflow-status-action
-      - uses: martialonline/workflow-status@v3
-        id: check
-      - name: Create a change event
-        uses: PagerDuty/pagerduty-change-events-action@master
-        with:
-          integration-key: ${{ secrets.PAGERDUTY_CHANGE_INTEGRATION_KEY }}
-          custom-event: Automatic deployment ${{ steps.check.outputs.status }}
