@@ -1,3 +1,10 @@
+## [1.154.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.2...1.154.3) (2023-12-11)
+
+
+### Bug Fixes
+
+* skip list in fieldwork-ongoing in if assigned/in-progress with no scout ([0d9173e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0d9173e479eb1323f641df3615a41f3ff77f3cac))
+
 ## [1.154.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.1...1.154.2) (2023-12-07)
 
 
