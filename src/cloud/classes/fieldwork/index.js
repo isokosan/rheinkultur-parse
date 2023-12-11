@@ -94,6 +94,11 @@ Parse.Cloud.define('fieldwork-ongoing', async ({ params: { companyId, force }, u
         .select(['scouts', 'counts', 'type', 'state'])
         .eachBatch((lists) => {
           for (const list of lists) {
+            // if a scout is not selected, but the list is assigned/in progress, something is off.
+            if (!list.get('scouts')?.length) {
+              consola.error('Assigned/In progress TaskList with no scout: ' + list.id)
+              continue
+            }
             const { rejected, pending, approved, completed, total } = list.get('counts')
             const listCounts = {
               rejected: rejected || 0,
