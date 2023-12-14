@@ -1,3 +1,10 @@
+## [1.154.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.3...1.154.4) (2023-12-14)
+
+
+### Bug Fixes
+
+* skipInvoiceEmails checks in issue-invoices and send-issued-invoice-emails jobs ([2a5a1dd](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2a5a1ddb708701bd85f630188a7699a0196a0953))
+
 ## [1.154.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.2...1.154.3) (2023-12-11)
 
 
