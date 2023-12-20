@@ -1,3 +1,10 @@
+# [1.155.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.4...1.155.0) (2023-12-20)
+
+
+### Features
+
+* add 14 day prior quarter finalize option ([95c8074](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/95c807402aaaaf0a4cc3ea096da022d2f9dbb2ba))
+
 ## [1.154.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.3...1.154.4) (2023-12-14)
 
 
