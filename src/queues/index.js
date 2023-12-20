@@ -11,7 +11,7 @@ async function processMediaInvoices (start, end) {
   let i = 0
   const invoiceMediaRows = {}
   const invoicesQuery = Parse.Query.or(
-    $query('Invoice').equalTo('status', 2),
+    $query('Invoice').greaterThanOrEqualTo('status', 1).lessThanOrEqualTo('status', 2),
     // Include canceled vaillant 2023 invoice in every case during 2023 quarterly reports
     $query('Invoice').equalTo('objectId', 'qxOV3RIM2V').equalTo('status', 3)
   )
@@ -127,7 +127,8 @@ async function processMediaInvoices (start, end) {
 async function processCustomInvoices (start, end) {
   const response = []
   const invoicesQuery = $query('Invoice')
-    .equalTo('status', 2)
+    .greaterThanOrEqualTo('status', 1)
+    .lessThanOrEqualTo('status', 2)
     .equalTo('media', null)
     // .equalTo('periodicDistributorQuarter', null) // exclude periodic distributor invoices (MA Lionsgroup)
     .notEqualTo('lessor', null)

@@ -27,8 +27,8 @@ Parse.Cloud.beforeFind(QuarterlyReport, ({ query }) => {
 
 async function getReportFinalizeIssues (quarter) {
   const { start, end } = getQuarterStartEnd(quarter)
-  // if quarter did not end, return empty issues
-  if (moment(end).isAfter(moment(await $today()), 'day')) { return null }
+  // if quarter did not end, or is not ending in the next 15 days, return empty issues
+  if (moment(end).subtract(14, 'days').isAfter(moment(await $today()), 'day')) { return null }
   const issues = {
     contracts: await $query('Contract')
       .equalTo('status', 3) // aktiv
@@ -94,7 +94,7 @@ Parse.Cloud.define('quarterly-report-generate', async ({ params: { quarter } }) 
   return newJobId
 }, $adminOnly)
 
-Parse.Cloud.define('quarterly-report-finalize', async ({ params: { quarter } }) => {
+Parse.Cloud.define('quarterly-report-finalize', async ({ params: { quarter }, user }) => {
   const report = await $query(QuarterlyReport)
     .equalTo('quarter', quarter)
     .descending('createdAt')
@@ -103,11 +103,25 @@ Parse.Cloud.define('quarterly-report-finalize', async ({ params: { quarter } }) 
   if (report.get('status') !== 'draft') {
     throw new Error('Cannot finalize report in non-draft status')
   }
-  if (report.get('issues')) {
-    throw new Error('Report has issues')
+  const { end } = getQuarterStartEnd(quarter)
+  if (moment(end).subtract(14, 'days').isAfter(moment(await $today()), 'day')) {
+    throw new Error('Report can only be closed two weeks prior to quarter end.')
   }
-  report.set('status', 'finalized')
-  await report.save(null, { useMasterKey: true })
+
+  // close partner quarters
+  await $query('PartnerQuarter')
+    .equalTo('quarter', quarter)
+    .notEqualTo('status', 'finalized')
+    .each(partnerQuarter => partnerQuarter
+      .set({ status: 'finalized' })
+      .save(null, { useMasterKey: true })
+    , { useMasterKey: true })
+
+  await report
+    .set('status', 'finalized')
+    .set('finalizedAt', new Date())
+    .set('finalizedBy', user)
+    .save(null, { useMasterKey: true })
   return {
     data: report,
     message: 'Bericht finalisiert'
