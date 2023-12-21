@@ -1,3 +1,10 @@
+# [1.156.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.155.0...1.156.0) (2023-12-21)
+
+
+### Features
+
+* add briefing approve all verified ([2f8bf0c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2f8bf0c821a1529ac87886469e93b04bd8b477eb))
+
 # [1.155.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.154.4...1.155.0) (2023-12-20)
 
 
