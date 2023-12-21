@@ -1,5 +1,6 @@
 const Briefing = Parse.Object.extend('Briefing')
 const TaskList = Parse.Object.extend('TaskList')
+const { difference } = require('lodash')
 const { getStatusAndCounts } = require('./task-lists')
 
 Parse.Cloud.beforeSave(Briefing, async ({ object: briefing, context: { syncStatus } }) => {
@@ -253,7 +254,7 @@ Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user 
 }, $fieldworkManager)
 
 // removed booked cubes from draft briefing
-Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefingId } }) => {
+Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefingId }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
   // TOTRANSLATE
   if (briefing.get('status') !== 0) {
@@ -275,10 +276,41 @@ Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefi
       const cubeChanges = $cubeChanges(taskList, cubeIds)
       if (cubeChanges) {
         taskList.set({ cubeIds })
-        const audit = { fn: 'task-list-update', data: { cubeChanges, removedBooked: true } }
+        const audit = { user, fn: 'task-list-update', data: { cubeChanges, removedBooked: true } }
         return taskList.save(null, { useMasterKey: true, context: { audit } })
       }
     }, { useMasterKey: true })
+}, $fieldworkManager)
+
+Parse.Cloud.define('briefing-approve-verified-cubes', async ({ params: { id: briefingId }, user }) => {
+  const briefing = await $getOrFail(Briefing, briefingId)
+  // TOTRANSLATE
+  if (briefing.get('status') !== 0) {
+    throw new Error('Briefing is not a draft!')
+  }
+  let approved = 0
+  await $query('TaskList')
+    .equalTo('type', 'scout')
+    .equalTo('briefing', briefing)
+    .equalTo('status', 0)
+    .greaterThan('counts.approvable', 0)
+    .each(async (taskList) => {
+      const cubeIds = taskList.get('cubeIds')
+      const adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
+      const approvableCubeIds = await $query('Cube')
+        .containedIn('objectId', cubeIds)
+        .notEqualTo('vAt', null)
+        .notEqualTo('media', null)
+        .distinct('objectId', { useMasterKey: true })
+      const newAdminApprovedCubeIds = [...new Set([...adminApprovedCubeIds, ...approvableCubeIds])]
+      const addedApprovedIds = difference(newAdminApprovedCubeIds, adminApprovedCubeIds)
+      if (!addedApprovedIds.length) { return }
+      const audit = { user, fn: taskList.get('type') + '-submission-preapprove', data: { cubeIds: addedApprovedIds, approved: true } }
+      taskList.set({ adminApprovedCubeIds: newAdminApprovedCubeIds })
+      await taskList.save(null, { useMasterKey: true, context: { audit } })
+      approved += addedApprovedIds.length
+    }, { useMasterKey: true })
+  return approved
 }, $fieldworkManager)
 
 // removes newly booked cube from briefings that are running
