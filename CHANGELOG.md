@@ -1,3 +1,10 @@
+## [1.156.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.156.0...1.156.1) (2023-12-22)
+
+
+### Bug Fixes
+
+* unset lexDocumentId on unsetDocument request or change ([5a38d3e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5a38d3e462873c717ef76da19760ff6488089b1c))
+
 # [1.156.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.155.0...1.156.0) (2023-12-21)
 
 
