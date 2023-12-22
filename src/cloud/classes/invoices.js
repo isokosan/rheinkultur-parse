@@ -575,13 +575,10 @@ Parse.Cloud.define('invoice-reset-introduction', async ({ params: { id: invoiceI
   return invoice.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourceId: lexId } }) => {
-  if (!invoiceId && !lexId) { throw new Error('Either id or resourceId is required.') }
+Parse.Cloud.define('invoice-sync-lex', async ({ params: { resourceId: lexId, unsetDocument } }) => {
+  if (!lexId) { throw new Error('resourceId is required.') }
   const resource = await lexApi('/invoices/' + lexId, 'GET')
-  const query = $query(Invoice)
-  invoiceId && query.equalTo('objectId', invoiceId)
-  lexId && query.equalTo('lexId', lexId)
-  let invoice = await query.first({ useMasterKey: true })
+  let invoice = await $query(Invoice).equalTo('lexId', lexId).first({ useMasterKey: true })
   // handle new invoice if not found
   if (!invoice) {
     if (resource.voucherStatus === 'draft') {
@@ -616,9 +613,11 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { id: invoiceId, resourc
   } = resource
   const changes = $changes(invoice, { voucherStatus, netTotal, taxTotal, total })
   if (Object.keys(changes).length) {
-    invoice.set({ voucherStatus, netTotal, taxTotal, total })
+    invoice.set({ voucherStatus, netTotal, taxTotal, total }).unset('lexDocumentFileId')
     const audit = { fn: 'invoice-update-lex', data: { changes } }
     await invoice.save(null, { useMasterKey: true, context: { audit } })
+  } else if (unsetDocument) {
+    await invoice.unset('lexDocumentFileId').save(null, { useMasterKey: true })
   }
   return invoice
 }, $internOrAdmin)
