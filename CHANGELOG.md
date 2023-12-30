@@ -1,3 +1,10 @@
+## [1.156.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.156.1...1.156.2) (2023-12-30)
+
+
+### Bug Fixes
+
+* remove bcc from schedule notification mails ([eb59938](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eb5993827298727b5f8eca4a0a2c462718952389))
+
 ## [1.156.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.156.0...1.156.1) (2023-12-22)
 
 
