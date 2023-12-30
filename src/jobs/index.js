@@ -383,6 +383,7 @@ const checkScheduleHealth = async function () {
     }).join('')
     return sendMail({
       to: await getScheduleNotificationsEmailConfig(),
+      bcc: null,
       subject: `${lateJobs.length} failing job${lateJobs.length > 1 ? 's' : ''}`,
       html
     })
