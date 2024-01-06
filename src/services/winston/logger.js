@@ -22,7 +22,7 @@ const colors = {
 }
 
 function getLogger () {
-  if (DEVELOPMENT) {
+  if (global.DEVELOPMENT || global.PLAYGROUND) {
     return createLogger({
       level: process.env.LOG_LEVEL || 'silly',
       levels,
@@ -77,7 +77,7 @@ const expressLogger = expressWinston.logger({
 
 const consola = Object.keys(levels).reduce((acc, level) => {
   acc[level] = function (...messages) {
-    logger[level](messages.map(msg => ['string', 'number'].includes(typeof msg) ? msg : inspect(msg, false, 3, true)).join(' '))
+    logger[level](messages.map(msg => ['string', 'number'].includes(typeof msg) ? msg : inspect(msg, false, level === 'debug' ? 10 : 3, true)).join(' '))
   }
   return acc
 }, {})

@@ -6,9 +6,13 @@ async function calculateStats (startOfMonth, endOfMonth) {
   const kinetic = await $getOrFail('Company', 'FNFCxMgEEr')
   const distributorIds = await $query('Company').notEqualTo('distributor', null).distinct('objectId', { useMasterKey: true })
   const stats = {
-    invoices: { count: 0, total: 0 },
-    creditNotes: { count: 0, total: 0 },
-    revenue: {}, // companyId keys
+    revenue: {
+      media: 0,
+      production: 0,
+      distributors: 0,
+      kinetic: 0,
+      total: 0
+    }, // revenue type (media / production / distributors / kinetic / total)
     customers: {}, // active customers
     distributors: {}, // companyId keys
     contracts: { count: 0, cubes: 0, starting: 0, ending: 0 },
@@ -19,30 +23,40 @@ async function calculateStats (startOfMonth, endOfMonth) {
     .equalTo('status', 2)
     .greaterThanOrEqualTo('date', startOfMonth)
     .lessThanOrEqualTo('date', endOfMonth)
-    .select(['total', 'company'])
+    .select(['netTotal', 'company', 'media', 'production'])
     .eachBatch(batch => batch.forEach((invoice) => {
-      const total = invoice.get('total')
-      stats.invoices.count++
-      stats.invoices.total = round2(stats.invoices.total + total)
+      const total = invoice.get('netTotal')
+      stats.revenue.total = round2(stats.revenue.total + total)
       const companyId = invoice.get('company').id
-      stats.revenue[companyId] = round2((stats.revenue[companyId] || 0) + total)
-      if (distributorIds.includes(companyId)) {
+      if (companyId === 'FNFCxMgEEr') {
+        stats.revenue.kinetic = round2(stats.revenue.kinetic + total)
+      } else if (distributorIds.includes(companyId)) {
         stats.distributors[companyId] = round2((stats.distributors[companyId] || 0) + total)
+        stats.revenue.distributors = round2(stats.revenue.distributors + total)
+      } else {
+        const mediaTotal = invoice.get('media')?.total || 0
+        const productionTotal = invoice.get('production')?.total || 0
+        stats.revenue.media = round2(stats.revenue.media + mediaTotal)
+        stats.revenue.production = round2(stats.revenue.production + productionTotal)
       }
     }), { useMasterKey: true })
   await $query('CreditNote')
     .equalTo('status', 2)
     .greaterThanOrEqualTo('date', startOfMonth)
     .lessThanOrEqualTo('date', endOfMonth)
-    .select(['total', 'company'])
+    .select(['netTotal', 'company', 'mediaItems'])
     .eachBatch(batch => batch.forEach((creditNote) => {
-      const total = creditNote.get('total')
-      stats.creditNotes.count++
-      stats.creditNotes.total = round2(stats.creditNotes.total + total)
+      const total = creditNote.get('netTotal')
+      stats.revenue.total = round2(stats.revenue.total - total)
       const companyId = creditNote.get('company').id
-      stats.revenue[companyId] = round2((stats.revenue[companyId] || 0) - total)
-      if (distributorIds.includes(companyId)) {
+      if (companyId === 'FNFCxMgEEr') {
+        stats.revenue.kinetic = round2(stats.revenue.kinetic - total)
+      } else if (distributorIds.includes(companyId)) {
         stats.distributors[companyId] = round2((stats.distributors[companyId] || 0) - total)
+        stats.revenue.distributors = round2(stats.revenue.distributors - total)
+      } else {
+        const mediaTotal = Object.values(creditNote.get('mediaItems') || {}).reduce((acc, item) => acc + item.total, 0)
+        stats.revenue.media = round2(stats.revenue.media - mediaTotal)
       }
     }), { useMasterKey: true })
   await $query('Contract')
@@ -99,7 +113,7 @@ module.exports = async function (job) {
   let m = 0
   const carry = moment('2023-01-01')
   const today = await $today()
-  const months = moment(carry).diff(today, 'months')
+  const months = moment(today).diff(carry, 'months')
   while (carry.isSameOrBefore(today, 'month')) {
     const month = carry.format('YYYY-MM')
     const start = moment(month).startOf('month').format('YYYY-MM-DD')

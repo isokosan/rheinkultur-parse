@@ -96,14 +96,14 @@ const CUBE_FLAGS = {
   },
 
   // WARNINGS
-  TTMR: {
-    value: 'TTMR',
-    label: 'Moskito Rahmen (Town Talker)',
-    level: 'warning',
-    lessors: ['TLK'],
-    description: 'Nach Buchung sofort Meldung an TT, Rahmen muss von TT entfernt werden.',
-    editable: true
-  },
+  // TTMR: {
+  //   value: 'TTMR',
+  //   label: 'Moskito Rahmen (Town Talker)',
+  //   level: 'warning',
+  //   lessors: ['TLK'],
+  //   description: 'Nach Buchung sofort Meldung an TT, Rahmen muss von TT entfernt werden.',
+  //   editable: true
+  // },
   SaeK: {
     value: 'SaeK',
     label: 'Steht in einem Kreisverkehr',

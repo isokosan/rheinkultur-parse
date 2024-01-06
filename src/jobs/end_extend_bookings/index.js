@@ -23,7 +23,7 @@ module.exports = async function (job) {
     const booking = await extendBookingsQuery.first({ useMasterKey: true })
     if (!booking) { break }
     consola.info('auto extending booking', booking.id)
-    await Parse.Cloud.run('booking-extend', { id: booking.id }, { useMasterKey: true })
+    await Parse.Cloud.run('order-extend', { className: 'Booking', id: booking.id }, { useMasterKey: true })
     extendedBookings++
     job.progress(parseInt(100 * (extendedBookings + endedBookings) / total))
   }

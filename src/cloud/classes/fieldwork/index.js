@@ -212,7 +212,7 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { companyI
       }
       for (const { key, start, end } of months) {
         response[key] = {}
-        for (const type of ['Scout', 'Control', 'Disassembly']) {
+        for (const type of ['Scout', 'Control']) {
           const query = $query(type + 'Submission')
           scoutsQuery && query.matchesQuery('scout', scoutsQuery)
           await query
@@ -229,6 +229,7 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { companyI
                     scout: 0,
                     control: 0,
                     disassembly: 0,
+                    'special-format-disassembly': 0,
                     total: 0
                   }
                 }
@@ -237,6 +238,34 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { companyI
               }
             }, { useMasterKey: true })
         }
+        const query = $query('DisassemblySubmission')
+        scoutsQuery && query.matchesQuery('scout', scoutsQuery)
+        await query
+          .greaterThanOrEqualTo('createdAt', start)
+          .lessThanOrEqualTo('createdAt', end)
+          .equalTo('status', 'approved')
+          .include('taskList.disassembly')
+          .select(['scout', 'taskList.disassembly'])
+          .eachBatch((submissions) => {
+            for (const submission of submissions) {
+              const scoutId = submission.get('scout').id
+              if (!response[key][scoutId]) {
+                response[key][scoutId] = {
+                  scoutId,
+                  scout: 0,
+                  control: 0,
+                  disassembly: 0,
+                  'special-format-disassembly': 0,
+                  total: 0
+                }
+              }
+              const type = submission.get('taskList').get('disassembly').get('specialFormat')
+                ? 'special-format-disassembly'
+                : 'disassembly'
+              response[key][scoutId][type]++
+              response[key][scoutId].total++
+            }
+          }, { useMasterKey: true })
       }
       return response
     },

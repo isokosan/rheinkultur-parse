@@ -1,5 +1,6 @@
 const axios = require('axios')
-const { intersection } = require('lodash')
+const { intersection, lowerFirst, kebabCase } = require('lodash')
+const { ORDER_CLASSES } = require('@/shared')
 
 const Disassembly = Parse.Object.extend('Disassembly')
 const TaskList = Parse.Object.extend('TaskList')
@@ -11,18 +12,11 @@ const DISCARD_BEFORE = moment('2023-07-01').subtract(1, 'day').format('YYYY-MM-D
 const getDueDate = date => moment(date).add(2, 'weeks').format('YYYY-MM-DD')
 
 Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly, context: { syncStatus } }) => {
-  if (disassembly.get('booking') && disassembly.get('contract')) {
-    throw new Error('Disassembly cannot be tied to a booking and a contract simultaneously')
-  }
-  // make sure the id matches the booking / contract
   const [className, objectId] = disassembly.id.split('-')
-  if (disassembly.get(className.toLowerCase()).id !== objectId) {
-    throw new Error('Disassembly key does not match booking / contract')
-  }
-
+  disassembly.set('orderKey', [className, objectId].join('-'))
   !disassembly.get('status') && disassembly.set('status', 1)
   !disassembly.get('dueDate') && disassembly.set('dueDate', getDueDate(disassembly.get('date')))
-  disassembly.unset('order')
+  disassembly.unset('order') // make sure not to persist in DB
   if (disassembly.isNew()) { return }
 
   if (syncStatus || !disassembly.get('counts')) {
@@ -33,7 +27,7 @@ Parse.Cloud.beforeSave(Disassembly, async ({ object: disassembly, context: { syn
 })
 
 Parse.Cloud.beforeFind(Disassembly, ({ query }) => {
-  query.include(['contract', 'booking'])
+  query.include(ORDER_CLASSES.map(lowerFirst))
 })
 
 Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => {
@@ -46,20 +40,19 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
     .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
   for (const disassembly of disassemblies) {
     disassembly.set(counts[disassembly.id])
-    disassembly.set('order', disassembly.get('booking') || disassembly.get('contract'))
+    disassembly.set('order', ORDER_CLASSES.map(className => disassembly.get(lowerFirst(className))).find(Boolean))
     disassembly.set('company', disassembly.get('order').get('company'))
   }
 })
 
 async function checkActiveTaskListsExists ({ order, className, disassembly }) {
   if ((!order || !className) && !disassembly) {
-    throw new Error('Either order and className or disassembly must be provided')
+    throw new Error('Either order or disassembly must be provided.')
   }
   const query = $query(TaskList)
   if (order) {
-    const contract = className === 'Contract' ? order : null
-    const booking = className === 'Booking' ? order : null
-    query.matchesQuery('disassembly', $query(Disassembly).equalTo('contract', contract).equalTo('booking', booking))
+    const orderKey = order.className + '-' + order.id
+    query.matchesQuery('disassembly', $query(Disassembly).equalTo('orderKey', orderKey))
   }
   disassembly && query.equalTo('disassembly', disassembly)
   // TODO: Update check here and go over notifications
@@ -109,15 +102,13 @@ async function ensureDisassemblyExists (order, date, dueDate, type) {
         date,
         dueDate,
         type,
-        booking: order.className === 'Booking' ? $pointer('Booking', order.id) : undefined,
-        contract: order.className === 'Contract' ? $pointer('Contract', order.id) : undefined
+        [lowerFirst(order.className)]: $pointer(order.className, order.id)
       }
     })
   }
   return $parsify(Disassembly, disassemblyKey)
 }
 
-// Update booking or contract disassembly from RMV
 Parse.Cloud.define('disassembly-order-update', async ({
   params: {
     className,
@@ -135,7 +126,7 @@ Parse.Cloud.define('disassembly-order-update', async ({
   delete changes.fromRMV
   disassembly.fromRMV = fromRMV
   order.set({ disassembly })
-  const audit = { user, fn: className.toLowerCase() + '-update', data: { changes } }
+  const audit = { user, fn: kebabCase(className) + '-update', data: { changes } }
   if (!fromRMV) {
     if (!disassembly.statuses && !disassembly.submissions) {
       order.unset('disassembly')
@@ -155,9 +146,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
   if (orderEndDate && orderEndDate < discardBefore) {
     orderEndDate = null
   }
-  const contract = className === 'Contract' ? order : null
-  const booking = className === 'Booking' ? order : null
-  const getDisassembliesQuery = () => $query(Disassembly).equalTo('contract', contract).equalTo('booking', booking)
+  const getDisassembliesQuery = () => $query(Disassembly).startsWith('objectId', [className, orderId].join('-'))
 
   // abort and clear lists if disassembly will not be done by RMV
   if (!order.get('disassembly')?.fromRMV) {

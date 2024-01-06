@@ -9,10 +9,12 @@ Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MAS
 const excel = require('exceljs')
 const fetch = require('node-fetch')
 
+const { lowerFirst } = require('lodash')
+
 const elastic = require('@/services/elastic')
 const { drive } = require('@/services/googleapis')
 const { getLexFile, getLexInvoiceDocument, getLexCreditNoteDocument } = require('@/services/lex')
-const { getCubeSummaries } = require('@/shared')
+const { getOrderClassName, getCubeSummaries } = require('@/shared')
 const { round2, round5, dateString, durationString } = require('@/utils')
 const { fetchHousingTypes } = require('@/cloud/classes/housing-types')
 const { fetchStates } = require('@/cloud/classes/states')
@@ -105,7 +107,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
     companyName: { header: 'Kunde/VP', width: 40 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
-    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    campaignNo: { header: 'Kampagnenname', width: 20 },
 
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 15 },
@@ -296,58 +298,22 @@ function getCubeMonthlyMedia (cube, order) {
   if (pricingModel === 'zero') {
     return 0
   }
-  return monthlyMedia[cube.id]
+  return monthlyMedia?.[cube.id]
 }
 
-async function getContractRows (contract, { housingTypes, states }, exportCubeIds) {
-  const rows = []
-  const { motive, externalOrderNo, campaignNo, cubeIds } = contract.attributes
-  const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
-  const printPackages = production?.get('printPackages') || {}
-  exportCubeIds = exportCubeIds ? exportCubeIds.filter(id => cubeIds.includes(id)) : cubeIds
-  const cubes = await $query('Cube').containedIn('objectId', exportCubeIds).limit(exportCubeIds.length).find({ useMasterKey: true })
-  for (const cube of cubes) {
-    const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract.attributes)
-    const monthly = getCubeMonthlyMedia(cube, contract)
-    const autoExtends = contract.get('autoExtendsBy')
-      ? ((contract.get('canceledAt') || canceledEarly) ? 'nein (gekündigt)' : 'ja')
-      : 'nein'
-
-    rows.push({
-      orderNo: contract.get('no'),
-      motive,
-      externalOrderNo,
-      campaignNo,
-      objectId: cube.id,
-      htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
-      str: cube.get('str'),
-      hsnr: cube.get('hsnr'),
-      plz: cube.get('plz'),
-      ort: cube.get('ort'),
-      stateName: states[cube.get('state')?.id]?.name || '',
-      start,
-      end,
-      duration,
-      autoExtends,
-      monthly,
-      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(Boolean).join(': '),
-      canceledEarly,
-      ...parseCubeFeatures(cube.get('features'))
-    })
-  }
-  return rows
-}
-
-// http://localhost:1337/exports/contract/AsaJNA61xX
-router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
+// http://localhost:1337/exports/order/Contract-AsaJNA61xX
+router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
   const workbook = new excel.Workbook()
+  const [className, objectId] = req.params.orderKey.split('-')
+  const order = await $getOrFail(className, objectId)
+  const cubeIds = req.query.cubeIds ? decodeURIComponent(req.query.cubeIds || '').split(',') : order.get('cubeIds')
 
   const fields = {
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
-    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    campaignNo: { header: 'Kampagnenname', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
@@ -369,22 +335,51 @@ router.get('/contract/:contractId', handleErrorAsync(async (req, res) => {
 
   const { columns, headerRowValues } = getColumnHeaders(fields)
 
-  const contract = await $getOrFail('Contract', req.params.contractId)
-  const cubeIds = req.query.cubeIds ? decodeURIComponent(req.query.cubeIds || '').split(',') : null
-  const worksheet = workbook.addWorksheet(safeName(contract.get('no')))
+  const worksheet = workbook.addWorksheet(safeName(order.get('no')))
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
   headerRow.height = 24
 
-  const rows = await getContractRows(contract, { housingTypes, states }, cubeIds)
-  for (const item of rows) {
-    const row = worksheet.addRow(item)
-    item.canceledEarly && (row.getCell(12).font = { name: 'Calibri', color: { argb: 'ff2222' } })
-    item.canceledEarly && (row.getCell(13).font = { name: 'Calibri', color: { argb: 'ff2222' } })
+  const { motive, externalOrderNo, campaignNo } = order.attributes
+  const fieldName = lowerFirst(className)
+  const production = await $query('Production').equalTo(fieldName, order).first({ useMasterKey: true })
+  const printPackages = production?.get('printPackages') || {}
+  const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
+  for (const cube of cubes) {
+    const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, order.attributes)
+    const autoExtends = order.get('autoExtendsBy')
+      ? ((order.get('canceledAt') || canceledEarly) ? 'nein (gekündigt)' : 'ja')
+      : 'nein'
+
+    const monthly = getCubeMonthlyMedia(cube, order)
+
+    const row = worksheet.addRow({
+      orderNo: order.get('no'),
+      motive,
+      externalOrderNo,
+      campaignNo,
+      objectId: cube.id,
+      htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
+      str: cube.get('str'),
+      hsnr: cube.get('hsnr'),
+      plz: cube.get('plz'),
+      ort: cube.get('ort'),
+      stateName: states[cube.get('state')?.id]?.name || '',
+      start,
+      end,
+      duration,
+      autoExtends,
+      monthly,
+      pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(Boolean).join(': '),
+      canceledEarly,
+      ...parseCubeFeatures(cube.get('features'))
+    })
+    canceledEarly && (row.getCell(12).font = { name: 'Calibri', color: { argb: 'ff2222' } })
+    canceledEarly && (row.getCell(13).font = { name: 'Calibri', color: { argb: 'ff2222' } })
   }
 
-  const filename = `Vertrag ${contract.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
+  const filename = `${order.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
@@ -402,7 +397,7 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     orderNo: { header: 'Auftragsnr.', width: 20 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
-    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    campaignNo: { header: 'Kampagnenname', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
@@ -435,7 +430,39 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
     .equalTo('company', company)
     .equalTo('status', 3)
     .each(async (contract) => {
-      rows.push(...await getContractRows(contract, { housingTypes, states }))
+      const { motive, externalOrderNo, campaignNo, cubeIds } = contract.attributes
+      const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
+      const printPackages = production?.get('printPackages') || {}
+      const cubes = await $query('Cube').containedIn('objectId', cubeIds).limit(cubeIds.length).find({ useMasterKey: true })
+      for (const cube of cubes) {
+        const { start, end, duration, canceledEarly } = getCubeOrderDates(cube, contract.attributes)
+        const monthly = getCubeMonthlyMedia(cube, contract)
+        const autoExtends = contract.get('autoExtendsBy')
+          ? ((contract.get('canceledAt') || canceledEarly) ? 'nein (gekündigt)' : 'ja')
+          : 'nein'
+
+        rows.push({
+          orderNo: contract.get('no'),
+          motive,
+          externalOrderNo,
+          campaignNo,
+          objectId: cube.id,
+          htCode: housingTypes[cube.get('ht')?.id]?.code || cube.get('hti'),
+          str: cube.get('str'),
+          hsnr: cube.get('hsnr'),
+          plz: cube.get('plz'),
+          ort: cube.get('ort'),
+          stateName: states[cube.get('state')?.id]?.name || '',
+          start,
+          end,
+          duration,
+          autoExtends,
+          monthly,
+          pp: [printPackages[cube.id]?.no, printPackages[cube.id]?.name].filter(Boolean).join(': '),
+          canceledEarly,
+          ...parseCubeFeatures(cube.get('features'))
+        })
+      }
     }, { useMasterKey: true })
 
   rows.sort((a, b) => {
@@ -881,10 +908,10 @@ const addTaskListSheet = async (workbook, taskList) => {
 }
 router.get('/task-list', handleErrorAsync(async (req, res) => {
   const taskList = await $query('TaskList')
-    .include(['state', 'briefing', 'control', 'disassembly', 'disassembly.booking', 'disassembly.contract'])
+    .include(['state', 'briefing', 'control', 'disassembly'])
     .get(req.query.id, { useMasterKey: true })
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')
-  let name = parent.get('name') || parent.get('booking')?.get('no') || parent.get('contract')?.get('no')
+  let name = parent.get('name') || parent.get('order').no
   if (taskList.get('type') === 'disassembly') {
     name = 'Demontage ' + name
   }
@@ -902,7 +929,7 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
     const [, orderClass, orderId] = req.query.parent.split('-')
     const order = await $getOrFail(orderClass, orderId)
     name = 'Demontage ' + order.get('no')
-    parentQuery.equalTo(orderClass.toLowerCase(), order)
+    parentQuery.equalTo(lowerFirst(orderClass), order)
   } else {
     const objectId = req.query.parent.replace(`${className}-`, '')
     parentQuery.equalTo('objectId', objectId)
@@ -910,7 +937,7 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
   }
   const workbook = new excel.Workbook()
   await $query('TaskList')
-    .matchesQuery(className.toLowerCase(), parentQuery)
+    .matchesQuery(lowerFirst(className), parentQuery)
     .include('state')
     .each(async taskList => {
       await addTaskListSheet(workbook, taskList)
@@ -927,6 +954,7 @@ router.get('/disassemblies', handleErrorAsync(async (req, res) => {
 
   const { columns, headerRowValues } = getColumnHeaders({
     orderNo: { header: 'Auftragsnr.', width: 20 },
+    orderType: { header: 'Auftragstyp.', width: 30 },
     customerName: { header: 'Kunde', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
@@ -961,6 +989,7 @@ router.get('/disassemblies', handleErrorAsync(async (req, res) => {
       for (const cube of cubes) {
         worksheet.addRow({
           orderNo: order.get('no'),
+          orderType: getOrderClassName(order.className),
           customerName: order.get('company')?.get('name'),
           objectId: cube.id,
           htCode: cube.get('ht')?.get('code') || cube.get('hti'),
@@ -1013,7 +1042,7 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
     orderNo: { header: 'Auftragsnr.', width: 15 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: isAldiReport ? 'VST' : 'Extern Auftragsnr.', width: 20 },
-    campaignNo: { header: isAldiReport ? 'Regionalgesellschaft' : 'Kampagnennr.', width: 20 },
+    campaignNo: { header: isAldiReport ? 'Regionalgesellschaft' : 'Kampagnenname', width: 20 },
     media: { header: 'Size', width: 10 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
@@ -1283,7 +1312,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
     companyName: { header: 'Kunde', width: 40 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
-    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    campaignNo: { header: 'Kampagnenname', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
@@ -1466,7 +1495,7 @@ router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
     orderNo: { header: 'Auftragsnr.', width: 15 },
     motive: { header: 'Motiv', width: 30 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
-    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    campaignNo: { header: 'Kampagnenname', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
@@ -1563,7 +1592,7 @@ router.get('/bookings', handleErrorAsync(async (req, res) => {
     companyName: { header: 'Kunde', width: 40 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
-    campaignNo: { header: 'Kampagnennr.', width: 20 },
+    campaignNo: { header: 'Kampagnenname', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
@@ -1749,7 +1778,8 @@ router.get('/invoice-pdf', handleErrorAsync(async (req, res) => {
     res.set('Content-Disposition', `inline; filename="${lexNo}.pdf"`)
     return res.send(response.buffer)
   } catch (error) {
-    throw new Error(error.data.message)
+    consola.error(error.status, error.data)
+    throw new Error(error.data?.message || error.text || 'Unknown LexApi Error')
   }
 }))
 

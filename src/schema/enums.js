@@ -32,11 +32,13 @@ module.exports.PERMISSIONS = {
   */
 }
 
-module.exports.BOOKING_STATUSES = {
+module.exports.ORDER_STATUSES = {
   '-1': 'Storniert',
-  // 0.0: 'Entwurf', // partners ??
-  // 0.1: 'Genehmigung ausstehend', // partners ??
-  // 0.2: 'Abgelehnt', // partners ??
+  0: 'Entwurf',
+  // 0.0: 'Entwurf', // offers
+  // 0.1: 'Gesendet', // offers
+  // 0.2: 'Abgelehnt', // offers ????
+  // 0.3: 'Accepted', // offers ????
   2: 'Entwurf',
   2.1: 'In Bearbeitung',
   3: 'Aktiv',
@@ -60,22 +62,16 @@ module.exports.BOOKING_REQUEST_STATUSES = {
   2: 'Abgelehnt'
 }
 
-module.exports.CONTRACT_STATUSES = {
-  '-1': 'Storniert',
-  // 0.0: 'Entwurf', // offers
-  // 0.1: 'Gesendet', // offers
-  // 0.2: 'Abgelehnt', // offers ????
-  // 0.3: 'Accepted', // offers ????
-  2: 'Entwurf',
-  2.1: 'In Bearbeitung',
-  3: 'Aktiv',
-  4: 'Gekündigt',
-  5: 'Ausgelaufen'
-}
+// When making changes to cube statuses, make sure to go over search and cube after find functions where public / partner statuses are set
 module.exports.CUBE_STATUSES = {
   0: 'Verfügbar',
-  5: 'Vermarktet',
+  // 3: 'Warnmeldung',
+  4: 'Sonderformate',
+  // Everything above here is "unverfügbar" in public view
+  5: 'Moskitorahmen',
+  6: 'Vermarktet',
   7: 'Nicht vermarktungsfähig',
+  // Everything above here is invisible in public view
   8: 'Nicht gefunden',
   9: 'Ausgeblendet (A/R)'
 }

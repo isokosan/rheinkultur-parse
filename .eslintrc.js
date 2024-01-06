@@ -17,6 +17,7 @@ module.exports = {
     BASE_DIR: true,
     CUBE_LIMIT: true,
     DEVELOPMENT: true,
+    PLAYGROUND: true,
     moment: true,
     sendMail: true,
     $cleanDict: true,

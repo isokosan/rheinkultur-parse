@@ -1,41 +1,35 @@
-const { setContractCubeStatuses, setBookingCubeStatus } = require('@/shared')
+const { ORDER_CLASSES, setOrderCubeStatuses } = require('@/shared')
 module.exports = async function (job) {
-  const response = { contracts: {}, bookings: {}, updatedOrders: 0, updatedCubes: 0 }
-  let i = 0
+  const response = { updatedOrders: 0, updatedCubes: 0 }
+  for (const className of ORDER_CLASSES) {
+    response[className] = {}
+  }
+  let checkedOrders = 0
+  let checkedCubes = 0
   const cubeCountAggregate = [
     { $group: { _id: 'id', cubeCount: { $sum: '$cubeCount' } } }
   ]
-  // get all contracts and bookings and set their cube statuses one by one
-  const total = await Promise.all([
-    $query('Contract').aggregate(cubeCountAggregate),
-    $query('Booking').aggregate(cubeCountAggregate)
-  ]).then(([[contractCount], [bookingCount]]) => contractCount.cubeCount + bookingCount.cubeCount)
-  await $query('Contract').eachBatch(async (contracts) => {
-    for (const contract of contracts) {
-      const { set, unset } = await setContractCubeStatuses(contract)
-      i += contract.get('cubeCount')
-      if (set.length || unset.length) {
-        consola.info({ no: contract.get('no'), set, unset })
-        response.contracts[contract.get('no')] = { set, unset }
-        response.updatedCubes += (set.length + unset.length)
-        response.updatedOrders += 1
+  // get all orders and set their cube statuses one by one
+  const total = await Promise.all(ORDER_CLASSES.map(className => $query('Contract').aggregate(cubeCountAggregate)))
+    .then(response => response.reduce((acc, [item]) => acc + item.cubeCount, 0))
+
+  for (const className of ORDER_CLASSES) {
+    await $query(className).eachBatch(async (orders) => {
+      for (const order of orders) {
+        checkedOrders += 1
+        checkedCubes += order.get('cubeCount')
+        const { set, unset } = await setOrderCubeStatuses(order)
+        if (set.length || unset.length) {
+          consola.info({ no: order.get('no'), set, unset })
+          response[className][order.get('no')] = { set, unset }
+          response.updatedCubes += (set.length + unset.length)
+          response.updatedOrders += 1
+        }
+        job.progress(parseInt(100 * checkedCubes / total))
       }
-      job.progress(parseInt(100 * i / total))
-    }
-  }, { useMasterKey: true })
-  await $query('Booking').include('cube').eachBatch(async (bookings) => {
-    for (const booking of bookings) {
-      const { set, unset } = await setBookingCubeStatus(booking)
-      i++
-      if (set.length || unset.length) {
-        consola.info({ no: booking.get('no'), set, unset })
-        response.bookings[booking.get('no')] = { set, unset }
-        response.updatedCubes += (set.length + unset.length)
-        response.updatedOrders += 1
-      }
-      job.progress(parseInt(100 * i / total))
-    }
-  }, { useMasterKey: true })
-  response.checkedCubes = i
+    }, { useMasterKey: true })
+  }
+  response.checkedOrders = checkedOrders
+  response.checkedCubes = checkedCubes
   return Promise.resolve(response)
 }

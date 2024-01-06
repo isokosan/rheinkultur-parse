@@ -81,7 +81,6 @@ async function processMediaInvoices (start, end) {
         row.agencyRate = agencyRate
       }
 
-      // TODO: check later
       row.motive = contract.get('motive')
       row.externalOrderNo = contract.get('externalOrderNo')
       row.campaignNo = contract.get('campaignNo')
@@ -227,7 +226,6 @@ async function processCreditNotes (start, end) {
         row.agencyRate = agencyRate
       }
 
-      // TODO: check later
       row.motive = contract?.get('motive')
       row.externalOrderNo = contract?.get('externalOrderNo')
       row.campaignNo = contract?.get('campaignNo')

@@ -1,13 +1,25 @@
-const { getNewNo, getActiveCubeOrder, getFutureCubeOrder } = require('@/shared')
+const { ORDER_CLASSES, getNewNo, getActiveCubeOrder, getFutureCubeOrder } = require('@/shared')
 const redis = require('@/services/redis')
 const { indexCube, unindexCube, indexCubeBookings } = require('@/cloud/search')
 const { PDGA, errorFlagKeys, warningFlagKeys, editableFlagKeys } = require('@/cloud/cube-flags')
 
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
-    // available, booked, not available, not found
-    if (this.get('order')) { return 5 }
-    if (this.get('futureOrder')) { return 5 }
+    if (this.get('futureOrder') && ['Contract', 'Booking'].includes(this.get('futureOrder').className)) {
+      return 6
+    }
+    if (this.get('order') && ['Contract', 'Booking'].includes(this.get('order').className)) {
+      return 6
+    }
+    const order = this.get('order') || this.get('futureOrder')
+    if (order) {
+      if (order.className === 'FrameMount') {
+        return 5
+      }
+      if (order.className === 'SpecialFormat') {
+        return 4
+      }
+    }
     if (this.get('pair')) { return 9 }
     if (this.get('dAt')) { return 8 }
     const flags = this.get('flags') || []
@@ -15,7 +27,7 @@ const Cube = Parse.Object.extend('Cube', {
       return 7
     }
     if (warningFlagKeys.some(key => this.get(key))) {
-      return 4
+      return 3
     }
     return 0
   }
@@ -141,7 +153,6 @@ Parse.Cloud.beforeDelete(Cube, async ({ object: cube }) => {
 Parse.Cloud.afterDelete(Cube, $deleteAudits)
 
 // if query is coming from public api, hide soft deleted cubes
-// TODO: Also hide for external users like distributors that do not scout
 Parse.Cloud.beforeFind(Cube, async ({ query, user, master }) => {
   const isPublic = !user && !master
   isPublic && query.equalTo('dAt', null).equalTo('pair', null)
@@ -170,7 +181,20 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
           cube.unset(key)
         }
       }
-      cube.get('s') === 5 ? cube.set('s', 7) : cube.set('s', 0)
+      cube.get('s') >= 5 ? cube.set('s', 7) : cube.set('s', 0)
+      continue
+    }
+
+    // if is partner request
+    const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
+    if (isPartner) {
+      cube.get('s') === 4 && cube.set('s', 0)
+      cube.get('s') === 5 && cube.set('s', 6)
+      // show as not available to partners if booked by other company
+      const companyId = cube.get('order')?.company?.id || cube.get('futureOrder')?.company?.id
+      if (cube.get('s') === 6 && companyId !== user.get('company').id) {
+        cube.set('s', 7)
+      }
       continue
     }
 
@@ -200,22 +224,18 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
     }
 
     if (query._include.includes('orders')) {
-      const contracts = await $query('Contract')
-        .equalTo('cubeIds', cube.id)
-        .find({ useMasterKey: true })
-        .then(contracts => contracts.map(contract => ({
-          className: 'Contract',
-          ...contract.toJSON(),
-          earlyCanceledAt: contract.get('earlyCancellations')?.[cube.id]
-        })))
-      const bookings = await $query('Booking')
-        .equalTo('cubeIds', cube.id)
-        .find({ useMasterKey: true })
-        .then(bookings => bookings.map(booking => ({
-          className: 'Booking',
-          ...booking.toJSON()
-        })))
-      cube.set('orders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
+      // TOLIMIT: 100 limit for each order type
+      const orders = await Promise.all(ORDER_CLASSES.map((className) => {
+        return $query(className)
+          .equalTo('cubeIds', cube.id)
+          .find({ useMasterKey: true })
+          .then(orders => orders.map(order => ({
+            className,
+            ...order.toJSON(),
+            earlyCanceledAt: order.get('earlyCancellations')?.[cube.id]
+          })))
+      })).then(orders => orders.flat().sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
+      cube.set('orders', orders)
       cube.set('draftOrders', cube.get('orders').filter(order => order.status >= 0 && order.status <= 2.1))
     }
 

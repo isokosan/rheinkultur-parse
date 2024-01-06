@@ -66,4 +66,4 @@ async function switchCube (contractNo, fromId, toId) {
   console.log(comment)
 }
 
-require('./run')(() => switchCube('V20-0761', 'TLK-72223A88', 'TLK-72223V1023'))
+require('./run')(() => switchCube('V20-0571', 'TLK-6813A36', 'TLK-6813A553'))

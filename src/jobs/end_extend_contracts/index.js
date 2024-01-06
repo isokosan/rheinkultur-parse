@@ -25,7 +25,7 @@ module.exports = async function (job) {
     const contract = await extendContractsQuery.include(['company']).first({ useMasterKey: true })
     if (!contract) { break }
     consola.info('auto extending contract', contract.id, contract.get('company').get('email'))
-    await Parse.Cloud.run('contract-extend', { id: contract.id, email: !DEVELOPMENT }, { useMasterKey: true })
+    await Parse.Cloud.run('order-extend', { className: 'Contract', id: contract.id, email: !DEVELOPMENT }, { useMasterKey: true })
     extendedContracts++
     job.progress(parseInt(100 * (extendedContracts + endedContracts) / total))
   }

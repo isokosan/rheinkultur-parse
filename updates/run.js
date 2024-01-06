@@ -1,5 +1,6 @@
 require('dotenv').config()
 global.Parse = require('parse/node')
+global.PLAYGROUND = true
 require('./../src/globals')
 global.DEVELOPMENT = process.argv[2] !== '--prod'
 

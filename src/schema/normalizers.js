@@ -12,6 +12,34 @@ const normalizeUsernameFromEmail = (email) => {
   return [username.replace(/\./g, ''), domain].join('@')
 }
 
+const ORDER_UNSET_NULL_FIELDS = [
+  'motive',
+  'externalOrderNo',
+  'campaignNo',
+  'autoExtendsBy',
+  'noticePeriod'
+]
+
+const ORDER_FIELD_NORMALIZERS = {
+  motive: normalizeString,
+  externalOrderNo: normalizeString,
+  campaignNo: normalizeString,
+  cubeIds: normalizeCubeIds,
+  startsAt: normalizeDateString,
+  endsAt: normalizeDateString,
+  initialDuration: normalizeInt,
+  autoExtendsBy: normalizeInt,
+  noticePeriod: normalizeInt
+}
+
+function normalizeOrderFields (normalized) {
+  if (!normalized.autoExtendsBy) {
+    normalized.autoExtendsBy = null
+    normalized.noticePeriod = null
+  }
+  return normalized
+}
+
 module.exports = {
   defined,
   normalizeString,
@@ -153,15 +181,11 @@ module.exports = {
   },
   contracts: {
     UNSET_NULL_FIELDS: [
-      'motive',
-      'externalOrderNo',
-      'campaignNo',
+      ...ORDER_UNSET_NULL_FIELDS,
       'companyPerson',
       'invoiceAddress',
       'invoiceDescription',
       'invoicingAt',
-      'autoExtendsBy',
-      'noticePeriod',
       'pricingModel',
       'gradualPriceMap',
       'agency',
@@ -172,6 +196,7 @@ module.exports = {
     ],
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
+        ...ORDER_FIELD_NORMALIZERS,
         companyId: defined,
         addressId: defined,
         companyPersonId: defined,
@@ -180,12 +205,6 @@ module.exports = {
         invoicingAt: value => value === 'end' ? 'end' : 'start',
         paymentType: value => value === '1' || value === 1 ? 1 : 0,
         dueDays: normalizeInt,
-        motive: normalizeString,
-        externalOrderNo: normalizeString,
-        campaignNo: normalizeString,
-        cubeIds: normalizeCubeIds,
-        startsAt: normalizeDateString,
-        endsAt: normalizeDateString,
         agencyId: defined,
         agencyPersonId: defined,
         commission: value => value ? parseFloat(`${value}`.replace(',', '.')) : null,
@@ -207,10 +226,7 @@ module.exports = {
           }
           return null
         },
-        initialDuration: normalizeInt,
         billingCycle: normalizeInt,
-        autoExtendsBy: normalizeInt,
-        noticePeriod: normalizeInt,
         invoiceDescription: normalizeString,
         pricingModel: value => ['gradual', 'fixed', 'zero'].includes(value) ? value : null,
         disassemblyFromRMV: value => value === 'y'
@@ -233,48 +249,67 @@ module.exports = {
         normalized.commission = undefined
         normalized.commissions = undefined
       }
-      if (!normalized.autoExtendsBy) {
-        normalized.autoExtendsBy = null
-        normalized.noticePeriod = null
-      }
-      return normalized
+      return normalizeOrderFields(normalized)
     }
   },
   bookings: {
     UNSET_NULL_FIELDS: [
+      ...ORDER_UNSET_NULL_FIELDS,
       'companyPerson',
-      'autoExtendsBy',
-      'noticePeriod',
-      'motive',
-      'externalOrderNo',
-      'campaignNo',
       'endPrices',
       'monthlyMedia'
     ],
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
+        ...ORDER_FIELD_NORMALIZERS,
         companyId: defined,
         companyPersonId: defined,
-        motive: normalizeString,
-        externalOrderNo: normalizeString,
-        campaignNo: normalizeString,
-        cubeIds: normalizeCubeIds,
-        startsAt: normalizeDateString,
-        endsAt: normalizeDateString,
-        initialDuration: normalizeInt,
-        autoExtendsBy: normalizeInt,
-        noticePeriod: normalizeInt,
         disassemblyFromRMV: value => value === 'y'
       }
       const normalized = {}
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
       }
-      if (!normalized.autoExtendsBy) {
-        normalized.autoExtendsBy = null
-        normalized.noticePeriod = null
+      return normalizeOrderFields(normalized)
+    }
+  },
+  specialFormats: {
+    UNSET_NULL_FIELDS: [
+      ...ORDER_UNSET_NULL_FIELDS,
+      'companyPerson',
+      'sfCounts'
+    ],
+    normalizeFields (form) {
+      const FIELD_NORMALIZERS = {
+        ...ORDER_FIELD_NORMALIZERS,
+        companyId: defined,
+        companyPersonId: defined,
+        disassemblyFromRMV: value => value === 'y'
       }
-      return normalized
+      const normalized = {}
+      for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
+        normalized[key] = FIELD_NORMALIZERS[key](form[key])
+      }
+      return normalizeOrderFields(normalized)
+    }
+  },
+  frameMounts: {
+    UNSET_NULL_FIELDS: [
+      ...ORDER_UNSET_NULL_FIELDS,
+      'companyPerson'
+    ],
+    normalizeFields (form) {
+      const FIELD_NORMALIZERS = {
+        ...ORDER_FIELD_NORMALIZERS,
+        companyId: defined,
+        companyPersonId: defined,
+        disassemblyFromRMV: value => value === 'y'
+      }
+      const normalized = {}
+      for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
+        normalized[key] = FIELD_NORMALIZERS[key](form[key])
+      }
+      return normalizeOrderFields(normalized)
     }
   },
   invoices: {

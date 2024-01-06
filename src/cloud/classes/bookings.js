@@ -3,7 +3,7 @@ const { normalizeDateString, normalizeString, bookings: { UNSET_NULL_FIELDS, nor
 const { indexBooking, unindexBooking, indexBookingRequests, unindexBookingRequests } = require('@/cloud/search')
 
 const { round2 } = require('@/utils')
-const { getNewNo, checkIfCubesAreAvailable, setBookingCubeStatus } = require('@/shared')
+const { getNewNo, checkIfCubesAreAvailable, validateOrderFinalize, setOrderCubeStatuses, earlyCancelSpecialFormats } = require('@/shared')
 
 const Booking = Parse.Object.extend('Booking')
 
@@ -60,7 +60,7 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
   await indexBooking(booking)
   await indexBookingRequests(booking)
-  setCubeStatuses && await setBookingCubeStatus(booking)
+  setCubeStatuses && await setOrderCubeStatuses(booking)
   audit && $audit(booking, audit)
 })
 
@@ -146,25 +146,13 @@ async function validatePricing ({ company, cubeIds, endPrices, monthlyMedia }) {
   }
 }
 
-async function validateBookingActivate (booking) {
-  if (booking.get('status') >= 3) {
-    throw new Error('Buchung schon aktiv.')
-  }
-
-  // check if booking has cubeIds
-  const cubeIds = booking.get('cubeIds') || []
-  if (!cubeIds.length) {
-    throw new Error('Sie müssen mindestens einen CityCube hinzugefügt haben, um die Buchung zu aktivieren.')
-  }
-
-  // check if all cubes are available
-  await checkIfCubesAreAvailable(booking)
-
+async function validateBookingFinalize (booking) {
+  await validateOrderFinalize(booking)
   // validate production
   const production = await $query('Production').equalTo('booking', booking).first({ useMasterKey: true })
   if (production) {
     const printPackages = production.get('printPackages')
-    for (const cubeId of cubeIds) {
+    for (const cubeId of booking.get('cubeIds')) {
       if (!(cubeId in printPackages) || !printPackages[cubeId]) {
         throw new Error('Sie müssen für alle Werbemedien ein Belegungspaket auswählen.')
       }
@@ -393,9 +381,12 @@ Parse.Cloud.define('booking-update', async ({
   return booking.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user }) => {
+Parse.Cloud.define('booking-finalize', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId, 'cube')
-  await validateBookingActivate(booking)
+  await validateBookingFinalize(booking)
+
+  // check if any special formats need to be canceled early
+  await earlyCancelSpecialFormats(booking)
 
   // save cube data in time of finalization
   const cube = booking.get('cube')
@@ -412,61 +403,19 @@ Parse.Cloud.define('booking-activate', async ({ params: { id: bookingId }, user 
   }
 
   booking.set({ status: 3, cubeData })
-  const audit = { user, fn: 'booking-activate' }
-  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, $internOrAdmin)
-
-Parse.Cloud.define('booking-set-cube-statuses', async ({ params: { id: bookingId } }) => {
-  const booking = await $getOrFail(Booking, bookingId)
-  return setBookingCubeStatus(booking)
+  const audit = { user, fn: 'booking-finalize' }
+  await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  return 'Buchung finalisiert.'
 }, $internOrAdmin)
 
 // TODO: Make sure to give option to update cube data
-Parse.Cloud.define('booking-deactivate', async ({ params: { id: bookingId }, user }) => {
+Parse.Cloud.define('booking-undo-finalize', async ({ params: { id: bookingId }, user }) => {
   const booking = await $getOrFail(Booking, bookingId)
   booking.set({ status: 2.1 })
-  const audit = { user, fn: 'booking-deactivate' }
-  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  const audit = { user, fn: 'booking-undo-finalize' }
+  await booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
+  return 'Finalisierung zurückgezogen.'
 }, $internOrAdmin)
-
-/**
- * Bookings are extended by auto extend duration
- * When a booking is extended
- *   the booking end date is updated
- *   extended years is incremented
- */
-Parse.Cloud.define('booking-extend', async ({ params: { id: bookingId, extendBy }, user, master }) => {
-  if (!master) {
-    if (!['intern', 'admin'].includes(user.get('accType'))) {
-      if (!(user.get('accType') === 'partner' && user.get('permissions').includes('manage-bookings'))) {
-        throw new Error('Unbefugter Zugriff.')
-      }
-    }
-  }
-
-  const booking = await $getOrFail(Booking, bookingId)
-  if (booking.get('status') !== 3) {
-    throw new Error('Nur laufende Buchungen können verlängert werden.')
-  }
-  extendBy = extendBy || booking.get('autoExtendsBy')
-  if (!extendBy || ![3, 6, 12].includes(parseInt(extendBy))) {
-    throw new Error('Verlängerungsanzahl nicht gesetzt.')
-  }
-  extendBy = parseInt(extendBy)
-
-  const startsAt = booking.get('startsAt')
-  const endsAt = booking.get('endsAt')
-  const newExtendedDuration = (booking.get('extendedDuration') || 0) + extendBy
-  const newTotalDuration = booking.get('initialDuration') + newExtendedDuration
-  const newEndsAt = moment(startsAt).add(newTotalDuration, 'months').subtract(1, 'day').format('YYYY-MM-DD')
-  booking.set({
-    endsAt: newEndsAt,
-    extendedDuration: newExtendedDuration
-  })
-
-  const audit = { user, fn: 'booking-extend', data: { extendBy, endsAt: [endsAt, booking.get('endsAt')] } }
-  return booking.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
-}, { requireUser: true })
 
 /**
  * When a booking is canceled on a given date
@@ -485,6 +434,9 @@ Parse.Cloud.define('booking-cancel', async ({
   const booking = await $getOrFail(Booking, bookingId)
   if (booking.get('status') !== 3) {
     throw new Error('Nur laufende Buchungen können gekündigt werden.')
+  }
+  if (!booking.get('autoExtendsBy') && endsAt === booking.get('endsAt')) {
+    throw new Error('Bitte geben Sie ein neues Enddatum ein.')
   }
 
   const changes = $changes(booking, { endsAt, cancelNotes })
@@ -958,7 +910,9 @@ Parse.Cloud.define('booking-request-accept', async ({ params: { id, comments }, 
   let endBooking
   if (request.type === 'create') {
     // create and activate booking
-    await validateBookingActivate(booking)
+    await validateBookingFinalize(booking)
+    // check if any special formats need to be canceled early
+    await earlyCancelSpecialFormats(booking)
     booking.set({ status: 3 })
     setCubeStatuses = true
     audit = { user, fn: 'booking-create-request-accept' }

@@ -315,16 +315,18 @@ Parse.Cloud.define('search', async ({
 }) => {
   let orderClass
   const isPublic = !master && !user
-  if (isPublic && s !== '0' && s !== '') {
-    s = ''
+  // public can only search for '0' => available or '' => all
+  if (isPublic) {
+    s = s === 'all' ? '' : '0'
   }
   const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
+  // partner can only search for '0' => available, my_bookings or '' => all
   if (isPartner) {
+    cId = user.get('company').id
     !['0', 'my_bookings', 'ml'].includes(s) && (s = '')
     if (s === 'my_bookings') {
-      s = '5'
+      s = '6'
       orderClass = 'Booking'
-      cId = user.get('company').id
     }
     lc = 'TLK'
   }
@@ -400,8 +402,7 @@ Parse.Cloud.define('search', async ({
   }
 
   // STATUS PUBLIC
-  // TODO: add filter for distributors (external users who are not scouts)
-  if (isPublic) {
+  if (isPublic || isPartner) {
     bool.must_not.push({ exists: { field: 'dAt' } })
     bool.must_not.push({ exists: { field: 'pair' } })
   }
@@ -422,7 +423,8 @@ Parse.Cloud.define('search', async ({
       bool: {
         should: [
           { bool: { must_not: { exists: { field: 's' } } } },
-          { range: { s: { lt: 5 } } },
+          // TOTEST: for public and partners lt should be 5
+          { range: { s: { lt: isPublic || isPartner ? 5 : 6 } } },
           availableFromClause
         ].filter(Boolean),
         minimum_should_match: 1
@@ -447,8 +449,32 @@ Parse.Cloud.define('search', async ({
     }
   }
 
-  // Booked
+  // SpecialFormat
+  if (s.includes('4')) {
+    bool.must.push({
+      bool: {
+        should: [
+          { match: { 'order.className': 'SpecialFormat' } },
+          { match: { 'futureOrder.className': 'SpecialFormat' } }
+        ],
+        minimum_should_match: 1
+      }
+    })
+  }
+  // FrameMount
   if (s.includes('5')) {
+    bool.must.push({
+      bool: {
+        should: [
+          { match: { 'order.className': 'FrameMount' } },
+          { match: { 'futureOrder.className': 'FrameMount' } }
+        ],
+        minimum_should_match: 1
+      }
+    })
+  }
+  // Booked by contract or booking
+  if (s.includes('6')) {
     const currentOrderMust = [{ exists: { field: 'order' } }]
     cId && currentOrderMust.push({ match: { 'order.company.objectId': cId } })
     orderClass && currentOrderMust.push({ match: { 'order.className': orderClass } })
@@ -467,13 +493,9 @@ Parse.Cloud.define('search', async ({
       }
     })
   }
+
   // Nicht vermarktungsfähig
-  s.includes('7') && bool.must.push({
-    bool: {
-      should: errorFlagKeys.map(key => ({ term: { 'flags.keyword': key } })),
-      minimum_should_match: 1
-    }
-  })
+  s.includes('7') && bool.must.push({ terms: { 'flags.keyword': errorFlagKeys } })
   s.includes('8')
     ? bool.must.push({ exists: { field: 'dAt' } })
     : (!s.includes('all') && bool.must_not.push({ exists: { field: 'dAt' } }))
@@ -521,6 +543,7 @@ Parse.Cloud.define('search', async ({
   ort && bool.filter.push({ term: { 'ort.keyword': ort } })
   stateId && bool.filter.push({ term: { 'state.objectId.keyword': stateId } })
 
+  // TODO: only enable if coming from EXPORTS
   if (returnQuery) {
     return {
       index: 'rheinkultur-cubes',
@@ -552,6 +575,10 @@ Parse.Cloud.define('search', async ({
       'gp',
       's'
     ]
+    if (isPartner) {
+      includes.push('order.company.objectId')
+      includes.push('futureOrder.company.objectId')
+    }
   }
   const searchResponse = await client.search({
     index: 'rheinkultur-cubes',
@@ -566,9 +593,20 @@ Parse.Cloud.define('search', async ({
   })
   const { hits: { hits, total: { value: count } } } = searchResponse
   let results = hits.map(hit => hit._source)
-  if (isPublic) {
+  if (isPublic || isPartner) {
     results = results.map(result => {
-      if (result.s >= 5) {
+      // show special-formats as available
+      result.s === 4 && (result.s = 0)
+      if (isPublic) {
+        // make sure to change this in cube afterfind as well
+        result.s >= 5 && (result.s = 7)
+        return result
+      }
+      // show frame-mounts as "not available"
+      result.s === 5 && (result.s = 6)
+      // show as not available to partners if booked by other company
+      const companyId = result.order?.company?.objectId || result.futureOrder?.company?.objectId
+      if (result.s === 6 && companyId !== cId) {
         result.s = 7
       }
       return result

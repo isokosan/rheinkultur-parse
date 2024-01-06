@@ -1,5 +1,8 @@
+const { lowerFirst } = require('lodash')
+const { ORDER_CLASSES } = require('@/shared')
+
 module.exports = async function (job) {
-  const orderQueries = ['Contract', 'Booking'].map(className => ({
+  const orderQueries = ORDER_CLASSES.map(className => ({
     className,
     query: $query(className).equalTo('disassembly.fromRMV', true)
   }))
@@ -19,21 +22,16 @@ module.exports = async function (job) {
   }
 
   // Run sync on removed disassemblies
-  await $query('Disassembly')
-    .matchesQuery('contract', $query('Contract').equalTo('disassembly.fromRMV', null)).each(async (record) => {
-      const { id } = record.get('contract')
-      const messages = await Parse.Cloud.run('disassembly-order-sync', { className: 'Contract', id }, { useMasterKey: true })
-      i++
-      messages && (actions['Contract-' + id] = messages)
-      consola.debug('Contract', record.get('contract').id, messages)
-    }, { useMasterKey: true })
-  await $query('Disassembly')
-    .matchesQuery('booking', $query('Booking').equalTo('disassembly.fromRMV', null)).each(async (record) => {
-      const { id } = record.get('booking')
-      const messages = await Parse.Cloud.run('disassembly-order-sync', { className: 'Booking', id }, { useMasterKey: true })
-      i++
-      messages && (actions['Booking-' + id] = messages)
-      consola.debug('Booking', record.get('booking').id, messages)
-    }, { useMasterKey: true })
+  for (const className of ORDER_CLASSES) {
+    const fieldName = lowerFirst(className)
+    await $query('Disassembly')
+      .matchesQuery(fieldName, $query(className).equalTo('disassembly.fromRMV', null)).each(async (record) => {
+        const { id } = record.get(lowerFirst)
+        const messages = await Parse.Cloud.run('disassembly-order-sync', { className, id }, { useMasterKey: true })
+        i++
+        messages && (actions[[className, id].join('-')] = messages)
+        consola.debug(className, id, messages)
+      }, { useMasterKey: true })
+  }
   return Promise.resolve({ i, actions })
 }

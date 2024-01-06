@@ -35,6 +35,47 @@ const taskSubmissionFields = {
   rejectionReason: { type: 'String' }
 }
 
+const durationFields = {
+  startsAt: { type: 'String' },
+  initialDuration: { type: 'Number' },
+  endsAt: { type: 'String' },
+  autoExtendsAt: { type: 'String' },
+  autoExtendsBy: { type: 'Number', default: 12 },
+  noticePeriod: { type: 'Number' },
+  extendedDuration: { type: 'Number' }
+}
+
+const orderFields = {
+  no: { type: 'String', required: true },
+  status: { type: 'Number', required: true },
+  company: { type: 'Pointer', targetClass: 'Company', required: true },
+  companyPerson: { type: 'Pointer', targetClass: 'Person' },
+
+  motive: { type: 'String' },
+  externalOrderNo: { type: 'String' },
+  campaignNo: { type: 'String' },
+
+  ...durationFields,
+
+  voidedAt: { type: 'Date' },
+  canceledAt: { type: 'Date' },
+  cancelNotes: { type: 'String' },
+
+  cubeIds: { type: 'Array', default: [] },
+
+  disassembly: { type: 'Object' }, // disassembly info
+
+  // calculated
+  cubeCount: { type: 'Number' },
+  totalDuration: { type: 'Number' }
+}
+
+const orderIndexes = {
+  noIndex: { no: 1 },
+  cubeIdsIndex: { cubeIds: 1 },
+  cubeIdsWithStatusIndex: { status: 1, cubeIds: 1 }
+}
+
 const schemaDefinitions = {
   _Role: {
     CLP: { ...readAuthOnly, ...writeMasterOnly }
@@ -121,32 +162,8 @@ const schemaDefinitions = {
       delete: {}
     },
     fields: {
-      no: { type: 'String', required: true },
-      status: { type: 'Number', required: true },
-      company: { type: 'Pointer', targetClass: 'Company' },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
-
-      motive: { type: 'String' },
-      externalOrderNo: { type: 'String' },
-      campaignNo: { type: 'String' },
-
-      // duration settings
-      startsAt: { type: 'String' },
-      initialDuration: { type: 'Number' },
-      endsAt: { type: 'String' },
-      autoExtendsAt: { type: 'String' },
-      autoExtendsBy: { type: 'Number', default: 12 },
-      noticePeriod: { type: 'Number' },
-      extendedDuration: { type: 'Number' },
-
-      voidedAt: { type: 'Date' },
-      canceledAt: { type: 'Date' },
-      cancelNotes: { type: 'String' },
-
-      cubeIds: { type: 'Array', default: [] },
+      ...orderFields,
       cubeId: { type: 'String' },
-
-      disassembly: { type: 'Object' }, // disassembly info
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
@@ -155,21 +172,13 @@ const schemaDefinitions = {
       // stored
       cubeData: { type: 'Object' },
 
-      // calculated
-      cubeCount: { type: 'Number' },
-      totalDuration: { type: 'Number' },
-
       // pricing comes from vertriebspartner
       endPrices: { type: 'Object' }, // Kunden-netto, only applies when company has commission pricing model
       monthlyMedia: { type: 'Object' }, // Monthly prices are set only when the company has no pricing model
 
       request: { type: 'Object' } // VP requests
     },
-    indexes: {
-      noIndex: { no: 1 },
-      cubeIdsIndex: { cubeIds: 1 },
-      cubeIdsWithStatusIndex: { status: 1, cubeIds: 1 }
-    }
+    indexes: orderIndexes
   },
   Comment: {
     CLP: {
@@ -228,34 +237,11 @@ const schemaDefinitions = {
       delete: {}
     },
     fields: {
-      no: { type: 'String', required: true },
-      status: { type: 'Number', required: true },
-      company: { type: 'Pointer', targetClass: 'Company', required: true },
-      companyPerson: { type: 'Pointer', targetClass: 'Person' },
-
-      motive: { type: 'String' },
-      externalOrderNo: { type: 'String' },
-      campaignNo: { type: 'String' },
-
-      // duration settings
-      startsAt: { type: 'String' },
-      initialDuration: { type: 'Number' },
-      endsAt: { type: 'String' },
-      autoExtendsAt: { type: 'String' },
-      autoExtendsBy: { type: 'Number', default: 12 },
-      noticePeriod: { type: 'Number' },
-      extendedDuration: { type: 'Number' },
+      ...orderFields,
       earlyCancellations: { type: 'Object' },
       // freeExtensions: { type: 'Object' }, // to be used if we want to allow per contract free extensions
-
-      voidedAt: { type: 'Date' },
-      canceledAt: { type: 'Date' },
-      cancelNotes: { type: 'String' },
-
-      cubeIds: { type: 'Array', default: [] },
       selectionRatings: { type: 'Object' }, // used to store info on how good a selected cube is
 
-      // contract specific
       address: { type: 'Pointer', targetClass: 'Address', required: true },
       driveFileId: { type: 'String' }, // google doc id
       // billing & pricing
@@ -276,24 +262,52 @@ const schemaDefinitions = {
       commissions: { type: 'Object' },
       commission: { type: 'Number' },
 
-      disassembly: { type: 'Object' }, // disassembly info
+      briefing: { type: 'Pointer', targetClass: 'Briefing' },
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
       responsibles: { type: 'Array' },
 
       // stored
-      cubeData: { type: 'Object' },
-
-      // calculated
-      cubeCount: { type: 'Number' },
-      totalDuration: { type: 'Number' }
+      cubeData: { type: 'Object' }
     },
-    indexes: {
-      noIndex: { no: 1 },
-      cubeIdsIndex: { cubeIds: 1 },
-      cubeIdsWithStatusIndex: { status: 1, cubeIds: 1 }
-    }
+    indexes: orderIndexes
+  },
+  // Rahmenbelegungen
+  FrameMount: {
+    CLP: {
+      get: { '*': true },
+      find: { requiresAuthentication: true },
+      count: { requiresAuthentication: true },
+      create: {},
+      update: {},
+      delete: {}
+    },
+    fields: {
+      ...orderFields,
+      earlyCancellations: { type: 'Object' },
+
+      briefing: { type: 'Pointer', targetClass: 'Briefing' }
+    },
+    indexes: orderIndexes
+  },
+  // Sonderformate
+  SpecialFormat: {
+    CLP: {
+      get: { '*': true },
+      find: { requiresAuthentication: true },
+      count: { requiresAuthentication: true },
+      create: {},
+      update: {},
+      delete: {}
+    },
+    fields: {
+      ...orderFields,
+      earlyCancellations: { type: 'Object' },
+      sfCounts: { type: 'Object' }, // how many were hung per cube
+      sfCount: { type: 'Number' } // total
+    },
+    indexes: orderIndexes
   },
   Cube: {
     CLP: { ...readPublic, ...writeMasterOnly },

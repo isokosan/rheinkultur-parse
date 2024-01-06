@@ -1,4 +1,4 @@
-const { isEqual } = require('lodash')
+const { isEqual, kebabCase } = require('lodash')
 const sendPush = require('@/services/push')
 const sendMail = require('@/services/email')
 
@@ -35,8 +35,8 @@ const NOTIFICATIONS = {
     message: ({ placeKey, status }) => `Eine Abfahrtsliste in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> wurde gelöscht.`,
     route: ({ type, orderClass, orderId }) => {
       if (type === 'disassembly') {
-        const name = orderClass.toLowerCase()
-        return { name: orderClass.toLowerCase(), params: { [`${name}Id`]: orderId }, hash: '#disassembly' }
+        const name = kebabCase(orderClass)
+        return { name: kebabCase(orderClass), params: { [`${name}Id`]: orderId }, hash: '#disassembly' }
       }
       return { name: 'fieldwork-list' }
     }

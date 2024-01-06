@@ -19,6 +19,9 @@ Parse.Cloud.beforeSave(Parse.User, async ({ object: user, master }) => {
         inviteLink: `${process.env.WEBAPP_URL}/invitation?token=${user.get('inviteToken')}`
       }
     })
+    if (!mailStatus.accepted.length) {
+      throw new Error('Einladungsmail konnte nicht versendet werden. Bitte prüfen Sie die E-Mail Adresse.')
+    }
     user.set('invitationMailStatus', mailStatus)
   }
   user.get('lastLoginAt') && user.unset('inviteToken')

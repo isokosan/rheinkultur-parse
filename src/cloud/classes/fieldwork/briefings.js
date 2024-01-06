@@ -338,63 +338,98 @@ Parse.Cloud.define('briefing-report', async ({ params: { id: briefingId }, user 
   const report = {}
   await $query('TaskList')
     .equalTo('briefing', briefing)
-    .select(['pk', 'results'])
+    .select(['pk', 'results', 'selectionRatings'])
     .each(async (taskList) => {
-      report[taskList.get('pk')] = taskList.get('results') || {}
+      const selections = {}
+      for (const rating of Object.values(taskList.get('selectionRatings') || {})) {
+        selections[rating] = (selections[rating] || 0) + 1
+      }
+      const pkReport = taskList.get('results') || {}
+      if ($cleanDict(selections)) {
+        pkReport.selections = selections
+      }
+      report[taskList.get('pk')] = pkReport
     }, { useMasterKey: true })
   return report
 }, $fieldworkManager)
 
-Parse.Cloud.define('briefing-generate-contract', async ({ params: { id: briefingId }, user }) => {
+Parse.Cloud.define('briefing-generate', async ({ params: { id: briefingId, type, includeCubes }, user }) => {
   const briefing = await $getOrFail('Briefing', briefingId, ['company'])
   const company = briefing.get('company')
   const getTaskListsQuery = () => $query('TaskList').equalTo('briefing', briefing)
 
+  const cubeIds = []
   // pre-approved verified cubes
-  const adminApprovedCubeIds = await getTaskListsQuery().distinct('adminApprovedCubeIds', { useMasterKey: true })
-
-  // approved submissions
-  const approvedCubeIds = await $query('ScoutSubmission')
-    .matchesQuery('taskList', getTaskListsQuery())
-    .equalTo('status', 'approved')
-    .notEqualTo('form.media', null)
-    .distinct('cube', { useMasterKey: true })
-    .then(cubes => cubes.map(cube => cube.objectId))
-
-  let selectionRatings = {}
-  await getTaskListsQuery().select('selectionRatings').eachBatch((lists) => {
-    for (const list of lists) {
-      selectionRatings = {
-        ...selectionRatings,
-        ...(list.get('selectionRatings') || {})
-      }
-    }
-  }, { useMasterKey: true })
-
-  const Contract = Parse.Object.extend('Contract')
-  const contract = new Contract({
-    cubeIds: [...adminApprovedCubeIds, ...approvedCubeIds].sort(),
-    selectionRatings,
-    status: 2,
-    company,
-    briefing,
-    campaignNo: briefing.get('name')
-  })
-
-  if (company) {
-    const { paymentType, dueDays } = company.attributes
-    const { billingCycle, pricingModel, invoicingAt } = company.get('contractDefaults') || {}
-    contract.set({
-      tags: contract.get('company').get('tags'),
-      address: company.get('address'),
-      invoiceAddress: company.get('invoiceAddress'),
-      billingCycle: billingCycle || 12,
-      invoicingAt: invoicingAt || pricingModel === 'gradual' ? 'end' : 'start',
-      paymentType: paymentType || 0,
-      dueDays: dueDays || 14,
-      pricingModel: pricingModel || null
-    })
+  if (includeCubes === 'approved') {
+    const adminApprovedCubeIds = await getTaskListsQuery().distinct('adminApprovedCubeIds', { useMasterKey: true })
+    const approvedCubeIds = await $query('ScoutSubmission')
+      .matchesQuery('taskList', getTaskListsQuery())
+      .equalTo('status', 'approved')
+      .notEqualTo('form.media', null)
+      .distinct('cube', { useMasterKey: true })
+      .then(cubes => cubes.map(cube => cube.objectId))
+    cubeIds.push(...adminApprovedCubeIds, ...approvedCubeIds)
   }
-  const audit = { user, fn: 'contract-generate' }
-  return contract.save(null, { useMasterKey: true, context: { audit } })
+  let selectionRatings = {}
+  if (type === 'Contract' || includeCubes === 'quality') {
+    await getTaskListsQuery().select('selectionRatings').eachBatch((lists) => {
+      for (const list of lists) {
+        selectionRatings = {
+          ...selectionRatings,
+          ...(list.get('selectionRatings') || {})
+        }
+      }
+    }, { useMasterKey: true })
+    if (includeCubes === 'quality') {
+      // only include cubeId keys that have a value of '🟢'
+      const greenCubeIds = Object.entries(selectionRatings)
+        .filter(([, rating]) => rating === '🟢')
+        .map(([cubeId]) => cubeId)
+      cubeIds.push(...greenCubeIds)
+    }
+  }
+
+  cubeIds.sort()
+
+  if (type === 'Contract') {
+    const Contract = Parse.Object.extend('Contract')
+    const contract = new Contract({
+      cubeIds,
+      selectionRatings,
+      status: 2,
+      company,
+      briefing,
+      campaignNo: briefing.get('name')
+    })
+
+    if (company) {
+      const { paymentType, dueDays } = company.attributes
+      const { billingCycle, pricingModel, invoicingAt } = company.get('contractDefaults') || {}
+      contract.set({
+        tags: contract.get('company').get('tags'),
+        address: company.get('address'),
+        invoiceAddress: company.get('invoiceAddress'),
+        billingCycle: billingCycle || 12,
+        invoicingAt: invoicingAt || pricingModel === 'gradual' ? 'end' : 'start',
+        paymentType: paymentType || 0,
+        dueDays: dueDays || 14,
+        pricingModel: pricingModel || null
+      })
+    }
+    const audit = { user, fn: 'contract-generate' }
+    return contract.save(null, { useMasterKey: true, context: { audit } })
+  }
+
+  if (type === 'FrameMount') {
+    const FrameMount = Parse.Object.extend('FrameMount')
+    const frameMount = new FrameMount({
+      cubeIds,
+      status: 2,
+      company,
+      briefing,
+      campaignNo: briefing.get('name')
+    })
+    const audit = { user, fn: 'frame-mount-generate' }
+    return frameMount.save(null, { useMasterKey: true, context: { audit } })
+  }
 }, $internOrAdmin)

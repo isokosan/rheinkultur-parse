@@ -5,7 +5,7 @@
  */
 
 const { normalizeString, creditNotes: { normalizeFields } } = require('@/schema/normalizers')
-const { validateSystemStatus, getDocumentTotals, getTaxRatePercentage } = require('@/shared')
+const { ORDER_FIELDS, validateSystemStatus, getDocumentTotals, getTaxRatePercentage } = require('@/shared')
 const { durationString } = require('@/utils')
 const { lexApi } = require('@/services/lex')
 const sendMail = require('@/services/email')
@@ -88,7 +88,7 @@ const CreditNote = Parse.Object.extend('CreditNote', {
     }
     const campaignNo = booking?.get('campaignNo') || contract?.get('campaignNo')
     if (campaignNo) {
-      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnennr.'
+      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnenname'
       lines.push(`${label}: ${campaignNo}`)
     }
 
@@ -128,14 +128,11 @@ async function validateCreditNoteDate (dateOfNewCreditNote) {
 }
 
 Parse.Cloud.beforeFind(CreditNote, async ({ query }) => {
-  query.include(['contract', 'invoices'])
+  query.include(['invoices', ...ORDER_FIELDS])
   if (query._include.includes('all')) {
     query.include([
       'company',
       'address',
-      'contract',
-      'bookings',
-      'booking',
       'docs'
     ])
   }
@@ -292,18 +289,17 @@ Parse.Cloud.define('credit-note-remove', async ({ params: { id: creditNoteId } }
   return creditNote.destroy({ useMasterKey: true })
 }, $internOrAdmin)
 
+// email: true (the email defined in invoice address will be used if no skipInvoiceEmails on contract) | string (the custom email will be used) | false (no email will be send)
 Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, email }, user }) => {
-  const creditNote = await $getOrFail(CreditNote, creditNoteId, ['company', 'address', 'companyPerson', 'invoices'])
+  const creditNote = await $getOrFail(CreditNote, creditNoteId, ['company', 'address', 'companyPerson'])
   if (creditNote.get('status') > 1 || creditNote.get('voucherDate')) {
-    // TO TRANSLATE
     throw new Error('Diese Gutschrift wurde bereits ausgestellt.')
   }
-
   await validateCreditNoteDate(creditNote.get('date'))
   await validateSystemStatus()
 
   if (creditNote.get('total') === 0) {
-    throw new Error('Can\'t issue 0€ creditNote')
+    throw new Error('Gutschriften mit einem Gesamtbetrag von 0€ können nicht ausgestellt werden.')
   }
 
   const { lex, supplement, street, zip, city, countryCode } = creditNote.get('address').attributes
@@ -322,7 +318,11 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
     })
     .toDate()
   creditNote.set('voucherDate', voucherDate)
-  email === true && (email = creditNote.get('address').email)
+  if (email === true) {
+    email = creditNote.get('contract')?.get('skipInvoiceEmails')
+      ? false
+      : creditNote.get('address').get('email')
+  }
   email ? creditNote.set('shouldMail', email) : creditNote.unset('shouldMail')
   const audit = { user, fn: 'credit-note-issue-request' }
   await creditNote.save(null, { useMasterKey: true, context: { audit } })
@@ -380,9 +380,8 @@ Parse.Cloud.define('credit-note-issue', async ({ params: { id: creditNoteId, ema
 }, $internOrAdmin)
 
 Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId, email }, user }) => {
-  if (!email) {
-    throw new Error(`Bad email ${email}`)
-  }
+  // TODO: Validate email
+  if (!email) { throw new Error(`Bad email ${email}`) }
   const creditNote = await $query(CreditNote)
     .include(['company', 'docs'])
     .get(creditNoteId, { useMasterKey: true })

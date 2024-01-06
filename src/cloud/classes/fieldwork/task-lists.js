@@ -1,6 +1,7 @@
 const { capitalize, sum, intersection, isArray, difference } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
+const { ORDER_FIELDS } = require('@/shared')
 const TaskList = Parse.Object.extend('TaskList')
 
 const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
@@ -336,7 +337,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
-  query.include(['briefing', 'control', 'disassembly', 'disassembly.booking', 'disassembly.contract'])
+  query.include(['briefing', 'control', 'disassembly', ...ORDER_FIELDS.map(fieldName => 'disassembly.' + fieldName)])
   query._include.includes('all') && query.include('submissions')
   if (master) { return }
   if (user.get('permissions')?.includes('manage-scouts')) {

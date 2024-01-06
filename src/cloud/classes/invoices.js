@@ -1,5 +1,5 @@
 const { normalizeString, invoices: { normalizeFields } } = require('@/schema/normalizers')
-const { validateSystemStatus, getDocumentTotals, getTaxRatePercentage, getPeriodTotal } = require('@/shared')
+const { ORDER_FIELDS, validateSystemStatus, getDocumentTotals, getTaxRatePercentage, getPeriodTotal } = require('@/shared')
 const { round2, round5, priceString, durationString } = require('@/utils')
 const { lexApi } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
@@ -89,7 +89,7 @@ const Invoice = Parse.Object.extend('Invoice', {
     }
     const campaignNo = booking?.get('campaignNo') || contract?.get('campaignNo')
     if (campaignNo) {
-      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnennr.'
+      const label = (this.get('tags') || []).find(tag => tag.id === 'ALDI') ? 'Regionalgesellschaft' : 'Kampagnenname'
       lines.push(`${label}: ${campaignNo}`)
     }
 
@@ -157,14 +157,11 @@ function updateGradualInvoice (invoice, gradualCount, gradualPrice) {
 }
 
 Parse.Cloud.beforeFind(Invoice, async ({ query }) => {
-  query.include('contract')
+  query.include(ORDER_FIELDS)
   if (query._include.includes('all')) {
     query.include([
       'company',
       'address',
-      'contract',
-      'booking',
-      'bookings',
       'docs'
     ])
   }
@@ -390,7 +387,7 @@ Parse.Cloud.define('invoice-remove', async ({ params: { id: invoiceId } }) => {
   return invoice.destroy({ useMasterKey: true })
 }, $internOrAdmin)
 
-// email: true (the email defined in invoice address will be used) | string (the custom email will be used) | false (no email will be send)
+// email: true (the email defined in invoice address will be used if no skipInvoiceEmails on contract) | string (the custom email will be used) | false (no email will be send)
 Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, user }) => {
   let invoice = await $getOrFail(Invoice, invoiceId, ['company', 'address', 'companyPerson'])
   if (invoice.get('status') > 1 || invoice.get('voucherDate')) {
@@ -424,7 +421,11 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
     })
     .toDate()
   invoice.set('voucherDate', voucherDate)
-  email === true && (email = invoice.get('address').get('email'))
+  if (email === true) {
+    email = invoice.get('contract')?.get('skipInvoiceEmails')
+      ? false
+      : invoice.get('address').get('email')
+  }
   email ? invoice.set('shouldMail', email) : invoice.unset('shouldMail')
   const audit = { user, fn: 'invoice-issue-request' }
   await invoice.save(null, { useMasterKey: true, context: { audit } })
@@ -485,9 +486,8 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
 }, $internOrAdmin)
 
 Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email }, user }) => {
-  if (!email) {
-    throw new Error(`Bad email ${email}`)
-  }
+  // TODO: Validate email
+  if (!email) { throw new Error(`Bad email ${email}`) }
   const invoice = await $query(Invoice)
     .include(['company', 'docs'])
     .get(invoiceId, { useMasterKey: true })
