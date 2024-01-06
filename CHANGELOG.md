@@ -1,3 +1,10 @@
+# [1.157.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.156.2...1.157.0) (2024-01-06)
+
+
+### Features
+
+* finish custom-projects ([eb74eab](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eb74eabd81dd07538456c42c89d1c0776cdf7542))
+
 ## [1.156.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.156.1...1.156.2) (2023-12-30)
 
 
