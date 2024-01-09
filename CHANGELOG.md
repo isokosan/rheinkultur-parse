@@ -1,3 +1,10 @@
+## [1.157.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.157.0...1.157.1) (2024-01-09)
+
+
+### Bug Fixes
+
+* status marketed in exports ([4c88838](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4c888385a56033fa33fc685144e8b6acdf68518c))
+
 # [1.157.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.156.2...1.157.0) (2024-01-06)
 
 
