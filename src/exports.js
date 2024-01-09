@@ -126,7 +126,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
   }
 
   const companyIdNameMap = {}
-  if (!req.query.s?.split(',').includes('5')) {
+  if (!req.query.s?.split(',').includes('6')) {
     delete fields.companyName
     delete fields.motive
     delete fields.externalOrderNo
