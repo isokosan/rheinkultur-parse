@@ -585,6 +585,8 @@ Parse.Cloud.define('invoice-sync-lex', async ({ params: { resourceId: lexId, uns
       consola.info('aborting invoice import because new invoice is not finalized')
       return
     }
+    // wait here 5 seconds to make sure the invoice is finalized
+    await new Promise(resolve => setTimeout(resolve, 5000))
     invoice = await $query(Invoice)
       .equalTo('voucherDate', moment(resource.voucherDate).toDate())
       .first({ useMasterKey: true })
