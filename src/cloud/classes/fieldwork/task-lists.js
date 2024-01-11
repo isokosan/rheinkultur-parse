@@ -920,12 +920,14 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
     managers: {},
     scouts: {},
     future: 0,
-    quotasIncomplete: 0
+    quotasIncomplete: 0,
+    totalCount: 0
   }
   await query
-    .select('type', 'manager', 'scouts', 'status', 'statuses', 'date', 'quota', 'quotas')
+    .select('type', 'manager', 'counts.total', 'scouts', 'status', 'statuses', 'date', 'quota', 'quotas')
     .eachBatch((taskLists) => {
       for (const taskList of taskLists) {
+        response.totalCount += taskList.get('counts')?.total || 0
         response.statuses[taskList.get('status') || 0] = (response.statuses[taskList.get('status')] || 0) + 1
         response.managers[taskList.get('manager')?.id || 'none'] = (response.managers[taskList.get('manager')?.id || 'none'] || 0) + 1
         const scouts = taskList.get('scouts') || []
