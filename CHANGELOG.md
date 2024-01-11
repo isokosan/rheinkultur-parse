@@ -1,3 +1,10 @@
+# [1.160.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.159.0...1.160.0) (2024-01-11)
+
+
+### Features
+
+* add special format assembly photos scope ([b0941a5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b0941a567418a5234fbb3eea530524990b1f532c))
+
 # [1.159.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.158.0...1.159.0) (2024-01-11)
 
 
