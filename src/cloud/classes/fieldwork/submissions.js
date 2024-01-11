@@ -2,8 +2,11 @@ const TaskList = Parse.Object.extend('TaskList')
 const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
+const SpecialFormatSubmission = Parse.Object.extend('SpecialFormatSubmission')
 
 const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
+
+// KNOWN ISSUE: scout submission has comments under form object, comment field is empty
 
 Parse.Cloud.afterFind(ControlSubmission, async ({ query, objects: submissions }) => {
   if (query._include.includes('orders')) {
@@ -138,14 +141,17 @@ Parse.Cloud.define('scout-submission-submit', async ({ params: { id: taskListId,
 
   form.notFound = Boolean(form.notFound)
   const condition = form.notFound ? 'nf' : 'true'
+  const comments = form.comments
   let changes
   if (submissionId) {
     changes = $changes(submission.get('form'), form, true)
     delete changes.photoIds
     delete changes.photoPos
+    delete form.comments
   }
+
   const photos = await $query('CubePhoto').containedIn('objectId', form.photoIds).find({ useMasterKey: true })
-  submission.set({ form, condition, photos })
+  submission.set({ form, condition, photos, comments })
 
   await submission.save(null, { useMasterKey: true })
   const audit = { fn: 'scout-submission-submit', data: { cubeId, changes, manual, approved: approve || undefined } }
@@ -377,4 +383,94 @@ Parse.Cloud.define('disassembly-submission-reject', async ({ params: { id: submi
   await taskList.save(null, { useMasterKey: true, context: { audit } })
   TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('disassembly', taskList, submission, cube, rejectionReason)
   return { message: 'Demontage abgelehnt.', data: submission }
+}, { requireUser: true })
+
+Parse.Cloud.define('special-format-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, approve }, user }) => {
+  approve && validateApprove(user)
+  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, SpecialFormatSubmission, submissionId)
+  submission.set('status', 'pending')
+
+  // !approve is for the case where scouts are using the scout app, in which case the scout should always be updated
+  // in the other case, the submission is new so no scout is present, as the approving admin will set as the  scout
+  const manual = (approve && !submission.id) || undefined
+  if (manual || !approve) {
+    submission.set('scout', user).set('lastSubmittedAt', new Date())
+  }
+
+  form.notFound = Boolean(form.notFound)
+  const quantity = parseInt(form.notFound ? 0 : form.quantity)
+  const comments = form.comments
+
+  let changes
+  if (submissionId) {
+    changes = $changes(submission.get('form'), form, true)
+    delete changes.photoIds
+    delete changes.photoPos
+    delete form.comments
+  }
+
+  const photos = await $query('CubePhoto').containedIn('objectId', form.photoIds).find({ useMasterKey: true })
+  submission.set({ form, quantity, photos, comments })
+
+  await submission.save(null, { useMasterKey: true })
+  const audit = { fn: 'special-format-submission-submit', data: { cubeId, changes, manual, approved: approve || undefined } }
+  if (approve) {
+    return Parse.Cloud.run('special-format-submission-approve', { id: submission.id, auditCarry: audit }, { sessionToken: user.getSessionToken() })
+  }
+  audit.user = user
+  taskList.set({ status: 3 })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  return { message: 'Einreichung erfolgreich.', data: submission }
+}, { requireUser: true })
+
+Parse.Cloud.define('special-format-submission-approve', async ({ params: { id: submissionId, auditCarry }, user }) => {
+  validateApprove(user)
+  const submission = await $getOrFail(SpecialFormatSubmission, submissionId, ['taskList', 'cube'])
+  const cube = submission.get('cube')
+  const cubeId = submission.get('cube').id
+
+  // if not found, soft delete the cube
+  if (submission.get('form').notFound) {
+    cube.set('dAt', new Date())
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  } else {
+    // save details to cube and approve photos
+    const { htId, media } = submission.get('form')
+    cube.set('media', media)
+    htId && cube.set('ht', $parsify('HousingType', htId))
+    cube.set('vAt', new Date())
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  }
+
+  submission.set({ status: 'approved' })
+  const audit = auditCarry || { fn: 'special-format-submission-approve', data: { cubeId } }
+  audit.user = user
+  await submission.save(null, { useMasterKey: true })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+  await removeRejectedNotifications('special-format', submission)
+  return {
+    message: auditCarry ? 'Sonderformat gespeichert und genehmigt.' : 'Sonderformat genehmigt.',
+    data: submission
+  }
+}, { requireUser: true })
+
+Parse.Cloud.define('special-format-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
+  const submission = await $getOrFail(SpecialFormatSubmission, submissionId, ['taskList', 'cube'])
+  const taskList = submission.get('taskList')
+  if (taskList.get('status') >= 4) {
+    throw new Error('Formulare aus erledigte Abfahrtsliste können nicht mehr abgelehnt werden.')
+  }
+  submission.set({ status: 'rejected', rejectionReason })
+  const cube = submission.get('cube')
+  const cubeId = cube.id
+  if (submission.get('form').notFound) {
+    cube.unset('dAt')
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  }
+  const audit = { user, fn: 'special-format-submission-reject', data: { cubeId, rejectionReason } }
+  await submission.save(null, { useMasterKey: true, context: { audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  // Notify scout if the list is in progress
+  TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('special-format', taskList, submission, cube, rejectionReason)
+  return { message: 'Scouting abgelehnt.', data: submission }
 }, { requireUser: true })

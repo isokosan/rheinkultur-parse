@@ -140,7 +140,7 @@ module.exports.TASK_LIST_STATUSES = {
 
 module.exports.TASK_LIST_IN_PROGRESS_STATUSES = [2, 3]
 
-// Briefing, Control, Disassembly
+// Briefing, Control, Disassembly, CustomService
 module.exports.FIELDWORK_STATUSES = {
   0: 'Entwurf',
   1: 'Geplant',

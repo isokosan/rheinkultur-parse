@@ -9,7 +9,6 @@ Parse.Cloud.beforeSave(Briefing, async ({ object: briefing, context: { syncStatu
   if (briefing.isNew()) { return }
   if (syncStatus || !briefing.get('counts')) {
     const { status, counts } = await getStatusAndCounts({ briefing })
-    // TODO: if changing add audit
     briefing.set({ status, counts })
   }
 })
@@ -261,7 +260,6 @@ Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefi
     throw new Error('Briefing is not a draft!')
   }
   return $query('TaskList')
-    .equalTo('type', 'scout')
     .equalTo('briefing', briefing)
     .equalTo('status', 0)
     .each(async (taskList) => {

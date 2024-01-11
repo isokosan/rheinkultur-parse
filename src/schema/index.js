@@ -262,6 +262,7 @@ const schemaDefinitions = {
       commissions: { type: 'Object' },
       commission: { type: 'Number' },
 
+      // when being generated from a briefing
       briefing: { type: 'Pointer', targetClass: 'Briefing' },
 
       docs: { type: 'Array' },
@@ -287,6 +288,7 @@ const schemaDefinitions = {
       ...orderFields,
       earlyCancellations: { type: 'Object' },
 
+      // when being generated from a briefing
       briefing: { type: 'Pointer', targetClass: 'Briefing' }
     },
     indexes: orderIndexes
@@ -305,7 +307,10 @@ const schemaDefinitions = {
       ...orderFields,
       earlyCancellations: { type: 'Object' },
       sfCounts: { type: 'Object' }, // how many were hung per cube
-      sfCount: { type: 'Number' } // total
+      sfCount: { type: 'Number' }, // total
+
+      // when being generated from a special format briefing
+      customService: { type: 'Pointer', targetClass: 'CustomService' }
     },
     indexes: orderIndexes
   },
@@ -708,15 +713,30 @@ const schemaDefinitions = {
       status: { type: 'Number', required: true }
     }
   },
+  // This is custom fieldwork parent, where in the future we combine other types of fieldwork
+  CustomService: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      type: { type: 'String' },
+      name: { type: 'String', required: true },
+      company: { type: 'Pointer', targetClass: 'Company' },
+      // companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      date: { type: 'String', required: true },
+      dueDate: { type: 'String', required: true },
+      status: { type: 'Number', required: true },
+
+      responsibles: { type: 'Array' },
+      docs: { type: 'Array' }
+    }
+  },
   TaskList: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       type: { type: 'String', required: true }, // scout, control or disassembly
       briefing: { type: 'Pointer', targetClass: 'Briefing' },
       control: { type: 'Pointer', targetClass: 'Control' },
-      // contract: { type: 'Pointer', targetClass: 'Contract' },
-      // booking: { type: 'Pointer', targetClass: 'Booking' },
       disassembly: { type: 'Pointer', targetClass: 'Disassembly' },
+      customService: { type: 'Pointer', targetClass: 'CustomService' },
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
       gp: { type: 'GeoPoint' }, // GeoPoint
@@ -775,6 +795,15 @@ const schemaDefinitions = {
     fields: {
       ...taskSubmissionFields,
       condition: { type: 'String' },
+      photos: { type: 'Array' }
+    }
+  },
+  SpecialFormatSubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      ...taskSubmissionFields,
+      quantity: { type: 'Number' },
+      form: { type: 'Object' },
       photos: { type: 'Array' }
     }
   },

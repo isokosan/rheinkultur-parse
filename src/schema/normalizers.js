@@ -408,7 +408,7 @@ module.exports = {
   taskLists: {
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
-        type: value => ['scout', 'control', 'assembly', 'disassembly'].includes(value) ? value : null,
+        type: value => ['scout', 'control', 'assembly', 'disassembly', 'special-format'].includes(value) ? value : null,
         name: normalizeString,
         quota: normalizeInt,
         quotas: value => $cleanDict({ MFG: value?.MFG || undefined, KVZ: value?.KVZ || undefined }),
@@ -421,7 +421,7 @@ module.exports = {
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
       }
-      if (normalized.type !== 'scout') {
+      if (!['scout', 'special-format'].includes(normalized.type)) {
         delete normalized.quota
         delete normalized.quotas
       }

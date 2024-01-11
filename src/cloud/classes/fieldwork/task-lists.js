@@ -1,4 +1,4 @@
-const { capitalize, sum, intersection, isArray, difference } = require('lodash')
+const { lowerFirst, upperFirst, camelCase, sum, intersection, isArray, difference } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const { ORDER_FIELDS } = require('@/shared')
@@ -6,7 +6,7 @@ const TaskList = Parse.Object.extend('TaskList')
 
 const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
 
-const getSubmissionClass = type => capitalize(type) + 'Submission'
+const getSubmissionClass = type => upperFirst(camelCase(type)) + 'Submission'
 
 async function getCenterOfCubes (cubeIds) {
   if (!cubeIds.length) {
@@ -48,7 +48,7 @@ function getParentStatus (parent, statusCounts) {
   return 1
 }
 
-async function getStatusAndCounts ({ briefing, control, disassembly }) {
+async function getStatusAndCounts ({ briefing, control, disassembly, customService }) {
   // count how many task lists each status has
   const statuses = {}
   const counts = {
@@ -67,6 +67,7 @@ async function getStatusAndCounts ({ briefing, control, disassembly }) {
     .equalTo('briefing', briefing)
     .equalTo('control', control)
     .equalTo('disassembly', disassembly)
+    .equalTo('customService', customService)
     .select(['status', 'counts', 'archivedAt'])
     .eachBatch((taskLists) => {
       for (const taskList of taskLists) {
@@ -81,7 +82,7 @@ async function getStatusAndCounts ({ briefing, control, disassembly }) {
         allArchived === true && !taskList.get('archivedAt') && (allArchived = false)
       }
     }, { useMasterKey: true })
-  const status = allArchived ? 5 : getParentStatus(briefing || control || disassembly, statuses)
+  const status = allArchived ? 5 : getParentStatus(briefing || control || disassembly || customService, statuses)
   return { status, counts }
 }
 
@@ -260,6 +261,44 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
       }
       taskList.set({ results })
     }
+
+    if (taskType === 'special-format') {
+      const quota = taskList.get('quota')
+      const quotas = taskList.get('quotas')
+      if (quota || quotas) {
+        counts.total = quota || sum(Object.values(quotas || {}))
+      }
+
+      await $query('SpecialFormatSubmission')
+        .equalTo('taskList', taskList)
+        .containedIn('status', ['pending', 'approved'])
+        .select('form')
+        .eachBatch((submissions) => {
+          for (const submission of submissions) {
+            if (submission.get('form').notFound) {
+              continue
+            }
+            const media = submission.get('form').media
+            results[media] = (results[media] || 0) + 1
+          }
+        }, { useMasterKey: true })
+
+      const quotasCompleted = {}
+      for (const media of ['MFG', 'KVZ']) {
+        quotasCompleted[media] = results[media]
+      }
+      if (quotas) {
+        let completedQuotaCount = 0
+        for (const key of Object.keys(quotas)) {
+          let total = quotasCompleted[key] || 0
+          const quota = quotas[key]
+          total > quota && (total = quota)
+          completedQuotaCount += total
+        }
+        counts.completed = completedQuotaCount
+      }
+      taskList.set({ results, quotasCompleted })
+    }
   }
   taskList.set({ statuses, counts })
 
@@ -321,8 +360,8 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
   // set auto-erledigt if approved matches total
   const { status, counts } = taskList.attributes
   if ([1, 2, 3].includes(status) && !counts.pending && counts.approved >= counts.total) {
-    // if its a scout list, you can forget about the rejected forms
-    if (taskList.get('type') !== 'scout' && counts.rejected) {
+    // control or disassembly can't be completed until rejections are cleared
+    if (['control', 'disassembly'].includes(taskList.get('type')) && counts.rejected) {
       return
     }
     const changes = { taskStatus: [status, 4] }
@@ -337,7 +376,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
-  query.include(['briefing', 'control', 'disassembly', ...ORDER_FIELDS.map(fieldName => 'disassembly.' + fieldName)])
+  query.include(['briefing', 'control', 'disassembly', 'customService', ...ORDER_FIELDS.map(fieldName => 'disassembly.' + fieldName)])
   query._include.includes('all') && query.include('submissions')
   if (master) { return }
   if (user.get('permissions')?.includes('manage-scouts')) {
@@ -353,14 +392,14 @@ Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
 Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
   const today = await $today()
   for (const taskList of taskLists) {
-    taskList.set('parent', taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly'))
+    taskList.set('parent', taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService'))
     taskList.set('dueDays', moment(taskList.get('dueDate')).diff(today, 'days'))
     if (query._include.includes('submissions')) {
       const submissionClass = getSubmissionClass(taskList.get('type'))
       // submission limit cannot be more than cube limit
       taskList.set('submissions', await $query(submissionClass).equalTo('taskList', taskList).limit(CUBE_LIMIT).find({ useMasterKey: true }))
     }
-    if (taskList.get('type') === 'scout') {
+    if (['scout', 'special-format'].includes(taskList.get('type'))) {
       if (taskList.get('quotas')) {
         const quotaStatus = []
         const quotas = taskList.get('quotas')
@@ -419,7 +458,7 @@ async function validateAppointAssign (taskList) {
   if (!taskList.get('date') || !taskList.get('dueDate')) {
     throw new Error('Bitte setzen Sie zuerst ein Datum und Fälligkeitsdatum.')
   }
-  if (taskList.get('type') === 'scout') {
+  if (['scout', 'special-format'].includes(taskList.get('type'))) {
     if (!taskList.get('quotas') && !taskList.get('quota')) {
       throw new Error('Bitte setzen Sie zuerst die Anzahle.')
     }
@@ -437,7 +476,7 @@ async function validateAppointAssign (taskList) {
 // Used in marklist store component to save manual cube changes
 Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, cubeIds }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('type') !== 'scout' || !taskList.get('briefing')) {
+  if (['control', 'disassembly'].includes(taskList.get('type'))) {
     throw new Error('CityCubes in kann nicht geändert werden.')
   }
   if (taskList.get('status')) {
@@ -473,7 +512,7 @@ Parse.Cloud.define('task-list-rate-selection', async ({ params: { id: taskListId
 Parse.Cloud.define('task-list-locations', ({ params: { parent: { className, objectId } } }) => {
   return $query('TaskList')
     .aggregate([
-      { $match: { [`_p_${className.toLowerCase()}`]: className + '$' + objectId } },
+      { $match: { [`_p_${lowerFirst(className)}`]: className + '$' + objectId } },
       { $group: { _id: '$pk', count: { $sum: 1 } } }
     ], { useMasterKey: true })
     .then(results => results.reduce((acc, { objectId, count }) => {
@@ -536,7 +575,7 @@ Parse.Cloud.define('task-list-update-scouts', async ({ params: { id: taskListId,
 
 Parse.Cloud.define('task-list-update-quotas', async ({ params: { id: taskListId, ...params }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  if (taskList.get('type') !== 'scout') {
+  if (!['scout', 'special-format'].includes(taskList.get('type'))) {
     throw new Error('Nur für Scout-Listen')
   }
   const { quota, quotas } = normalizeFields({ ...params, type: taskList.get('type') })
@@ -825,8 +864,9 @@ async function getQueryFromSelection (selection, count, user) {
   // parent
   selection.briefing && query.equalTo('briefing', $parsify('Briefing', selection.briefing))
   selection.control && query.equalTo('control', $parsify('Control', selection.control))
-  // selection.assembly && query.equalTo('assembly', $parsify('Assembly', selection.assembly))
+  selection.assembly && query.equalTo('assembly', $parsify('Assembly', selection.assembly))
   selection.disassembly && query.equalTo('disassembly', $parsify('Disassembly', selection.disassembly))
+  selection.customService && query.equalTo('customService', $parsify('CustomService', selection.customService))
 
   selection.state && query.equalTo('state', $parsify('State', selection.state))
   selection.type && query.equalTo('type', selection.type)
@@ -895,7 +935,7 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
         for (const scout of scouts) {
           response.scouts[scout.id] = (response.scouts[scout.id] || 0) + 1
         }
-        if (taskList.get('type') === 'scout' && !taskList.get('quotas') && !taskList.get('quota')) {
+        if (['scout', 'special-format'].includes(taskList.get('type')) && !taskList.get('quotas') && !taskList.get('quota')) {
           response.quotasIncomplete++
         }
         if (taskList.get('date') > today) {

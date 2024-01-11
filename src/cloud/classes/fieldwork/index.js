@@ -1,3 +1,5 @@
+const { lowerFirst } = require('lodash')
+
 Parse.Cloud.define('fieldwork-map', async ({ user }) => {
   const query = $query(Parse.User)
   user.get('company') && query.equalTo('company', user.get('company'))
@@ -233,7 +235,7 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { companyI
                     total: 0
                   }
                 }
-                response[key][scoutId][type.toLowerCase()]++
+                response[key][scoutId][lowerFirst(type)]++
                 response[key][scoutId].total++
               }
             }, { useMasterKey: true })
@@ -276,7 +278,7 @@ Parse.Cloud.define('fieldwork-approved-submissions', async ({ params: { companyI
 
 Parse.Cloud.define('fieldwork-parent-statuses', async ({ params: { itemClass, itemId }, user }) => {
   const parent = await $getOrFail(itemClass, itemId)
-  const getTaskListsQuery = () => $query('TaskList').equalTo(itemClass.toLowerCase(), parent)
+  const getTaskListsQuery = () => $query('TaskList').equalTo(lowerFirst(itemClass), parent)
   const statuses = {}
   await getTaskListsQuery()
     .select('status')
@@ -292,7 +294,7 @@ Parse.Cloud.define('fieldwork-parent-statuses', async ({ params: { itemClass, it
 Parse.Cloud.define('fieldwork-parent-archive', async ({ params: { itemClass, itemId }, user }) => {
   const parent = await $getOrFail(itemClass, itemId)
   let i = 0
-  const getTaskListsQuery = () => $query('TaskList').equalTo(itemClass.toLowerCase(), parent)
+  const getTaskListsQuery = () => $query('TaskList').equalTo(lowerFirst(itemClass), parent)
 
   if (await getTaskListsQuery().equalTo('status', 0).count({ useMasterKey: true })) {
     throw new Parse.Error(400, 'Draft task lists cannot be archived')
