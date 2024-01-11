@@ -1,3 +1,10 @@
+## [1.160.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.160.0...1.160.1) (2024-01-11)
+
+
+### Bug Fixes
+
+* wait 5 seconds before syncing and finalizing voucher from webhook ([d885884](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d885884f58f853c190764078972eca4ab2ddf9bd))
+
 # [1.160.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.159.0...1.160.0) (2024-01-11)
 
 
