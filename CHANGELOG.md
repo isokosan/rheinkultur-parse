@@ -1,3 +1,10 @@
+# [1.159.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.158.0...1.159.0) (2024-01-11)
+
+
+### Features
+
+* custom-services ([7d444f9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7d444f98888ed44fe132e02cb70c2c5fd22ab4ca))
+
 # [1.158.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.157.1...1.158.0) (2024-01-11)
 
 
