@@ -3,22 +3,24 @@ const filename = 'Standortliste_Gesamt_Sonderformate.csv'
 const filepath = path.join(__dirname, '..', '..', 'imports', filename)
 const csv = require('csvtojson')
 global.Parse = require('parse/node')
+const { parseAsDigitString } = require('./../src/utils')
 
 // wrap the above in an async function
 const run = async () => {
   const today = await $today()
-  // purge all special formats setting cube statuses
+  await $query('Disassembly')
+    .notEqualTo('specialFormat', null)
+    .each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
   await $query('SpecialFormat')
     .each(async (specialFormat) => {
       await specialFormat
         .set('cubeIds', [])
+        .unset('disassembly')
         .set('status', 0)
         .save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
-      console.log(specialFormat.get('no'), 'destroyed')
       await specialFormat.destroy({ useMasterKey: true })
     }, { useMasterKey: true })
   console.log('all deleted!')
-
   const specialFormatOrders = {}
   // parse xlsx into json
   const rows = await csv({
@@ -56,8 +58,26 @@ const run = async () => {
   }
   // iterate over specialFormatOrders and create/update orders
   const items = Object.values(specialFormatOrders)
+  // first sort by date and get numbers
   items.sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+
+  const nos = {
+    20: 1,
+    21: 1,
+    22: 1,
+    23: 1,
+    24: 1
+  }
   for (const item of items) {
+    const year = moment(item.startsAt).format('YY')
+    item.no = 'SF' + year + '-' + parseAsDigitString(nos[year], 4)
+    nos[year]++
+  }
+
+  items.sort((a, b) => b.startsAt.localeCompare(a.startsAt))
+
+  for (const item of items) {
+    console.log(item)
     // if (i >= 10) { break }
     item.cubeIds.sort()
     // get all cubes with order and future order

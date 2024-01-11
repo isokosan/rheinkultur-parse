@@ -198,6 +198,23 @@ async function earlyCancelSpecialFormats (order) {
       itemId,
       cancellations: specialFormats[itemId]
     }, { useMasterKey: true })
+    // run disassembly order sync to generate the disassembly task lists, getting an array of syned disassemblies
+    const syncStartedAt = new Date()
+    await Parse.Cloud.run('disassembly-order-sync', { className: 'SpecialFormat', id: itemId }, { useMasterKey: true })
+    const orderKey = ['SpecialFormat', itemId].join('-')
+    const disassemblyQuery = $query('Disassembly')
+      .equalTo('orderKey', orderKey)
+      .equalTo('type', 'extra')
+    await $query('TaskList')
+      .equalTo('status', 0.1)
+      .greaterthan('createdAt', syncStartedAt)
+      .matchesQuery('disassembly', disassemblyQuery)
+      .select('objectId')
+      .eachBatch(async (taskLists) => {
+        for (const taskList of taskLists) {
+          await Parse.Cloud.run('task-list-mark-complete', { id: taskList.id, skipSyncParentStatus: true }, { useMasterKey: true })
+        }
+      }, { useMasterKey: true })
   }
 }
 
