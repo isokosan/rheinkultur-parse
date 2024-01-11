@@ -1,3 +1,10 @@
+# [1.161.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.160.1...1.161.0) (2024-01-11)
+
+
+### Features
+
+* add total count to task list mass action preview ([77bac95](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/77bac95ffd8812190ab64a3975c87e020f024ac1))
+
 ## [1.160.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.160.0...1.160.1) (2024-01-11)
 
 
