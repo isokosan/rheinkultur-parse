@@ -1,3 +1,10 @@
+# [1.158.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.157.1...1.158.0) (2024-01-11)
+
+
+### Features
+
+* mark disassembled when canceling special formats ([2496ea5](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2496ea5253abf484bcefd72b7ff97844d564056c))
+
 ## [1.157.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.157.0...1.157.1) (2024-01-09)
 
 
