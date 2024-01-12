@@ -1,5 +1,4 @@
 const { parseAsDigitString } = require('@/utils')
-const { getVersion: getElasticVersion } = require('@/services/elastic')
 
 const UnsyncedLexDocument = Parse.Object.extend('UnsyncedLexDocument')
 
@@ -62,8 +61,8 @@ Parse.Cloud.define('system-status-vouchers', async () => {
 }, $internOrAdmin)
 
 Parse.Cloud.define('system-status-duplicate-invoices', async () => {
-  const keys = {}
   const duplicateInvoiceIds = []
+  const keys = {}
   await $query('Invoice')
     .notEqualTo('contract', null)
     .notEqualTo('periodStart', null)
@@ -76,7 +75,6 @@ Parse.Cloud.define('system-status-duplicate-invoices', async () => {
         const key = [periodStart, periodEnd, contract.id, total].join('-')
         if (keys[key]) {
           duplicateInvoiceIds.push(invoice.id)
-          duplicateInvoiceIds.push(keys[key])
           continue
         }
         keys[key] = invoice.id
@@ -91,17 +89,6 @@ Parse.Cloud.define('system-status-duplicate-invoices', async () => {
   }
   await Parse.Config.save({ systemStatus })
   return duplicateInvoiceIds
-}, $internOrAdmin)
-
-Parse.Cloud.define('system-status-elastic-version-match', async () => {
-  const elasticVersions = {
-    client: require('@/../package.json').dependencies['@elastic/elasticsearch'],
-    server: await getElasticVersion()
-  }
-  const systemStatus = await Parse.Config.get().then(config => config.get('systemStatus') || {})
-  systemStatus.elasticVersions = elasticVersions
-  await Parse.Config.save({ systemStatus })
-  return elasticVersions
 }, $internOrAdmin)
 
 module.exports.updateUnsyncedLexDocument = updateUnsyncedLexDocument
