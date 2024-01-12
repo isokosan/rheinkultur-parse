@@ -1,3 +1,10 @@
+## [1.162.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.0...1.162.1) (2024-01-12)
+
+
+### Bug Fixes
+
+* system errors duplicate invoice ids ([eb5bf49](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eb5bf49bc7225d57bac190c32c9bf50c48013d18))
+
 # [1.162.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.161.0...1.162.0) (2024-01-12)
 
 
