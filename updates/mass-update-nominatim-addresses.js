@@ -14,7 +14,7 @@ require('./run')(async () => {
           lon: longitude
         })
         if (nominatim.error) {
-          console.error(nominatim.error)
+          console.error(nominatim.error, cube.get('gp'))
           continue
         }
         cube.set('nominatimAddress', nominatim.address)

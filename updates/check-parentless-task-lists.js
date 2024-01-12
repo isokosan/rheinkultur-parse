@@ -1,8 +1,12 @@
 // SHOULD BE { c: 0, d: 0, s: 0 }
 require('./run')(async () => {
-  let c = 0
-  let d = 0
-  let s = 0
+  const parentless = {
+    control: 0,
+    scout: 0,
+    disassembly: 0,
+    'special-format': 0
+
+  }
   const existingControls = await $query('Control').select('objectId').find({ useMasterKey: true })
   console.log(existingControls.length, 'controls')
   await $query('TaskList')
@@ -14,7 +18,7 @@ require('./run')(async () => {
         if (!task.get('control')) {
           console.log('control task cleaning', task.get('createdAt'))
           await task.destroy({ useMasterKey: true })
-          c++
+          parentless.control++
           continue
         }
       }
@@ -29,7 +33,7 @@ require('./run')(async () => {
         if (!task.get('disassembly')) {
           await task.destroy({ useMasterKey: true })
           console.log('disassembly task cleaned')
-          d++
+          parentless.disassembly++
         }
       }
     }, { useMasterKey: true })
@@ -44,11 +48,28 @@ require('./run')(async () => {
         if (!task.get('briefing')) {
           console.log('briefing task cleaning', task.get('createdAt'))
           await task.destroy({ useMasterKey: true })
-          s++
+          parentless.scout++
           continue
         }
         console.log(task.get('briefing'))
       }
     }, { useMasterKey: true })
-  console.log({ c, d, s })
+  const existingSpecialFormats = await $query('CustomService').equalTo('type', 'special-format').select('objectId').find({ useMasterKey: true })
+  console.log(existingSpecialFormats.length, 'briefings')
+  await $query('TaskList')
+    .equalTo('type', 'special-format')
+    .notContainedIn('customService', existingSpecialFormats)
+    .eachBatch(async (tasks) => {
+      console.log('special-formats', tasks.length)
+      for (const task of tasks) {
+        if (!task.get('customService')) {
+          console.log('special format task cleaning', task.get('createdAt'))
+          await task.destroy({ useMasterKey: true })
+          parentless['special-format']++
+          continue
+        }
+        console.log(task.get('customService'))
+      }
+    }, { useMasterKey: true })
+  console.log(parentless)
 })
