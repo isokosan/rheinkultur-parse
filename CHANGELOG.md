@@ -1,3 +1,10 @@
+# [1.162.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.161.0...1.162.0) (2024-01-12)
+
+
+### Features
+
+* remove periodic invoicing and zero pricing from distributors ([87db34f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/87db34fc9a354beb39a6f54a078b8df38604f1d5))
+
 # [1.161.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.160.1...1.161.0) (2024-01-11)
 
 
