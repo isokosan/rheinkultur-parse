@@ -11,7 +11,7 @@ const Company = Parse.Object.extend('Company')
     gradualPriceMapId?: Which gradual pricing is applied (currently only ALDI is available)
   }
   DistributorOptions: {
-    pricingModel?: string // (fixed | commission | zero) default if empty (which is booking based (rheinkultur netto) entry)
+    pricingModel?: string // (fixed | commission) default if empty (which is booking based (rheinkultur netto) entry)
     fixedPrice?: MediaPriceMap // only if model is fixed, and single price
     fixedPriceMap?: MediaPriceMap // only if model is fixed { mediaNo: price, default: price }
     commission?: number // only if model is commission
@@ -159,8 +159,7 @@ Parse.Cloud.define('company-update-distributor', async ({
     pricingModel,
     fixedPrice,
     fixedPriceMap,
-    commission,
-    periodicInvoicing
+    commission
   }, user
 }) => {
   fixedPriceMap = $cleanDict(fixedPriceMap)
@@ -169,7 +168,6 @@ Parse.Cloud.define('company-update-distributor', async ({
     fixedPrice = undefined
     fixedPriceMap = undefined
     commission = undefined
-    periodicInvoicing = undefined
   }
 
   if (pricingModel !== 'fixed') {
@@ -179,21 +177,6 @@ Parse.Cloud.define('company-update-distributor', async ({
   if (pricingModel !== 'commission') {
     commission = undefined
   }
-  if (pricingModel !== 'zero') {
-    periodicInvoicing = undefined
-  }
-
-  // cleanup period invoice object
-  if (periodicInvoicing?.extraCols) {
-    for (const key of Object.keys(periodicInvoicing.extraCols || {})) {
-      if (!periodicInvoicing.extraCols[key]) {
-        delete periodicInvoicing.extraCols[key]
-      }
-    }
-    if (!Object.keys(periodicInvoicing.extraCols).length) {
-      delete periodicInvoicing.extraCols
-    }
-  }
 
   const company = await $getOrFail(Company, companyId)
   const distributor = cloneDeep(company.get('distributor'))
@@ -201,8 +184,7 @@ Parse.Cloud.define('company-update-distributor', async ({
     pricingModel,
     fixedPrice,
     fixedPriceMap,
-    commission,
-    periodicInvoicing
+    commission
   }
 
   const audit = { user }
@@ -212,7 +194,6 @@ Parse.Cloud.define('company-update-distributor', async ({
     company.set({ distributor: form })
   }
   // update distributor
-  // TODO: Check audits
   if (distributor && isDistributor) {
     audit.fn = 'company-update-distributor'
     const data = { changes: $changes(distributor, form, true) }

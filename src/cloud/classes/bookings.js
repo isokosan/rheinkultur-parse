@@ -112,13 +112,6 @@ async function validatePricing ({ company, cubeIds, endPrices, monthlyMedia }) {
         }
       }
     }
-    if (pricingModel === 'zero') {
-      for (const cubeId of cubeIds) {
-        if (monthlyMedia?.[cubeId]) {
-          throw new Error('Alle medien muss 0€ sein.')
-        }
-      }
-    }
     // check if all cubes are media verified, if fixed pricing depends on media
     if (pricingModel === 'fixed' && !company.get('distributor').fixedPrice) {
       const noMediaCubes = await $query('Cube')

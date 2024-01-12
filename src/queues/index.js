@@ -129,7 +129,6 @@ async function processCustomInvoices (start, end) {
     .greaterThanOrEqualTo('status', 1)
     .lessThanOrEqualTo('status', 2)
     .equalTo('media', null)
-    // .equalTo('periodicDistributorQuarter', null) // exclude periodic distributor invoices (MA Lionsgroup)
     .notEqualTo('lessor', null)
     .greaterThan('periodEnd', start)
     .lessThanOrEqualTo('periodStart', end)
@@ -238,7 +237,6 @@ async function processCreditNotes (start, end) {
   return response
 }
 
-// TODO: Check Marc Asriel periodic invoice as row
 async function processPartnerQuarters (quarter) {
   const response = []
   await $query('PartnerQuarter')

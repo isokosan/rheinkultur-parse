@@ -528,7 +528,6 @@ const schemaDefinitions = {
 
       // for pacht exports
       extraCols: { type: 'Object' },
-      // periodicDistributorQuarter: { type: 'String' }, // MA Lionsgroup type quarterly distributor invoice marker
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
