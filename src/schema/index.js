@@ -289,7 +289,8 @@ const schemaDefinitions = {
       earlyCancellations: { type: 'Object' },
 
       // when being generated from a briefing
-      briefing: { type: 'Pointer', targetClass: 'Briefing' }
+      briefing: { type: 'Pointer', targetClass: 'Briefing' },
+      pk: { type: 'String' } // placekey
     },
     indexes: orderIndexes
   },
@@ -326,6 +327,8 @@ const schemaDefinitions = {
       plz: { type: 'String' }, // postcode
       ort: { type: 'String', required: true }, // city - required was added later so not taking effect here
       state: { type: 'Pointer', targetClass: 'State', required: true }, // State - required was added later so not taking effect here
+
+      pk: { type: 'String' }, // placekey
 
       caok: { type: 'String' }, // current active order key
       ffok: { type: 'String' }, // first future order key
@@ -738,6 +741,9 @@ const schemaDefinitions = {
       customService: { type: 'Pointer', targetClass: 'CustomService' },
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
+
+      pk: { type: 'String' }, // placekey
+
       gp: { type: 'GeoPoint' }, // GeoPoint
       date: { type: 'String', required: true }, // start date
       dueDate: { type: 'String', required: true },

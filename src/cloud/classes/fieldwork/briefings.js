@@ -313,10 +313,11 @@ Parse.Cloud.define('briefing-approve-verified-cubes', async ({ params: { id: bri
 
 // removes newly booked cube from briefings that are running
 Parse.Cloud.define('briefings-remove-booked-cube', async ({ params: { cubeId } }) => {
+  // [ 'approved', 'not_found', 'approvable', 'pending', 'rejected' ]
   return $query('TaskList')
     .equalTo('type', 'scout')
     .equalTo('cubeIds', cubeId)
-    .equalTo(`statuses.${cubeId}`, null)
+    .containedIn(`statuses.${cubeId}`, [null, 'approvable'])
     .greaterThan('status', 0)
     .lessThan('status', 4)
     .each(async (taskList) => {
@@ -389,6 +390,7 @@ Parse.Cloud.define('briefing-generate', async ({ params: { id: briefingId, type,
 
   cubeIds.sort()
 
+  let i = 0
   if (type === 'Contract') {
     const Contract = Parse.Object.extend('Contract')
     const contract = new Contract({
@@ -415,19 +417,43 @@ Parse.Cloud.define('briefing-generate', async ({ params: { id: briefingId, type,
       })
     }
     const audit = { user, fn: 'contract-generate' }
-    return contract.save(null, { useMasterKey: true, context: { audit } })
+    await contract.save(null, { useMasterKey: true, context: { audit } })
+    i++
   }
 
   if (type === 'FrameMount') {
-    const FrameMount = Parse.Object.extend('FrameMount')
-    const frameMount = new FrameMount({
-      cubeIds,
-      status: 2,
-      company,
-      briefing,
-      campaignNo: briefing.get('name')
-    })
-    const audit = { user, fn: 'frame-mount-generate' }
-    return frameMount.save(null, { useMasterKey: true, context: { audit } })
+    const cubeIdsPerPk = await $query('Cube')
+      .containedIn('objectId', cubeIds)
+      .limit(cubeIds.length)
+      .select(['objectId', 'pk'])
+      .find({ useMasterKey: true })
+      .then((cubes) => {
+        const cubeIdsPerPk = {}
+        for (const cube of cubes) {
+          const pk = cube.get('pk')
+          cubeIdsPerPk[pk] = cubeIdsPerPk[pk] || []
+          cubeIdsPerPk[pk].push(cube.id)
+        }
+        return cubeIdsPerPk
+      })
+    for (const pk of Object.keys(cubeIdsPerPk)) {
+      const { ort, stateId } = $parsePk(pk)
+      const FrameMount = Parse.Object.extend('FrameMount')
+      const frameMount = new FrameMount({
+        cubeIds: cubeIdsPerPk[pk],
+        status: 2,
+        startsAt: '2024-01-01',
+        initialDuration: 60,
+        endsAt: moment('2024-01-01').add(60, 'months').subtract(1, 'day').format('YYYY-MM-DD'),
+        company,
+        briefing,
+        campaignNo: `DIN A1 - ${ort} (${stateId})`,
+        pk
+      })
+      const audit = { user, fn: 'frame-mount-generate' }
+      await frameMount.save(null, { useMasterKey: true, context: { audit } })
+      i++
+    }
+    return i
   }
 }, $internOrAdmin)
