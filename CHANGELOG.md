@@ -1,3 +1,10 @@
+## [1.162.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.1...1.162.2) (2024-01-15)
+
+
+### Bug Fixes
+
+* remove booked cubes that are not specialformat in briefings, and all in specialformat customservices ([ecf3ec0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ecf3ec09b03759deb5a153713936cdfd5a965bbf))
+
 ## [1.162.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.0...1.162.1) (2024-01-12)
 
 
