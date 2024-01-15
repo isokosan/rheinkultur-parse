@@ -264,8 +264,8 @@ Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefi
     .equalTo('status', 0)
     .each(async (taskList) => {
       const activeOrFutureBookingExistsQuery = Parse.Query.or(
-        $query('Cube').notEqualTo('order', null),
-        $query('Cube').notEqualTo('futureOrder', null)
+        $query('Cube').notEqualTo('order', null).notEqualTo('order.className', 'SpecialFormat'),
+        $query('Cube').notEqualTo('futureOrder', null).notEqualTo('futureOrder.className', 'SpecialFormat')
       )
       const bookedCubeIds = await activeOrFutureBookingExistsQuery
         .containedIn('objectId', taskList.get('cubeIds'))

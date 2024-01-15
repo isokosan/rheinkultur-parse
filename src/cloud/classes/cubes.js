@@ -141,7 +141,12 @@ Parse.Cloud.afterSave(Cube, async ({ object: cube, context: { audit, updating, c
   }
   if (checkBriefings) {
     if (cube.get('order') || cube.get('futureOrder')) {
-      Parse.Cloud.run('briefings-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
+      // if orders are not special format remove cube from briefings
+      if ((cube.get('order') && cube.get('order').className !== 'SpecialFormat') || (cube.get('futureOrder') && cube.get('futureOrder').className !== 'SpecialFormat')) {
+        Parse.Cloud.run('briefings-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
+      }
+      // in any case remove cube from special-format custom-service
+      Parse.Cloud.run('custom-service-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
     }
   }
 })
