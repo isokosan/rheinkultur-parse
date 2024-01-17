@@ -1,3 +1,10 @@
+## [1.162.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.2...1.162.3) (2024-01-17)
+
+
+### Bug Fixes
+
+* update all cubes response ([a6fbede](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a6fbedeeb76a5769912e54af78831837614e0469))
+
 ## [1.162.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.1...1.162.2) (2024-01-15)
 
 
