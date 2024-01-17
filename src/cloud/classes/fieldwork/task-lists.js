@@ -474,12 +474,12 @@ async function validateAppointAssign (taskList) {
 }
 
 // Used in marklist store component to save manual cube changes
-Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, cubeIds }, user }) => {
+Parse.Cloud.define('task-list-update-cubes', async ({ params: { id: taskListId, cubeIds, force }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   if (['control', 'disassembly'].includes(taskList.get('type'))) {
     throw new Error('CityCubes in kann nicht geändert werden.')
   }
-  if (taskList.get('status')) {
+  if (!force && taskList.get('status')) {
     throw new Error('CityCubes in kann nicht geändert werden.')
   }
   $cubeLimit(cubeIds.length)
