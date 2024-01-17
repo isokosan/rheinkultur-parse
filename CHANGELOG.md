@@ -1,3 +1,10 @@
+# [1.163.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.3...1.163.0) (2024-01-17)
+
+
+### Features
+
+* add force update to task-list cubes ([be61682](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/be61682800b0e60d3fa7f9236d5dfc219e422513))
+
 ## [1.162.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.2...1.162.3) (2024-01-17)
 
 
