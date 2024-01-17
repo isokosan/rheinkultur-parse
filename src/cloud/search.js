@@ -1,5 +1,5 @@
 const client = require('@/services/elastic')
-// const redis = require('@/services/redis')
+const redis = require('@/services/redis')
 const { errorFlagKeys } = require('@/cloud/cube-flags')
 
 const INDEXES = {
@@ -858,15 +858,14 @@ Parse.Cloud.define('search-booking-requests', async ({
 }, { requireUser: true, validateMasterKey: true })
 
 Parse.Cloud.define('booked-cubes', async () => {
-  // const cached = await redis.get('booked-cube-geojson')
-  // if (cached) { return JSON.parse(cached) }
+  const cached = await redis.get('cubes:everything')
+  if (cached) { return JSON.parse(cached) }
   const keepAlive = '1m'
   const size = 5000
   // Sorting should be by _shard_doc or at least include _shard_doc
   const index = ['rheinkultur-cubes']
   const sort = [{ _shard_doc: 'desc' }]
-  const query = { bool: { must: [{ term: { s: 5 } }] } }
-  // const query = { bool: { must_not: [{ terms: { s: [8, 9] } }] } }
+  const query = { bool: { must_not: [{ terms: { s: [8, 9] } }] } }
   let searchAfter
   let pointInTimeId = (await client.openPointInTime({ index, keep_alive: keepAlive })).id
   const cubes = []
@@ -883,31 +882,25 @@ Parse.Cloud.define('booked-cubes', async () => {
         sort,
         search_after: searchAfter
       },
-      _source: { includes: ['gp'] }
+      _source: { includes: ['gp', 's'] }
     })
     if (!hits?.length) { break }
     pointInTimeId = pit_id
     cubes.push(...hits.map(hit => hit._source))
+    // cubes.push(...hits.map(hit => ({
+    //   s: hit._source.s,
+    //   lat: hit._source.gp.latitude,
+    //   lon: hit._source.gp.longitude,
+    //   id: hit._id
+    // })))
     if (hits.length < size) { break }
     // search after has to provide value for each sort
     const lastHit = hits[hits.length - 1]
     searchAfter = lastHit.sort
   }
-  const geojson = {
-    type: 'FeatureCollection',
-    features: cubes.map(cube => ({
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [cube.gp.longitude, cube.gp.latitude]
-      },
-      properties: {
-        id: cube.objectId
-      }
-    }))
-  }
-  // await redis.set('booked-cube-geojson', JSON.stringify(geojson))
-  return geojson
+  await redis.set('cubes:everything', JSON.stringify(cubes))
+  await redis.expire('cubes:everything', 86400) // TTL of 1 day
+  return cubes
 }, $adminOnly)
 
 // Before is only defined if address is changing
