@@ -1,3 +1,10 @@
+## [1.164.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.0...1.164.1) (2024-01-22)
+
+
+### Bug Fixes
+
+* add population and totals to frame locations ([c1343b8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c1343b8187ab30d137d770b55e2d3b84b2eefe53))
+
 # [1.164.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.163.1...1.164.0) (2024-01-22)
 
 
