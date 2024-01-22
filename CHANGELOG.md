@@ -1,3 +1,10 @@
+## [1.164.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.1...1.164.2) (2024-01-22)
+
+
+### Bug Fixes
+
+* non-internal users can only see the order of a cube if they are from the company of the order ([bb98d92](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bb98d92ad2da38b8304835de9803b3680d92c975))
+
 ## [1.164.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.0...1.164.1) (2024-01-22)
 
 
