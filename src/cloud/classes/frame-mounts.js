@@ -85,6 +85,7 @@ Parse.Cloud.define('frames-locations', async ({ params: { force }, user }) => {
       return {
         locations: await Promise.all(locations.map(async (location) => {
           location.wawiCity = wawiCities.find((c) => c.id === location.placeKey)
+          location.population = location.wawiCity?.get('population')
           location.taskLists = scoutLists.filter((list) => list.get('pk') === location.placeKey)
           // get counts
           location.counts = location.taskLists.reduce((acc, list) => {
@@ -104,6 +105,10 @@ Parse.Cloud.define('frames-locations', async ({ params: { force }, user }) => {
                 { range: { s: { lt: 5 } } }
               ]
             })
+          }
+          if (location.counts.total) {
+            location.cubes = location.counts.total
+            location.progress = parseInt((location.counts.completed / location.counts.total) * 100)
           }
           return location
         }))
