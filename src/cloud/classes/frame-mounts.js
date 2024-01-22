@@ -119,6 +119,27 @@ Parse.Cloud.define('frames-locations', async ({ params: { force }, user }) => {
   })
 }, { requireUser: true })
 
+// function calculateRemainingTakedownQuota() {
+//   const allowedTakedownRate = 0.1
+//   const items = [
+//     { type: 'mount', count: 200 },
+//     { type: 'takedown', count: 20 },
+//     { type: 'mount', count: 50 },
+//     { type: 'unmount', count: 15 },
+//     { type: 'takedown', count: 1 },
+//     { type: 'mount', count: 100 }
+//   ]
+//   // should be 30 * 10% = 3 takedowns remaining
+//   const mounts = items.filter((m) => m.type === 'mount').reduce((acc, { count }) => acc + count, 0)
+//   const unmounts = items.filter((m) => m.type === 'unmount').reduce((acc, { count }) => acc + count, 0)
+//   const takedowns = items.filter((m) => m.type === 'takedown').reduce((acc, { count }) => acc + count, 0)
+//   const active = mounts - (unmounts + takedowns)
+//   const remainingTakedownQuota = Math.floor(active * allowedTakedownRate) - takedowns
+//   console.log({ mounts, unmounts, takedowns, active, remainingTakedownQuota })
+//   return remainingTakedownQuota
+// }
+// calculateRemainingTakedownQuota()
+
 /*
 const { frameMounts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const {
