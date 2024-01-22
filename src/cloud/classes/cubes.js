@@ -190,7 +190,6 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
       continue
     }
 
-    // if is partner request
     const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
     if (isPartner) {
       cube.get('s') === 4 && cube.set('s', 0)
@@ -199,6 +198,12 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
       const companyId = cube.get('order')?.company?.id || cube.get('futureOrder')?.company?.id
       if (cube.get('s') === 6 && companyId !== user.get('company').id) {
         cube.set('s', 7)
+      }
+      if (cube.get('order') && cube.get('order')?.company?.id !== user.get('company').id) {
+        cube.unset('order')
+      }
+      if (cube.get('futureOrder') && cube.get('futureOrder')?.company?.id !== user.get('company').id) {
+        cube.unset('futureOrder')
       }
       continue
     }
