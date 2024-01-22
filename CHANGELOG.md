@@ -1,3 +1,10 @@
+## [1.163.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.163.0...1.163.1) (2024-01-22)
+
+
+### Bug Fixes
+
+* add server side check for duplicated partner bookings ([d3b6a95](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d3b6a95ed0f97b23aade5418287ece468c9ecbbd))
+
 # [1.163.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.162.3...1.163.0) (2024-01-17)
 
 
