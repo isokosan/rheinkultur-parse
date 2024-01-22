@@ -1,5 +1,7 @@
 ARG  NODE_VERSION
 FROM node:${NODE_VERSION}
+
+# Install system dependencies
 RUN apt-get update -y && \
     apt-get upgrade -y && \
     apt-get install -y \
@@ -46,13 +48,23 @@ RUN cd libvips-${VIPS_BRANCH} \
 
 RUN ldconfig
 
+# Install Ghostscript, GraphicsMagick and ImageMagick after libvips
 RUN apt-get install -y ghostscript graphicsmagick imagemagick
 
-RUN npm i -g node-gyp@latest && npm config set node_gyp "/usr/local/lib/node_modules/node-gyp/bin/node-gyp.js"
+# Update npm to the latest version
+RUN npm install -g npm@latest
+# Install node-gyp globally
+RUN npm install -g node-gyp@latest
+# Set the correct path for node-gyp
+# RUN npm config set node_gyp /usr/local/lib/node_modules/node-gyp/bin/node-gyp.js
 
-# This has no affect since the package.json is not yet inside the working directory as docker compose has not yet mapped the volume
-# RUN rm -rf node_modules
-# RUN npm install -g npm@10.2.0
-# RUN npm install -g node-gyp
-# RUN yarn install
+# COPY PACKAGE JSON
+COPY package.json .
+COPY yarn.lock .
+COPY rk-lint .
+RUN yarn install
+RUN rm -rf package.json
+RUN rm -rf yarn.lock
+RUN rm -rf rk-lint
+
 WORKDIR /app

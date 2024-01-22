@@ -1,6 +1,6 @@
 async function clean () {
   // briefings
-  await $query('Briefing').containedIn('objectId', ['8X6GK15zZm']).each(async (briefing) => {
+  await $query('Briefing').containedIn('objectId', ['1dn6RAPheM']).each(async (briefing) => {
     // delete all submissions
     const taskListQuery = $query('TaskList').equalTo('briefing', briefing)
     await $query('ScoutSubmission').matchesQuery('taskList', taskListQuery).each(async (submission) => {

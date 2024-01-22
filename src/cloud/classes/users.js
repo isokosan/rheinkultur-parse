@@ -56,20 +56,21 @@ Parse.Cloud.afterFind(Parse.User, ({ objects: users }) => {
   return users
 })
 
-Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user: invitedBy }) => {
-  const [isAdmin, isPartnerScoutManager] = [
-    invitedBy.get('accType') === 'admin',
-    invitedBy.get('accType') === 'partner' && invitedBy.get('permissions')?.includes('manage-scouts')
-  ]
-  if (!isAdmin && !isPartnerScoutManager) {
-    throw new Error('Unbefugter Zugriff!')
+Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user: invitedBy, master }) => {
+  if (!master) {
+    const [isAdmin, isPartnerScoutManager] = [
+      invitedBy.get('accType') === 'admin',
+      invitedBy.get('accType') === 'partner' && invitedBy.get('permissions')?.includes('manage-scouts')
+    ]
+    if (!isAdmin && !isPartnerScoutManager) {
+      throw new Error('Unbefugter Zugriff!')
+    }
+    if (isPartnerScoutManager) {
+      params.accType = 'scout'
+      params.permissions = []
+      params.companyId = invitedBy.get('company')?.id
+    }
   }
-  if (isPartnerScoutManager) {
-    params.accType = 'scout'
-    params.permissions = []
-    params.companyId = invitedBy.get('company')?.id
-  }
-  const inviteToken = generateToken()
   const {
     email,
     firstName,
@@ -89,7 +90,7 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
     company: companyId
       ? await $getOrFail('Company', companyId)
       : undefined,
-    inviteToken: password ? undefined : inviteToken,
+    inviteToken: password ? undefined : generateToken(),
     invitedBy,
     invitedAt: new Date()
   })
