@@ -583,14 +583,25 @@ Parse.Cloud.define('booking-production-invoice', async ({ params: { id: bookingI
 // Requests
 
 /**
- * Process a booking submit
+ * Process a booking submit, only for partners
  */
 Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
-  const isPartner = user.get('accType') === 'partner'
+  const isPartner = user.get('accType') === 'partner' && user.get('company')
   if (!isPartner || !user.get('permissions')?.includes?.('manage-bookings')) {
     throw new Error('Unbefugter Zugriff')
   }
   const cube = await $getOrFail('Cube', params.id.split('new-')[1])
+
+  // check if existing booking request for this cube
+  const existing = await $query('Booking')
+    .equalTo('cubeIds', cube.id)
+    .equalTo('request.type', 'create')
+    .equalTo('company', user.get('company'))
+    .first({ useMasterKey: true })
+  if (existing) {
+    throw new Error('Sie haben den Standort bereits angefragt.')
+  }
+
   const {
     // companyPersonId,
     motive,
