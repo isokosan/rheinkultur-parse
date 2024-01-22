@@ -282,6 +282,11 @@ Parse.Cloud.define(
   { validateMasterKey: true }
 )
 
+async function countCubes (bool) {
+  const { count } = await client.count({ index: 'rheinkultur-cubes', body: { query: { bool } } })
+  return count
+}
+
 Parse.Cloud.define('search', async ({
   params: {
     id,
@@ -1068,6 +1073,7 @@ module.exports = {
   purgeIndexes,
   indexCube,
   indexCubes,
+  countCubes,
   unindexCube,
   indexCubeBookings,
   indexBooking,

@@ -10,7 +10,8 @@ module.exports.ACC_TYPES = {
 module.exports.PERMISSIONS = {
   'manage-bookings': 'Manage Bookings',
   'manage-scouts': 'Manage Scouts',
-  'manage-fieldwork': 'Manage Fieldwork'
+  'manage-fieldwork': 'Manage Fieldwork',
+  'manage-frames': 'Manage Frames'
   /*
   cubes: 'CityCubes Public View', // verfügbar / nicht verfügbar
   'cubes-detail': 'CityCubes Detail View', // details like booked, not marketable etc
@@ -68,7 +69,7 @@ module.exports.CUBE_STATUSES = {
   // 3: 'Warnmeldung',
   4: 'Sonderformate',
   // Everything above here is "unverfügbar" in public view
-  5: 'Moskitorahmen',
+  // 5: 'Moskitorahmen', // activate once we have frames working
   6: 'Vermarktet',
   7: 'Nicht vermarktungsfähig',
   // Everything above here is invisible in public view

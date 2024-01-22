@@ -33,14 +33,12 @@ Parse.Cloud.beforeFind(Audit, async ({ query, user, master }) => {
   if (master) { return }
   if (!user || user.get('accType') === 'scout') { throw new Parse.Error(401, 'Unbefugter Zugriff') }
 
-  if (['admin', 'intern'].includes(user.get('accType'))) {
-    if (!user.get('permissions')?.includes('manage-fieldwork')) {
-      query.notContainedIn('fn', FIELDWORK_FUNCTIONS)
-    }
+  if (!user.get('permissions')?.includes('manage-fieldwork')) {
+    query.notContainedIn('fn', FIELDWORK_FUNCTIONS)
   }
 
-  const orQueries = []
   if (user.get('accType') === 'partner') {
+    const orQueries = []
     if (user.get('permissions')?.includes('manage-scouts')) {
       const userIds = await $query(Parse.User)
         .equalTo('company', user.get('company'))
@@ -54,8 +52,12 @@ Parse.Cloud.beforeFind(Audit, async ({ query, user, master }) => {
         .distinct('objectId', { useMasterKey: true })
       orQueries.push($query(Audit).equalTo('itemClass', 'Booking').containedIn('itemId', bookingIds))
     }
-  }
-  if (orQueries.length) {
+    if (user.get('permissions')?.includes('manage-frames')) {
+      orQueries.push($query(Audit).equalTo('itemClass', 'Frame'))
+    }
+    if (!orQueries.length) {
+      throw new Parse.Error(401, 'Unbefugter Zugriff')
+    }
     return Parse.Query.and(
       query,
       Parse.Query.or(...orQueries)
