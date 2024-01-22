@@ -1,3 +1,10 @@
+# [1.164.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.163.1...1.164.0) (2024-01-22)
+
+
+### Features
+
+* add frame-manager and frame locations ([7ab94eb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7ab94ebb2474c992daa8c3519e6a1ad1ab612d63))
+
 ## [1.163.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.163.0...1.163.1) (2024-01-22)
 
 
