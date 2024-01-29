@@ -1,3 +1,10 @@
+# [1.166.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.165.0...1.166.0) (2024-01-29)
+
+
+### Features
+
+* add rejection details to scouting of frame locations ([551c28d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/551c28de69ff7990854fe3ae9270545d90113cbb))
+
 # [1.165.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.4...1.165.0) (2024-01-29)
 
 
