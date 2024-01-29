@@ -1,3 +1,10 @@
+## [1.164.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.3...1.164.4) (2024-01-29)
+
+
+### Bug Fixes
+
+* remove user validation from order extend ([28368c8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/28368c81aafa4a3d20e5b44800bbd3af8081800e))
+
 ## [1.164.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.2...1.164.3) (2024-01-29)
 
 
