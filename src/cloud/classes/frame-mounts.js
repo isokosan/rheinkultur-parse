@@ -129,7 +129,8 @@ Parse.Cloud.define('frames-rejections', async ({ params: { taskListIds }, user }
   return $query('ScoutSubmission')
     .matchesQuery('taskList', taskListsQuery)
     .equalTo('status', 'rejected')
-    .include('cube')
+    .include(['cube', 'photos'])
+    .limit(1000)
     .find({ useMasterKey: true })
 }, { requireUser: true })
 
