@@ -139,7 +139,7 @@ Parse.Cloud.define('order-extend', async ({ params: { className, id, email, exte
     message += await generateExtensionInvoices(order.id, newEndsAt, previousEndsAt)
   }
   return message
-}, $internOrAdmin)
+})
 
 /**
  * When any order ends
