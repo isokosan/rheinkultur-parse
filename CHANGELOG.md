@@ -1,3 +1,10 @@
+## [1.166.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.1...1.166.2) (2024-01-29)
+
+
+### Bug Fixes
+
+* add cube photos to frame location temp status ([667d21c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/667d21cf6b62ebce03de8a234b60c65b7da9833f))
+
 ## [1.166.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.0...1.166.1) (2024-01-29)
 
 
