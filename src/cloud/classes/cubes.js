@@ -1,7 +1,7 @@
 const { ORDER_CLASSES, getNewNo, getActiveCubeOrder, getFutureCubeOrder } = require('@/shared')
 const redis = require('@/services/redis')
 const { indexCube, unindexCube, indexCubeBookings } = require('@/cloud/search')
-const { PDGA, errorFlagKeys, warningFlagKeys, editableFlagKeys } = require('@/cloud/cube-flags')
+const { PDGA, EXCLUDE_CITIES_PER_PARTNER, errorFlagKeys, warningFlagKeys, editableFlagKeys } = require('@/cloud/cube-flags')
 
 const Cube = Parse.Object.extend('Cube', {
   getStatus () {
@@ -204,6 +204,9 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
       }
       if (cube.get('futureOrder') && cube.get('futureOrder')?.company?.id !== user.get('company').id) {
         cube.unset('futureOrder')
+      }
+      if (!cube.get('s') && EXCLUDE_CITIES_PER_PARTNER[user.get('company').id]?.includes(cube.get('pk'))) {
+        cube.set('s', 7)
       }
       continue
     }

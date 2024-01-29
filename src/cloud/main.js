@@ -31,7 +31,7 @@ const {
     'housing-types': { fetchHousingTypes },
     'gradual-price-maps': { fetchGradualPriceMaps }
   },
-  'cube-flags': { CUBE_FLAGS: cubeFlags }
+  'cube-flags': { CUBE_FLAGS: cubeFlags, EXCLUDE_CITIES_PER_PARTNER: excludeCitiesPerPartner }
 } = require('require-dir')('./', {
   recurse: true
 })
@@ -95,7 +95,8 @@ Parse.Cloud.define('enums', () => ({
   interestRates,
   taskListStatuses,
   fieldworkStatuses,
-  cubeFlags
+  cubeFlags,
+  excludeCitiesPerPartner
 }), { requireUser: true })
 
 Parse.Cloud.define('counts', async ({ user }) => {

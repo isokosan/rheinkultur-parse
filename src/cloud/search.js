@@ -1,6 +1,6 @@
 const client = require('@/services/elastic')
 const redis = require('@/services/redis')
-const { errorFlagKeys } = require('@/cloud/cube-flags')
+const { EXCLUDE_CITIES_PER_PARTNER, errorFlagKeys } = require('@/cloud/cube-flags')
 
 const INDEXES = {
   'rheinkultur-streets-autocomplete': {
@@ -82,6 +82,7 @@ const INDEXES = {
           ? { __type: 'Pointer', className: 'State', objectId: cube.get('state').id }
           : undefined,
         stateId: cube.get('state')?.id,
+        pk: cube.get('pk'),
         gp: cube.get('gp')?.toJSON(),
         geo: {
           lat: cube.get('gp').latitude,
@@ -581,6 +582,7 @@ Parse.Cloud.define('search', async ({
       's'
     ]
     if (isPartner) {
+      includes.push('pk')
       includes.push('order.company.objectId')
       includes.push('futureOrder.company.objectId')
     }
@@ -612,6 +614,9 @@ Parse.Cloud.define('search', async ({
       // show as not available to partners if booked by other company
       const companyId = result.order?.company?.objectId || result.futureOrder?.company?.objectId
       if (result.s === 6 && companyId !== cId) {
+        result.s = 7
+      }
+      if (!result.s && EXCLUDE_CITIES_PER_PARTNER[cId].includes(result.pk)) {
         result.s = 7
       }
       return result

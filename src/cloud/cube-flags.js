@@ -11,6 +11,24 @@ const PDGA = {
   'NW:Stolberg (Rhld.)': true,
   'NW:Würselen': true
 }
+
+const EXCLUDE_CITIES_PER_PARTNER = {
+  XPLYKFS9Pc: [
+    'NW:Remscheid',
+    'NW:Solingen',
+    'NW:Erkrath',
+    'NW:Haan',
+    'NW:Heiligenhaus',
+    'NW:Hilden',
+    'NW:Langenfeld',
+    'NW:Mettmann',
+    'NW:Monheim am Rhein',
+    'NW:Ratingen',
+    'NW:Velbert',
+    'NW:Wülfrath'
+  ]
+}
+
 const CUBE_FLAGS = {
   // NO RIGHTS
   MBfD: {
@@ -117,6 +135,7 @@ const CUBE_FLAGS = {
 module.exports = {
   PDGA,
   CUBE_FLAGS,
+  EXCLUDE_CITIES_PER_PARTNER,
   editableFlagKeys: Object.keys(CUBE_FLAGS).filter(key => CUBE_FLAGS[key].editable),
   errorFlagKeys: Object.keys(CUBE_FLAGS).filter(key => CUBE_FLAGS[key].level === 'error'),
   warningFlagKeys: Object.keys(CUBE_FLAGS).filter(key => CUBE_FLAGS[key].level === 'warning')
