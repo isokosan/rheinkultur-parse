@@ -1,3 +1,10 @@
+# [1.165.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.4...1.165.0) (2024-01-29)
+
+
+### Features
+
+* add exclude cities to partners and add pk to cube search index ([1500fcc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1500fccb61401a2d6e80e287f1e08e443951cbd5))
+
 ## [1.164.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.3...1.164.4) (2024-01-29)
 
 
