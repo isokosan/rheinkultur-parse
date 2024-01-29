@@ -119,6 +119,20 @@ Parse.Cloud.define('frames-locations', async ({ params: { force }, user }) => {
   })
 }, { requireUser: true })
 
+// TEMPORARY FUNCTION
+Parse.Cloud.define('frames-rejections', async ({ params: { taskListIds }, user }) => {
+  const isFramesManager = user.get('permissions').includes('manage-frames')
+  if (!isFramesManager) {
+    throw new Parse.Error(401, 'Unauthorized')
+  }
+  const taskListsQuery = await $query('TaskList').containedIn('objectId', taskListIds)
+  return $query('ScoutSubmission')
+    .matchesQuery('taskList', taskListsQuery)
+    .equalTo('status', 'rejected')
+    .include('cube')
+    .find({ useMasterKey: true })
+}, { requireUser: true })
+
 // function calculateRemainingTakedownQuota() {
 //   const allowedTakedownRate = 0.1
 //   const items = [
