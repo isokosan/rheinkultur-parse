@@ -1,3 +1,10 @@
+## [1.166.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.0...1.166.1) (2024-01-29)
+
+
+### Bug Fixes
+
+* lüneburg state ([9bd85f2](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9bd85f2fedc6eb194423267878d4c29e3eadcc4f))
+
 # [1.166.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.165.0...1.166.0) (2024-01-29)
 
 
