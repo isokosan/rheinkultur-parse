@@ -95,7 +95,8 @@ Parse.Cloud.define('order-void', async ({ params: { className, id, comments: can
  */
 Parse.Cloud.define('order-extend', async ({ params: { className, id, email, extendBy }, user, master }) => {
   if (!master && !['intern', 'admin'].includes(user.get('accType'))) {
-    if (className !== 'Booking' || !(user.get('accType') === 'partner' && user.get('permissions').includes('manage-bookings'))) {
+    const isBookingManagerPartner = className === 'Booking' && user.get('accType') === 'partner' && user.get('permissions').includes('manage-bookings')
+    if (!isBookingManagerPartner) {
       throw new Error('Unbefugter Zugriff.')
     }
   }
