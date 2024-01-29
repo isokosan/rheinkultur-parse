@@ -48,7 +48,7 @@ const LOCATION_LIST = [
   { ort: 'Halle (Saale)', state: 'Sachsen-Anhalt ', planned: 100 },
   { ort: 'Magdeburg', state: 'Sachsen-Anhalt ', planned: 150 },
   { ort: 'Flensburg', state: 'Schleswig-Holstein ', planned: null },
-  { ort: 'Lüneburg ', state: 'Schleswig-Holstein ', planned: null }
+  { ort: 'Lüneburg ', state: 'Niedersachsen', planned: null }
 ].map((city) => {
   city.ort = city.ort.trim()
   city.state = city.state.trim()
