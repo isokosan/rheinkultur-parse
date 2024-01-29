@@ -1,3 +1,10 @@
+## [1.164.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.2...1.164.3) (2024-01-29)
+
+
+### Bug Fixes
+
+* order-extend with booking ([ff15535](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ff15535b873c696d9bf8843fcd5ae50522e3dccf))
+
 ## [1.164.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.164.1...1.164.2) (2024-01-22)
 
 
