@@ -616,7 +616,7 @@ Parse.Cloud.define('search', async ({
       if (result.s === 6 && companyId !== cId) {
         result.s = 7
       }
-      if (!result.s && EXCLUDE_CITIES_PER_PARTNER[cId].includes(result.pk)) {
+      if (!result.s && EXCLUDE_CITIES_PER_PARTNER[cId]?.includes(result.pk)) {
         result.s = 7
       }
       return result
