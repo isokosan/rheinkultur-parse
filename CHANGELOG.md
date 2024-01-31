@@ -1,3 +1,10 @@
+## [1.166.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.2...1.166.3) (2024-01-31)
+
+
+### Bug Fixes
+
+* exclude cities bugfix ([6b0cc8f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6b0cc8f6b1f2172abfc103086490d8481511a75e))
+
 ## [1.166.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.1...1.166.2) (2024-01-29)
 
 
