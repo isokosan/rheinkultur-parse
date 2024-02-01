@@ -17,7 +17,7 @@ const LOCATION_LIST = [
   { ort: 'Sindelfingen ', state: 'Baden-Württemberg', planned: null },
   { ort: 'Tübingen ', state: 'Baden-Württemberg', planned: 200 },
   { ort: 'Ulm', state: 'Baden-Württemberg', planned: null },
-  { ort: 'Bodensee-Netz', state: 'Baden-Württemberg', planned: null },
+  // { ort: 'Bodensee-Netz', state: 'Baden-Württemberg', planned: null },
   { ort: 'Stuttgart', state: 'Baden-Württemberg', planned: 250 },
   { ort: 'Augsburg ', state: 'Bayern ', planned: 100 },
   { ort: 'Bayreuth ', state: 'Bayern ', planned: null },
