@@ -1,3 +1,10 @@
+## [1.166.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.3...1.166.4) (2024-02-01)
+
+
+### Bug Fixes
+
+* remove bodensee netz from frame mount locations ([4c29f2e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4c29f2e391fb4731a51187b6d082b94329510962))
+
 ## [1.166.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.2...1.166.3) (2024-01-31)
 
 
