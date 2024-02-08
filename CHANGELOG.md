@@ -1,3 +1,10 @@
+## [1.166.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.4...1.166.5) (2024-02-08)
+
+
+### Bug Fixes
+
+* customService bugs ([cad2d98](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cad2d98deebd7e99f482dafb6b93ca18b729d718))
+
 ## [1.166.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.3...1.166.4) (2024-02-01)
 
 
