@@ -681,7 +681,7 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
 
   // update statuses if disassembly
   if (taskList.get('disassembly')) {
-    await taskList.get('disassembly').fetchWithInclude(['contract', 'booking'], { useMasterKey: true })
+    await taskList.get('disassembly').fetchWithInclude(['contract', 'booking', 'specialFormat'], { useMasterKey: true })
     const order = taskList.get('disassembly').get('order')
     const disassembly = order.get('disassembly')
     const statuses = disassembly.statuses || {}

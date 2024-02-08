@@ -659,7 +659,6 @@ Parse.Cloud.define('search-fieldwork', async ({
 
   stateId && bool.filter.push({ term: { stateId } })
 
-  console.log({ type })
   type && bool.filter.push({ term: { 'type.keyword': type } })
 
   // hideArchived

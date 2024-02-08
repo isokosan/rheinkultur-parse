@@ -41,8 +41,8 @@ function setFlag (flags = [], flag, flagged) {
 }
 
 Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating, orderStatusCheck } }) => {
-  if (!(/^[A-Za-z0-9ÄÖÜäöüß*_/()-]+$/.test(cube.id))) {
-    throw new Error('CityCube ID sollte nicht die folgende Zeichen behalten: ".", "$", "%", "?", "+", " ", "Ãœ"')
+  if (!(/^[A-Za-z0-9ÄÖÜäöüß_/()-]+$/.test(cube.id))) {
+    throw new Error('CityCube ID sollte nicht die folgende Zeichen behalten: ".", "$", "%", "?", "+", " ", "Ãœ", "*"')
   }
 
   // require state and ort (for placekey operations) - cannot update schema
@@ -152,6 +152,16 @@ Parse.Cloud.afterSave(Cube, async ({ object: cube, context: { audit, updating, c
 })
 
 Parse.Cloud.beforeDelete(Cube, async ({ object: cube }) => {
+  // if the was/is in any order or task list then reject deletion before those are cleared up
+  for (const className of [...ORDER_CLASSES, 'TaskList']) {
+    const exists = await $query(className)
+      .equalTo('cubeIds', cube.id)
+      .first({ useMasterKey: true })
+    if (exists) {
+      const id = exists.id
+      throw new Error(`CityCube ${cube.id} ist in ${className} ${id} und kann nicht gelöscht werden.`)
+    }
+  }
   await unindexCube(cube)
 })
 
@@ -618,7 +628,7 @@ Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, c
   // update item with cube statuses
   await item.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   const count = Object.keys(cancellations).length
-  let message = `${count < 2 ? 'CityCube' : 'CityCubes'} frühzeitlig storniert.`
+  let message = `${count === 1 ? 'CityCube' : 'CityCubes'} frühzeitlig storniert.`
   if (itemClass === 'Contract') {
     // attempt to update planned invoices
     await Parse.Cloud.run('contract-update-planned-invoices', { id: itemId }, { useMasterKey: true })
