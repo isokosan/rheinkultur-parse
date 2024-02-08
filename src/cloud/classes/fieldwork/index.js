@@ -22,7 +22,7 @@ Parse.Cloud.define('fieldwork-outstanding', async ({ user }) => {
     .containedIn('status', [2, 3])
     .lessThanOrEqualTo('date', await $today())
   await taskListQuery
-    .select(['scouts', 'counts', 'type', 'gp', 'pk', 'briefing', 'control', 'disassembly'])
+    .select(['scouts', 'counts', 'type', 'gp', 'pk', 'briefing', 'control', 'disassembly', 'customService'])
     .eachBatch((lists) => {
       for (const list of lists) {
         const { completed, total } = list.get('counts')
@@ -166,11 +166,12 @@ Parse.Cloud.define('fieldwork-upcoming', async ({ params: { force } }) => {
             if (!response[key][stateId]) {
               response[key][stateId] = {
                 stateId,
-                scout: {},
-                control: {},
-                disassembly: {},
                 total: {}
               }
+            }
+            // scout, control, disassembly, special-format
+            if (!response[key][stateId][type]) {
+              response[key][stateId][type] = {}
             }
             response[key][stateId][type][status] = (response[key][stateId][type][status] || 0) + total
             response[key][stateId][type].total = (response[key][stateId][type].total || 0) + total

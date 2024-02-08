@@ -138,10 +138,10 @@ const INDEXES = {
       }
     },
     parseQuery: $query('TaskList'),
-    datasetMap: taskLists => taskLists.map(taskList => ({
-      _id: taskList.id,
-      doc: {
+    datasetMap: taskLists => taskLists.map((taskList) => {
+      const doc = {
         objectId: taskList.id,
+        parentId: taskList.get('parent')?.id,
         archived: !!taskList.get('archivedAt') || undefined,
         type: taskList.get('type'),
         ort: taskList.get('ort'),
@@ -159,7 +159,8 @@ const INDEXES = {
         date: taskList.get('date'),
         dueDate: taskList.get('dueDate')
       }
-    }))
+      return { _id: taskList.id, doc }
+    })
   },
   // bookings with cubes
   'rheinkultur-bookings': {
@@ -636,6 +637,8 @@ Parse.Cloud.define('search-fieldwork', async ({
     managerId,
     scoutId,
     status,
+    dClass, // disassembly parent class (Contract | SpecialFormat)
+    dType, // disassembly type (main | extra)
     sa, // showArchived
     from,
     pagination
@@ -656,7 +659,8 @@ Parse.Cloud.define('search-fieldwork', async ({
 
   stateId && bool.filter.push({ term: { stateId } })
 
-  type && bool.filter.push({ term: { type } })
+  console.log({ type })
+  type && bool.filter.push({ term: { 'type.keyword': type } })
 
   // hideArchived
   !sa && bool.must_not.push({ term: { archived: true } })
@@ -676,6 +680,9 @@ Parse.Cloud.define('search-fieldwork', async ({
   // hide drafts if not included in status filter explicity
   status?.length && bool.must.push({ terms: { status } })
   !status?.includes(0) && bool.must.push({ range: { status: { gt: 0 } } })
+
+  dClass && bool.filter.push({ prefix: { 'parentId.keyword': dClass } })
+  dType && bool.filter.push({ match: { parentId: `*${dType}$` } })
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)

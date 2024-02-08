@@ -438,7 +438,7 @@ Parse.Cloud.define('special-format-submission-approve', async ({ params: { id: s
     const { htId, media } = submission.get('form')
     cube.set('media', media)
     htId && cube.set('ht', $parsify('HousingType', htId))
-    cube.set('vAt', new Date())
+    // cube.set('vAt', new Date())
     await $saveWithEncode(cube, null, { useMasterKey: true })
   }
 

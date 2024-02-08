@@ -371,7 +371,7 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
   }
   // Not sure if this will degrade performance
   if (skipSyncParentStatus) { return }
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
   await parent.save(null, { useMasterKey: true, context: { syncStatus: true } })
 })
 
