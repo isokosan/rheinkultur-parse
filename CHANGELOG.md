@@ -1,3 +1,15 @@
+# [1.167.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.5...1.167.0) (2024-02-09)
+
+
+### Bug Fixes
+
+* remove start from allowed cube id characters ([0d23609](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0d23609a0491558f7758150e3eeca43c887996e7))
+
+
+### Features
+
+* mark SF cubes disassembled one by one and allow sf lists to be completed at planned status 0.1 ([598191c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/598191c9f492293a8dd9264b8cf2436cb2311952))
+
 ## [1.166.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.4...1.166.5) (2024-02-08)
 
 
