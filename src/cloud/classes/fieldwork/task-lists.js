@@ -359,16 +359,23 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 
   // set auto-erledigt if approved matches total
   const { status, counts } = taskList.attributes
-  if ([1, 2, 3].includes(status) && !counts.pending && counts.approved >= counts.total) {
-    // control or disassembly can't be completed until rejections are cleared
-    if (['control', 'disassembly'].includes(taskList.get('type')) && counts.rejected) {
-      return
-    }
+
+  // marking lists automatically erledigt / geplant
+  const isCompletedAndChecked = !counts.pending && counts.approved >= counts.total
+  // special format disassemblies can be completed at planned stage
+  const isSpecialFormatDisassembly = taskList.get('type') === 'disassembly' && taskList.get('parent').id.startsWith('SpecialFormat')
+  const statusIsCompletable = isSpecialFormatDisassembly
+    ? [0.1, 1, 2, 3].includes(status)
+    : [1, 2, 3].includes(status)
+  // control or disassembly can't be completed until rejections are cleared
+  const hasRejectionsAndNeedsChecking = counts.rejected && ['control', 'disassembly'].includes(taskList.get('type'))
+  if (isCompletedAndChecked && statusIsCompletable && !hasRejectionsAndNeedsChecking) {
     const changes = { taskStatus: [status, 4] }
     taskList.set({ status: 4 })
     const audit = { fn: 'task-list-complete', data: { changes } }
     await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
   }
+
   // Not sure if this will degrade performance
   if (skipSyncParentStatus) { return }
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
@@ -681,7 +688,7 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
 
   // update statuses if disassembly
   if (taskList.get('disassembly')) {
-    await taskList.get('disassembly').fetchWithInclude(['contract', 'booking', 'specialFormat'], { useMasterKey: true })
+    await taskList.get('disassembly').fetchWithInclude(ORDER_FIELDS, { useMasterKey: true })
     const order = taskList.get('disassembly').get('order')
     const disassembly = order.get('disassembly')
     const statuses = disassembly.statuses || {}
@@ -724,9 +731,9 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
   await taskList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
-Parse.Cloud.define('task-list-mass-preapprove', async ({ params: { id: taskListId, cubeIds, approved }, user }) => {
+Parse.Cloud.define('task-list-mass-preapprove', async ({ params: { id: taskListId, cubeIds, approved }, user, master }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
-  await validateScoutManagerOrFieldworkManager(taskList, user)
+  !master && await validateScoutManagerOrFieldworkManager(taskList, user)
   if (taskList.get('type') === 'scout' && approved) {
     // check if any cubes that are not verified exist
     if (await $query('Cube').containedIn('objectId', cubeIds).equalTo('vAt', null).count({ useMasterKey: true })) {
@@ -746,7 +753,7 @@ Parse.Cloud.define('task-list-mass-preapprove', async ({ params: { id: taskListI
 
   // update statuses if disassembly
   if (taskList.get('disassembly')) {
-    await taskList.get('disassembly').fetchWithInclude(['contract', 'booking'], { useMasterKey: true })
+    await taskList.get('disassembly').fetchWithInclude(ORDER_FIELDS, { useMasterKey: true })
     const order = taskList.get('disassembly').get('order')
     const disassembly = order.get('disassembly')
     const statuses = disassembly.statuses || {}

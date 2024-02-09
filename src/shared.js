@@ -193,26 +193,25 @@ async function earlyCancelSpecialFormats (order) {
       }, { useMasterKey: true })
   }
   for (const itemId of Object.keys(specialFormats)) {
+    const cancellations = specialFormats[itemId]
     await Parse.Cloud.run('cubes-early-cancel', {
       itemClass: 'SpecialFormat',
       itemId,
-      cancellations: specialFormats[itemId]
+      cancellations
     }, { useMasterKey: true })
     // run disassembly order sync to generate the disassembly task lists, getting an array of syned disassemblies
     const syncStartedAt = new Date()
     await Parse.Cloud.run('disassembly-order-sync', { className: 'SpecialFormat', id: itemId }, { useMasterKey: true })
+    const cubeIds = Object.keys(cancellations)
+    // iterate over each cubeId and mark the cube as adminApproved (preapproved)
     const orderKey = ['SpecialFormat', itemId].join('-')
-    const disassemblyQuery = $query('Disassembly')
-      .equalTo('orderKey', orderKey)
-      .equalTo('type', 'extra')
+    const disassemblyQuery = $query('Disassembly').equalTo('orderKey', orderKey)
     await $query('TaskList')
-      .equalTo('status', 0.1)
-      .greaterthan('createdAt', syncStartedAt)
+      .greaterThan('updatedAt', syncStartedAt)
       .matchesQuery('disassembly', disassemblyQuery)
-      .select('objectId')
       .eachBatch(async (taskLists) => {
         for (const taskList of taskLists) {
-          await Parse.Cloud.run('task-list-mark-complete', { id: taskList.id, skipSyncParentStatus: true }, { useMasterKey: true })
+          await Parse.Cloud.run('task-list-mass-preapprove', { id: taskList.id, cubeIds, approved: true }, { useMasterKey: true })
         }
       }, { useMasterKey: true })
   }
