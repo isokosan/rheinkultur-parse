@@ -1,3 +1,10 @@
+## [1.167.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.167.0...1.167.1) (2024-02-09)
+
+
+### Bug Fixes
+
+* parent if bug and revert task list auto-mark-complete when status is 0.1 ([5bde2e0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5bde2e08bc95308f3a60bc5540768213394ae7dc))
+
 # [1.167.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.166.5...1.167.0) (2024-02-09)
 
 
