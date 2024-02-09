@@ -363,16 +363,25 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 
   // marking lists automatically erledigt / geplant
   const isCompletedAndChecked = !counts.pending && counts.approved >= counts.total
-  // special format disassemblies can be completed at planned stage
-  // const isSpecialFormatDisassembly = taskList.get('type') === 'disassembly' && parent.id.startsWith('SpecialFormat')
-  const statusIsCompletable = [1, 2, 3].includes(status)
   // control or disassembly can't be completed until rejections are cleared
   const hasRejectionsAndNeedsChecking = counts.rejected && ['control', 'disassembly'].includes(taskList.get('type'))
-  if (isCompletedAndChecked && statusIsCompletable && !hasRejectionsAndNeedsChecking) {
+
+  // force update to completed for special-format extras that have all been approved
+  const isSpecialFormatExtraDisassemblyGettingPreapproved =
+    taskList.get('type') === 'disassembly' &&
+    parent.id.startsWith('SpecialFormat') &&
+    parent.id.endsWith('extra') &&
+    audit?.fn === 'disassembly-submission-preapprove'
+  // special format disassemblies that just got created/added to can be completed at planned stage
+  const completeableStatuses = [1, 2, 3]
+  if (isSpecialFormatExtraDisassemblyGettingPreapproved) {
+    completeableStatuses.push(0.1)
+  }
+  if (isCompletedAndChecked && completeableStatuses.includes(status) && !hasRejectionsAndNeedsChecking) {
     const changes = { taskStatus: [status, 4] }
     taskList.set({ status: 4 })
-    const audit = { fn: 'task-list-complete', data: { changes } }
-    await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+    const newAudit = { fn: 'task-list-complete', data: { changes } }
+    await taskList.save(null, { useMasterKey: true, context: { audit: newAudit, locationCleanup: true } })
   }
 
   // Not sure if this will degrade performance
