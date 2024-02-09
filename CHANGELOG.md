@@ -1,3 +1,10 @@
+## [1.167.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.167.1...1.167.2) (2024-02-09)
+
+
+### Bug Fixes
+
+* complete auto-completing special format disassemblies that are getting cubes preapproved at planned stage ([65a0c63](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/65a0c639d906a9058a7fde6a9e374df7b52cfe97))
+
 ## [1.167.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.167.0...1.167.1) (2024-02-09)
 
 
