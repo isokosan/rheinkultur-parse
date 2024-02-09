@@ -359,14 +359,13 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 
   // set auto-erledigt if approved matches total
   const { status, counts } = taskList.attributes
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
 
   // marking lists automatically erledigt / geplant
   const isCompletedAndChecked = !counts.pending && counts.approved >= counts.total
   // special format disassemblies can be completed at planned stage
-  const isSpecialFormatDisassembly = taskList.get('type') === 'disassembly' && taskList.get('parent').id.startsWith('SpecialFormat')
-  const statusIsCompletable = isSpecialFormatDisassembly
-    ? [0.1, 1, 2, 3].includes(status)
-    : [1, 2, 3].includes(status)
+  // const isSpecialFormatDisassembly = taskList.get('type') === 'disassembly' && parent.id.startsWith('SpecialFormat')
+  const statusIsCompletable = [1, 2, 3].includes(status)
   // control or disassembly can't be completed until rejections are cleared
   const hasRejectionsAndNeedsChecking = counts.rejected && ['control', 'disassembly'].includes(taskList.get('type'))
   if (isCompletedAndChecked && statusIsCompletable && !hasRejectionsAndNeedsChecking) {
@@ -378,7 +377,6 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 
   // Not sure if this will degrade performance
   if (skipSyncParentStatus) { return }
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
   await parent.save(null, { useMasterKey: true, context: { syncStatus: true } })
 })
 
