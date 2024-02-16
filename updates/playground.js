@@ -1,20 +1,11 @@
 require('./run')(async () => {
-  let i = 0
-  let t = 0
   await $query('Cube')
-    .contains('objectId', '*')
-    // .count({ useMasterKey: true })
-    // .then(console.log)
+    .equalTo('ort', 'Altdorf')
+    .equalTo('plz', '84032')
+    .equalTo('state', $pointer('State', 'RP'))
+    .equalTo('nominatimAddress.state', 'Bayern')
     .each(async (cube) => {
-      // check if cube is in task list and remove
-      await $query('TaskList').equalTo('cubeIds', cube.id).each(async (taskList) => {
-        const cubeIds = taskList.get('cubeIds').filter(id => id !== cube.id)
-        taskList.set('cubeIds', cubeIds)
-        await taskList.save(null, { useMasterKey: true })
-        t++
-      }, { useMasterKey: true })
-      await cube.destroy({ useMasterKey: true })
-      i++
+      cube.set('state', $pointer('State', 'BY'))
+      await $saveWithEncode(cube, null, { useMasterKey: true })
     }, { useMasterKey: true })
-  console.log({ i, t })
 })
