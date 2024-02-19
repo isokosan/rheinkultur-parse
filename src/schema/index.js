@@ -176,7 +176,8 @@ const schemaDefinitions = {
       endPrices: { type: 'Object' }, // Kunden-netto, only applies when company has commission pricing model
       monthlyMedia: { type: 'Object' }, // Monthly prices are set only when the company has no pricing model
 
-      request: { type: 'Object' } // VP requests
+      request: { type: 'Object' }, // VP requests
+      requestHistory: { type: 'Array' } // VP request history
     },
     indexes: orderIndexes
   },
@@ -274,26 +275,28 @@ const schemaDefinitions = {
     },
     indexes: orderIndexes
   },
-  // Rahmenbelegungen
-  FrameMount: {
-    CLP: {
-      get: { '*': true },
-      find: { requiresAuthentication: true },
-      count: { requiresAuthentication: true },
-      create: {},
-      update: {},
-      delete: {}
-    },
-    fields: {
-      ...orderFields,
-      earlyCancellations: { type: 'Object' },
+  // Rahmenbelegungen WIP
+  // FrameMount: {
+  //   CLP: {
+  //     get: { '*': true },
+  //     find: { requiresAuthentication: true },
+  //     count: { requiresAuthentication: true },
+  //     create: {},
+  //     update: {},
+  //     delete: {}
+  //   },
+  //   fields: {
+  //     pk: { type: 'String' }, // placekey
+  //     company: { type: 'Pointer', targetClass: 'Company' },
 
-      // when being generated from a briefing
-      briefing: { type: 'Pointer', targetClass: 'Briefing' },
-      pk: { type: 'String' } // placekey
-    },
-    indexes: orderIndexes
-  },
+  //     cubeIds: { type: 'Array' }, // active (mounted) cube ids
+  //     allowedCubeIds: { type 'Array' }, // active freigegebene cube ids
+
+  //     request: { type: 'Object' }, // VP requests
+  //     requestHistory: { type: 'Array' }, // VP request history
+  //   },
+  //   indexes: orderIndexes
+  // },
   // Sonderformate
   SpecialFormat: {
     CLP: {
