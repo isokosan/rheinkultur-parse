@@ -1,3 +1,10 @@
+# [1.168.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.167.2...1.168.0) (2024-03-05)
+
+
+### Features
+
+* add sides to filters ([672c1b6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/672c1b633e8ba9191eafad03b9de0749611f62c7))
+
 ## [1.167.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.167.1...1.167.2) (2024-02-09)
 
 
