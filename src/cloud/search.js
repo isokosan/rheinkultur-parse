@@ -99,6 +99,7 @@ const INDEXES = {
           : undefined,
 
         flags: cube.get('flags'),
+        sides: cube.get('sides'),
         features: cube.get('features'),
 
         klsId: cube.get('importData')?.klsId,
@@ -526,13 +527,21 @@ Parse.Cloud.define('search', async ({
   }
 
   if (sm) {
+    const sides = {}
     const features = {}
     for (const item of sm.split(',') || []) {
       const [key, value] = item.split(':')
+      if (key === 'sides') {
+        sides[value] = 'y'
+        continue
+      }
       if (!features[key]) {
         features[key] = []
       }
       features[key].push(value)
+    }
+    for (const key of Object.keys(sides)) {
+      bool.must.push({ match: { [`sides.${key}.keyword`]: sides[key] } })
     }
     for (const key of Object.keys(features)) {
       bool.must.push({ terms: { [`features.${key}`]: features[key] } })

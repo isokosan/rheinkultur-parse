@@ -352,7 +352,7 @@ const schemaDefinitions = {
       p2: { type: 'Pointer', targetClass: 'CubePhoto' }, // Umfeld
 
       // belegung possibility
-      sides: { type: 'Object' }, // Which sides can be used
+      sides: { type: 'Object' }, // Which sides (faces) can be used
       features: { type: 'Object' }, // extra scouting data (features)
 
       hti: { type: 'String' }, // housing type string from import
