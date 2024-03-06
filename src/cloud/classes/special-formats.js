@@ -143,7 +143,6 @@ Parse.Cloud.define('special-format-update', async ({ params: { id: specialFormat
     sfCounts[cubeId] = sfCounts?.[cubeId] || 1
   }
   sfCounts = $cleanDict(sfCounts, cubeIds)
-  specialFormat.set('sfCounts', sfCounts)
 
   $cubeLimit(cubeIds.length)
   const cubeChanges = $cubeChanges(specialFormat, cubeIds)
