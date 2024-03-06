@@ -16,22 +16,28 @@ async function initializeForDevelopment () {
     await user.save(null, { useMasterKey: true })
   }, { useMasterKey: true })
   console.info('set user passwords, unset logging')
-  // sync lex accounts with dev lex
-  await $query('Address').notEqualTo('lex', null).each(async (address) => {
-    await new Promise(resolve => setTimeout(resolve, 700))
-    // check if address name exists on lexoffice
-    let [lex] = await Parse.Cloud.run('lex-contacts', { name: address.get('name').trim() }, { useMasterKey: true })
-    if (!lex) {
-      lex = await Parse.Cloud.run('lex-contact-create', {
-        name: address.get('name'),
-        allowTaxFreeInvoices: address.get('countryCode') !== 'DE' || undefined
-      }, { useMasterKey: true })
-      consola.info('created new lex', address.get('name'))
-    } else {
-      console.info('found existing lex', address.get('name'))
-    }
-    return address.set({ lex }).save(null, { useMasterKey: true })
-  }, { useMasterKey: true })
-  console.info('synced lex accounts with dev lex')
+  // try to sync lex accounts with dev lex if lex dev is active
+  try {
+    await $query('Address').notEqualTo('lex', null).each(async (address) => {
+      await new Promise(resolve => setTimeout(resolve, 700))
+      // check if address name exists on lexoffice
+      let [lex] = await Parse.Cloud.run('lex-contacts', { name: address.get('name').trim() }, { useMasterKey: true })
+      if (!lex) {
+        lex = await Parse.Cloud.run('lex-contact-create', {
+          name: address.get('name'),
+          allowTaxFreeInvoices: address.get('countryCode') !== 'DE' || undefined
+        }, { useMasterKey: true })
+        consola.info('created new lex', address.get('name'))
+      } else {
+        console.info('found existing lex', address.get('name'))
+      }
+      return address.set({ lex }).save(null, { useMasterKey: true })
+    }, { useMasterKey: true })
+    console.info('synced lex accounts with dev lex')
+  } catch (error) {
+    console.error(error)
+    console.info('skipped syncing lex accounts')
+  }
+  console.success('DONE!')
 }
 initializeForDevelopment()
