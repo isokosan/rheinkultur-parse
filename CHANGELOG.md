@@ -1,3 +1,10 @@
+## [1.168.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.0...1.168.1) (2024-03-06)
+
+
+### Bug Fixes
+
+* special format sfCount audits ([73f21a1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/73f21a178f73749a831847455fbe97411424f2b1))
+
 # [1.168.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.167.2...1.168.0) (2024-03-05)
 
 
