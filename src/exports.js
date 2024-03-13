@@ -44,7 +44,11 @@ router.use(async (req, res, next) => {
 
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
-const safeName = name => name.replace(/\//g, '').replace(/\s\s+/g, ' ').replace(/,/g, '').trim()
+const safeName = name => name
+  .replace(/[/\\?%*:|"<>.]/g, '_')
+  .replace(/\s+/g, ' ')
+  .replace(/,/g, '')
+  .trim()
 
 // common sheets functions
 function getColumnHeaders (headers) {
