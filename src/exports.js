@@ -50,6 +50,8 @@ const safeName = name => name
   .replace(/,/g, '')
   .trim()
 
+const getAttachmentContentDisposition = (fn, ext) => `attachment; filename*=UTF-8''${encodeURI(safeName(fn))}.${ext}`
+
 // common sheets functions
 function getColumnHeaders (headers) {
   const columns = []
@@ -233,7 +235,7 @@ router.get('/cubes', handleErrorAsync(async (req, res) => {
     })
   })
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', 'attachment; filename=Cubes.xlsx')
+  res.set('Content-Disposition', getAttachmentContentDisposition('CityCubes', 'xlsx'))
   res.set('Content-Length', buffer.length)
   return res.send(buffer)
 }))
@@ -272,7 +274,7 @@ router.get('/hts', handleErrorAsync(async (req, res) => {
   }
   const filename = `Verifizierte Gehäusetypen nach Bundesland (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -385,7 +387,7 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
 
   const filename = `${order.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -483,7 +485,7 @@ router.get('/company/:companyId', handleErrorAsync(async (req, res) => {
 
   const filename = `Laufende Verträge ${company.get('name')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -626,7 +628,7 @@ router.get('/kinetic-extensions/:quarter', handleErrorAsync(async (req, res) => 
 
   const filename = `Übersicht Aufträge Q${quarter} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -770,7 +772,7 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   const contractOrBooking = production.get('contract') || production.get('booking')
   const filename = safeName(['Montageauftrag', contractOrBooking.get('motive'), contractOrBooking.get('no')].filter(Boolean).join(' '))
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', 'attachment; filename=' + filename + '.xlsx')
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () {
     res.status(200).end()
   })
@@ -922,7 +924,7 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
   const workbook = new excel.Workbook()
   await addTaskListSheet(workbook, taskList)
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${name} ${taskList.get('ort')}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(`${name} ${taskList.get('ort')}`, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 router.get('/task-lists', handleErrorAsync(async (req, res) => {
@@ -947,7 +949,7 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
       await addTaskListSheet(workbook, taskList)
     }, { useMasterKey: true })
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${name}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(name, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 router.get('/disassemblies', handleErrorAsync(async (req, res) => {
@@ -1010,7 +1012,7 @@ router.get('/disassemblies', handleErrorAsync(async (req, res) => {
 
   // add all to rows
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${name}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(name, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
@@ -1106,8 +1108,7 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
   totalRow.height = 24
   totalRow.font = { bold: true, size: 12 }
 
-  const filename = safeName('Schadenlist ' + report.get('control').get('name'))
-  res.set('Content-Disposition', `attachment; filename=${filename}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition('Schadenlist ' + report.get('control').get('name'), 'xlsx'))
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
@@ -1291,9 +1292,8 @@ router.get('/invoice-summary', handleErrorAsync(async (req, res) => {
   const headerRow = worksheet.getRow(1)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
   headerRow.height = 24
-  const filename = `${invoice.get('lexNo') || ''} Rechnungsdetails`.trim()
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(`${invoice.get('lexNo') || ''} Rechnungsdetails`, 'xlsx'))
   return workbook.xlsx.write(res).then(function () {
     res.status(200).end()
   })
@@ -1482,7 +1482,7 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   totalRow.font = { name: 'Calibri', bold: true }
 
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -1581,7 +1581,7 @@ router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
   totalRow.font = { name: 'Calibri', bold: true }
 
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
@@ -1739,7 +1739,7 @@ router.get('/bookings', handleErrorAsync(async (req, res) => {
     })
   })
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', 'attachment; filename=Meine Buchungen.xlsx')
+  res.set('Content-Disposition', getAttachmentContentDisposition('Meine Buchungen', 'xlsx'))
   res.set('Content-Length', buffer.length)
   return res.send(buffer)
 }))
@@ -1830,8 +1830,8 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
     })
   })
   if (fetchResponse.ok) {
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
     res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
     fetchResponse.body.pipe(res)
     return
   }
@@ -1911,7 +1911,7 @@ router.get('/cube-mismatches', handleErrorAsync(async (req, res) => {
   }
   const filename = 'Wrong Bundesländer'
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-  res.set('Content-Disposition', `attachment; filename=${safeName(filename)}.xlsx`)
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
