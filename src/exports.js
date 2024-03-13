@@ -773,7 +773,7 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
 }))
 
 const addTaskListSheet = async (workbook, taskList) => {
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly').get('order')
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')?.get('order') || taskList.get('customService')
   const company = parent?.get('company') ? await parent.get('company').fetch({ useMasterKey: true }) : null
   const worksheet = workbook.addWorksheet(safeName(`${taskList.get('ort')} (${taskList.get('state').id}) ${moment(taskList.get('dueDate')).format('DD.MM.YYYY')}`))
 
@@ -908,9 +908,9 @@ const addTaskListSheet = async (workbook, taskList) => {
 }
 router.get('/task-list', handleErrorAsync(async (req, res) => {
   const taskList = await $query('TaskList')
-    .include(['state', 'briefing', 'control', 'disassembly'])
+    .include(['state', 'briefing', 'control', 'disassembly', 'customService'])
     .get(req.query.id, { useMasterKey: true })
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly')
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
   let name = parent.get('name') || parent.get('order').no
   if (taskList.get('type') === 'disassembly') {
     name = 'Demontage ' + name

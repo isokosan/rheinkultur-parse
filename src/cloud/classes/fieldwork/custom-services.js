@@ -24,7 +24,7 @@ Parse.Cloud.afterSave(CustomService, async ({ object: customService, context: { 
 })
 
 Parse.Cloud.beforeFind(CustomService, ({ query }) => {
-  query._include.includes('all') && query.include(['company', 'docs'])
+  query._include.includes('all') && query.include(['company', 'docs', 'specialFormat'])
 })
 
 Parse.Cloud.afterFind(CustomService, async ({ query, objects: customServices }) => {
@@ -36,6 +36,14 @@ Parse.Cloud.afterFind(CustomService, async ({ query, objects: customServices }) 
     .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
   for (const customService of customServices) {
     customService.set(counts[customService.id])
+  }
+  if (query._include.includes('specialFormat')) {
+    const specialFormats = await $query('SpecialFormat')
+      .matchesQuery('customService', query)
+      .find({ useMasterKey: true })
+    for (const customService of customServices) {
+      customService.set('specialFormat', specialFormats.find(sf => sf.get('customService').id === customService.id))
+    }
   }
 })
 
