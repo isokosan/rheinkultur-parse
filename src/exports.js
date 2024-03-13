@@ -45,7 +45,7 @@ router.use(async (req, res, next) => {
 const handleErrorAsync = func => (req, res, next) => func(req, res, next).catch((error) => next(error))
 
 const safeName = name => name
-  .replace(/[/\\?%*:|"<>.]/g, '_')
+  .replace(/[/\\?%*:|"<>.]/g, ' ')
   .replace(/\s+/g, ' ')
   .replace(/,/g, '')
   .trim()
