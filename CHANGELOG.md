@@ -1,3 +1,10 @@
+## [1.168.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.2...1.168.3) (2024-03-13)
+
+
+### Bug Fixes
+
+* safe name fn in exports ([dd0b120](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dd0b120f5e0ef4c009a8c600ffbd7b83a3b11287))
+
 ## [1.168.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.1...1.168.2) (2024-03-13)
 
 
