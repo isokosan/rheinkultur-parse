@@ -1817,7 +1817,6 @@ router.get('/credit-note-pdf', handleErrorAsync(async (req, res) => {
 
 router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
   const production = await $getOrFail('Production', req.query.production)
-  const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung.pdf'
   const url = `${process.env.WEBAPP_URL}/assembly-instructions/${production.id}?sid=${req.sessionToken}`
   const fetchResponse = await fetch(process.env.HTML_TO_PDF_API, {
     method: 'POST',
@@ -1831,6 +1830,7 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
   })
   if (fetchResponse.ok) {
     res.setHeader('Content-Type', 'application/pdf')
+    const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung'
     res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
     fetchResponse.body.pipe(res)
     return
