@@ -1,3 +1,11 @@
+## [1.168.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.3...1.168.4) (2024-03-13)
+
+
+### Bug Fixes
+
+* add utf-8 export filename content disposition fix ([fbd5fd3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fbd5fd37c7c0507ea3bc5109aeaf866f078f2645))
+* remove underscore ([555f31d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/555f31df0b33fbb5dabef3f25f02e278a7fab06e))
+
 ## [1.168.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.2...1.168.3) (2024-03-13)
 
 
