@@ -1,3 +1,10 @@
+## [1.168.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.1...1.168.2) (2024-03-13)
+
+
+### Bug Fixes
+
+* bug with custom service exports ([e311237](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e311237d7d651281258007fdd42ceb8a09dd18c3))
+
 ## [1.168.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.0...1.168.1) (2024-03-06)
 
 
