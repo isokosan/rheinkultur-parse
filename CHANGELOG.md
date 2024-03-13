@@ -1,3 +1,10 @@
+## [1.168.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.4...1.168.5) (2024-03-13)
+
+
+### Bug Fixes
+
+* montageanweisung pdf name ([9abcd65](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9abcd65910b1ab1fe3426219b642c86f7bd1d2cc))
+
 ## [1.168.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.3...1.168.4) (2024-03-13)
 
 
