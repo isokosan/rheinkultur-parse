@@ -267,9 +267,8 @@ Parse.Cloud.define('custom-service-remove', async ({ params: { id: customService
 // removed booked cubes from draft customService
 Parse.Cloud.define('custom-service-remove-booked-cubes', async ({ params: { id: customServiceId }, user }) => {
   const customService = await $getOrFail(CustomService, customServiceId)
-  // TOTRANSLATE
   if (customService.get('status') !== 0) {
-    throw new Error('Sonderdiensleistung is not a draft!')
+    throw new Error('Sonderdiensleistung muss im Entwurfsstadium sein.')
   }
   return $query('TaskList')
     .equalTo('customService', customService)

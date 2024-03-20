@@ -150,6 +150,10 @@ const schemaDefinitions = {
       user: { type: 'Pointer', targetClass: '_User' },
       fn: { type: 'String', required: true },
       data: { type: 'Object' }
+    },
+    indexes: {
+      item: { itemClass: 1, itemId: 1 },
+      user: { user: 1 }
     }
   },
   Booking: {
@@ -196,6 +200,9 @@ const schemaDefinitions = {
       itemId: { type: 'String', required: true },
       text: { type: 'String', required: true },
       source: { type: 'String' }
+    },
+    indexes: {
+      item: { itemClass: 1, itemId: 1 }
     }
   },
   Company: {
@@ -275,28 +282,41 @@ const schemaDefinitions = {
     },
     indexes: orderIndexes
   },
-  // Rahmenbelegungen WIP
-  // FrameMount: {
-  //   CLP: {
-  //     get: { '*': true },
-  //     find: { requiresAuthentication: true },
-  //     count: { requiresAuthentication: true },
-  //     create: {},
-  //     update: {},
-  //     delete: {}
-  //   },
-  //   fields: {
-  //     pk: { type: 'String' }, // placekey
-  //     company: { type: 'Pointer', targetClass: 'Company' },
+  FrameMount: {
+    CLP: {
+      get: { requiresAuthentication: true },
+      find: { requiresAuthentication: true },
+      count: { requiresAuthentication: true },
+      create: {},
+      update: {},
+      delete: {}
+    },
+    fields: {
+      pk: { type: 'String', required: true }, // placekey
+      company: { type: 'Pointer', targetClass: 'Company' },
+      status: { type: 'Number', required: true }, // 2: inactive 2.1: in-bearbeitung 3: active/free 4: inactive
+      reservedUntil: { type: 'String' }, // free date end
 
-  //     cubeIds: { type: 'Array' }, // active (mounted) cube ids
-  //     allowedCubeIds: { type 'Array' }, // active freigegebene cube ids
+      planned: { type: 'Number' },
+      cubeIds: { type: 'Array' }, // free cube ids
+      freedCount: { type: 'Number' },
+      cubeCount: { type: 'Number' }, // mounted cube count
+      // cubeHistory: { type: 'Object' }, // history of qty changes per cube
+      fmCounts: { type: 'Object' }, // current frame situation
+      fmDates: { type: 'Object' }, // mount-unmount dates (startsAt, endsAt)
+      fmCount: { type: 'Number' }, // current frame count
+      takedowns: { type: 'Object' },
+      counts: { type: 'Object' }, // aggregate counts
 
-  //     request: { type: 'Object' }, // VP requests
-  //     requestHistory: { type: 'Array' }, // VP request history
-  //   },
-  //   indexes: orderIndexes
-  // },
+      // audits will keep track of changes (of freed cubes, not of each frame mount)
+      docs: { type: 'Array' },
+      tags: { type: 'Array' },
+      responsibles: { type: 'Array' },
+
+      request: { type: 'Object' }, // requests
+      requestHistory: { type: 'Array' } // request history
+    }
+  },
   // Sonderformate
   SpecialFormat: {
     CLP: {
@@ -335,17 +355,18 @@ const schemaDefinitions = {
 
       caok: { type: 'String' }, // current active order key
       ffok: { type: 'String' }, // first future order key
+      fmk: { type: 'String' }, // frame mount key
       order: { type: 'Object' }, // current order
       futureOrder: { type: 'Object' }, // first future order
+      fm: { type: 'Object' }, // frame mount info
       vAt: { type: 'Date' }, // verifiedAt Date
+      flags: { type: 'Array' },
+
       cAt: { type: 'Date' }, // lastControlledAt Date
       sAt: { type: 'Date' }, // lastScoutedAt Date
-      dAt: { type: 'Date' }, // deletedAt Date (not found)
-      // hAt: { type: 'Date' }, // hiddenAt Date (has pair or other reason)
-      pair: { type: 'Pointer', targetClass: 'Cube' }, // Cube pair, if filled this one will be hidden
 
-      flags: { type: 'Array' }, // testing out array format for warnings
-      // flyer: { type: 'Object' }, // For Sonderformate with start, end, companyId
+      dAt: { type: 'Date' }, // deletedAt Date (not found)
+      pair: { type: 'Pointer', targetClass: 'Cube' }, // Cube pair, if filled this one will be hidden
 
       // photos
       p1: { type: 'Pointer', targetClass: 'CubePhoto' }, // Nauaufnahme
@@ -362,6 +383,7 @@ const schemaDefinitions = {
     indexes: {
       orderKeyIndex: { caok: 1 },
       futureOrderKeyIndex: { ffok: 1 },
+      frameMountKey: { fmk: 1 },
       flagsIndex: { flags: 1 }
     }
   },

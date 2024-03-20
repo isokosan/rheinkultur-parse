@@ -28,7 +28,10 @@ Parse.Cloud.beforeSave(SpecialFormat, async ({ object: specialFormat }) => {
 })
 
 Parse.Cloud.afterSave(SpecialFormat, async ({ object: specialFormat, context: { audit, setCubeStatuses } }) => {
-  setCubeStatuses && await setOrderCubeStatuses(specialFormat)
+  if (setCubeStatuses) {
+    await specialFormat.fetch({ useMasterKey: true })
+    await setOrderCubeStatuses(specialFormat)
+  }
   audit && $audit(specialFormat, audit)
 })
 

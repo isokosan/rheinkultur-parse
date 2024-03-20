@@ -29,21 +29,28 @@ require('./run')(async () => {
       password: 'J8rgbV17Vo'
     }
   ]
-
-  await $query(Parse.User)
-    .contains('email', 'stadtkultur-online.de')
-    .each((user) => {
-      console.log(user.get('email'))
-      console.log(user.get('username'))
-      user.set('email', user.get('email').replace('stadtkultur-online.de', 'stadtkultur.de'))
-      user.set('username', user.get('username').replace('stadtkultur-online.de', 'stadtkultur.de'))
-      return user.save(null, { useMasterKey: true })
-    }, { useMasterKey: true })
-
   for (const user of users) {
     const exists = await $query(Parse.User).equalTo('email', user.email).first({ useMasterKey: true })
     if (!exists) {
       await Parse.Cloud.run('user-invite', user, { useMasterKey: true })
     }
   }
+  const intern = [
+    'denizar@gmail.com',
+    'rwe@rheinkultur-medien.de',
+    'gwe@rheinkultur-medien.de'
+  ]
+  let p = 0
+  for (const email of intern) {
+    const user = await $query(Parse.User).equalTo('email', email).first({ useMasterKey: true })
+    // add permission manage-frames
+    const permissions = user.get('permissions') || []
+    if (!permissions.includes('manage-frames')) {
+      permissions.push('manage-frames')
+      user.set('permissions', permissions)
+      await user.save(null, { useMasterKey: true })
+      p++
+    }
+  }
+  console.log(p)
 })

@@ -47,3 +47,10 @@ docker compose run parse bash => to run commands inside the container
 
 ### ngrok
 ./ngrok http --domain=porpoise-related-weekly.ngrok-free.app 1337
+
+
+Ich kann das blau von Himmel nicht versprechen, aber ich kann dir das grün von Wiese geben.
+Leben ist kein Ponyhof.
+Ich verstehe nur Bahnhof.
+
+Klappe zu, Affe tot. => And thats the end of the story

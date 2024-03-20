@@ -38,6 +38,20 @@ async function initializeForDevelopment () {
     console.error(error)
     console.info('skipped syncing lex accounts')
   }
-  console.success('DONE!')
+  // temporary add manage-frames role to gwe, rwe and deniz
+  for (const email of ['gwe@rheinkultur-medien.de', 'rwe@rheinkultur-medien.de', 'denizar@gmail.com']) {
+    const user = await $query(Parse.User)
+      .equalTo('email', email)
+      .first({ useMasterKey: true })
+    if (!user) { continue }
+    const permissions = user.get('permissions') || []
+    if (!permissions.includes('manage-frames')) {
+      permissions.push('manage-frames')
+      user.set('permissions', permissions)
+      await user.save(null, { useMasterKey: true })
+      console.info('added manage-frames role to', email)
+    }
+  }
+  console.info('DONE!')
 }
 initializeForDevelopment()

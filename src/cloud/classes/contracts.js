@@ -43,7 +43,10 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
 })
 
 Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculatePlannedInvoices } }) => {
-  setCubeStatuses && await setOrderCubeStatuses(contract)
+  if (setCubeStatuses) {
+    await contract.fetch({ useMasterKey: true })
+    await setOrderCubeStatuses(contract)
+  }
   audit && $audit(contract, audit)
   recalculatePlannedInvoices && Parse.Cloud.run(
     'contract-update-planned-invoices',

@@ -7,10 +7,13 @@ const { difference, isEqual } = require('lodash')
 
 // dict: dictionary to clean
 // allowedKeys: if populated removes all keys that dont match (eg used in cleaning cubeIds that were removed)
-global.$cleanDict = (dict, allowedKeys) => {
+global.$cleanDict = (dict, allowedKeys, opts) => {
   if (!dict) { return null }
   for (const key of Object.keys(dict)) {
     if (dict[key] === undefined) {
+      delete dict[key]
+    }
+    if (opts?.filterZeros && dict[key] === 0) {
       delete dict[key]
     }
     if (allowedKeys && !allowedKeys.includes(key)) {
@@ -80,11 +83,34 @@ global.$internOrAdmin = function ({ user, master }) {
   throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
 }
 global.$internBookingManager = function ({ user, master }) {
-  if (master) { return true }
-  if (['intern', 'admin'].includes(user?.get('accType'))) {
+  if (master || user?.get('accType') === 'admin') { return true }
+  if (user?.get('accType') === 'intern') {
     if (user.get('permissions').includes('manage-bookings')) {
       return true
     }
+  }
+  throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
+}
+global.$internFrameManager = function ({ user, master }) {
+  if (master || user?.get('accType') === 'admin') { return true }
+  if (user?.get('accType') === 'intern') {
+    if (user.get('permissions').includes('manage-frames')) {
+      return true
+    }
+  }
+  throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
+}
+global.$isFramePartner = function ({ user, master }) {
+  if (master) { return true }
+  if (user.get('accType') === 'partner' && user.get('permissions').includes('manage-frames')) {
+    return true
+  }
+  throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
+}
+global.$isFrameManager = function ({ user, master }) {
+  if (master) { return true }
+  if (user.get('permissions').includes('manage-frames')) {
+    return true
   }
   throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation Error')
 }

@@ -3,8 +3,21 @@ const sendPush = require('@/services/push')
 const sendMail = require('@/services/email')
 
 const { TASK_LIST_STATUSES, BOOKING_REQUEST_TYPES } = require('@/schema/enums')
-
 const Notification = Parse.Object.extend('Notification')
+
+const number = value => typeof value === 'number' ? new Intl.NumberFormat('de-DE').format(value) : '-'
+const pluralize = (value, singular, plural, zero) => {
+  if (typeof value !== 'number') {
+    value = value?.length || 0
+  }
+  if (value === 1) {
+    return number(value) + ' ' + singular
+  }
+  if (value === 0 && zero) {
+    return number(value) + ' ' + zero
+  }
+  return number(value) + ' ' + plural
+}
 
 const NOTIFICATIONS = {
   'task-list-assigned': {
@@ -46,7 +59,7 @@ const NOTIFICATIONS = {
       <p>Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong> wurde abgelehnt.</p>
       <p><strong>Art der Anfrage:</strong> ${BOOKING_REQUEST_TYPES[type]}</p>
       <p><strong>Grund für die Ablehnung:</strong></p>
-      <p>${reason.replace(/\n/g, '<br>')}</p>
+      <p>${reason?.replace(/\n/g, '<br>')}</p>
     `,
     message: ({ no, cubeId, type, reason }) => `Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong> wurde abgelehnt.`,
     route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
@@ -57,10 +70,38 @@ const NOTIFICATIONS = {
       <p>Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong> wurde genehmight.</p>
       <p><strong>Art der Anfrage:</strong> ${BOOKING_REQUEST_TYPES[type]}</p>
       <p><strong>Bemerkungen zur Buchungsanfrage:</strong></p>
-      <p>${comments.replace(/\n/g, '<br>')}</p>
+      <p>${comments?.replace(/\n/g, '<br>')}</p>
     `,
-    message: ({ no, cubeId, type, comments }) => `Bitte lesen Sie die folgenden Bemerkungen zu Ihrer genehmigten Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong>.`,
+    message: ({ no, cubeId, type }) => `Bitte lesen Sie die folgenden Bemerkungen zu Ihrer genehmigten Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong>.`,
     route: ({ bookingId, requestId, cubeId, no }) => ({ name: 'booking-requests', query: { cubeId, no }, hash: '#booking=' + bookingId + '>' + requestId })
+  },
+  'frame-mount-request-rejected': {
+    mailContent: ({ pk, reason }) => `
+      <p>Ihre Anfrage für die Moskitorahmen in <strong>${pk.split(':')[1]}</strong> wurde abgelehnt.</p>
+      <p><strong>Grund für die Ablehnung:</strong></p>
+      <p>${reason?.replace(/\n/g, '<br>')}</p>
+    `,
+    message: ({ pk, reason }) => `Ihre Anfrage für die Moskitorahmen in <strong>${pk.split(':')[1]}</strong> wurde abgelehnt.`,
+    route: ({ frameMountId, requestId }) => ({ name: 'frame-mount', params: { id: frameMountId }, hash: '#request' + requestId })
+  },
+  'frame-mount-request-accept-comments': {
+    mailSubject: () => 'Bemerkungen zu Ihrer genehmigten Anfrage',
+    mailContent: ({ pk, comments }) => `
+      <p>Ihre Anfrage für die Moskitorahmen in <strong>${pk.split(':')[1]}</strong> wurde genehmight.</p>
+      <p><strong>Bemerkungen zur Anfrage:</strong></p>
+      <p>${comments?.replace(/\n/g, '<br>')}</p>
+    `,
+    message: ({ pk }) => `Bitte lesen Sie die folgenden Bemerkungen zu Ihrer genehmigten Anfrage für die Moskitorahmen in <strong>${pk.split(':')[1]}</strong>.`,
+    route: ({ frameMountId, requestId }) => ({ name: 'frame-mount', params: { id: frameMountId }, hash: '#request' + requestId })
+  },
+  'frame-mount-takedown-request': {
+    mailSubject: () => 'Neue Moskitorahmen Demontageauftrag',
+    mailContent: ({ pk, cubeIds }) => `
+      <p>Neue Demontageauftrag in <strong>${pk.split(':')[1]}</strong> für ${pluralize(cubeIds.length, 'CityCube', 'CityCubes')}.</p>
+      <p>Bitte überprüfen Sie den Auftrag und führen Sie die Demontage durch, dann markieren Sie ihn als "Erledigt".</p>
+    `,
+    message: ({ pk, cubeIds }) => `Neuer Demontageauftrag in ${pk.split(':')[1]} für ${pluralize(cubeIds.length, 'CityCube', 'CityCubes')}. Bitte überprüfen Sie den Auftrag und führen Sie die Demontage durch, dann markieren Sie ihn als 'Erledigt'.`,
+    route: ({ frameMountId }) => ({ name: 'frame-mount', params: { id: frameMountId }, hash: '#filter-tdPending' })
   }
 }
 

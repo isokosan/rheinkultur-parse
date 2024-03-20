@@ -255,9 +255,8 @@ Parse.Cloud.define('briefing-remove', async ({ params: { id: briefingId }, user 
 // removed booked cubes from draft briefing
 Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefingId }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
-  // TOTRANSLATE
   if (briefing.get('status') !== 0) {
-    throw new Error('Briefing is not a draft!')
+    throw new Error('Das Briefing muss im Entwurfsstatus sein.')
   }
   return $query('TaskList')
     .equalTo('briefing', briefing)
@@ -265,7 +264,8 @@ Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefi
     .each(async (taskList) => {
       const activeOrFutureBookingExistsQuery = Parse.Query.or(
         $query('Cube').notEqualTo('order', null).notEqualTo('order.className', 'SpecialFormat'),
-        $query('Cube').notEqualTo('futureOrder', null).notEqualTo('futureOrder.className', 'SpecialFormat')
+        $query('Cube').notEqualTo('futureOrder', null).notEqualTo('futureOrder.className', 'SpecialFormat'),
+        $query('Cube').notEqualTo('fm.qty', null) // has frame order mounted
       )
       const bookedCubeIds = await activeOrFutureBookingExistsQuery
         .containedIn('objectId', taskList.get('cubeIds'))
@@ -282,9 +282,8 @@ Parse.Cloud.define('briefing-remove-booked-cubes', async ({ params: { id: briefi
 
 Parse.Cloud.define('briefing-approve-verified-cubes', async ({ params: { id: briefingId }, user }) => {
   const briefing = await $getOrFail(Briefing, briefingId)
-  // TOTRANSLATE
   if (briefing.get('status') !== 0) {
-    throw new Error('Briefing is not a draft!')
+    throw new Error('Das Briefing muss im Entwurfsstatus sein.')
   }
   let approved = 0
   await $query('TaskList')
@@ -420,40 +419,5 @@ Parse.Cloud.define('briefing-generate', async ({ params: { id: briefingId, type,
     await contract.save(null, { useMasterKey: true, context: { audit } })
     i++
   }
-
-  if (type === 'FrameMount') {
-    const cubeIdsPerPk = await $query('Cube')
-      .containedIn('objectId', cubeIds)
-      .limit(cubeIds.length)
-      .select(['objectId', 'pk'])
-      .find({ useMasterKey: true })
-      .then((cubes) => {
-        const cubeIdsPerPk = {}
-        for (const cube of cubes) {
-          const pk = cube.get('pk')
-          cubeIdsPerPk[pk] = cubeIdsPerPk[pk] || []
-          cubeIdsPerPk[pk].push(cube.id)
-        }
-        return cubeIdsPerPk
-      })
-    for (const pk of Object.keys(cubeIdsPerPk)) {
-      const { ort, stateId } = $parsePk(pk)
-      const FrameMount = Parse.Object.extend('FrameMount')
-      const frameMount = new FrameMount({
-        cubeIds: cubeIdsPerPk[pk],
-        status: 2,
-        startsAt: '2024-01-01',
-        initialDuration: 60,
-        endsAt: moment('2024-01-01').add(60, 'months').subtract(1, 'day').format('YYYY-MM-DD'),
-        company,
-        briefing,
-        campaignNo: `DIN A1 - ${ort} (${stateId})`,
-        pk
-      })
-      const audit = { user, fn: 'frame-mount-generate' }
-      await frameMount.save(null, { useMasterKey: true, context: { audit } })
-      i++
-    }
-    return i
-  }
+  return i
 }, $internOrAdmin)

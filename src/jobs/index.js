@@ -50,6 +50,12 @@ const updateJobs = {
     cron: '10 5 * * *', // at 05:10 AM
     notificationDuration: 24
   },
+  reindex_frame_mounts: {
+    name: 'Suchindex von Moskitorahmen aktualisieren',
+    timeoutMinutes: 10,
+    cron: '10 5 * * *', // at 05:10 AM
+    notificationDuration: 24
+  },
   recalculate_aldi_prices: {
     name: 'Aktualisierung von ALDI preisen.',
     timeoutMinutes: 10,

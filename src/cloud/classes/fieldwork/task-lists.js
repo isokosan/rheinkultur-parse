@@ -965,19 +965,17 @@ Parse.Cloud.define('task-list-mass-update-preview', async ({ params: { selection
 Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selection, count, ...form }, user }) => {
   const query = await getQueryFromSelection(selection, count, user)
   const today = await $today()
-
   // check if any of the task lists are not planned (in draft status)
-  // TOTRANSLATE
   if (action !== 'remove' && await Parse.Query.and(query, $query('TaskList').equalTo('status', 0)).count({ useMasterKey: true })) {
-    throw new Error('There are task lists that are not planned (in draft status) in this selection.')
+    throw new Error('In dieser Auswahl gibt es Abfahrtslisten, die nicht geplant sind (im Entwurfsstatus).')
   }
 
   if (action === 'remove' && await Parse.Query.and(query, $query('TaskList').greaterThan('status', 0)).count({ useMasterKey: true })) {
-    throw new Error('There are task lists that are already planned in this selection that cannot be deleted.')
+    throw new Error('Es gibt Abfahrtslisten, die in dieser Auswahl bereits geplant sind und nicht gelöscht werden können.')
   }
 
   if (action === 'archive' && await Parse.Query.and(query, $query('TaskList').lessThan('status', 4)).count({ useMasterKey: true })) {
-    throw new Error('There are task lists that are not completed')
+    throw new Error('Es gibt Abfahrtslisten, die nicht erledigt werden.')
   }
 
   let runFn
@@ -1018,8 +1016,7 @@ Parse.Cloud.define('task-list-mass-update-run', async ({ params: { action, selec
       await validateScoutManagerOrFieldworkManager(taskList, user)
       let locationCleanup
       if (taskList.get('status') > 1) {
-        // TOTRANSLATE
-        throw new Error('You cannot change scouts in an assigned task list. Please first retract.')
+        throw new Error('Sie können Scouts in einer beauftragten Abfahrsliste nicht ändern. Bitte ziehen Sie sich zuerst zurück.')
       }
       const currentScoutIds = (taskList.get('scouts') || []).map(s => s.id)
 

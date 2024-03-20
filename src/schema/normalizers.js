@@ -295,15 +295,19 @@ module.exports = {
   },
   frameMounts: {
     UNSET_NULL_FIELDS: [
-      ...ORDER_UNSET_NULL_FIELDS,
-      'companyPerson'
+      'reservedUntil',
+      'companyPerson',
+      'planned',
+      'fmCounts'
     ],
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
-        ...ORDER_FIELD_NORMALIZERS,
         companyId: defined,
+        cubeIds: normalizeCubeIds,
+        reservedUntil: normalizeDateString,
         companyPersonId: defined,
-        disassemblyFromRMV: value => value === 'y'
+        pk: defined,
+        planned: normalizeInt
       }
       const normalized = {}
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {

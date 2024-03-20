@@ -317,6 +317,7 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
   const cubeIds = req.query.cubeIds ? decodeURIComponent(req.query.cubeIds || '').split(',') : order.get('cubeIds')
 
   const fields = {
+    orderNo: { header: 'Auftragsnr.', width: 15 },
     motive: { header: 'Motiv', width: 20 },
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
     campaignNo: { header: 'Kampagnenname', width: 20 },

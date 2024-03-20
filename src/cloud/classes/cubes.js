@@ -11,14 +11,10 @@ const Cube = Parse.Object.extend('Cube', {
     if (this.get('order') && ['Contract', 'Booking'].includes(this.get('order').className)) {
       return 6
     }
-    const order = this.get('order') || this.get('futureOrder')
-    if (order) {
-      if (order.className === 'FrameMount') {
-        return 5
-      }
-      if (order.className === 'SpecialFormat') {
-        return 4
-      }
+    // even if reserved return all frame-mounts as 5
+    if (this.get('fm')) { return 5 }
+    if ((this.get('order') || this.get('futureOrder'))?.className === 'SpecialFormat') {
+      return 4
     }
     if (this.get('pair')) { return 9 }
     if (this.get('dAt')) { return 8 }
@@ -61,9 +57,6 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     cube.set('media', ht.get('media'))
   }
 
-  // unique flags
-  cube.get('flags')?.length ? cube.set('flags', [...new Set(cube.get('flags'))]) : cube.unset('flags')
-
   if (updating === true) { return }
 
   if (orderStatusCheck) {
@@ -78,8 +71,12 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     cube.set('flags', setFlag(cube.get('flags'), 'PDGA', Boolean(PDGA[cube.get('pk')])))
   }
 
+  // unique flags
+  cube.get('flags')?.length ? cube.set('flags', [...new Set(cube.get('flags'))]) : cube.unset('flags')
+
   cube.get('order') ? cube.set('caok', cube.get('order').className + '$' + cube.get('order').objectId) : cube.unset('caok')
   cube.get('futureOrder') ? cube.set('ffok', cube.get('futureOrder').className + '$' + cube.get('futureOrder').objectId) : cube.unset('ffok')
+  cube.get('fm') ? cube.set('fmk', cube.get('fm').objectId) : cube.unset('fmk')
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
   await indexCubeBookings(cube)
@@ -148,6 +145,10 @@ Parse.Cloud.afterSave(Cube, async ({ object: cube, context: { audit, updating, c
       // in any case remove cube from special-format custom-service
       Parse.Cloud.run('custom-service-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
     }
+    // if there is a frame mounted then remove from briefings
+    if (cube.get('fm')?.qty) {
+      Parse.Cloud.run('briefings-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
+    }
   }
 })
 
@@ -171,6 +172,7 @@ Parse.Cloud.afterDelete(Cube, $deleteAudits)
 Parse.Cloud.beforeFind(Cube, async ({ query, user, master }) => {
   const isPublic = !user && !master
   isPublic && query.equalTo('dAt', null).equalTo('pair', null)
+  query._include.includes('fm') && query.include('fm.frameMount')
 })
 
 const PUBLIC_FIELDS = ['media', 'hti', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2', 'vAt']
@@ -200,13 +202,18 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
       continue
     }
 
-    const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
-    if (isPartner) {
+    const partnerId = !master && user && user.get('accType') === 'partner' && user.get('company').id
+    if (partnerId) {
       cube.get('s') === 4 && cube.set('s', 0)
-      cube.get('s') === 5 && cube.set('s', 6)
+      // if frame mount from a different company set to "booked"
+      cube.get('s') === 5 && cube.get('fm')?.company?.id !== partnerId && cube.set('s', 6)
+
+      if (user.get('permissions')?.includes('manage-frames')) {
+        cube.get('s') < 5 && cube.set('s', 7)
+      }
       // show as not available to partners if booked by other company
       const companyId = cube.get('order')?.company?.id || cube.get('futureOrder')?.company?.id
-      if (cube.get('s') === 6 && companyId !== user.get('company').id) {
+      if (cube.get('s') === 6 && companyId !== partnerId) {
         cube.set('s', 7)
       }
       if (cube.get('order') && cube.get('order')?.company?.id !== user.get('company').id) {

@@ -60,7 +60,10 @@ Parse.Cloud.beforeSave(Booking, async ({ object: booking }) => {
 Parse.Cloud.afterSave(Booking, async ({ object: booking, context: { audit, setCubeStatuses } }) => {
   await indexBooking(booking)
   await indexBookingRequests(booking)
-  setCubeStatuses && await setOrderCubeStatuses(booking)
+  if (setCubeStatuses) {
+    await booking.fetch({ useMasterKey: true })
+    await setOrderCubeStatuses(booking)
+  }
   audit && $audit(booking, audit)
 })
 

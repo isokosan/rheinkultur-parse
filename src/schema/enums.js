@@ -43,7 +43,7 @@ module.exports.ORDER_STATUSES = {
   2: 'Entwurf',
   2.1: 'In Bearbeitung',
   3: 'Aktiv',
-  4: 'Gekündigt',
+  4: 'Gekündigt', // should be combined into "Inaktiv"
   5: 'Ausgelaufen'
 }
 
@@ -63,13 +63,20 @@ module.exports.BOOKING_REQUEST_STATUSES = {
   2: 'Abgelehnt'
 }
 
+module.exports.FRAME_MOUNT_REQUEST_STATUSES = {
+  draft: 'Entwurf',
+  pending: 'Warten auf Freigabe',
+  accepted: 'Genehmigt',
+  rejected: 'Abgelehnt'
+}
+
 // When making changes to cube statuses, make sure to go over search and cube after find functions where public / partner statuses are set
 module.exports.CUBE_STATUSES = {
   0: 'Verfügbar',
   // 3: 'Warnmeldung',
   4: 'Sonderformate',
   // Everything above here is "unverfügbar" in public view
-  // 5: 'Moskitorahmen', // activate once we have frames working
+  5: 'Moskitorahmen',
   6: 'Vermarktet',
   7: 'Nicht vermarktungsfähig',
   // Everything above here is invisible in public view

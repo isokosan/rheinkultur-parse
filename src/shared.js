@@ -1,12 +1,11 @@
 const { isEqual, lowerFirst, omit } = require('lodash')
 const { round2, round5, parseAsDigitString } = require('./utils')
 
-const ORDER_CLASSES = ['Contract', 'Booking', 'FrameMount', 'SpecialFormat']
+const ORDER_CLASSES = ['Contract', 'Booking', 'SpecialFormat']
 const ORDER_FIELDS = ORDER_CLASSES.map(lowerFirst)
 const ORDER_CLASS_NAMES = {
   Contract: 'Mediendienstleistungsvertrag',
   Booking: 'Vertriebspartner Buchung',
-  FrameMount: 'Moskitorahmen',
   SpecialFormat: 'Sonderformatauftrag'
 }
 const getOrderClassName = className => ORDER_CLASS_NAMES[className] || '-'
@@ -123,13 +122,15 @@ async function checkIfCubesAreAvailable (order) {
   if (!cubeIds.length) { return }
   // const className = order.className
   const orderStart = order.get('startsAt')
-  const orderEnd = (order.get('autoExtendsBy') && !order.get('canceledAt')) ? null : order.get('endsAt')
+  const orderEnd = order.className === 'FrameMount'
+    ? null
+    : (order.get('autoExtendsBy') && !order.get('canceledAt')) ? null : order.get('endsAt')
   const orderEarlyCancellations = order.get('earlyCancellations') || {}
   const errors = {}
   for (const cubeId of cubeIds) {
     const orderCubeEarlyCanceledAt = orderEarlyCancellations[cubeId]
     const orderCubeEnd = orderCubeEarlyCanceledAt && (!orderEnd || orderCubeEarlyCanceledAt < orderEnd) ? orderCubeEarlyCanceledAt : orderEnd
-    for (const className of ['Contract', 'Booking', 'FrameMount']) {
+    for (const className of ['Contract', 'Booking']) {
       const query = $query(className)
         .equalTo('cubeIds', cubeId)
         .greaterThanOrEqualTo('status', 3) // is or was active
@@ -164,33 +165,66 @@ async function checkIfCubesAreAvailable (order) {
     }
     throw new Error(messages)
   }
+  const framesMountedIds = await $query('Cube')
+    .containedIn('objectId', cubeIds)
+    .notEqualTo('fm.qty', null)
+    .distinct('objectId', { useMasterKey: true })
+  if (framesMountedIds.length) {
+    throw new Error(`CityCubes mit montierten Rahmen: ${framesMountedIds.join(', ')}`)
+  }
 }
 
 async function earlyCancelSpecialFormats (order) {
-  const orderStart = order.get('startsAt')
-  const cancelDate = moment(orderStart).subtract(1, 'day').format('YYYY-MM-DD')
   const specialFormats = {}
-  for (const cubeId of order.get('cubeIds')) {
-    await $query('SpecialFormat')
-      .equalTo('cubeIds', cubeId)
-      .greaterThanOrEqualTo('status', 3) // is or was active
-      .lessThanOrEqualTo('startsAt', orderStart)
-      .notEqualTo(`earlyCancellations.${cubeId}`, true) // wasn't taken completely out of the special format
-      .select(['startsAt', 'endsAt', 'autoExtendsBy', 'canceledAt', 'earlyCancellations'])
-      .eachBatch((matches) => {
-        for (const match of matches) {
-          const { endsAt, earlyCancellations, autoExtendsBy, canceledAt } = match.attributes
-          let cubeEnd = ((autoExtendsBy && !canceledAt) ? null : endsAt)
-          if (earlyCancellations?.[cubeId] && (!cubeEnd || earlyCancellations[cubeId] < cubeEnd)) {
-            cubeEnd = earlyCancellations[cubeId]
+  if (order.className === 'FrameMount') {
+    const fmDates = order.get('fmDates') || {}
+    for (const cubeId of Object.keys(fmDates)) {
+      const mountStart = fmDates[cubeId].startsAt
+      const cancelDate = moment(mountStart).subtract(1, 'day').format('YYYY-MM-DD')
+      await $query('SpecialFormat')
+        .equalTo('cubeIds', cubeId)
+        .greaterThanOrEqualTo('status', 3) // is or was active
+        .lessThanOrEqualTo('startsAt', mountStart)
+        .eachBatch((matches) => {
+          for (const match of matches) {
+            const { endsAt, earlyCancellations, autoExtendsBy, canceledAt } = match.attributes
+            let cubeEnd = ((autoExtendsBy && !canceledAt) ? null : endsAt)
+            if (earlyCancellations?.[cubeId] && (!cubeEnd || earlyCancellations[cubeId] < cubeEnd)) {
+              cubeEnd = earlyCancellations[cubeId]
+            }
+            const mountStartsBeforeCubeEnds = Boolean(cubeEnd && cubeEnd >= mountStart)
+            if (mountStartsBeforeCubeEnds) {
+              specialFormats[match.id] = specialFormats[match.id] || {}
+              specialFormats[match.id][cubeId] = cancelDate
+            }
           }
-          const orderStartsBeforeCubeEnds = Boolean(cubeEnd && cubeEnd >= orderStart)
-          if (orderStartsBeforeCubeEnds) {
-            specialFormats[match.id] = specialFormats[match.id] || {}
-            specialFormats[match.id][cubeId] = cancelDate
+        }, { useMasterKey: true })
+    }
+  } else {
+    const orderStart = order.get('startsAt')
+    const cancelDate = moment(orderStart).subtract(1, 'day').format('YYYY-MM-DD')
+    for (const cubeId of order.get('cubeIds')) {
+      await $query('SpecialFormat')
+        .equalTo('cubeIds', cubeId)
+        .greaterThanOrEqualTo('status', 3) // is or was active
+        .lessThanOrEqualTo('startsAt', orderStart)
+        .notEqualTo(`earlyCancellations.${cubeId}`, true) // wasn't taken completely out of the special format
+        .select(['startsAt', 'endsAt', 'autoExtendsBy', 'canceledAt', 'earlyCancellations'])
+        .eachBatch((matches) => {
+          for (const match of matches) {
+            const { endsAt, earlyCancellations, autoExtendsBy, canceledAt } = match.attributes
+            let cubeEnd = ((autoExtendsBy && !canceledAt) ? null : endsAt)
+            if (earlyCancellations?.[cubeId] && (!cubeEnd || earlyCancellations[cubeId] < cubeEnd)) {
+              cubeEnd = earlyCancellations[cubeId]
+            }
+            const orderStartsBeforeCubeEnds = Boolean(cubeEnd && cubeEnd >= orderStart)
+            if (orderStartsBeforeCubeEnds) {
+              specialFormats[match.id] = specialFormats[match.id] || {}
+              specialFormats[match.id][cubeId] = cancelDate
+            }
           }
-        }
-      }, { useMasterKey: true })
+        }, { useMasterKey: true })
+    }
   }
   for (const itemId of Object.keys(specialFormats)) {
     const cancellations = specialFormats[itemId]
@@ -223,7 +257,7 @@ async function validateOrderFinalize (order) {
   }
   // check if contract has cubeIds
   const cubeIds = order.get('cubeIds') || []
-  if (!cubeIds.length) {
+  if (!cubeIds.length && order.className !== 'FrameMount') {
     throw new Error('Sie müssen mindestens einen CityCube hinzugefügt haben, um den Auftrag zu finalisieren.')
   }
   // check if all cubes are available
@@ -353,9 +387,102 @@ async function removeAllCubeReferencesToOrderKey (orderKey, cubeIds) {
   return removed
 }
 
+async function setCubeStatusesFrameMount (frameMount) {
+  const response = { set: [], unset: [] }
+  const cubeIds = frameMount.get('cubeIds') || []
+  const fmCounts = frameMount.get('fmCounts') || {}
+  const earlyCancellations = frameMount.get('earlyCancellations') || {}
+  const fmDates = frameMount.get('fmDates') || {}
+  // remove all references to frame mount if earlyCanceled
+  await $query('Cube')
+    .equalTo('fmk', frameMount.id)
+    .containedIn('objectId', Object.keys(earlyCancellations))
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        cube.unset('fm')
+        await $saveWithEncode(cube, null, { useMasterKey: true })
+        response.unset.push(cube.id)
+      }
+    }, { useMasterKey: true })
+
+  // remove all references to frame mount if not in cubeIds
+  await $query('Cube')
+    .equalTo('fmk', frameMount.id)
+    .notContainedIn('objectId', cubeIds)
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        cube.unset('fm')
+        await $saveWithEncode(cube, null, { useMasterKey: true })
+        response.unset.push(cube.id)
+      }
+    }, { useMasterKey: true })
+
+  // unset everything if less than draft (but in bearbeitung stays)
+  if (frameMount.get('status') <= 2) {
+    await $query('Cube')
+      .equalTo('fmk', frameMount.id)
+      .eachBatch(async (cubes) => {
+        for (const cube of cubes) {
+          cube.unset('fm')
+          await $saveWithEncode(cube, null, { useMasterKey: true })
+          response.unset.push(cube.id)
+        }
+      }, { useMasterKey: true })
+  }
+
+  // no reserved until or reserved until date in future
+  const isReserved = !frameMount.get('reservedUntil') || !moment(await $today()).isAfter(frameMount.get('reservedUntil'), 'day')
+
+  // unset all cubes that do not have frames
+  if (!isReserved) {
+    await $query('Cube')
+      .containedIn('objectId', cubeIds)
+      .notContainedIn('objectId', Object.keys(fmCounts))
+      .equalTo('fmk', frameMount.id)
+      .eachBatch(async (cubes) => {
+        for (const cube of cubes) {
+          cube.unset('fm')
+          await $saveWithEncode(cube, null, { useMasterKey: true })
+          response.unset.push(cube.id)
+        }
+      }, { useMasterKey: true })
+  }
+  // set all cubeIds
+  const query = $query('Cube')
+    .notContainedIn('objectId', Object.keys(earlyCancellations))
+  isReserved
+    ? query.containedIn('objectId', cubeIds)
+    : query.containedIn('objectId', Object.keys(fmCounts))
+  await query.eachBatch(async (cubes) => {
+    for (const cube of cubes) {
+      const fm = {
+        frameMount: frameMount.toPointer(),
+        objectId: frameMount.id,
+        status: frameMount.get('status'),
+        company: frameMount.get('company').toPointer(),
+        pk: frameMount.get('pk')
+      }
+      if (fmCounts[cube.id]) {
+        fm.qty = fmCounts[cube.id]
+        fm.startsAt = fmDates[cube.id]?.startsAt
+        fm.endsAt = fmDates[cube.id]?.endsAt
+      }
+      cube.set({ fm })
+      await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: Boolean(fm.qty) } })
+      response.set.push(cube.id)
+    }
+  }, { useMasterKey: true })
+  return response
+}
+
+// Handle FrameMount statuses here
 async function setOrderCubeStatuses (orderObj) {
+  if (orderObj.className === 'FrameMount') {
+    return setCubeStatusesFrameMount(orderObj)
+  }
   const response = { set: [], unset: [] }
   const today = moment(await $today())
+
   const order = getOrderSummary(orderObj)
   const orderKey = [orderObj.className, orderObj.id].join('$')
   const { cubeIds, earlyCancellations } = orderObj.attributes

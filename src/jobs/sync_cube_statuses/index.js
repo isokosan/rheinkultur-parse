@@ -1,7 +1,9 @@
 const { ORDER_CLASSES, setOrderCubeStatuses } = require('@/shared')
+
+const classNames = [...ORDER_CLASSES, 'FrameMount']
 module.exports = async function (job) {
   const response = { updatedOrders: 0, updatedCubes: 0 }
-  for (const className of ORDER_CLASSES) {
+  for (const className of classNames) {
     response[className] = {}
   }
   let checkedOrders = 0
@@ -10,10 +12,10 @@ module.exports = async function (job) {
     { $group: { _id: 'id', cubeCount: { $sum: '$cubeCount' } } }
   ]
   // get all orders and set their cube statuses one by one
-  const total = await Promise.all(ORDER_CLASSES.map(className => $query('Contract').aggregate(cubeCountAggregate)))
+  const total = await Promise.all(classNames.map(className => $query(className).aggregate(cubeCountAggregate)))
     .then(response => response.reduce((acc, [item]) => acc + item.cubeCount, 0))
 
-  for (const className of ORDER_CLASSES) {
+  for (const className of classNames) {
     await $query(className).eachBatch(async (orders) => {
       for (const order of orders) {
         checkedOrders += 1

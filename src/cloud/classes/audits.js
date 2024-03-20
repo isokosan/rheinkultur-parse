@@ -53,7 +53,7 @@ Parse.Cloud.beforeFind(Audit, async ({ query, user, master }) => {
       orQueries.push($query(Audit).equalTo('itemClass', 'Booking').containedIn('itemId', bookingIds))
     }
     if (user.get('permissions')?.includes('manage-frames')) {
-      orQueries.push($query(Audit).equalTo('itemClass', 'Frame'))
+      orQueries.push($query(Audit).equalTo('itemClass', 'FrameMount'))
     }
     if (!orQueries.length) {
       throw new Parse.Error(401, 'Unbefugter Zugriff')

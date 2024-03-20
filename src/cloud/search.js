@@ -109,6 +109,7 @@ const INDEXES = {
         order: cube.get('order'),
         futureOrder: cube.get('futureOrder'),
         pair: cube.get('pair'),
+        fm: cube.get('fm'), // frame mount details
 
         // status (calculated attribute)
         s: cube.get('s')
@@ -241,6 +242,51 @@ const INDEXES = {
           }
         }))
     }).flat()
+  },
+  'rheinkultur-frame-mount-requests': {
+    config: {
+      mappings: {
+        properties: {
+          updatedAt: { type: 'date' }
+        }
+      }
+    },
+    parseQuery: Parse.Query.or(
+      $query('FrameMount').notEqualTo('request', null),
+      $query('FrameMount').notEqualTo('requestHistory', null)
+    ),
+    datasetMap: frameMounts => frameMounts.map(frameMount => {
+      return [frameMount.get('request'), frameMount.get('requestHistory') || []]
+        .flat()
+        .filter(Boolean)
+        .map((request) => ({
+          _id: request.id,
+          doc: {
+            frameMountId: frameMount.id,
+            pk: frameMount.get('pk'),
+            ...request,
+            changes: {
+              added: request.changes.added,
+              removed: request.changes.removed
+            }
+          }
+        }))
+    }).flat()
+  },
+  'rheinkultur-frame-mount-takedowns': {
+    parseQuery: $query('FrameMount').notEqualTo('takedowns', null),
+    datasetMap: frameMounts => frameMounts.map(frameMount => {
+      return Object.keys(frameMount.get('takedowns'))
+        .map((cubeId) => ({
+          _id: frameMount.id + cubeId,
+          doc: {
+            frameMountId: frameMount.id,
+            cubeId,
+            pk: frameMount.get('pk'),
+            ...frameMount.get('takedowns')[cubeId]
+          }
+        }))
+    }).flat()
   }
 }
 
@@ -289,6 +335,20 @@ async function countCubes (bool) {
   const { count } = await client.count({ index: 'rheinkultur-cubes', body: { query: { bool } } })
   return count
 }
+async function randomCubes (bool, size) {
+  const searchResponse = await client.search({
+    index: 'rheinkultur-cubes',
+    body: {
+      query: { bool },
+      sort: [{ _script: { script: 'Math.random()', type: 'number', order: 'asc' } }],
+      track_total_hits: true
+    },
+    size
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  const results = hits.map(hit => hit._source)
+  return { results, count }
+}
 
 Parse.Cloud.define('search', async ({
   params: {
@@ -322,6 +382,7 @@ Parse.Cloud.define('search', async ({
   }, user, master
 }) => {
   let orderClass
+  let fmqty
   const isPublic = !master && !user
   // public can only search for '0' => available or '' => all
   if (isPublic) {
@@ -331,10 +392,14 @@ Parse.Cloud.define('search', async ({
   // partner can only search for '0' => available, my_bookings or '' => all
   if (isPartner) {
     cId = user.get('company').id
-    !['0', 'my_bookings', 'ml'].includes(s) && (s = '')
+    !['0', 'my_bookings', 'my_frames', 'ml'].includes(s) && (s = '')
     if (s === 'my_bookings') {
       s = '6'
       orderClass = 'Booking'
+    }
+    if (s === 'my_frames') {
+      s = '5'
+      fmqty = 1
     }
     lc = 'TLK'
   }
@@ -415,6 +480,12 @@ Parse.Cloud.define('search', async ({
     bool.must_not.push({ exists: { field: 'pair' } })
   }
 
+  // if its a frame-manager fm.companyId has to match cId
+  if (isPartner && user.get('permissions')?.includes('manage-frames')) {
+    bool.must.push({ match: { 'fm.company.objectId': cId } })
+    fmqty && bool.must.push({ range: { 'fm.qty': { gte: fmqty } } })
+  }
+
   if (s.includes('0')) {
     const availableFromClause = availableFrom
       ? {
@@ -429,6 +500,7 @@ Parse.Cloud.define('search', async ({
       : null
     bool.must.push({
       bool: {
+        must_not: [{ exists: { field: 'fm' } }],
         should: [
           { bool: { must_not: { exists: { field: 's' } } } },
           // TOTEST: for public and partners lt should be 5
@@ -455,6 +527,11 @@ Parse.Cloud.define('search', async ({
       ort = list.get('ort')
       stateId = list.get('state').id
     }
+    if (className === 'FrameMount') {
+      const fm = await $getOrFail(className, objectId)
+      ort = fm.get('pk').split(':')[1]
+      stateId = fm.get('pk').split(':')[0]
+    }
   }
 
   // SpecialFormat
@@ -469,18 +546,11 @@ Parse.Cloud.define('search', async ({
       }
     })
   }
-  // FrameMount
+  // Frame
   if (s.includes('5')) {
-    bool.must.push({
-      bool: {
-        should: [
-          { match: { 'order.className': 'FrameMount' } },
-          { match: { 'futureOrder.className': 'FrameMount' } }
-        ],
-        minimum_should_match: 1
-      }
-    })
+    bool.filter.push({ exists: { field: 'fm' } })
   }
+
   // Booked by contract or booking
   if (s.includes('6')) {
     const currentOrderMust = [{ exists: { field: 'order' } }]
@@ -593,6 +663,7 @@ Parse.Cloud.define('search', async ({
     ]
     if (isPartner) {
       includes.push('pk')
+      includes.push('fm.company.objectId')
       includes.push('order.company.objectId')
       includes.push('futureOrder.company.objectId')
     }
@@ -619,11 +690,17 @@ Parse.Cloud.define('search', async ({
         result.s >= 5 && (result.s = 7)
         return result
       }
-      // show frame-mounts as "not available"
-      result.s === 5 && (result.s = 6)
+      // show not freed cubes as "not available"
+      if (isPartner && user.get('permissions')?.includes('manage-frames')) {
+        if (!result.fm || result.fm.company?.objectId !== cId) {
+          result.s = 7
+        }
+      }
+
       // show as not available to partners if booked by other company
-      const companyId = result.order?.company?.objectId || result.futureOrder?.company?.objectId
-      if (result.s === 6 && companyId !== cId) {
+      // fm should come first as it tops special formats
+      const companyId = result.fm?.company?.objectId || result.order?.company?.objectId || result.futureOrder?.company?.objectId
+      if ([5, 6].includes(result.s) && companyId !== cId) {
         result.s = 7
       }
       if (!result.s && EXCLUDE_CITIES_PER_PARTNER[cId]?.includes(result.pk)) {
@@ -882,6 +959,88 @@ Parse.Cloud.define('search-booking-requests', async ({
   return { results, count }
 }, { requireUser: true, validateMasterKey: true })
 
+// runs only on frame-mount-requests list view
+Parse.Cloud.define('search-frame-mount-requests', async ({
+  params: {
+    requestId,
+    pk,
+    status,
+    from,
+    pagination
+  }, user, master
+}) => {
+  // BUILD QUERY
+  const bool = { should: [], must: [], must_not: [], filter: [] }
+  const sort = ['_score']
+  sort.unshift({ updatedAt: { order: 'desc' } })
+  pk && bool.filter.push({ term: { 'pk.keyword': pk } })
+  status && bool.filter.push({ term: { 'status.keyword': status } })
+
+  const searchResponse = await client.search({
+    index: 'rheinkultur-frame-mount-requests',
+    body: {
+      query: { bool },
+      sort,
+      track_total_hits: true
+    },
+    from,
+    size: pagination || 50
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  return { results: hits.map(hit => hit._source), count }
+}, { requireUser: true, validateMasterKey: true })
+
+// runs only on frame-mount-takedowns view
+Parse.Cloud.define('search-frame-mount-takedowns', async ({
+  params: {
+    pk,
+    status,
+    from,
+    pagination
+  }, user, master
+}) => {
+  // BUILD QUERY
+  const bool = { should: [], must: [], must_not: [], filter: [] }
+  const sort = ['_score']
+  sort.unshift({ until: { order: 'desc' } })
+
+  pk && bool.filter.push({ term: { 'pk.keyword': pk } })
+  status === 'pending' && bool.must_not.push({ exists: { field: 'date' } })
+  status === 'accepted' && bool.must.push({ exists: { field: 'date' } })
+
+  const searchResponse = await client.search({
+    index: 'rheinkultur-frame-mount-takedowns',
+    body: {
+      query: { bool },
+      sort,
+      track_total_hits: true
+    },
+    from,
+    size: pagination || 50
+  })
+  const { hits: { hits, total: { value: count } } } = searchResponse
+  const frameMountIds = [...new Set(hits.map(hit => hit._source.frameMountId))]
+  const frameMounts = await $query('FrameMount')
+    .containedIn('objectId', frameMountIds)
+    .limit(frameMountIds.length)
+    .find({ useMasterKey: true })
+  const cubeIds = [...new Set(hits.map(hit => hit._source.cubeId))]
+  const cubes = await $query('Cube')
+    .containedIn('objectId', cubeIds)
+    .limit(cubeIds.length)
+    .find({ useMasterKey: true })
+  const results = hits.map(hit => {
+    const frameMount = frameMounts.find(obj => obj.id === hit._source.frameMountId)
+    if (!frameMount) { return null }
+    hit._source.frameMount = frameMount.toJSON()
+    const cube = cubes.find(obj => obj.id === hit._source.cubeId)
+    if (!cube) { return null }
+    hit._source.cube = cube.toJSON()
+    return hit._source
+  }).filter(Boolean)
+  return { results, count }
+}, { requireUser: true, validateMasterKey: true })
+
 Parse.Cloud.define('booked-cubes', async () => {
   const cached = await redis.get('cubes:everything')
   if (cached) { return JSON.parse(cached) }
@@ -1013,6 +1172,46 @@ const indexBookingRequests = async (booking) => {
   return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-booking-requests', _id } }, doc]) })
 }
 
+const unindexFrameMountRequests = (frameMount) => {
+  return client.deleteByQuery({
+    index: 'rheinkultur-frame-mount-requests',
+    body: {
+      query: {
+        term: {
+          'frameMountId.keyword': frameMount.id
+        }
+      }
+    }
+  }).catch(consola.error)
+}
+
+const indexFrameMountRequests = async (frameMount) => {
+  await unindexFrameMountRequests(frameMount)
+  const dataset = INDEXES['rheinkultur-frame-mount-requests'].datasetMap([frameMount])
+  if (!dataset.length) { return }
+  return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-frame-mount-requests', _id } }, doc]) })
+}
+
+const unindexFrameMountTakedowns = (frameMount) => {
+  return client.deleteByQuery({
+    index: 'rheinkultur-frame-mount-takedowns',
+    body: {
+      query: {
+        term: {
+          'frameMountId.keyword': frameMount.id
+        }
+      }
+    }
+  }).catch(consola.error)
+}
+
+const indexFrameMountTakedowns = async (frameMount) => {
+  await unindexFrameMountTakedowns(frameMount)
+  const dataset = INDEXES['rheinkultur-frame-mount-takedowns'].datasetMap([frameMount])
+  if (!dataset.length) { return }
+  return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-frame-mount-takedowns', _id } }, doc]) })
+}
+
 const indexTaskList = (taskList) => {
   const [{ _id: id, doc: body }] = INDEXES['rheinkultur-fieldwork'].datasetMap([taskList])
   return client.index({ index: 'rheinkultur-fieldwork', id, body })
@@ -1094,12 +1293,17 @@ module.exports = {
   indexCube,
   indexCubes,
   countCubes,
+  randomCubes,
   unindexCube,
   indexCubeBookings,
   indexBooking,
   unindexBooking,
   indexBookingRequests,
   unindexBookingRequests,
+  indexFrameMountRequests,
+  unindexFrameMountRequests,
+  indexFrameMountTakedowns,
+  unindexFrameMountTakedowns,
   indexTaskList,
   unindexTaskList
 }
