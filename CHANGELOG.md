@@ -1,3 +1,10 @@
+# [1.169.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.5...1.169.0) (2024-03-20)
+
+
+### Features
+
+* finish frames ([7f3b4ed](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7f3b4ed8554f792f4753d7e1c03b936e58afbb18))
+
 ## [1.168.5](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.4...1.168.5) (2024-03-13)
 
 
