@@ -1,3 +1,15 @@
+# [1.170.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.169.0...1.170.0) (2024-03-20)
+
+
+### Bug Fixes
+
+* freed count in draft mode ([bae3035](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bae30358f1060a93f82b02b286cf1c23c23dc6bc))
+
+
+### Features
+
+* add mappings to search index for frame mount takedowns ([b1caecb](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b1caecb514f369770f46194bb65c8cc3b4f2f190))
+
 # [1.169.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.168.5...1.169.0) (2024-03-20)
 
 
