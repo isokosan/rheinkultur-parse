@@ -274,6 +274,20 @@ const INDEXES = {
     }).flat()
   },
   'rheinkultur-frame-mount-takedowns': {
+    config: {
+      mappings: {
+        properties: {
+          until: {
+            type: 'date',
+            format: 'strict_date'
+          },
+          date: {
+            type: 'date',
+            format: 'strict_date'
+          }
+        }
+      }
+    },
     parseQuery: $query('FrameMount').notEqualTo('takedowns', null),
     datasetMap: frameMounts => frameMounts.map(frameMount => {
       return Object.keys(frameMount.get('takedowns'))
