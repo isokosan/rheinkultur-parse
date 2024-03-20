@@ -33,7 +33,8 @@ Parse.Cloud.beforeSave(FrameMount, async ({ object: frameMount, context: { setCu
   !frameMount.get('takedowns') && frameMount.set('takedowns', {})
   const cubeIds = frameMount.get('cubeIds') || []
   cubeIds.sort()
-  frameMount.set('cubeIds', cubeIds).set('freedCount', cubeIds.length)
+  frameMount.set('cubeIds', cubeIds)
+  frameMount.set('freedCount', frameMount.get('status') > 2 ? cubeIds.length : 0)
 
   if (setCubeStatuses) {
     const earlyCancellations = {}
