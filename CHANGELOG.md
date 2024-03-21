@@ -1,3 +1,10 @@
+## [1.172.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.172.0...1.172.1) (2024-03-21)
+
+
+### Bug Fixes
+
+* last removed cubes frame-mounts ([142de8d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/142de8dcaffb29a5395c0aa2b16aaced79a658b3))
+
 # [1.172.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.171.1...1.172.0) (2024-03-21)
 
 
