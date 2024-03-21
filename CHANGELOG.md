@@ -1,3 +1,10 @@
+## [1.171.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.171.0...1.171.1) (2024-03-21)
+
+
+### Bug Fixes
+
+* only allow stadtkultur gmbh rahmen manager role ([01d0446](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/01d04460a9b4187557f1485e67630c26a3fa00bf))
+
 # [1.171.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.170.0...1.171.0) (2024-03-21)
 
 
