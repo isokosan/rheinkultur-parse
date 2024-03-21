@@ -678,6 +678,7 @@ Parse.Cloud.define('search', async ({
     if (isPartner) {
       includes.push('pk')
       includes.push('fm.company.objectId')
+      includes.push('fm.earlyCanceledAt')
       includes.push('order.company.objectId')
       includes.push('futureOrder.company.objectId')
     }
@@ -707,6 +708,8 @@ Parse.Cloud.define('search', async ({
       // show not freed cubes as "not available"
       if (isPartner && user.get('permissions')?.includes('manage-frames')) {
         if (result.fm?.company?.objectId !== cId) {
+          result.s = 7
+        } else if (result.fm?.earlyCanceledAt) {
           result.s = 7
         }
       }

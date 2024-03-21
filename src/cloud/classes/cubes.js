@@ -214,7 +214,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
 
       // if partner is frame manager can only see freed cubes
       if (user.get('permissions')?.includes('manage-frames')) {
-        cube.get('fm')?.company?.id !== partnerId && cube.set('s', 7)
+        (cube.get('fm')?.company?.id !== partnerId || cube.get('fm')?.earlyCanceledAt) && cube.set('s', 7)
       }
       // show as not available to partners if booked by other company
       const companyId = cube.get('order')?.company?.id || cube.get('futureOrder')?.company?.id

@@ -242,7 +242,7 @@ Parse.Cloud.define('frame-mount-update-cubes', async ({ params: { id: frameMount
   // if any removeCubeIds is mounted or has takedown error
   const fmCounts = frameMount.get('fmCounts') || {}
   const takedowns = frameMount.get('takedowns') || {}
-  if (cubeChanges.removed?.length && cubeChanges.removed.some(cubeId => fmCounts[cubeId] || takedowns[cubeId])) {
+  if (cubeChanges?.removed?.length && cubeChanges.removed.some(cubeId => fmCounts[cubeId] || takedowns[cubeId])) {
     throw new Error('Frame Mount has cube that cannot be removed')
   }
   frameMount.set({ cubeIds })
@@ -273,7 +273,7 @@ Parse.Cloud.define('frame-mount-update', async ({ params: { id: frameMountId, ..
   // if any removeCubeIds is mounted or has takedown error
   const fmCounts = frameMount.get('fmCounts') || {}
   const takedowns = frameMount.get('takedowns') || {}
-  if (cubeChanges.removed?.length && cubeChanges.removed.some(cubeId => fmCounts[cubeId] || takedowns[cubeId])) {
+  if (cubeChanges?.removed?.length && cubeChanges.removed.some(cubeId => fmCounts[cubeId] || takedowns[cubeId])) {
     throw new Error('Frame Mount has cube that cannot be removed')
   }
   cubeChanges && frameMount.set({ cubeIds })
