@@ -191,7 +191,7 @@ Parse.Cloud.afterFind(FrameMount, async ({ query, objects: frameMounts }) => {
     frameMount.set('city', cities.find((c) => c.id === frameMount.get('pk')))
     frameMount.set('scouting', scoutingSummaries[frameMount.id])
     if (query._include.includes('lastRemovedCubeIds') && frameMount.get('status') >= 0 && frameMount.get('status') <= 2.1) {
-      frameMount.set('lastRemovedCubeIds', await getLastRemovedCubeIds('SpecialFormat', frameMount.id))
+      frameMount.set('lastRemovedCubeIds', await getLastRemovedCubeIds('FrameMount', frameMount.id))
     }
   }
 })
