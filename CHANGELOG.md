@@ -1,3 +1,10 @@
+# [1.172.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.171.1...1.172.0) (2024-03-21)
+
+
+### Features
+
+* add stars to frame mounts ([ac25802](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ac258022e0ac5917a5a073ad583eba3883eb5dd4))
+
 ## [1.171.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.171.0...1.171.1) (2024-03-21)
 
 
