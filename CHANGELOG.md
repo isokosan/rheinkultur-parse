@@ -1,3 +1,10 @@
+# [1.171.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.170.0...1.171.0) (2024-03-21)
+
+
+### Features
+
+* user updates ([b9a3131](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b9a3131f9ce6afa966803cba6966a40e446170e6))
+
 # [1.170.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.169.0...1.170.0) (2024-03-20)
 
 
