@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid')
-const { sum, difference } = require('lodash')
+const { sum } = require('lodash')
 const redis = require('@/services/redis')
 const { ensureUniqueField } = require('@/utils')
 const {
@@ -109,7 +109,6 @@ Parse.Cloud.afterSave(FrameMount, async ({ object: frameMount, context: { audit,
     await earlyCancelSpecialFormats(frameMount)
   }
   await indexFrameMountRequests(frameMount)
-  console.log('indexing frame mount takedowns')
   await indexFrameMountTakedowns(frameMount)
   audit && $audit(frameMount, audit)
 })
@@ -240,18 +239,18 @@ Parse.Cloud.define('frame-mount-update-cubes', async ({ params: { id: frameMount
   if (!cubeChanges) {
     throw new Error('Keine Änderungen')
   }
-  // if frame mount has any frames in any of the cubes first those have to be updated
-  const frameCubeIds = Object.keys(frameMount.get('frames') || {})
-  const framesWithoutCubes = difference(frameCubeIds, cubeIds)
-  if (framesWithoutCubes.length) {
-    throw new Error(`There are Frames mounted on CityCubes ${framesWithoutCubes.join(', ')}. You should first remove the frames.`)
+  // if any removeCubeIds is mounted or has takedown error
+  const fmCounts = frameMount.get('fmCounts') || {}
+  const takedowns = frameMount.get('takedowns') || {}
+  if (cubeChanges.removed?.length && cubeChanges.removed.some(cubeId => fmCounts[cubeId] || takedowns[cubeId])) {
+    throw new Error('Frame Mount has cube that cannot be removed')
   }
   frameMount.set({ cubeIds })
   const audit = { user, fn: 'frame-mount-update', data: { cubeChanges } }
   return frameMount.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('frame-mount-update', async ({ params: { id: frameMountId, fmCounts, ...params }, user }) => {
+Parse.Cloud.define('frame-mount-update', async ({ params: { id: frameMountId, ...params }, user }) => {
   const {
     cubeIds,
     planned,
@@ -263,24 +262,31 @@ Parse.Cloud.define('frame-mount-update', async ({ params: { id: frameMountId, fm
     throw new Error('Finalisierte Aufträge können nicht mehr geändert werden.')
   }
 
-  for (const cubeId of cubeIds) {
-    fmCounts[cubeId] = fmCounts?.[cubeId] || undefined
-  }
-  fmCounts = $cleanDict(fmCounts, cubeIds)
+  // removed changing frame mounts from our side
+  // for (const cubeId of cubeIds) {
+  //   fmCounts[cubeId] = fmCounts?.[cubeId] || undefined
+  // }
+  // fmCounts = $cleanDict(fmCounts, cubeIds)
 
   $cubeLimit(cubeIds.length)
   const cubeChanges = $cubeChanges(frameMount, cubeIds)
+  // if any removeCubeIds is mounted or has takedown error
+  const fmCounts = frameMount.get('fmCounts') || {}
+  const takedowns = frameMount.get('takedowns') || {}
+  if (cubeChanges.removed?.length && cubeChanges.removed.some(cubeId => fmCounts[cubeId] || takedowns[cubeId])) {
+    throw new Error('Frame Mount has cube that cannot be removed')
+  }
   cubeChanges && frameMount.set({ cubeIds })
 
   const changes = $changes(frameMount, {
     planned,
-    reservedUntil,
-    fmCounts
+    reservedUntil
+    // fmCounts
   })
   frameMount.set({
     planned,
-    reservedUntil,
-    fmCounts
+    reservedUntil
+    // fmCounts
   })
 
   frameMount.get('status') === 1 && frameMount.set('status', 0)

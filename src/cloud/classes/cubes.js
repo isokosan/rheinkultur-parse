@@ -11,8 +11,12 @@ const Cube = Parse.Object.extend('Cube', {
     if (this.get('order') && ['Contract', 'Booking'].includes(this.get('order').className)) {
       return 6
     }
-    // even if reserved return all frame-mounts as 5
-    if (this.get('fm')) { return 5 }
+    if (this.get('fm')) {
+      const fm = this.get('fm')
+      if (fm.qty) { return 5 }
+      // until dissapears after reserved date is past
+      if (fm.until) { return 5 }
+    }
     if ((this.get('order') || this.get('futureOrder'))?.className === 'SpecialFormat') {
       return 4
     }
@@ -208,8 +212,9 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
       // if frame mount from a different company set to "booked"
       cube.get('s') === 5 && cube.get('fm')?.company?.id !== partnerId && cube.set('s', 6)
 
+      // if partner is frame manager can only see freed cubes
       if (user.get('permissions')?.includes('manage-frames')) {
-        cube.get('s') < 5 && cube.set('s', 7)
+        cube.get('fm')?.company?.id !== partnerId && cube.set('s', 7)
       }
       // show as not available to partners if booked by other company
       const companyId = cube.get('order')?.company?.id || cube.get('futureOrder')?.company?.id

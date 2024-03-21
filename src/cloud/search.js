@@ -706,14 +706,14 @@ Parse.Cloud.define('search', async ({
       }
       // show not freed cubes as "not available"
       if (isPartner && user.get('permissions')?.includes('manage-frames')) {
-        if (!result.fm || result.fm.company?.objectId !== cId) {
+        if (result.fm?.company?.objectId !== cId) {
           result.s = 7
         }
       }
 
       // show as not available to partners if booked by other company
       // fm should come first as it tops special formats
-      const companyId = result.fm?.company?.objectId || result.order?.company?.objectId || result.futureOrder?.company?.objectId
+      const companyId = result.order?.company?.objectId || result.futureOrder?.company?.objectId || result.fm?.company?.objectId
       if ([5, 6].includes(result.s) && companyId !== cId) {
         result.s = 7
       }
@@ -1104,7 +1104,6 @@ Parse.Cloud.define('booked-cubes', async () => {
 // Before is only defined if address is changing
 const indexCubes = async (cubes) => {
   const dataset = INDEXES['rheinkultur-cubes'].datasetMap(cubes)
-  consola.info('indexing:', dataset.length, 'cubes')
   if (!dataset.length) { return }
   return client.bulk({ refresh: true, body: dataset.flatMap(({ doc, _id }) => [{ index: { _index: 'rheinkultur-cubes', _id } }, doc]) })
 }

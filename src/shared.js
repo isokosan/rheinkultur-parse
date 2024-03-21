@@ -167,6 +167,7 @@ async function checkIfCubesAreAvailable (order) {
   }
   const framesMountedIds = await $query('Cube')
     .containedIn('objectId', cubeIds)
+    .notEqualTo('fm.frameMount.objectId', order.id)
     .notEqualTo('fm.qty', null)
     .distinct('objectId', { useMasterKey: true })
   if (framesMountedIds.length) {
@@ -311,6 +312,12 @@ function orderSummaryIsEqual (a, b) {
     omit(b, ['booking', 'contract', 'specialFormat', 'frameMount', 'company'])
   )
 }
+function fmSummaryIsEqual (a, b) {
+  return isEqual(
+    omit(a, ['frameMount', 'company']),
+    omit(b, ['frameMount', 'company'])
+  )
+}
 
 function orderPointerIsEqual (a, b) {
   if (!a?.objectId || !b?.objectId) {
@@ -393,17 +400,6 @@ async function setCubeStatusesFrameMount (frameMount) {
   const fmCounts = frameMount.get('fmCounts') || {}
   const earlyCancellations = frameMount.get('earlyCancellations') || {}
   const fmDates = frameMount.get('fmDates') || {}
-  // remove all references to frame mount if earlyCanceled
-  await $query('Cube')
-    .equalTo('fmk', frameMount.id)
-    .containedIn('objectId', Object.keys(earlyCancellations))
-    .eachBatch(async (cubes) => {
-      for (const cube of cubes) {
-        cube.unset('fm')
-        await $saveWithEncode(cube, null, { useMasterKey: true })
-        response.unset.push(cube.id)
-      }
-    }, { useMasterKey: true })
 
   // remove all references to frame mount if not in cubeIds
   await $query('Cube')
@@ -433,45 +429,36 @@ async function setCubeStatusesFrameMount (frameMount) {
   // no reserved until or reserved until date in future
   const isReserved = frameMount.get('status') === 3 && !moment(await $today()).isAfter(frameMount.get('reservedUntil'), 'day')
 
-  // unset all cubes that do not have frames
-  if (!isReserved) {
-    await $query('Cube')
-      .containedIn('objectId', cubeIds)
-      .notContainedIn('objectId', Object.keys(fmCounts))
-      .equalTo('fmk', frameMount.id)
-      .eachBatch(async (cubes) => {
-        for (const cube of cubes) {
-          cube.unset('fm')
-          await $saveWithEncode(cube, null, { useMasterKey: true })
-          response.unset.push(cube.id)
+  // set all fm summary status on cubeIds
+  await $query('Cube')
+    .containedIn('objectId', cubeIds)
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        const fm = {
+          frameMount: frameMount.toPointer(),
+          company: frameMount.get('company').toPointer(),
+          status: frameMount.get('status'),
+          pk: frameMount.get('pk')
         }
-      }, { useMasterKey: true })
-  }
-  // set all cubeIds
-  const query = $query('Cube')
-    .notContainedIn('objectId', Object.keys(earlyCancellations))
-  isReserved
-    ? query.containedIn('objectId', cubeIds)
-    : query.containedIn('objectId', Object.keys(fmCounts))
-  await query.eachBatch(async (cubes) => {
-    for (const cube of cubes) {
-      const fm = {
-        frameMount: frameMount.toPointer(),
-        objectId: frameMount.id,
-        status: frameMount.get('status'),
-        company: frameMount.get('company').toPointer(),
-        pk: frameMount.get('pk')
+        if (earlyCancellations[cube.id]) {
+          fm.earlyCanceledAt = earlyCancellations[cube.id]
+        } else {
+          if (fmCounts[cube.id]) {
+            fm.qty = fmCounts[cube.id]
+            fm.startsAt = fmDates[cube.id]?.startsAt
+            fm.endsAt = fmDates[cube.id]?.endsAt
+          }
+          if (isReserved) {
+            fm.until = frameMount.get('reservedUntil')
+          }
+        }
+        if (!fmSummaryIsEqual(cube.get('fm'), fm)) {
+          cube.set({ fm })
+          await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: Boolean(fm.qty) } })
+          response.set.push(cube.id)
+        }
       }
-      if (fmCounts[cube.id]) {
-        fm.qty = fmCounts[cube.id]
-        fm.startsAt = fmDates[cube.id]?.startsAt
-        fm.endsAt = fmDates[cube.id]?.endsAt
-      }
-      cube.set({ fm })
-      await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: Boolean(fm.qty) } })
-      response.set.push(cube.id)
-    }
-  }, { useMasterKey: true })
+    }, { useMasterKey: true })
   return response
 }
 
