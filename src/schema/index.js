@@ -299,6 +299,7 @@ const schemaDefinitions = {
 
       planned: { type: 'Number' },
       cubeIds: { type: 'Array' }, // free cube ids
+      stars: { type: 'Object' },
       freedCount: { type: 'Number' },
       cubeCount: { type: 'Number' }, // mounted cube count
       // cubeHistory: { type: 'Object' }, // history of qty changes per cube

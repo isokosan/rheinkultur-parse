@@ -34,7 +34,7 @@ Parse.Cloud.beforeSave(FrameMount, async ({ object: frameMount, context: { setCu
   const cubeIds = frameMount.get('cubeIds') || []
   cubeIds.sort()
   frameMount.set('cubeIds', cubeIds)
-  frameMount.set('freedCount', frameMount.get('status') > 2 ? cubeIds.length : 0)
+  frameMount.set('freedCount', frameMount.get('status') > 2.1 ? cubeIds.length : 0)
 
   if (setCubeStatuses) {
     const earlyCancellations = {}
@@ -293,6 +293,10 @@ Parse.Cloud.define('frame-mount-finalize', async ({ params: { id: frameMountId }
   await validateOrderFinalize(frameMount)
   frameMount.set({ status: 3 })
   const audit = { user, fn: 'frame-mount-finalize' }
+
+  // cleanup stars
+  frameMount.set('stars', $cleanDict(frameMount.get('stars'), frameMount.get('cubeIds')))
+
   await frameMount.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   return 'Moskitorahmen finalisiert.'
 }, $internOrAdmin)
@@ -301,7 +305,7 @@ Parse.Cloud.define('frame-mount-undo-finalize', async ({ params: { id: frameMoun
   const frameMount = await $getOrFail(FrameMount, frameMountId)
   frameMount.set({ status: 2.1 })
   const audit = { user, fn: 'frame-mount-undo-finalize' }
-  await frameMount.save(null, { useMasterKey: true, context: { audit } })
+  await frameMount.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   return 'Finalisierung zurückgezogen.'
 }, $internOrAdmin)
 
@@ -581,3 +585,13 @@ Parse.Cloud.define('frame-mount-takedown-requests', async () => {
     }, { useMasterKey: true })
   return pendingTakedownRequests
 }, { requireUser: true })
+
+Parse.Cloud.define('frame-mount-toggle-star', async ({ params: { id: frameMountId, cubeId }, user }) => {
+  const frameMount = await $getOrFail(FrameMount, frameMountId)
+  const stars = frameMount.get('stars') || {}
+  const starred = !stars[cubeId]
+  stars[cubeId] = starred || undefined
+  frameMount.set({ stars: $cleanDict(stars) })
+  await frameMount.save(null, { useMasterKey: true })
+  return starred
+}, $internFrameManager)

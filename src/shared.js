@@ -431,7 +431,7 @@ async function setCubeStatusesFrameMount (frameMount) {
   }
 
   // no reserved until or reserved until date in future
-  const isReserved = !frameMount.get('reservedUntil') || !moment(await $today()).isAfter(frameMount.get('reservedUntil'), 'day')
+  const isReserved = frameMount.get('status') === 3 && !moment(await $today()).isAfter(frameMount.get('reservedUntil'), 'day')
 
   // unset all cubes that do not have frames
   if (!isReserved) {
