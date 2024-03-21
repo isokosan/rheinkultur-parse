@@ -84,6 +84,10 @@ module.exports = {
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
         normalized[key] = FIELD_NORMALIZERS[key](form[key])
       }
+      // if companyId is set, permissions have manage-frames, the companyId can only be Stadtkultur GMBH
+      if (normalized.companyId && normalized.permissions?.includes('manage-frames') && normalized.companyId !== '19me3Ge8LZ') {
+        throw new Error('Bad Request with invalid permissions')
+      }
       return normalized
     }
   },
