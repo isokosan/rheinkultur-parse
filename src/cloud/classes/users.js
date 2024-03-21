@@ -104,34 +104,38 @@ Parse.Cloud.define('user-invite', async ({ params: { password, ...params }, user
 Parse.Cloud.define('user-update', async ({ params: { id, ...params }, user: auth }) => {
   const user = await $getOrFail(Parse.User, id, ['companyPerson'])
   const {
+    email,
     firstName,
     lastName,
-    accType,
     pbx,
     mobile,
+    accType,
     companyId,
-    companyPersonId
+    permissions
   } = normalizeFields(params)
 
-  const changes = $changes(user, { firstName, lastName, accType, pbx, mobile })
-  user.set({ firstName, lastName, accType, pbx, mobile })
-  const accTypeChanged = accType !== user.get('accType')
-  const companyChanged = companyId !== user.get('company')?.id
+  const changes = $changes(user, { email, firstName, lastName, pbx, mobile, accType, permissions })
+  if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
 
+  user.set({ email, firstName, lastName, accType, permissions, pbx, mobile })
+
+  if (changes.email) {
+    user.set('username', normalizeUsernameFromEmail(email))
+  }
+
+  const company = ['partner', 'scout'].includes(accType) && companyId
+    ? await $getOrFail('Company', companyId)
+    : null
+  const companyChanged = company?.id !== user.get('company')?.id
   if (companyChanged) {
-    changes.companyId = [user.get('company')?.id, companyId]
-    const company = companyId ? await $getOrFail('Company', companyId) : null
+    changes.companyId = [user.get('company')?.id, company?.id]
     company ? user.set({ company }) : user.unset('company')
   }
 
-  if (companyPersonId !== user.get('companyPerson')?.id) {
-    const companyPerson = companyPersonId ? await $getOrFail('Person', companyPersonId) : null
-    changes.companyPerson = [user.get('companyPerson')?.get('fullName'), companyPerson?.get('fullName')]
-    companyPerson ? user.set({ companyPerson }) : user.unset('companyPerson')
-  }
-
   const audit = { user: auth, fn: 'user-update', data: { changes } }
-  return user.save(null, { useMasterKey: true, context: { audit, clearSessions: (accTypeChanged || companyChanged) } })
+  const clearSessions = companyChanged || changes.email || changes.accType || changes.permissions
+  await user.save(null, { useMasterKey: true, context: { audit, clearSessions } })
+  return clearSessions
 }, $adminOnly)
 
 Parse.Cloud.define('user-ban', async ({ params: { id: userId }, user: auth }) => {

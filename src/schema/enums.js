@@ -8,6 +8,7 @@ module.exports.ACC_TYPES = {
 }
 
 module.exports.PERMISSIONS = {
+  scout: 'Kann Scouten',
   'manage-bookings': 'Manage Bookings',
   'manage-scouts': 'Manage Scouts',
   'manage-fieldwork': 'Manage Fieldwork',
