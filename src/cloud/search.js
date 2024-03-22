@@ -588,9 +588,7 @@ Parse.Cloud.define('search', async ({
 
   // Nicht vermarktungsfähig
   s.includes('7') && bool.must.push({ terms: { 'flags.keyword': errorFlagKeys } })
-  s.includes('8')
-    ? bool.must.push({ exists: { field: 'dAt' } })
-    : (!s.includes('all') && bool.must_not.push({ exists: { field: 'dAt' } }))
+  s.includes('8') && bool.must.push({ exists: { field: 'dAt' } })
   s.includes('9')
     ? bool.must.push({ exists: { field: 'pair' } })
     : (!s.includes('all') && bool.must_not.push({ exists: { field: 'pair' } }))
