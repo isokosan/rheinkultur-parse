@@ -80,7 +80,7 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
 
   cube.get('order') ? cube.set('caok', cube.get('order').className + '$' + cube.get('order').objectId) : cube.unset('caok')
   cube.get('futureOrder') ? cube.set('ffok', cube.get('futureOrder').className + '$' + cube.get('futureOrder').objectId) : cube.unset('ffok')
-  cube.get('fm') ? cube.set('fmk', cube.get('fm').objectId) : cube.unset('fmk')
+  cube.get('fm') ? cube.set('fmk', cube.get('fm').frameMount.id) : cube.unset('fmk')
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
   await indexCubeBookings(cube)

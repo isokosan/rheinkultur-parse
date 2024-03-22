@@ -11,7 +11,7 @@ require('./run')(async () => {
   for (const pk of Object.keys(pks)) {
     const fm = await $query('FrameMount').equalTo('pk', pk).first({ useMasterKey: true })
     if (!fm) {
-      console.log(pk)
+      console.log(pk, pks[pk])
       continue
     }
     await fm.set('cubeIds', pks[pk]).save(null, { useMasterKey: true })

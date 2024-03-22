@@ -3,13 +3,24 @@ const FrameMount = Parse.Object.extend('FrameMount')
 
 async function cleanUpFrameMounts () {
   if (!DEVELOPMENT) { return }
-  // cleanup all frame mounts
   await $query('FrameMount')
     .each((frameMount) => {
-      frameMount.set('cubeIds', []).set('fmCounts', []).set('takedowns', []).set('cubeHistory', null)
+      frameMount
+        .set('cubeIds', [])
+        .set('fmCounts', null)
+        .set('takedowns', null)
+        .set('cubeHistory', null)
+        .set('status', 2)
+        .unset('reservedUntil')
+        .unset('request')
+        .unset('requestHistory')
       return frameMount.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
     }, { useMasterKey: true })
 }
+
+cleanUpFrameMounts().then(() => {
+  consola.info('cleaned up frame mounts')
+})
 
 async function seedTest ({ params: { pk } }) {
   await cleanUpFrameMounts()
