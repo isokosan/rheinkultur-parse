@@ -6,15 +6,14 @@ const { getStatusAndCounts } = require('./task-lists')
 const { ensureUniqueField, round2 } = require('@/utils')
 
 function getCubesQuery (control) {
-  const { date, dueDate, lastControlBefore, orderType, criteria } = control.attributes
-
+  const { date, dueDate, untilDate, lastControlBefore, orderType, criteria } = control.attributes
   const extendsDuringControlPeriod = $query('Cube')
     .equalTo('order.earlyCanceledAt', null) // not early canceled
     .equalTo('order.canceledAt', null) // not canceled
     .notEqualTo('order.autoExtendsBy', null)
     .greaterThan('order.endsAt', date)
-    .lessThanOrEqualTo('order.endsAt', dueDate)
-  const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', dueDate)
+    .lessThanOrEqualTo('order.endsAt', untilDate || dueDate)
+  const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', untilDate || dueDate)
 
   // order status is active and started, extends or ends after control date
   let baseQuery = Parse.Query.or(extendsDuringControlPeriod, endDateAfterControlPeriod)
@@ -228,6 +227,7 @@ Parse.Cloud.define('control-create', async ({
     name,
     date,
     dueDate,
+    untilDate,
     lastControlBefore,
     orderType
   }, user
@@ -236,6 +236,7 @@ Parse.Cloud.define('control-create', async ({
     name,
     date,
     dueDate,
+    untilDate,
     lastControlBefore,
     orderType
   })
@@ -264,6 +265,7 @@ Parse.Cloud.define('control-update', async ({
     name,
     date,
     dueDate,
+    untilDate,
     lastControlBefore,
     orderType,
     criteria
@@ -273,10 +275,10 @@ Parse.Cloud.define('control-update', async ({
   orderType === 'all' && (orderType = null)
 
   const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, dueDate, lastControlBefore, orderType })
+  const changes = $changes(control, { name, date, dueDate, untilDate, lastControlBefore, orderType })
   changes.criteria = getCriteriaChanges(control.get('criteria'), criteria)
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
-  control.set({ name, date, dueDate, lastControlBefore, orderType, criteria })
+  control.set({ name, date, dueDate, untilDate, lastControlBefore, orderType, criteria })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
