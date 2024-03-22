@@ -1,3 +1,10 @@
+# [1.175.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.174.0...1.175.0) (2024-03-22)
+
+
+### Features
+
+* control lauft mindestens bis date ([a8def2f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a8def2f8fb8e7e831bdd9bb34c8259544412d233))
+
 # [1.174.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.173.0...1.174.0) (2024-03-22)
 
 
