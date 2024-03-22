@@ -1,3 +1,10 @@
+# [1.173.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.172.3...1.173.0) (2024-03-22)
+
+
+### Features
+
+* update bookings to from konzepthaus ([c6b3760](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c6b37600b6d07561b8f13cb54e57e82cf4a34115))
+
 ## [1.172.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.172.2...1.172.3) (2024-03-22)
 
 
