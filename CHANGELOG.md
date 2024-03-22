@@ -1,3 +1,10 @@
+## [1.172.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.172.2...1.172.3) (2024-03-22)
+
+
+### Bug Fixes
+
+* fmk ([00e8ade](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/00e8ade189fc585d72bfe1c9ef7ab6e16e699bf4))
+
 ## [1.172.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.172.1...1.172.2) (2024-03-21)
 
 
