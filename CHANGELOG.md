@@ -1,3 +1,10 @@
+# [1.174.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.173.0...1.174.0) (2024-03-22)
+
+
+### Features
+
+* show hidden cubes intern ([9a5c387](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9a5c38776c56a32a6311683899b754e5d036e735))
+
 # [1.173.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.172.3...1.173.0) (2024-03-22)
 
 
