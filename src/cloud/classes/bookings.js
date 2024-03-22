@@ -204,8 +204,7 @@ Parse.Cloud.define('booking-create', async ({ params, user, master }) => {
     startsAt,
     initialDuration,
     endsAt,
-    autoExtendsBy,
-    disassemblyFromRMV
+    autoExtendsBy
   } = normalizeFields(params)
 
   const booking = new Booking({
@@ -218,11 +217,14 @@ Parse.Cloud.define('booking-create', async ({ params, user, master }) => {
     initialDuration: parseInt(initialDuration),
     endsAt,
     autoExtendsBy,
-    responsibles: user ? [user] : undefined,
-    disassembly: disassemblyFromRMV
-      ? { fromRMV: true }
-      : null
+    responsibles: user ? [user] : undefined
   })
+
+  // set disassembly to RMV if konzepthaus
+  if (companyId === 'XPLYKFS9Pc') {
+    booking.set('disassembly', { fromRMV: true })
+  }
+
   companyId && booking.set({ company: await $getOrFail('Company', companyId) })
   companyPersonId && booking.set({ companyPerson: await $getOrFail('Person', companyPersonId) })
 
@@ -655,6 +657,11 @@ Parse.Cloud.define('booking-create-request', async ({ params, user }) => {
     endPrices,
     monthlyMedia
   })
+
+  // set disassembly to RMV if konzepthaus
+  if (isPartner.id === 'XPLYKFS9Pc') {
+    booking.set('disassembly', { fromRMV: true })
+  }
 
   await checkIfCubesAreAvailable(booking)
 

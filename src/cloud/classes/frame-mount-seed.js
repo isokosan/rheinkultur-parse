@@ -16,11 +16,8 @@ async function cleanUpFrameMounts () {
         .unset('requestHistory')
       return frameMount.save(null, { useMasterKey: true, context: { setCubeStatuses: true } })
     }, { useMasterKey: true })
+  console.log('cleaned up frame mounts')
 }
-
-cleanUpFrameMounts().then(() => {
-  consola.info('cleaned up frame mounts')
-})
 
 async function seedTest ({ params: { pk } }) {
   await cleanUpFrameMounts()
@@ -114,3 +111,4 @@ async function seedTest ({ params: { pk } }) {
 Parse.Cloud.define('seed-frame-mount-tests', seedTest, { requireMaster: true })
 // Parse.Cloud.run('seed-frame-mount-tests', { pk: 'BW:Heidelberg' }, { useMasterKey: true })
 // Parse.Cloud.run('seed-frame-mount-tests', {}, { useMasterKey: true })
+// cleanUpFrameMounts()
