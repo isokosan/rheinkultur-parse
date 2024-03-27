@@ -11,7 +11,7 @@ module.exports = async function (job) {
   await bPLZsQuery
     .eachBatch(async (plzs) => {
       for (const plz of plzs) {
-        response.bPLZs += await syncBlacklistCubeFlags(plz.id, true)
+        response.bPLZs += await syncBlacklistCubeFlags(plz)
         i++
       }
       job.progress(parseInt(100 * i / total))

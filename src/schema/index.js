@@ -656,6 +656,7 @@ const schemaDefinitions = {
     },
     fields: {
       nMR: { type: 'Boolean' },
+      blk: { type: 'Array' },
       pks: { type: 'Array' },
       population: { type: 'Number' },
       qkm: { type: 'Number' }

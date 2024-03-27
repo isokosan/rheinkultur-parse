@@ -71,7 +71,7 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
   }
 
   if (cube.get('lc') === 'TLK') {
-    cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz')))))
+    cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz') + ':' + cube.get('pk')))))
     cube.set('flags', setFlag(cube.get('flags'), 'PDGA', Boolean(PDGA[cube.get('pk')])))
   }
 
@@ -186,7 +186,7 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   for (const cube of cubes) {
     if (cube.get('lc') === 'TLK') {
       cube.set('klsId', cube.get('importData')?.klsId)
-      cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz')))))
+      cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz') + ':' + cube.get('pk')))))
       cube.set('flags', setFlag(cube.get('flags'), 'PDGA', Boolean(PDGA[cube.get('pk')])))
     }
 
