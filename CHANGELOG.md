@@ -1,3 +1,10 @@
+# [1.176.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.175.0...1.176.0) (2024-03-27)
+
+
+### Features
+
+* update plz blacklists to plz+pk combo ([cb89435](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cb8943504907e7b55ebe04d0a01a50a882f4eaf7))
+
 # [1.175.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.174.0...1.175.0) (2024-03-22)
 
 
