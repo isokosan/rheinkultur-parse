@@ -414,7 +414,7 @@ async function setCubeStatusesFrameMount (frameMount) {
     }, { useMasterKey: true })
 
   // unset everything if less than in bearbeitung
-  if (frameMount.get('status') <= 2.1) {
+  if (frameMount.get('status') <= 2) {
     await $query('Cube')
       .equalTo('fmk', 'FrameMount$' + frameMount.id)
       .eachBatch(async (cubes) => {
