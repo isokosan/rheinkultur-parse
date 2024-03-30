@@ -93,6 +93,30 @@ Parse.Cloud.define('system-status-duplicate-invoices', async () => {
 
 module.exports.updateUnsyncedLexDocument = updateUnsyncedLexDocument
 
+async function fixFlags () {
+  // pipeline to get ids where flags equal empty array
+  const flagUnsets = await $query('Cube')
+    .aggregate([
+      { $match: { flags: [] } },
+      { $project: { _id: 1 } }
+    ], { useMasterKey: true })
+  let i = 0
+  console.log(flagUnsets.length)
+  await $query('Cube')
+    .containedIn('objectId', flagUnsets.map(({ objectId }) => objectId))
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
+      }
+      i += cubes.length
+      console.log(`Progress: ${parseInt(i / flagUnsets.length * 100)}%`)
+    }, { useMasterKey: true })
+}
+Parse.Cloud.define('fix-flags', () => {
+  fixFlags()
+  return 'ok'
+}, { requireMaster: true })
+
 // TODO: Move to updates folder
 // // CHECK OVERLAPPING PLANNED INVOICES OF CONTRACTS
 // Parse.Cloud.define('manual-updates-check-contract-invoices', async () => {
