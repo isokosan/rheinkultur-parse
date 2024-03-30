@@ -1,3 +1,10 @@
+# [1.177.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.176.0...1.177.0) (2024-03-30)
+
+
+### Features
+
+* finish paginated_marklist ([13344d9](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/13344d938d735e8ec72ab27513aec95267fdb9f5))
+
 # [1.176.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.175.0...1.176.0) (2024-03-27)
 
 
