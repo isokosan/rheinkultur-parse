@@ -262,12 +262,6 @@ Parse.Cloud.define('frame-mount-update', async ({ params: { id: frameMountId, ..
     throw new Error('Finalisierte Aufträge können nicht mehr geändert werden.')
   }
 
-  // removed changing frame mounts from our side
-  // for (const cubeId of cubeIds) {
-  //   fmCounts[cubeId] = fmCounts?.[cubeId] || undefined
-  // }
-  // fmCounts = $cleanDict(fmCounts, cubeIds)
-
   $cubeLimit(cubeIds.length)
   const cubeChanges = $cubeChanges(frameMount, cubeIds)
   // if any removeCubeIds is mounted or has takedown error
@@ -281,12 +275,10 @@ Parse.Cloud.define('frame-mount-update', async ({ params: { id: frameMountId, ..
   const changes = $changes(frameMount, {
     planned,
     reservedUntil
-    // fmCounts
   })
   frameMount.set({
     planned,
     reservedUntil
-    // fmCounts
   })
 
   frameMount.get('status') === 1 && frameMount.set('status', 0)

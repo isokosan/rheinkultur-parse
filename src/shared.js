@@ -403,7 +403,7 @@ async function setCubeStatusesFrameMount (frameMount) {
 
   // remove all references to frame mount if not in cubeIds
   await $query('Cube')
-    .equalTo('fmk', frameMount.id)
+    .equalTo('fmk', 'FrameMount$' + frameMount.id)
     .notContainedIn('objectId', cubeIds)
     .eachBatch(async (cubes) => {
       for (const cube of cubes) {
@@ -416,7 +416,7 @@ async function setCubeStatusesFrameMount (frameMount) {
   // unset everything if less than draft (but in bearbeitung stays)
   if (frameMount.get('status') <= 2) {
     await $query('Cube')
-      .equalTo('fmk', frameMount.id)
+      .equalTo('fmk', 'FrameMount$' + frameMount.id)
       .eachBatch(async (cubes) => {
         for (const cube of cubes) {
           cube.unset('fm')

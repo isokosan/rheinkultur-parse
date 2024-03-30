@@ -7,7 +7,6 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   if (production.get('booking') && production.get('contract')) {
     throw new Error('Production cannot be tied to a booking and a contract simultaneously')
   }
-
   const bookingOrContract = production.get('booking') || production.get('contract')
   await bookingOrContract.fetch({ useMasterKey: true })
 
@@ -25,6 +24,7 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   ]) {
     production.set(key, $cleanDict(production.get(key), cubeIds))
   }
+  !production.get('printPackages') && production.set('printPackages', {})
 
   const total = round2(sum(Object.values(production.get('totals') || {})))
   production.set({ total })

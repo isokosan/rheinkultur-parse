@@ -918,7 +918,8 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
     .include(['state', 'briefing', 'control', 'disassembly', 'customService'])
     .get(req.query.id, { useMasterKey: true })
   const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
-  let name = parent.get('name') || parent.get('order').no
+  await parent.get('order')?.fetch({ useMasterKey: true })
+  let name = parent.get('name') || parent.get('order')?.get('no')
   if (taskList.get('type') === 'disassembly') {
     name = 'Demontage ' + name
   }

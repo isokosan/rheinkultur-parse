@@ -243,6 +243,10 @@ Parse.Cloud.define('booking-update-cubes', async ({ params: { id: bookingId, ...
     throw new Error('Keine Änderungen')
   }
   booking.set({ cubeIds })
+  const endPrices = $cleanDict(booking.get('endPrices') || {}, cubeIds)
+  const monthlyMedia = $cleanDict(booking.get('monthlyMedia') || {}, cubeIds)
+  booking.set({ endPrices, monthlyMedia })
+
   const production = await $query('Production').equalTo('booking', booking).first({ useMasterKey: true })
   production && production.save(null, { useMasterKey: true })
 
@@ -275,7 +279,6 @@ Parse.Cloud.define('booking-update', async ({
 
   const booking = await $getOrFail(Booking, bookingId)
   $cubeLimit(cubeIds.length)
-
   const cubeChanges = $cubeChanges(booking, cubeIds)
   cubeChanges && booking.set({ cubeIds })
 
@@ -283,8 +286,8 @@ Parse.Cloud.define('booking-update', async ({
   const pricingModel = company ? company.get('distributor').pricingModel : null
   if (pricingModel !== 'commission') { endPrices = null }
   if (pricingModel) { monthlyMedia = null }
-  endPrices = $cleanDict(endPrices)
-  monthlyMedia = $cleanDict(monthlyMedia)
+  endPrices = $cleanDict(endPrices, cubeIds)
+  monthlyMedia = $cleanDict(monthlyMedia, cubeIds)
 
   const changes = $changes(booking, {
     motive,

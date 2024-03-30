@@ -686,6 +686,12 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
     throw new Error('Nur verifizierte CityCubes können als gescouted markiert werden.')
   }
   let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
+
+  // if approved and cubeId is already in adminApprovedCubeIds
+  if ((approved && adminApprovedCubeIds.includes(cubeId)) || (!approved && !adminApprovedCubeIds.includes(cubeId))) {
+    throw new Error('Keine Änderungen')
+  }
+
   adminApprovedCubeIds = approved
     ? [...adminApprovedCubeIds, cubeId]
     : adminApprovedCubeIds.filter(id => id !== cubeId)

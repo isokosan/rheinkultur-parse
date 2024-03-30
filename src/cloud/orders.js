@@ -1,8 +1,8 @@
-const { kebabCase } = require('lodash')
+const { kebabCase, intersection } = require('lodash')
 const { normalizeDateString, normalizeString } = require('@/schema/normalizers')
 const { generateExtensionInvoices } = require('./classes/contracts')
 const {
-  // getOrderClassName,
+  ORDER_CLASSES,
   setOrderCubeStatuses
 } = require('@/shared')
 
@@ -158,3 +158,55 @@ Parse.Cloud.define('order-end', async ({ params: { className, id }, user }) => {
   const audit = { user, fn: kebabCase(className) + '-end' }
   return order.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
 }, $internOrAdmin)
+
+/**
+ * Gather order issues
+ *  check if there are any issues on given cubeIds
+ */
+// TODO: Refactor this function to only send in order keys, and filter flags by null only as [] does not work
+Parse.Cloud.define('order-finalize-issues', async ({ params: { className, objectId, cubeIds } }) => {
+  const orderKey = className + '$' + objectId
+  const hasCO = $query('Cube').notEqualTo('caok', null).notEqualTo('caok', orderKey)
+  const hasFO = $query('Cube').notEqualTo('ffok', null).notEqualTo('ffok', orderKey)
+  const hasFM = $query('Cube').notEqualTo('fmk', null).notEqualTo('fmk', orderKey)
+  const hasFlags = $query('Cube').notEqualTo('flags', null)
+  const issues = await Parse.Query.or(hasCO, hasFO, hasFM, hasFlags)
+    .containedIn('objectId', cubeIds)
+    .limit(cubeIds.length)
+    .select(['order', 'futureOrder', 'fm', 'flags'])
+    .find({ useMasterKey: true })
+    .then((cubes) => cubes
+      .reduce((acc, { id, attributes: { order, futureOrder, fm, flags } }) => {
+        const cube = $cleanDict({
+          order: order && order.className + '$' + order.objectId === orderKey ? undefined : order,
+          futureOrder: futureOrder && futureOrder.className + '$' + futureOrder.objectId === orderKey ? undefined : futureOrder,
+          fm: fm && fm.frameMount.className + '$' + fm.frameMount.id === orderKey ? undefined : fm,
+          flags: flags?.length ? flags : undefined
+        })
+        if (cube) {
+          acc[id] = cube
+        }
+        return acc
+      }, {})
+    )
+  const orders = await Promise.all(ORDER_CLASSES.map((orderClass) => {
+    const query = $query(orderClass)
+    if (orderClass === className) {
+      query.notEqualTo('objectId', objectId)
+    }
+    cubeIds.length === 1 ? query.equalTo('cubeIds', cubeIds[0]) : query.containedBy('cubeIds', cubeIds)
+    return query
+      .greaterThanOrEqualTo('status', 0)
+      .lessThanOrEqualTo('status', 2.1)
+      .find({ useMasterKey: true })
+      .then(orders => orders.map(order => ({ className: orderClass, ...order.toJSON() })))
+  })).then(orders => orders.flat())
+  for (const order of orders) {
+    for (const cubeId of intersection(order.cubeIds, cubeIds)) {
+      issues[cubeId] = issues[cubeId] || {}
+      issues[cubeId].draftOrders = issues[cubeId].draftOrders || []
+      issues[cubeId].draftOrders.push(order)
+    }
+  }
+  return issues
+})

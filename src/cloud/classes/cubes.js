@@ -61,6 +61,13 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     cube.set('media', ht.get('media'))
   }
 
+  if (cube.get('lc') === 'TLK') {
+    cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz') + ':' + cube.get('pk')))))
+    cube.set('flags', setFlag(cube.get('flags'), 'PDGA', Boolean(PDGA[cube.get('pk')])))
+  }
+  // unique flags
+  cube.get('flags')?.length ? cube.set('flags', [...new Set(cube.get('flags'))]) : cube.unset('flags')
+
   if (updating === true) { return }
 
   if (orderStatusCheck) {
@@ -70,17 +77,9 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     futureOrder ? cube.set('futureOrder', futureOrder) : cube.unset('futureOrder')
   }
 
-  if (cube.get('lc') === 'TLK') {
-    cube.set('flags', setFlag(cube.get('flags'), 'bPLZ', Boolean(await redis.sismember('blacklisted-plzs', cube.get('plz') + ':' + cube.get('pk')))))
-    cube.set('flags', setFlag(cube.get('flags'), 'PDGA', Boolean(PDGA[cube.get('pk')])))
-  }
-
-  // unique flags
-  cube.get('flags')?.length ? cube.set('flags', [...new Set(cube.get('flags'))]) : cube.unset('flags')
-
   cube.get('order') ? cube.set('caok', cube.get('order').className + '$' + cube.get('order').objectId) : cube.unset('caok')
   cube.get('futureOrder') ? cube.set('ffok', cube.get('futureOrder').className + '$' + cube.get('futureOrder').objectId) : cube.unset('ffok')
-  cube.get('fm') ? cube.set('fmk', cube.get('fm').frameMount.id) : cube.unset('fmk')
+  cube.get('fm') ? cube.set('fmk', 'FrameMount$' + cube.get('fm').frameMount.id) : cube.unset('fmk')
   cube.set('s', cube.getStatus())
   await indexCube(cube, cube.isNew() ? {} : before)
   await indexCubeBookings(cube)
@@ -231,31 +230,6 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
         cube.set('s', 7)
       }
       continue
-    }
-
-    if (query._include.includes('draftOrders')) {
-      const contracts = await $query('Contract')
-        .equalTo('cubeIds', cube.id)
-        .greaterThanOrEqualTo('status', 0)
-        .lessThanOrEqualTo('status', 2.1)
-        .find({ useMasterKey: true })
-        .then(contracts => contracts.map(contract => ({
-          className: 'Contract',
-          ...contract.toJSON(),
-          earlyCanceledAt: contract.get('earlyCancellations')?.[cube.id]
-        })))
-      const bookings = await $query('Booking')
-        .equalTo('cubeIds', cube.id)
-        .greaterThanOrEqualTo('status', 0)
-        .lessThanOrEqualTo('status', 2.1)
-        .notEqualTo(`earlyCancellations.${cube.id}`, true)
-        .find({ useMasterKey: true })
-        .then(bookings => bookings.map(booking => ({
-          className: 'Booking',
-          ...booking.toJSON(),
-          earlyCanceledAt: booking.get('earlyCancellations')?.[cube.id]
-        })))
-      cube.set('draftOrders', [...contracts, ...bookings].sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
     }
 
     if (query._include.includes('orders')) {
@@ -660,3 +634,7 @@ Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, c
   }
   return message
 }, $internOrAdmin)
+
+Parse.Cloud.define('cube-pks', async ({ params: { cubeIds } }) => {
+  return await $query('Cube').containedIn('objectId', cubeIds).distinct('pk', { useMasterKey: true })
+}, { requireUser: true })
