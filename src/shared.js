@@ -413,8 +413,8 @@ async function setCubeStatusesFrameMount (frameMount) {
       }
     }, { useMasterKey: true })
 
-  // unset everything if less than draft (but in bearbeitung stays)
-  if (frameMount.get('status') <= 2) {
+  // unset everything if less than in bearbeitung
+  if (frameMount.get('status') <= 2.1) {
     await $query('Cube')
       .equalTo('fmk', 'FrameMount$' + frameMount.id)
       .eachBatch(async (cubes) => {
@@ -424,6 +424,7 @@ async function setCubeStatusesFrameMount (frameMount) {
           response.unset.push(cube.id)
         }
       }, { useMasterKey: true })
+    return
   }
 
   // no reserved until or reserved until date in future
