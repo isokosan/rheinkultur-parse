@@ -1,3 +1,10 @@
+## [1.177.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.2...1.177.3) (2024-03-30)
+
+
+### Bug Fixes
+
+* frame mount unset status ([e772207](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e7722076be8d49c9113126939f9f6c7a36a2df5f))
+
 ## [1.177.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.1...1.177.2) (2024-03-30)
 
 
