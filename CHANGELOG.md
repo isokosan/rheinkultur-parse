@@ -1,3 +1,10 @@
+## [1.177.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.0...1.177.1) (2024-03-30)
+
+
+### Bug Fixes
+
+* add transition flags fn ([f44accf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f44accfce949421788d32f6f1b86a6031822c49e))
+
 # [1.177.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.176.0...1.177.0) (2024-03-30)
 
 
