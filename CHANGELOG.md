@@ -1,3 +1,10 @@
+## [1.177.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.1...1.177.2) (2024-03-30)
+
+
+### Bug Fixes
+
+* remove fmk from draft frame mounts ([844e938](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/844e9380bdbe0aa22f189f20509059700a165600))
+
 ## [1.177.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.0...1.177.1) (2024-03-30)
 
 
