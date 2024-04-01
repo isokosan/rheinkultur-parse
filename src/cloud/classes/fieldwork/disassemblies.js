@@ -55,22 +55,19 @@ async function checkActiveTaskListsExists ({ order, className, disassembly }) {
     query.matchesQuery('disassembly', $query(Disassembly).equalTo('orderKey', orderKey))
   }
   disassembly && query.equalTo('disassembly', disassembly)
-  // TODO: Update check here and go over notifications
-  if (await query.greaterThanOrEqualTo('status', 1).count({ useMasterKey: true })) {
-    throw new Error('Demontage mit geplante Listen kann nicht gelöscht werden.')
+  // check if there are any task lists that are assigned
+  const activeLists = await query.greaterThanOrEqualTo('status', 1).include('scouts').find({ useMasterKey: true })
+  for (const taskList of activeLists) {
+    // notify fieldwork manager about changes
+    await $notify({
+      usersQuery: $query(Parse.User).equalTo('permissions', 'manage-fieldwork'),
+      identifier: 'disassembly-canceled',
+      data: { taskListId: taskList.id, placeKey: taskList.get('pk'), status: taskList.get('status') }
+    })
   }
-  // const activeLists = await query.greaterThanOrEqualTo('status', 1).find({ useMasterKey: true })
-  // if (activeLists.length) {
-  //   throw new Error('Cannot delete disassembly with submitted tasks.')
-  // }
-  // if (submissions) {
-  //   // Lists with submissions from scouts
-  //   // If there are any submissions from scouts already in this list, do not allow deleting.
-  //   throw new Error('Cannot delete disassembly with submitted tasks.')
-  // }
-  // If there is no submissions yet, but the list was Ernannt oder Beauftragt - then we notify & delete.
-  // Send a notification to all the scouts, and manager of the list, and all feldarbeit-managers
-  // Eine (Demontage/Kontrol/Scouting) liste in Solingen mit # CityCubes wurde gelöscht. (Add the cube and standorte in the notification to show it in a popup when clicked.)
+  if (activeLists.length) {
+    throw new Error('There are active task lists for this disassembly.')
+  }
 }
 
 // TODO: Make sure status of Disassembly is saved and updated?
@@ -150,7 +147,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
 
   // abort and clear lists if disassembly will not be done by RMV
   if (!order.get('disassembly')?.fromRMV) {
-    await getDisassembliesQuery().each(disassembly => disassembly.destroy({ useMasterKey: true }), { useMasterKey: true })
+    await getDisassembliesQuery().each(disassembly => disassembly.destroy({ useMasterKey: true }).catch(consola.error), { useMasterKey: true })
     sync.push({ type: 'all', action: 'remove' })
     const audit = { fn: 'disassembly-sync', data: { sync } }
     await order.save(null, { useMasterKey: true, context: { audit } })
@@ -209,7 +206,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
       const notifyRemovedWithAttributes = from.get('status')
         ? { orderClass: order.className, orderId: order.id, orderNo: order.get('no') }
         : false
-      return from.destroy({ useMasterKey: true, context: { notifyRemovedWithAttributes } })
+      return from.destroy({ useMasterKey: true, context: { notifyRemovedWithAttributes } }).catch(consola.error)
     }
     const fromCubeChanges = $cubeChanges(from, fromRemainingCubes)
     if (!fromCubeChanges) { return }
@@ -237,7 +234,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
         sync.push({ type: 'main', action: 'remove', date: mainDisassembly.get('date') })
       }
       if (mainDisassembly.get('date') >= DISCARD_BEFORE) {
-        await mainDisassembly.destroy({ useMasterKey: true })
+        await mainDisassembly.destroy({ useMasterKey: true }).catch(consola.error)
       }
     }
   } else if (orderEndDate) {
@@ -465,7 +462,7 @@ Parse.Cloud.define('disassembly-order-sync', async ({ params: { className, id: o
     for (const disassembly of disassemblies) {
       if (!await $query(TaskList).equalTo('disassembly', disassembly).count({ useMasterKey: true })) {
         consola.debug('removing empty disassemblies')
-        await disassembly.destroy({ useMasterKey: true })
+        await disassembly.destroy({ useMasterKey: true }).catch(consola.error)
       }
     }
   }, { useMasterKey: true })

@@ -54,6 +54,12 @@ const NOTIFICATIONS = {
       return { name: 'fieldwork-list' }
     }
   },
+  'disassembly-canceled': {
+    message: ({ placeKey, status }) => {
+      return `Eine geplante Demontage in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> konnte nicht abgesagt werden. Bitte stornieren Sie sie und synchronisieren Sie die Demontagen erneut.`
+    },
+    route: ({ taskListId }) => ({ name: 'task-list', params: { listId: taskListId } })
+  },
   'booking-request-rejected': {
     mailContent: ({ no, cubeId, type, reason }) => `
       <p>Ihre Buchungsanfrage für die Buchung <strong>${no}</strong> mit dem CityCube <strong>${cubeId}</strong> wurde abgelehnt.</p>
