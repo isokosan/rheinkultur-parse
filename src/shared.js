@@ -424,7 +424,7 @@ async function setCubeStatusesFrameMount (frameMount) {
           response.unset.push(cube.id)
         }
       }, { useMasterKey: true })
-    return
+    return response
   }
 
   // no reserved until or reserved until date in future
