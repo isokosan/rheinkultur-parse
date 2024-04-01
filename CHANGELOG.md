@@ -1,3 +1,15 @@
+# [1.178.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.3...1.178.0) (2024-04-01)
+
+
+### Bug Fixes
+
+* frame mount set order statuses response ([c1a52a0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c1a52a0174e1062397b2339057a6408fbf2c8b05))
+
+
+### Features
+
+* sync disassemblies and notify ([7c5b5a1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7c5b5a1a41e820d20e6cf83fed88281df06b75a6))
+
 ## [1.177.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.2...1.177.3) (2024-03-30)
 
 
