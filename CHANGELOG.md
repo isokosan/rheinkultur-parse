@@ -1,3 +1,10 @@
+# [1.179.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.178.0...1.179.0) (2024-04-03)
+
+
+### Features
+
+* add selection ratings to frame mounts ([079c807](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/079c80793cb86f6aeae5e95060b108a875ef398a))
+
 # [1.178.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.177.3...1.178.0) (2024-04-01)
 
 
