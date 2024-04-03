@@ -250,6 +250,24 @@ Parse.Cloud.define('frame-mount-update-cubes', async ({ params: { id: frameMount
   return frameMount.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
+Parse.Cloud.define('frame-mount-rate-selection', async ({ params: { id: frameMountId, cubeId, selectionRating }, user }) => {
+  const frameMount = await $getOrFail(FrameMount, frameMountId)
+  if (frameMount.get('status') >= 3) {
+    throw new Error('Selektionen von finalisierte Moskitorahmen können nicht mehr geändert werden.')
+  }
+  const selectionRatings = await frameMount.get('selectionRatings') || {}
+  if (selectionRatings[cubeId] === selectionRating) {
+    throw new Error('Selektion bereits gesetzt.')
+  }
+  if (selectionRating === '⚪') {
+    delete selectionRatings[cubeId]
+  } else {
+    selectionRatings[cubeId] = selectionRating
+  }
+  frameMount.set({ selectionRatings })
+  return frameMount.save(null, { useMasterKey: true })
+}, $internOrAdmin)
+
 Parse.Cloud.define('frame-mount-update', async ({ params: { id: frameMountId, ...params }, user }) => {
   const {
     cubeIds,

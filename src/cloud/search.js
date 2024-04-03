@@ -390,6 +390,7 @@ Parse.Cloud.define('search', async ({
     verifiable,
     availableFrom,
     isMap, // used to determine if query is coming from map and should only include limited fields
+    cubeIds,
     from,
     pagination,
     returnQuery
@@ -524,6 +525,10 @@ Parse.Cloud.define('search', async ({
         minimum_should_match: 1
       }
     })
+  }
+
+  if (cubeIds?.length) {
+    bool.filter.push({ terms: { 'objectId.keyword': cubeIds } })
   }
 
   if (ml) {
