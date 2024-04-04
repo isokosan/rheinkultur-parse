@@ -1836,7 +1836,9 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
     fetchResponse.body.pipe(res)
     return
   }
-  res.status(fetchResponse.status).send('Failed to fetch the PDF.')
+  console.error('FETCH ERRORED')
+  console.error(fetchResponse)
+  res.status(fetchResponse.status).send(fetchResponse)
 }))
 
 router.get('/cube-mismatches', handleErrorAsync(async (req, res) => {
