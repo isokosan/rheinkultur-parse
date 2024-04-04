@@ -1825,9 +1825,8 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       url,
-      pdfOptions: {
-        timeout: 10 * 60 * 1000 // 10 minutes
-      }
+      pdfOptions: { timeout: 0 },
+      timeout: 30 * 60 * 1000 // 30 minutes navigation timeout
     })
   })
   if (fetchResponse.ok) {
