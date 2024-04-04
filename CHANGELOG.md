@@ -1,3 +1,10 @@
+## [1.179.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.0...1.179.1) (2024-04-04)
+
+
+### Bug Fixes
+
+* attempt to set higher timeout ([b7d600a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b7d600a5d2fbab37057d48de1bdb4b72d9f9e343))
+
 # [1.179.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.178.0...1.179.0) (2024-04-03)
 
 
