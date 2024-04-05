@@ -1,3 +1,11 @@
+## [1.179.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.1...1.179.2) (2024-04-05)
+
+
+### Bug Fixes
+
+* increase disassembly sync timeout ([fce9b5d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fce9b5dbe56f6a99b62964a3358c285fb49e04fe))
+* log error with fetch ([0e15480](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0e154806e428a8d3b4489ccf0e0bcc4707fe752f))
+
 ## [1.179.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.0...1.179.1) (2024-04-04)
 
 
