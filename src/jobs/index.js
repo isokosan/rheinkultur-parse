@@ -26,6 +26,12 @@ const updateJobs = {
     cron: '0 4 * * *', // at 04:00 AM
     notificationDuration: 24
   },
+  sync_disassemblies: {
+    name: 'Demontage synchronizieren.',
+    timeoutMinutes: 120,
+    cron: '0 4 * * *', // at 04:00 AM
+    notificationDuration: 24
+  },
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
     timeoutMinutes: 10,
@@ -60,12 +66,6 @@ const updateJobs = {
     name: 'Aktualisierung von ALDI preisen.',
     timeoutMinutes: 10,
     cron: '20 5 * * *', // at 05:20 AM
-    notificationDuration: 24
-  },
-  sync_disassemblies: {
-    name: 'Demontage synchronizieren.',
-    timeoutMinutes: 30,
-    cron: '30 5 * * *', // at 05:30 AM
     notificationDuration: 24
   },
   reindex_cubes: {
