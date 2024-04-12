@@ -1,3 +1,10 @@
+## [1.179.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.3...1.179.4) (2024-04-12)
+
+
+### Bug Fixes
+
+* disassemblies error ([d582017](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d5820172ccb92c268796b9c278e572af725f8ce3))
+
 ## [1.179.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.2...1.179.3) (2024-04-12)
 
 
