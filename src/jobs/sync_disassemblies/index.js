@@ -33,5 +33,10 @@ module.exports = async function (job) {
         consola.debug(className, id, messages)
       }, { useMasterKey: true })
   }
+
+  // TODO: remove disassemblies without any orders!
+  // const noOrderQuery = $query('Disassembly')
+  // ORDER_CLASSES.forEach(className => noOrderQuery.equalTo(lowerFirst(className), null))
+  // await noOrderQuery.each(record => record.destroy({ useMasterKey: true }), { useMasterKey: true })
   return Promise.resolve({ i, actions })
 }

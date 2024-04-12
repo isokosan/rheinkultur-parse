@@ -40,8 +40,13 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
     .then(response => response.reduce((acc, { objectId, taskListCount, cubeCount }) => ({ ...acc, [objectId]: { taskListCount, cubeCount } }), {}))
   for (const disassembly of disassemblies) {
     disassembly.set(counts[disassembly.id])
-    disassembly.set('order', ORDER_CLASSES.map(className => disassembly.get(lowerFirst(className))).find(Boolean))
-    disassembly.set('company', disassembly.get('order').get('company'))
+    const order = ORDER_CLASSES.map(className => disassembly.get(lowerFirst(className))).find(Boolean)
+    if (!order) {
+      console.error(disassembly.get('orderKey'))
+      continue
+    }
+    disassembly.set('order', order)
+    disassembly.set('company', order.get('company'))
   }
 })
 
