@@ -488,7 +488,7 @@ Parse.Cloud.define('control-summary', async ({ params: { id: controlId }, user }
 }, $fieldworkManager)
 
 Parse.Cloud.beforeSave(ControlReport, async ({ object: report }) => {
-  await ensureUniqueField(report, 'control', 'company')
+  report.isNew() && await ensureUniqueField(report, 'control', 'company')
   const submissions = Object.values(report.get('submissions') || {})
   report.set('total', submissions.filter(x => x.status === 'include').reduce((acc, x) => round2(acc + (x.cost || 0)), 0))
   report.set('counts', submissions.reduce((acc, x) => {

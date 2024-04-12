@@ -1,3 +1,4 @@
+// SHOULD RETURN EMPTY ARRAY
 const { upperFirst, camelCase } = require('lodash')
 const getSubmissionClass = type => upperFirst(camelCase(type)) + 'Submission'
 require('./run')(async () => {

@@ -224,10 +224,6 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
 // The CubePhoto will not be deleted unless the file associated with it is successfuly deleted, or is already not found
 Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user, master }) => {
   const cube = await $getOrFail('Cube', object.get('cubeId'))
-  if (!master) {
-    if (!user) { throw new Error('Unerlaubte Aktion') }
-    if (!['intern', 'admin'].includes(user.get('accType')) && user.id !== object.get('createdBy').id) { throw new Error('Unerlaubte Aktion') }
-  }
   if (cube.get('p1')?.id === object.id) {
     await cube.unset('p1').save(null, { useMasterKey: true })
   }
@@ -240,6 +236,19 @@ Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user, master }) => {
     object.get('size1000')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError), // deletes size1000 if exists
     object.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError) // deletes thumb if exists
   ])
+}, async ({ object, user, master }) => {
+  if (master) { return true }
+  if (!user) { throw new Error('Unerlaubte Aktion') }
+  const accType = user.get('accType')
+  if (['intern', 'admin'].includes(accType)) { return true }
+  if (user.id === object.get('createdBy').id) { return true }
+  if (accType === 'partner') {
+    const uploader = object.get('createdBy')
+    await uploader.fetch({ useMasterKey: true })
+    const uploaderCompanyId = uploader.get('company').id
+    if (user.get('company').id === uploaderCompanyId) { return true }
+  }
+  throw new Error('Unerlaubte Aktion')
 })
 
 // Run another p1 & p2 cleanup check after deletion

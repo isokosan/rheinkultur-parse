@@ -1,13 +1,20 @@
+const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
+const { ensureUniqueField } = require('@/utils')
+
 const TaskList = Parse.Object.extend('TaskList')
 const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 const SpecialFormatSubmission = Parse.Object.extend('SpecialFormatSubmission')
 
-const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
+// register before save unique field checks
+for (const submissionClass of [ScoutSubmission, ControlSubmission, DisassemblySubmission, SpecialFormatSubmission]) {
+  Parse.Cloud.beforeSave(submissionClass, async ({ object }) => {
+    object.isNew() && await ensureUniqueField(object, 'taskList', 'cube')
+  })
+}
 
 // KNOWN ISSUE: scout submission has comments under form object, comment field is empty
-
 Parse.Cloud.afterFind(ControlSubmission, async ({ query, objects: submissions }) => {
   if (query._include.includes('orders')) {
     const orderKeys = [...new Set(submissions.map(submission => submission.get('orderKey')))]
