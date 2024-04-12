@@ -1,3 +1,10 @@
+## [1.179.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.2...1.179.3) (2024-04-12)
+
+
+### Bug Fixes
+
+* is unique checks in ensure unique field ([d202f67](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d202f673b2e92d642461af0f79697d6f93013ad6))
+
 ## [1.179.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.1...1.179.2) (2024-04-05)
 
 
