@@ -836,6 +836,37 @@ Parse.Cloud.define('task-list-remove', async ({ params: { id: taskListId } }) =>
   return { message: 'Abfahrtsliste gelöscht.' }
 }, $fieldworkManager)
 
+Parse.Cloud.define('task-list-mark-incomplete', async ({ params: { id: taskListId, comments }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  await validateScoutManagerOrFieldworkManager(taskList, user)
+  // only allow special format lists to be incompleted
+  if (taskList.get('type') !== 'special-format') {
+    throw new Error('Nur Sonderformat-Listen können als nicht vollständig markiert werden.')
+  }
+
+  if (taskList.get('status') === 4.1) {
+    return {
+      data: taskList.get('status'),
+      message: 'Liste bereits als erledigt markiert.'
+    }
+  }
+  const changes = { taskStatus: [taskList.get('status'), 4.1] }
+  taskList.set({ status: 4.1 })
+  const audit = { user, fn: 'task-list-mark-incomplete', data: { changes, comments } }
+  await taskList.save(null, { useMasterKey: true, context: { audit, locationCleanup: true } })
+
+  await $notify({
+    usersQuery: $query(Parse.User).equalTo('permissions', 'manage-fieldwork'),
+    identifier: 'task-list-marked-incomplete',
+    data: { taskListId: taskList.id, placeKey: taskList.get('pk'), comments }
+  })
+
+  return {
+    data: taskList.get('status'),
+    message: 'Liste als erledigt markiert.'
+  }
+}, { requireUser: true })
+
 // check if location has tasks remaining
 Parse.Cloud.define('task-list-mark-complete', async ({ params: { id: taskListId, skipSyncParentStatus }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)

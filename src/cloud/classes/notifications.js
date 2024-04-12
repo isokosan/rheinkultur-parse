@@ -54,6 +54,10 @@ const NOTIFICATIONS = {
       return { name: 'fieldwork-list' }
     }
   },
+  'task-list-marked-incomplete': {
+    message: ({ placeKey, comments }) => `Eine Abfahrtsliste in <strong>${placeKey.split(':')[1]}</strong> wurde als unvollständig erledigt markiert. Kommentar: ${comments}`,
+    route: ({ taskListId }) => ({ name: 'task-list', params: { listId: taskListId } })
+  },
   'disassembly-canceled': {
     message: ({ placeKey, status }) => {
       return `Eine geplante Demontage in ${TASK_LIST_STATUSES[status]} status in <strong>${placeKey.split(':')[1]}</strong> konnte nicht abgesagt werden. Bitte stornieren Sie sie und synchronisieren Sie die Demontagen erneut.`

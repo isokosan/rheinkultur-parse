@@ -42,7 +42,7 @@ Parse.Cloud.afterFind(Disassembly, async ({ query, objects: disassemblies }) => 
     disassembly.set(counts[disassembly.id])
     const order = ORDER_CLASSES.map(className => disassembly.get(lowerFirst(className))).find(Boolean)
     if (!order) {
-      console.error(disassembly.get('orderKey'))
+      consola.error(disassembly.get('orderKey'))
       continue
     }
     disassembly.set('order', order)
