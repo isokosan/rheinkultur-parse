@@ -1,3 +1,10 @@
+# [1.180.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.4...1.180.0) (2024-04-12)
+
+
+### Features
+
+* add mark incomplete fn to partner scout managers ([1271b09](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1271b0971d5837c5d24bdaa70570e1a51d7914a9))
+
 ## [1.179.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.3...1.179.4) (2024-04-12)
 
 
