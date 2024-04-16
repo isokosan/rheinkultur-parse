@@ -1,3 +1,10 @@
+## [1.181.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.0...1.181.1) (2024-04-16)
+
+
+### Bug Fixes
+
+* add update cube htis ([abf3630](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/abf3630aa11890bcc2451690599b37b7c8d80b52))
+
 # [1.181.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.180.0...1.181.0) (2024-04-16)
 
 
