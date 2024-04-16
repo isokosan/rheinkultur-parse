@@ -1,3 +1,10 @@
+## [1.181.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.1...1.181.2) (2024-04-16)
+
+
+### Bug Fixes
+
+* monthly installments round down always ([911649d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/911649d482fe1e5c0b0816f0c51d82cb65530e0b))
+
 ## [1.181.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.0...1.181.1) (2024-04-16)
 
 
