@@ -132,8 +132,8 @@ Parse.Cloud.define('company-update-info', async ({
     name,
     email,
     paymentType,
-    dueDays,
-    contractDefaults
+    dueDays
+
   } = normalizeFields(params)
 
   const company = await $getOrFail(Company, companyId)
@@ -141,13 +141,27 @@ Parse.Cloud.define('company-update-info', async ({
     name,
     email,
     paymentType,
-    dueDays,
-    contractDefaults
+    dueDays
   })
 
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
-  company.set({ name, email, paymentType, dueDays, contractDefaults })
+  company.set({ name, email, paymentType, dueDays })
 
+  const audit = { user, fn: 'company-update-info', data: { changes } }
+  return company.save(null, { useMasterKey: true, context: { audit } })
+}, $internOrAdmin)
+
+Parse.Cloud.define('company-update-contract-defaults', async ({
+  params: {
+    id: companyId,
+    ...params
+  }, user
+}) => {
+  const { contractDefaults } = normalizeFields(params)
+  const company = await $getOrFail(Company, companyId)
+  const changes = $changes(company, { contractDefaults })
+  if (!$cleanDict(changes.contractDefaults)) { throw new Error('Keine Änderungen') }
+  company.set({ contractDefaults })
   const audit = { user, fn: 'company-update-info', data: { changes } }
   return company.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)

@@ -55,6 +55,11 @@ Parse.Cloud.beforeSave(Cube, async ({ object: cube, context: { before, updating,
     cube.get(key) && cube.set(key, cube.get(key).trim())
   }
 
+  // fix stov hti
+  if (cube.get('hti') && ['59', '82', '82 A', '82 B', '82 C', '83', '92'].includes(cube.get('hti'))) {
+    cube.set('hti', `KVZ ${cube.get('hti')}`)
+  }
+
   // media
   if (cube.get('ht') && !cube.get('media')) {
     const ht = await cube.get('ht').fetch({ useMasterKey: true })

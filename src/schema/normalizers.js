@@ -99,10 +99,10 @@ module.exports = {
         dueDays: x => normalizeInt(x) ?? 14,
         paymentType: x => parseInt(['0', '1'].includes(x) ? x : '0'),
         contractDefaults (defaults = {}) {
-          const { pricingModel, fixedPrice, fixedPriceMap, gradualPriceMapId } = defaults
+          const { pricingModel, fixedPrice, fixedPriceMap, updateFixedPrices, gradualPriceMapId } = defaults
           const billingCycle = normalizeInt(defaults.billingCycle) || undefined
           if (pricingModel === 'fixed') {
-            return { pricingModel, fixedPrice, fixedPriceMap, billingCycle }
+            return $cleanDict({ pricingModel, fixedPrice, fixedPriceMap, billingCycle, updateFixedPrices })
           }
           if (pricingModel === 'gradual') {
             return { pricingModel, billingCycle, gradualPriceMapId }
