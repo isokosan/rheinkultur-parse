@@ -1,3 +1,10 @@
+# [1.181.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.180.0...1.181.0) (2024-04-16)
+
+
+### Features
+
+* move company contract defaults ([52232fc](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/52232fcb119e9c79d9b228d9b9288c1a6424ab8b))
+
 # [1.180.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.179.4...1.180.0) (2024-04-12)
 
 
