@@ -363,7 +363,7 @@ Parse.Cloud.define('booking-update', async ({
       for (const cubeId of Object.keys(printPackages)) {
         const cubeTotal = totals?.[cubeId] || 0
         if (installments) {
-          monthlies[cubeId] = round2(cubeTotal / installments)
+          monthlies[cubeId] = Math.floor(cubeTotal / installments)
         }
         productionTotal += cubeTotal
       }

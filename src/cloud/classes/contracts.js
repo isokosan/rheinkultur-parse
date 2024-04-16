@@ -975,7 +975,7 @@ Parse.Cloud.define('contract-update', async ({ params: { id: contractId, monthly
       for (const cubeId of Object.keys(printPackages)) {
         const cubeTotal = totals?.[cubeId] || 0
         if (installments) {
-          monthlies[cubeId] = round2(cubeTotal / installments)
+          monthlies[cubeId] = Math.floor(cubeTotal / installments)
         }
         productionTotal += cubeTotal
       }
