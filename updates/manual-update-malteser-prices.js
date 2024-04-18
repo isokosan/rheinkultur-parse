@@ -6,15 +6,16 @@ require('./run')(async () => {
   // then add into company view a total number of contracts and cubes active counter
   const company = await $getOrFail('Company', '7BocaTOH9k')
   company.set('contractDefaults', {
-    pricing: 'fixed',
+    pricingModel: 'fixed',
     billingCycle: 6,
     invoicingAt: 'start',
     fixedPriceMap: {
       KVZ: 49,
       MFG: 65
     },
-    autoUpdatePrices: true
+    updateFixedPrices: true
   })
+  await company.save(null, { useMasterKey: true })
   await $query('Contract')
     .equalTo('company', company)
     .notEqualTo('pricingModel', 'fixed')

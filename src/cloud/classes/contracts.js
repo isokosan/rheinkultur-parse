@@ -1137,6 +1137,38 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
   const contractEnd = contract.get('endsAt')
   const billingCycle = contract.get('billingCycle')
   const paymentType = contract.get('paymentType')
+
+  const priceChangeAudits = []
+  let monthlyMedia = contract.get('monthlyMedia')
+  if (contract.get('pricingModel') === 'fixed') {
+    await $query('Audit')
+      .equalTo('itemClass', 'Contract')
+      .equalTo('itemId', contract.id)
+      .equalTo('fn', 'contract-extend')
+      .eachBatch((audits) => {
+        for (const audit of audits) {
+          const { endsAt, changes } = audit.get('data')
+          changes?.monthlyMedia && priceChangeAudits.push({
+            start: endsAt[0],
+            end: endsAt[1],
+            beforeMonthlyMedia: changes.monthlyMedia[0],
+            monthlyMedia: changes.monthlyMedia[1]
+          })
+        }
+      }, { useMasterKey: true })
+      // apply the oldest beforeMonthlyMedia as monthlyMedia
+    if (priceChangeAudits.length) {
+      priceChangeAudits.sort((a, b) => moment(a.start).diff(b.start))
+      monthlyMedia = priceChangeAudits[0].beforeMonthlyMedia
+    }
+  }
+  function getMonthlyMedia (date) {
+    const changed = priceChangeAudits.find(({ start, end }) => {
+      return moment(date).isBetween(start, end, 'day', '[)')
+    })
+    return changed?.monthlyMedia || monthlyMedia
+  }
+
   for (const invoice of invoices) {
     let updated = false
     const periodStart = invoice.get('periodStart')
@@ -1147,12 +1179,13 @@ Parse.Cloud.define('contract-update-planned-invoices', async ({ params: { id: co
       invoice.set('gradualPrice', gradualPrice)
     }
 
+    const monthlyMedia = getMonthlyMedia(periodStart)
     const mediaItems = []
     let monthlyTotal = 0
     let mediaTotal = 0
 
     for (const cubeId of contract.get('cubeIds')) {
-      const monthly = invoice.get('gradualPrice') || contract.get('monthlyMedia')?.[cubeId]
+      const monthly = invoice.get('gradualPrice') || monthlyMedia[cubeId]
       // if cube completely canceled skip
       if (earlyCancellations[cubeId] === true) { continue }
       const cubeCanceledAt = earlyCancellations[cubeId] ? moment(earlyCancellations[cubeId]) : null
@@ -1382,7 +1415,7 @@ Parse.Cloud.define('contract-generate-cancellation-credit-note', async ({ params
   return creditNote.save(null, { useMasterKey: true, context: { audit } })
 }, { requireMaster: true })
 
-Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractId, email }, user }) => {
+Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractId, email, fixedPricesUpdated }, user }) => {
   if (!email) {
     throw new Error(`Bad email ${email}`)
   }
@@ -1393,7 +1426,7 @@ Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractI
   const attachments = [{
     filename: `${contract.get('no')} Verlängerung.pdf`,
     contentType: 'application/pdf',
-    href: process.env.EXPORTS_SERVER_URL + '/contract-extend-pdf?id=' + contract.id,
+    href: process.env.EXPORTS_SERVER_URL + '/contract-extend-pdf?id=' + contract.id + '&fixedPricesUpdated=' + (fixedPricesUpdated || ''),
     httpHeaders: {
       'x-exports-master-key': process.env.EXPORTS_MASTER_KEY
     }

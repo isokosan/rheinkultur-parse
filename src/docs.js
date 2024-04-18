@@ -201,7 +201,7 @@ const generateContract = async (contract) => {
   return data.documentId
 }
 
-const generateContractExtend = async (contract) => {
+const generateContractExtend = async (contract, fixedPricesUpdated) => {
   async function getReplaceTextRequests (contract) {
     const countryNames = await getCountries()
     const getCountryText = value => value === 'DE' ? '' : countryNames[value]
@@ -219,7 +219,7 @@ const generateContractExtend = async (contract) => {
       motive: contract.get('motive') || '-',
       externalOrderNo: contract.get('externalOrderNo') || '-',
       date: moment(await $today()).format('DD.MM.YYYY'),
-      fixedPricesUpdated: ''
+      fixedPricesUpdated: fixedPricesUpdated ? (fixedPricesUpdated.trim() + ' ') : ''
     })
   }
 

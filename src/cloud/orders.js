@@ -93,7 +93,7 @@ Parse.Cloud.define('order-void', async ({ params: { className, id, comments: can
 /**
  * When any order gets extended
  */
-Parse.Cloud.define('order-extend', async ({ params: { className, id, email, extendBy }, user, master }) => {
+Parse.Cloud.define('order-extend', async ({ params: { className, id, email, extendBy, updatePrices }, user, master }) => {
   if (!master && !['intern', 'admin'].includes(user.get('accType'))) {
     const isBookingManagerPartner = className === 'Booking' && user.get('accType') === 'partner' && user.get('permissions').includes('manage-bookings')
     if (!isBookingManagerPartner) {
@@ -101,7 +101,7 @@ Parse.Cloud.define('order-extend', async ({ params: { className, id, email, exte
     }
   }
 
-  const order = await $getOrFail(className, id)
+  const order = await $getOrFail(className, id, ['company', 'cubeData'])
   if (order.get('status') !== 3) {
     throw new Error('Nur laufende Aufträge können verlängert werden.')
   }
@@ -123,23 +123,49 @@ Parse.Cloud.define('order-extend', async ({ params: { className, id, email, exte
     endsAt: newEndsAt.format('YYYY-MM-DD'),
     extendedDuration: newExtendedDuration
   })
+  let message = 'Auftrag wurde verlängert.'
 
   const audit = { user, fn: kebabCase(className) + '-extend', data: { extendBy, endsAt: [previousEndsAt, order.get('endsAt')] } }
 
-  let message = 'Auftrag wurde verlängert.'
+  let fixedPricesUpdated
+  if (updatePrices && order.get('company').get('contractDefaults')?.updateFixedPrices) {
+    const { pricingModel, fixedPrice, fixedPriceMap } = order.get('company').get('contractDefaults') || {}
+    if (order.get('pricingModel') !== 'fixed' || pricingModel !== 'fixed') {
+      throw new Error('Nur feste Preise können aktualisiert werden.')
+    }
+    const monthlyMedia = {}
+    for (const cubeId of order.get('cubeIds')) {
+      if (fixedPrice) {
+        monthlyMedia[cubeId] = fixedPrice
+      }
+      if (fixedPriceMap) {
+        const { media } = order.get('cubeData')[cubeId]
+        monthlyMedia[cubeId] = fixedPriceMap[media]
+      }
+    }
+    const changes = $changes(order, { monthlyMedia })
+    // if prices did not change throw error
+    if (!$cleanDict(changes)) { throw new Error('Keine Änderungen.') }
+    order.set({ monthlyMedia })
+    audit.data.changes = changes
+    message += ' Preisen aktualisiert.'
+    fixedPricesUpdated = 'Die Preise des Vertrags wurden aktualisiert.'
+  }
+
   if (className === 'Contract') {
     if (email === true) {
       email = order.get('company').get('email')
     }
-    email && await Parse.Cloud.run('contract-extend-send-mail', { id: order.id, email }, { useMasterKey: true })
+    email && await Parse.Cloud.run('contract-extend-send-mail', { id: order.id, email, fixedPricesUpdated }, { useMasterKey: true })
       .then(() => { message += ` Email an ${email} gesendet.` })
   }
+
   await order.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   if (className === 'Contract') {
     message += await generateExtensionInvoices(order.id, newEndsAt, previousEndsAt)
   }
   return message
-})
+}, { requireUser: true })
 
 /**
  * When any order ends

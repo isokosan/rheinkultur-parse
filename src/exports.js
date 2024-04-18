@@ -1748,7 +1748,7 @@ router.get('/bookings', handleErrorAsync(async (req, res) => {
 
 router.get('/contract-extend-pdf', handleErrorAsync(async (req, res) => {
   const contract = await $getOrFail('Contract', req.query.id)
-  const fileId = await generateContractExtend(contract)
+  const fileId = await generateContractExtend(contract, req.query.fixedPricesUpdated)
   const response = await drive.files.export({ fileId, mimeType: 'application/pdf' }, { responseType: 'stream' })
   return response.data
     .on('error', consola.error)
