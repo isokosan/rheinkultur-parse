@@ -1,3 +1,10 @@
+## [1.181.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.2...1.181.3) (2024-04-18)
+
+
+### Bug Fixes
+
+* add fixedPricesUpdated var to template extend ([116d995](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/116d995df4be3b592215f10b33b1d285ebcf87bf))
+
 ## [1.181.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.1...1.181.2) (2024-04-16)
 
 
