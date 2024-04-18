@@ -1,3 +1,10 @@
+# [1.183.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.182.0...1.183.0) (2024-04-18)
+
+
+### Features
+
+* add order update cube data fn ([074a744](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/074a7444c67fe630e9e9bb25bbbe294673191142))
+
 # [1.182.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.3...1.182.0) (2024-04-18)
 
 
