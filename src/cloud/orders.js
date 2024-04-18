@@ -236,3 +236,21 @@ Parse.Cloud.define('order-finalize-issues', async ({ params: { className, object
   }
   return issues
 })
+
+// Update cube data in a running contract
+Parse.Cloud.define('order-update-cube-data', async ({ params: { className, objectId, cubeId } }) => {
+  const order = await $getOrFail(className, objectId, 'cubeData')
+  const cubeData = order.get('cubeData') || {}
+  const cube = await $getOrFail('Cube', cubeId)
+  cubeData[cubeId] = {
+    hsnr: cube.get('hsnr'),
+    str: cube.get('str'),
+    plz: cube.get('plz'),
+    ort: cube.get('ort'),
+    stateId: cube.get('state').id,
+    media: cube.get('media'),
+    htId: cube.get('ht')?.id
+  }
+  order.set({ cubeData: $cleanDict(cubeData, order.get('cubeIds')) })
+  return order.save(null, { useMasterKey: true })
+}, $internOrAdmin)

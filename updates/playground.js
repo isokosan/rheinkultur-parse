@@ -1,5 +1,19 @@
 require('./run')(async () => {
-  await Parse.Cloud.run('fix-kvz-htis', {}, { useMasterKey: true }).then(console.log)
+  const comments = await $query('Comment')
+    .equalTo('itemClass', 'Contract')
+    .startsWith('text', 'Der falsch angelegte CityCube')
+    .find({ useMasterKey: true })
+  for (const comment of comments) {
+    const contract = await $getOrFail('Contract', comment.get('itemId'), 'cubeData')
+    console.log(contract.get('no'))
+    for (const cubeId of contract.get('cubeIds')) {
+      if (!contract.get('cubeData')[cubeId]) {
+        await Parse.Cloud.run('order-update-cube-data', { className: 'Contract', objectId: contract.id, cubeId }, { useMasterKey: true })
+      }
+    }
+    console.log('---')
+  }
+
   // const kinetic = await $getOrFail('Company', 'FNFCxMgEEr')
   // const contractBased = {
   //   contracts: 0,
