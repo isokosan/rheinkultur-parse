@@ -1,3 +1,10 @@
+# [1.182.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.3...1.182.0) (2024-04-18)
+
+
+### Features
+
+* fixed pricing updates ([ece6be4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ece6be46bd463620758f882ff541438857be9837))
+
 ## [1.181.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.181.2...1.181.3) (2024-04-18)
 
 
