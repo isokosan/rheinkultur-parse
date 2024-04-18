@@ -218,7 +218,8 @@ const generateContractExtend = async (contract) => {
       contractNo: contract.get('no'),
       motive: contract.get('motive') || '-',
       externalOrderNo: contract.get('externalOrderNo') || '-',
-      date: moment(await $today()).format('DD.MM.YYYY')
+      date: moment(await $today()).format('DD.MM.YYYY'),
+      fixedPricesUpdated: ''
     })
   }
 
