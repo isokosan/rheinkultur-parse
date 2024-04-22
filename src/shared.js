@@ -542,6 +542,34 @@ async function setOrderCubeStatuses (orderObj) {
 
   const runningOrder = order.willExtend || today.isSameOrBefore(order.endsAt, 'day')
   if (runningOrder) {
+    // we check control submissions to see which cubes are in planned controls while etting the order
+    const controlAts = {}
+    await $query('ControlSubmission')
+      .equalTo('orderKey', orderKey)
+      .select(['cube', 'lastSubmittedAt'])
+      .eachBatch(async (controlSubmissions) => {
+        for (const submission of controlSubmissions) {
+          controlAts[submission.get('cube').id] = moment(submission.get('lastSubmittedAt')).format('YYYY-MM-DD')
+        }
+      }, { useMasterKey: true })
+    await $query('Control')
+      .equalTo('orderKeys', orderKey)
+      .greaterThanOrEqualTo('status', 1)
+      .lessThan('status', 4)
+      .select(['cubeOrderKeys', 'dueDate'])
+      .eachBatch(async (controls) => {
+        for (const control of controls) {
+          const cubeOrderKeys = control.get('cubeOrderKeys')
+          const dueDate = control.get('dueDate')
+          for (const cubeId of Object.keys(cubeOrderKeys)) {
+            if (controlAts[cubeId]) { continue }
+            if (cubeOrderKeys[cubeId] === orderKey) {
+              controlAts[cubeId] = dueDate
+            }
+          }
+        }
+      }, { useMasterKey: true })
+
     // first we check the status of early ending cubes
     const earlyCanceledCubeIds = Object.keys(earlyCancellations || {})
     // set the status of those cubes that were early canceled
@@ -564,7 +592,8 @@ async function setOrderCubeStatuses (orderObj) {
       const cubeOrder = {
         ...order,
         earlyCanceledAt: date,
-        endsAt: moment(order.endsAt).isBefore(date) ? order.endsAt : date
+        endsAt: moment(order.endsAt).isBefore(date) ? order.endsAt : date,
+        controlAt: controlAts[earlyCanceledCubeId]
       }
       if (!orderSummaryIsEqual(cube.get('order'), cubeOrder)) {
         cube.set('order', cubeOrder)
@@ -577,8 +606,12 @@ async function setOrderCubeStatuses (orderObj) {
       .notContainedIn('objectId', earlyCanceledCubeIds)
       .eachBatch(async (cubes) => {
         for (const cube of cubes) {
-          if (!orderSummaryIsEqual(cube.get('order'), order)) {
-            cube.set('order', order)
+          const cubeOrder = {
+            ...order,
+            controlAt: controlAts[cube.id]
+          }
+          if (!orderSummaryIsEqual(cube.get('order'), cubeOrder)) {
+            cube.set('order', cubeOrder)
             response.set.push(cube.id)
             await $saveWithEncode(cube, null, { useMasterKey: true, context: { checkBriefings: true } })
           }

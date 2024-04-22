@@ -738,6 +738,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     c,
     state: stateId,
     type,
+    dueIn,
     start,
     end,
     managerId,
@@ -745,6 +746,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     status,
     dClass, // disassembly parent class (Contract | SpecialFormat)
     dType, // disassembly type (main | extra)
+    controlId, // if control is selected
     sa, // showArchived
     from,
     pagination
@@ -761,11 +763,17 @@ Parse.Cloud.define('search-fieldwork', async ({
     bool.must.push({ range: { status: { gte: 1 } } })
   }
 
+  if (dueIn) {
+    const dueDate = moment(await $today())
+    if (dueIn !== 'passed') {
+      const [add, type] = dueIn.split('-')
+      dueDate.add(add, type)
+    }
+    bool.filter.push({ range: { dueDate: { lte: dueDate.format('YYYY-MM-DD') } } })
+  }
   (start || end) && bool.filter.push({ range: { date: { gte: start, lte: end } } })
 
   stateId && bool.filter.push({ term: { stateId } })
-
-  type && bool.filter.push({ term: { 'type.keyword': type } })
 
   // hideArchived
   !sa && bool.must_not.push({ term: { archived: true } })
@@ -786,8 +794,16 @@ Parse.Cloud.define('search-fieldwork', async ({
   status?.length && bool.must.push({ terms: { status } })
   !status?.includes(0) && bool.must.push({ range: { status: { gt: 0 } } })
 
-  dClass && bool.filter.push({ prefix: { 'parentId.keyword': dClass } })
-  dType && bool.filter.push({ match: { parentId: `*${dType}$` } })
+  if (type) {
+    bool.filter.push({ term: { 'type.keyword': type } })
+    if (type === 'disassembly') {
+      dClass && bool.filter.push({ prefix: { 'parentId.keyword': dClass } })
+      dType && bool.filter.push({ match: { parentId: `*${dType}$` } })
+    }
+    if (type === 'control') {
+      controlId && bool.filter.push({ term: { 'parentId.keyword': controlId } })
+    }
+  }
 
   if (c) {
     const [lon, lat] = c.split(',').map(parseFloat)

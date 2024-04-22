@@ -6,7 +6,7 @@ const { getStatusAndCounts } = require('./task-lists')
 const { ensureUniqueField, round2 } = require('@/utils')
 
 function getCubesQuery (control) {
-  const { date, dueDate, untilDate, lastControlBefore, orderType, criteria } = control.attributes
+  const { date, dueDate, startedBefore, untilDate, lastControlBefore, orderType, criteria } = control.attributes
   const extendsDuringControlPeriod = $query('Cube')
     .equalTo('order.earlyCanceledAt', null) // not early canceled
     .equalTo('order.canceledAt', null) // not canceled
@@ -20,19 +20,17 @@ function getCubesQuery (control) {
     .greaterThan('order.status', 2)
     .lessThan('order.startsAt', date)
 
-  if (orderType) {
-    baseQuery.equalTo('order.className', orderType)
-  }
-
+  startedBefore && baseQuery.lessThan('order.startsAt', startedBefore)
   // filter out cubes that were controlled in the last x months
   if (lastControlBefore) {
     const lastControlAt = moment(date).subtract(lastControlBefore, 'months').toDate()
     const lastControlQuery = Parse.Query.or(
-      $query('Cube').doesNotExist('cAt'),
-      $query('Cube').lessThan('cAt', lastControlAt)
+      $query('Cube').doesNotExist('order.lastControlledAt'),
+      $query('Cube').lessThan('order.lastControlledAt', lastControlAt)
     )
     baseQuery = Parse.Query.and(baseQuery, lastControlQuery)
   }
+  orderType && baseQuery.equalTo('order.className', orderType)
 
   const filters = {
     placeKey: { include: [], exclude: [] },
@@ -157,6 +155,7 @@ Parse.Cloud.beforeSave(Control, async ({ object: control, context: { syncStatus 
   }
 
   if (control.isNew()) { return }
+
   if (syncStatus || !control.get('counts')) {
     const { status, counts } = await getStatusAndCounts({ control })
     // TODO: if changing add audit
@@ -166,8 +165,19 @@ Parse.Cloud.beforeSave(Control, async ({ object: control, context: { syncStatus 
 
 Parse.Cloud.afterSave(Control, ({ object: control, context: { audit } }) => { $audit(control, audit) })
 
-Parse.Cloud.beforeFind(Control, ({ query }) => {
+Parse.Cloud.beforeFind(Control, async ({ query, user }) => {
   query._include.includes('all') && query.include(['criteria', 'docs'])
+  // partners can only see controls if they are assigned to any task lists under
+  if (user && user.get('accType') === 'partner') {
+    const managerQuery = $query(Parse.User).equalTo('company', user.get('company'))
+    const controlIds = await $query('TaskList')
+      .equalTo('type', 'control')
+      .matchesQuery('manager', managerQuery)
+      .greaterThanOrEqualTo('status', 1)
+      .distinct('control', { useMasterKey: true })
+      .then(controls => controls.map(control => control.objectId))
+    query.containedIn('objectId', controlIds)
+  }
 })
 
 Parse.Cloud.afterFind(Control, async ({ query, objects: controls }) => {
@@ -228,6 +238,7 @@ Parse.Cloud.define('control-create', async ({
     date,
     dueDate,
     untilDate,
+    startedBefore,
     lastControlBefore,
     orderType
   }, user
@@ -237,6 +248,7 @@ Parse.Cloud.define('control-create', async ({
     date,
     dueDate,
     untilDate,
+    startedBefore,
     lastControlBefore,
     orderType
   })
@@ -266,6 +278,7 @@ Parse.Cloud.define('control-update', async ({
     date,
     dueDate,
     untilDate,
+    startedBefore,
     lastControlBefore,
     orderType,
     criteria
@@ -275,10 +288,10 @@ Parse.Cloud.define('control-update', async ({
   orderType === 'all' && (orderType = null)
 
   const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, dueDate, untilDate, lastControlBefore, orderType })
+  const changes = $changes(control, { name, date, dueDate, untilDate, startedBefore, lastControlBefore, orderType })
   changes.criteria = getCriteriaChanges(control.get('criteria'), criteria)
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
-  control.set({ name, date, dueDate, untilDate, lastControlBefore, orderType, criteria })
+  control.set({ name, date, dueDate, untilDate, startedBefore, lastControlBefore, orderType, criteria })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
@@ -343,6 +356,7 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
     .limit(matchingCubeIds.length)
     .find({ useMasterKey: true })
   const cubeOrderKeys = cubes.reduce((acc, cube) => ({ ...acc, [cube.id]: cube.get('caok') }), {})
+  const orderKeys = [...new Set(Object.values(cubeOrderKeys))]
   const locations = {}
   for (const cube of cubes) {
     const stateId = cube.get('state')?.id
@@ -392,7 +406,11 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
     .notContainedIn('pk', Object.keys(locations))
     .each(dl => dl.destroy({ useMasterKey: true }), { useMasterKey: true })
 
-  await control.set('cubeIds', matchingCubeIds).set('cubeOrderKeys', cubeOrderKeys).save(null, { useMasterKey: true })
+  await control
+    .set('cubeIds', matchingCubeIds)
+    .set('orderKeys', orderKeys)
+    .set('cubeOrderKeys', cubeOrderKeys)
+    .save(null, { useMasterKey: true })
   return {
     message: `${Object.keys(locations).length} lists generated`
   }
@@ -505,7 +523,7 @@ Parse.Cloud.define('control-generate-reports', async ({ params: { id: controlId 
     throw new Error('Control was not yet completed!')
   }
   const companies = {}
-  const orderKeys = [...new Set(Object.values(control.get('cubeOrderKeys') || {}))]
+  const orderKeys = control.get('orderKeys')
   const bookingIds = orderKeys.filter(x => x.startsWith('Booking')).map(x => x.split('$')[1])
   if (bookingIds.length) {
     for (const booking of await $query('Booking')

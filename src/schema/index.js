@@ -363,8 +363,6 @@ const schemaDefinitions = {
       fm: { type: 'Object' }, // frame mount info
       vAt: { type: 'Date' }, // verifiedAt Date
       flags: { type: 'Array' },
-
-      cAt: { type: 'Date' }, // lastControlledAt Date
       sAt: { type: 'Date' }, // lastScoutedAt Date
 
       dAt: { type: 'Date' }, // deletedAt Date (not found)
@@ -706,8 +704,12 @@ const schemaDefinitions = {
       status: { type: 'Number', required: true },
 
       lastControlBefore: { type: 'Number' },
+      startedBefore: { type: 'String' },
       orderType: { type: 'String' },
       criteria: { type: 'Array' },
+
+      cubeOrderKeys: { type: 'Object' },
+      orderKeys: { type: 'Array' },
 
       responsibles: { type: 'Array' },
       docs: { type: 'Array' }
