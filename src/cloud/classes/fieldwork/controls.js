@@ -240,8 +240,9 @@ Parse.Cloud.define('control-create', async ({
     untilDate,
     startedBefore,
     lastControlBefore,
-    orderType
-  }, user
+    orderType,
+    criteria
+  }, user, master
 }) => {
   const control = new Control({
     name,
@@ -250,7 +251,8 @@ Parse.Cloud.define('control-create', async ({
     untilDate,
     startedBefore,
     lastControlBefore,
-    orderType
+    orderType,
+    criteria: master ? criteria : undefined
   })
 
   const audit = { user, fn: 'control-create' }
@@ -416,6 +418,15 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
   }
 }, $fieldworkManager)
 
+async function triggerSetCubeStatusesForOrderKeys (orderKeys) {
+  for (const orderKey of orderKeys) {
+    console.log('START', orderKey)
+    await $getOrFail(...orderKey.split('$'))
+      .then(order => order.save(null, { useMasterKey: true, context: { setCubeStatuses: true } }))
+  }
+  return true
+}
+
 Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
   if (control.get('status') > 0) {
@@ -432,7 +443,9 @@ Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }
     }, { useMasterKey: true })
   const audit = { user, fn: 'control-mark-as-planned' }
   control.set({ status: 1 })
-  return control.save(null, { useMasterKey: true, context: { audit } })
+  await control.save(null, { useMasterKey: true, context: { audit } })
+  triggerSetCubeStatusesForOrderKeys(control.get('orderKeys'))
+  return control
 }, $fieldworkManager)
 
 Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user }) => {
@@ -466,7 +479,9 @@ Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user })
     }, { useMasterKey: true })
 
   const audit = { user, fn: 'control-revert' }
-  return control.set({ status: 0 }).save(null, { useMasterKey: true, context: { audit } })
+  await control.set({ status: 0 }).save(null, { useMasterKey: true, context: { audit } })
+  triggerSetCubeStatusesForOrderKeys(control.get('orderKeys'))
+  return control
 }, $fieldworkManager)
 
 Parse.Cloud.define('control-remove', async ({ params: { id: controlId }, user }) => {
