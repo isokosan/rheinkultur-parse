@@ -1,3 +1,11 @@
+## [1.184.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.0...1.184.1) (2024-04-22)
+
+
+### Bug Fixes
+
+* criteria in control generation if master ([11b25b0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/11b25b0157c4f37c6e74f0e27faee28eadf9b2cc))
+* lastControlAt checks ([c59bc7d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c59bc7d1b9e54ff90636db7fa356ec7bd3b44aa5))
+
 # [1.184.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.183.0...1.184.0) (2024-04-22)
 
 
