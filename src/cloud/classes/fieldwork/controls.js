@@ -25,8 +25,8 @@ function getCubesQuery (control) {
   if (lastControlBefore) {
     const lastControlAt = moment(date).subtract(lastControlBefore, 'months').toDate()
     const lastControlQuery = Parse.Query.or(
-      $query('Cube').doesNotExist('order.lastControlledAt'),
-      $query('Cube').lessThan('order.lastControlledAt', lastControlAt)
+      $query('Cube').doesNotExist('order.controlAt'),
+      $query('Cube').lessThan('order.controlAt', lastControlAt)
     )
     baseQuery = Parse.Query.and(baseQuery, lastControlQuery)
   }
