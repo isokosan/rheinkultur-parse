@@ -1,3 +1,10 @@
+# [1.184.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.183.0...1.184.0) (2024-04-22)
+
+
+### Features
+
+* add startedBefore to controls ([fbea933](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fbea933028eab59d037afb76d5722aa678188076))
+
 # [1.183.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.182.0...1.183.0) (2024-04-18)
 
 
