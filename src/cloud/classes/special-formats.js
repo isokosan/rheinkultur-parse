@@ -25,6 +25,10 @@ Parse.Cloud.beforeSave(SpecialFormat, async ({ object: specialFormat }) => {
   cubeIds.sort()
   specialFormat.set('cubeIds', cubeIds).set('cubeCount', cubeIds.length)
   specialFormat.set('sfCount', sum(Object.values(specialFormat.get('sfCounts') || {})))
+  if (specialFormat.get('earlyCancellations')) {
+    const earlyCancellations = $cleanDict(specialFormat.get('earlyCancellations'), cubeIds)
+    earlyCancellations ? specialFormat.set('earlyCancellations', earlyCancellations) : specialFormat.unset('earlyCancellations')
+  }
 })
 
 Parse.Cloud.afterSave(SpecialFormat, async ({ object: specialFormat, context: { audit, setCubeStatuses } }) => {

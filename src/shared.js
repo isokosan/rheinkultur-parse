@@ -542,7 +542,7 @@ async function setOrderCubeStatuses (orderObj) {
 
   const runningOrder = order.willExtend || today.isSameOrBefore(order.endsAt, 'day')
   if (runningOrder) {
-    // we check control submissions to see which cubes are in planned controls while etting the order
+    // we check control submissions to see which cubes are in planned controls while setting the order
     const controlAts = {}
     await $query('ControlSubmission')
       .equalTo('orderKey', orderKey)

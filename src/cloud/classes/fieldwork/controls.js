@@ -4,6 +4,7 @@ const ControlReport = Parse.Object.extend('ControlReport')
 const TaskList = Parse.Object.extend('TaskList')
 const { getStatusAndCounts } = require('./task-lists')
 const { ensureUniqueField, round2 } = require('@/utils')
+const { setOrderCubeStatuses } = require('@/shared')
 
 function getCubesQuery (control) {
   const { date, dueDate, startedBefore, untilDate, lastControlBefore, orderType, criteria } = control.attributes
@@ -11,6 +12,9 @@ function getCubesQuery (control) {
     .equalTo('order.earlyCanceledAt', null) // not early canceled
     .equalTo('order.canceledAt', null) // not canceled
     .notEqualTo('order.autoExtendsBy', null)
+    // TODO: check will extend with early cancelations
+    // .equalTo('order.willExtend', true)
+    // TODO: figure this out- This needs to stay because canceledAt orders can still be running during this period.
     .greaterThan('order.endsAt', date)
     .lessThanOrEqualTo('order.endsAt', untilDate || dueDate)
   const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', untilDate || dueDate)
@@ -23,10 +27,11 @@ function getCubesQuery (control) {
   startedBefore && baseQuery.lessThan('order.startsAt', startedBefore)
   // filter out cubes that were controlled in the last x months
   if (lastControlBefore) {
-    const lastControlAt = moment(date).subtract(lastControlBefore, 'months').toDate()
+    // by comparing last control to due date we are making sure the cubes that were controlled in the same period last year or last 6 months are included in the new period.
+    const lastControlAt = moment(dueDate).subtract(lastControlBefore, 'months').format('YYYY-MM-DD')
     const lastControlQuery = Parse.Query.or(
       $query('Cube').doesNotExist('order.controlAt'),
-      $query('Cube').lessThan('order.controlAt', lastControlAt)
+      $query('Cube').lessThanOrEqualTo('order.controlAt', lastControlAt)
     )
     baseQuery = Parse.Query.and(baseQuery, lastControlQuery)
   }
@@ -418,15 +423,6 @@ Parse.Cloud.define('control-generate-lists', async ({ params: { id: controlId },
   }
 }, $fieldworkManager)
 
-async function triggerSetCubeStatusesForOrderKeys (orderKeys) {
-  for (const orderKey of orderKeys) {
-    console.log('START', orderKey)
-    await $getOrFail(...orderKey.split('$'))
-      .then(order => order.save(null, { useMasterKey: true, context: { setCubeStatuses: true } }))
-  }
-  return true
-}
-
 Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }, user }) => {
   const control = await $getOrFail(Control, controlId)
   if (control.get('status') > 0) {
@@ -443,9 +439,15 @@ Parse.Cloud.define('control-mark-as-planned', async ({ params: { id: controlId }
     }, { useMasterKey: true })
   const audit = { user, fn: 'control-mark-as-planned' }
   control.set({ status: 1 })
-  await control.save(null, { useMasterKey: true, context: { audit } })
-  triggerSetCubeStatusesForOrderKeys(control.get('orderKeys'))
-  return control
+  await $query('Cube')
+    .containedIn('caok', control.get('orderKeys'))
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        cube.set('order.controlAt', control.get('date'))
+        await $saveWithEncode(cube, null, { useMasterKey: true, context: { updating: true } })
+      }
+    }, { useMasterKey: true })
+  return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
 
 Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user }) => {
@@ -480,7 +482,9 @@ Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user })
 
   const audit = { user, fn: 'control-revert' }
   await control.set({ status: 0 }).save(null, { useMasterKey: true, context: { audit } })
-  triggerSetCubeStatusesForOrderKeys(control.get('orderKeys'))
+  for (const orderKey of control.get('orderKeys')) {
+    await $getOrFail(...orderKey.split('$')).then(setOrderCubeStatuses)
+  }
   return control
 }, $fieldworkManager)
 

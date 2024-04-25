@@ -11,7 +11,7 @@ const updateJobs = {
   sync_cube_statuses: {
     name: 'Sync Cube Statuses',
     cron: '0 3 * * *', // at 03:00 AM
-    timeoutMinutes: 60,
+    timeoutMinutes: 120,
     notificationDuration: 24
   },
   calculate_stats: {

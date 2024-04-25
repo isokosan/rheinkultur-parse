@@ -40,6 +40,10 @@ Parse.Cloud.beforeSave(Contract, async ({ object: contract }) => {
   }
   cubeIds.sort()
   contract.set('cubeIds', cubeIds).set('cubeCount', cubeIds.length)
+  if (contract.get('earlyCancellations')) {
+    const earlyCancellations = $cleanDict(contract.get('earlyCancellations'), cubeIds)
+    earlyCancellations ? contract.set('earlyCancellations', earlyCancellations) : contract.unset('earlyCancellations')
+  }
 })
 
 Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, setCubeStatuses, recalculatePlannedInvoices } }) => {
