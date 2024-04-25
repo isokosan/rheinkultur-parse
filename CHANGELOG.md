@@ -1,3 +1,11 @@
+## [1.184.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.1...1.184.2) (2024-04-25)
+
+
+### Bug Fixes
+
+* double sync cube statuses duration ([bc50817](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/bc50817add0adb4d8165fb681a73645879ea3eaa))
+* typo ([eafad1f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/eafad1feeb0980bf3d0d99e86aa21b3877aeadd9))
+
 ## [1.184.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.0...1.184.1) (2024-04-22)
 
 
