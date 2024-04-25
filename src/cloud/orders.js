@@ -149,7 +149,7 @@ Parse.Cloud.define('order-extend', async ({ params: { className, id, email, exte
     order.set({ monthlyMedia })
     audit.data.changes = changes
     message += ' Preisen aktualisiert.'
-    fixedPricesUpdated = 'Die Preise des Vertrags wurden aktualisiert.'
+    fixedPricesUpdated = 'Die Preise des Vertrages wurden aktualisiert.'
   }
 
   if (className === 'Contract') {
