@@ -1,3 +1,10 @@
+# [1.185.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.3...1.185.0) (2024-04-29)
+
+
+### Features
+
+* add custom-tasks ([d847826](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d847826a66527ee827106891f996e14b6441b007))
+
 ## [1.184.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.2...1.184.3) (2024-04-29)
 
 
