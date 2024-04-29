@@ -76,7 +76,7 @@ Parse.Cloud.define('custom-service-create', async ({
     dueDate
   }, user
 }) => {
-  if (type !== 'special-format') {
+  if (!['special-format', 'custom-task'].includes(type)) {
     throw new Error('CustomService type not supported!')
   }
   const customService = new CustomService({
@@ -264,6 +264,7 @@ Parse.Cloud.define('custom-service-remove', async ({ params: { id: customService
   return customService.destroy({ useMasterKey: true })
 }, $fieldworkManager)
 
+// THESE ARE SPECIFICALLY FOR SPECIAL-FORMATS
 // removed booked cubes from draft customService
 Parse.Cloud.define('custom-service-remove-booked-cubes', async ({ params: { id: customServiceId }, user }) => {
   const customService = await $getOrFail(CustomService, customServiceId)

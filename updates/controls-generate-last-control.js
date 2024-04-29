@@ -5,10 +5,10 @@ require('./run')(async () => {
     'Q4'
   ]) {
     const date = moment().quarter(quarter.slice(1)).startOf('quarter').format('YYYY-MM-DD')
-    const name = 'Groupm ' + quarter + '-2024 TEST'
     const dueDate = moment(date).endOf('quarter').format('YYYY-MM-DD')
     const untilDate = moment(dueDate).add(1, 'month').format('YYYY-MM-DD')
     const startedBefore = moment(date).subtract(6, 'months').format('YYYY-MM-DD')
+    const name = 'Groupm ' + quarter + '-2024 TEST-A (Started before ' + moment(startedBefore).format('DD.MM.YYYY') + ', not controlled in a year)'
     const lastControlBefore = 12 // 12 months before start date
     const lastControlAt = moment(date).subtract(lastControlBefore, 'months').format('YYYY-MM-DD')
     const orderType = 'Contract'
@@ -22,10 +22,10 @@ require('./run')(async () => {
     'Q4'
   ]) {
     const date = moment().quarter(quarter.slice(1)).year(2025).startOf('quarter').format('YYYY-MM-DD')
-    const name = 'Groupm ' + quarter + '-2025 TEST'
     const dueDate = moment(date).endOf('quarter').format('YYYY-MM-DD')
     const untilDate = moment(dueDate).add(1, 'month').format('YYYY-MM-DD')
     const startedBefore = moment(date).subtract(6, 'months').format('YYYY-MM-DD')
+    const name = 'Groupm ' + quarter + '-2025 TEST-A (Started before ' + moment(startedBefore).format('DD.MM.YYYY') + ', not controlled in a year)'
     const lastControlBefore = 12 // 12 months before start date
     const lastControlAt = moment(date).subtract(lastControlBefore, 'months').format('YYYY-MM-DD')
     const orderType = 'Contract'

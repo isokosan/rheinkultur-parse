@@ -842,6 +842,14 @@ const schemaDefinitions = {
       photos: { type: 'Array' }
     }
   },
+  CustomTaskSubmission: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      ...taskSubmissionFields,
+      form: { type: 'Object' },
+      photos: { type: 'Array' }
+    }
+  },
   // TODO: Remove the following in favor of using a better system?
   City: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },

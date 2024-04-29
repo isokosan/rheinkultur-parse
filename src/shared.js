@@ -307,6 +307,7 @@ function getOrderSummary (order) {
 }
 
 function orderSummaryIsEqual (a, b) {
+  // TODO: Add omitBy function with isUndefined to remove undefined values in case they exist
   return isEqual(
     omit(a, ['booking', 'contract', 'specialFormat', 'frameMount', 'company']),
     omit(b, ['booking', 'contract', 'specialFormat', 'frameMount', 'company'])

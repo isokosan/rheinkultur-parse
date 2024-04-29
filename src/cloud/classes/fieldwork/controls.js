@@ -15,6 +15,8 @@ function getCubesQuery (control) {
     .equalTo('order.earlyCanceledAt', null) // not early canceled
     .equalTo('order.canceledAt', null) // not canceled
     .notEqualTo('order.autoExtendsBy', null)
+    // .greaterThan('order.endsAt', date)
+    // .lessThanOrEqualTo('order.endsAt', untilDate || dueDate)
   const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', untilDate || dueDate)
 
   // order status is active and started, extends or ends after control date

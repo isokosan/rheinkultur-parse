@@ -1061,7 +1061,7 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
     end: { header: 'Enddatum', width: 12, style: dateStyle },
     condition: { header: 'Zustand', width: 20 },
     comments: { header: 'Kommentar', width: 20 },
-    cost: { header: 'Reperaturkosten', width: 20, style: priceStyle }
+    cost: { header: 'Reparaturkosten', width: 20, style: priceStyle }
   })
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)

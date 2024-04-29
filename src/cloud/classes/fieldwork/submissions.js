@@ -6,9 +6,10 @@ const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 const SpecialFormatSubmission = Parse.Object.extend('SpecialFormatSubmission')
+const CustomTaskSubmission = Parse.Object.extend('CustomTaskSubmission')
 
 // register before save unique field checks
-for (const submissionClass of [ScoutSubmission, ControlSubmission, DisassemblySubmission, SpecialFormatSubmission]) {
+for (const submissionClass of [ScoutSubmission, ControlSubmission, DisassemblySubmission, SpecialFormatSubmission, CustomTaskSubmission]) {
   Parse.Cloud.beforeSave(submissionClass, async ({ object }) => {
     object.isNew() && await ensureUniqueField(object, 'taskList', 'cube')
   })
@@ -480,4 +481,86 @@ Parse.Cloud.define('special-format-submission-reject', async ({ params: { id: su
   // Notify scout if the list is in progress
   TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('special-format', taskList, submission, cube, rejectionReason)
   return { message: 'Scouting abgelehnt.', data: submission }
+}, { requireUser: true })
+
+Parse.Cloud.define('custom-task-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, form, approve }, user }) => {
+  approve && validateApprove(user)
+  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, CustomTaskSubmission, submissionId)
+  submission.set('status', 'pending')
+
+  // !approve is for the case where scouts are using the scout app, in which case the scout should always be updated
+  // in the other case, the submission is new so no scout is present, as the approving admin will set as the  scout
+  const manual = (approve && !submission.id) || undefined
+  if (manual || !approve) {
+    submission.set('scout', user).set('lastSubmittedAt', new Date())
+  }
+
+  form.notFound = Boolean(form.notFound)
+  const comments = form.comments
+
+  let changes
+  if (submissionId) {
+    changes = $changes(submission.get('form'), form, true)
+    delete changes.photoIds
+    delete changes.photoPos
+    delete form.comments
+  }
+
+  const photos = await $query('CubePhoto').containedIn('objectId', form.photoIds).find({ useMasterKey: true })
+  submission.set({ form, photos, comments })
+
+  await submission.save(null, { useMasterKey: true })
+  const audit = { fn: 'custom-task-submission-submit', data: { cubeId, changes, manual, approved: approve || undefined } }
+  if (approve) {
+    return Parse.Cloud.run('custom-task-submission-approve', { id: submission.id, auditCarry: audit }, { sessionToken: user.getSessionToken() })
+  }
+  audit.user = user
+  taskList.set({ status: 3 })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  return { message: 'Einreichung erfolgreich.', data: submission }
+}, { requireUser: true })
+
+Parse.Cloud.define('custom-task-submission-approve', async ({ params: { id: submissionId, auditCarry }, user }) => {
+  validateApprove(user)
+  const submission = await $getOrFail(CustomTaskSubmission, submissionId, ['taskList', 'cube'])
+  const cube = submission.get('cube')
+  const cubeId = submission.get('cube').id
+
+  // if not found, soft delete the cube
+  if (submission.get('form').notFound) {
+    cube.set('dAt', new Date())
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  }
+
+  submission.set({ status: 'approved' })
+  const audit = auditCarry || { fn: 'custom-task-submission-approve', data: { cubeId } }
+  audit.user = user
+  await submission.save(null, { useMasterKey: true })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+  await removeRejectedNotifications('custom-task', submission)
+  return {
+    message: auditCarry ? 'Aufgabe gespeichert und genehmigt.' : 'Aufgabe genehmigt.',
+    data: submission
+  }
+}, { requireUser: true })
+
+Parse.Cloud.define('custom-task-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
+  const submission = await $getOrFail(CustomTaskSubmission, submissionId, ['taskList', 'cube'])
+  const taskList = submission.get('taskList')
+  if (taskList.get('status') >= 4) {
+    throw new Error('Formulare aus erledigte Abfahrtsliste können nicht mehr abgelehnt werden.')
+  }
+  submission.set({ status: 'rejected', rejectionReason })
+  const cube = submission.get('cube')
+  const cubeId = cube.id
+  if (submission.get('form').notFound) {
+    cube.unset('dAt')
+    await $saveWithEncode(cube, null, { useMasterKey: true })
+  }
+  const audit = { user, fn: 'custom-task-submission-reject', data: { cubeId, rejectionReason } }
+  await submission.save(null, { useMasterKey: true, context: { audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  // Notify scout if the list is in progress
+  TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('custom-task', taskList, submission, cube, rejectionReason)
+  return { message: 'Aufgabe abgelehnt.', data: submission }
 }, { requireUser: true })
