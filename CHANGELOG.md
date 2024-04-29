@@ -1,3 +1,10 @@
+## [1.184.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.2...1.184.3) (2024-04-29)
+
+
+### Bug Fixes
+
+* cleandict before order summary comparison ([8a05313](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/8a05313136d57aa68b4ccedfd91550d7fec58cf5))
+
 ## [1.184.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.1...1.184.2) (2024-04-25)
 
 
