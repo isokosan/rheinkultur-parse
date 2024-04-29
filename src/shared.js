@@ -589,12 +589,12 @@ async function setOrderCubeStatuses (orderObj) {
         }
         continue
       }
-      const cubeOrder = {
+      const cubeOrder = $cleanDict({
         ...order,
         earlyCanceledAt: date,
         endsAt: moment(order.endsAt).isBefore(date) ? order.endsAt : date,
         controlAt: controlAts[earlyCanceledCubeId]
-      }
+      })
       if (!orderSummaryIsEqual(cube.get('order'), cubeOrder)) {
         cube.set('order', cubeOrder)
         response.set.push(cube.id)
@@ -606,10 +606,10 @@ async function setOrderCubeStatuses (orderObj) {
       .notContainedIn('objectId', earlyCanceledCubeIds)
       .eachBatch(async (cubes) => {
         for (const cube of cubes) {
-          const cubeOrder = {
+          const cubeOrder = $cleanDict({
             ...order,
             controlAt: controlAts[cube.id]
-          }
+          })
           if (!orderSummaryIsEqual(cube.get('order'), cubeOrder)) {
             cube.set('order', cubeOrder)
             response.set.push(cube.id)

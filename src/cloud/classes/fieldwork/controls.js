@@ -7,25 +7,21 @@ const { ensureUniqueField, round2 } = require('@/utils')
 const { setOrderCubeStatuses } = require('@/shared')
 
 function getCubesQuery (control) {
-  const { date, dueDate, startedBefore, untilDate, lastControlBefore, orderType, criteria } = control.attributes
-  const extendsDuringControlPeriod = $query('Cube')
+  const { date, dueDate, startedBefore, untilDate, lastControlBefore, orderType, criteria, startQuarter } = control.attributes
+  // TODO: check will extend with early cancelations
+  // .equalTo('order.willExtend', true)
+  const endDateBeforeControlEndsButExtends = $query('Cube')
+    .lessThanOrEqualTo('order.endsAt', untilDate || dueDate)
     .equalTo('order.earlyCanceledAt', null) // not early canceled
     .equalTo('order.canceledAt', null) // not canceled
     .notEqualTo('order.autoExtendsBy', null)
-    // TODO: check will extend with early cancelations
-    // .equalTo('order.willExtend', true)
-    // TODO: figure this out- This needs to stay because canceledAt orders can still be running during this period.
-    .greaterThan('order.endsAt', date)
-    .lessThanOrEqualTo('order.endsAt', untilDate || dueDate)
   const endDateAfterControlPeriod = $query('Cube').greaterThan('order.endsAt', untilDate || dueDate)
 
   // order status is active and started, extends or ends after control date
-  let baseQuery = Parse.Query.or(extendsDuringControlPeriod, endDateAfterControlPeriod)
+  let baseQuery = Parse.Query.or(endDateBeforeControlEndsButExtends, endDateAfterControlPeriod)
     .greaterThan('order.status', 2)
-    .lessThan('order.startsAt', date)
-
-  startedBefore && baseQuery.lessThan('order.startsAt', startedBefore)
-  // filter out cubes that were controlled in the last x months
+    .lessThan('order.startsAt', startedBefore || date)
+  // // filter out cubes that were controlled in the last x months
   if (lastControlBefore) {
     // by comparing last control to due date we are making sure the cubes that were controlled in the same period last year or last 6 months are included in the new period.
     const lastControlAt = moment(dueDate).subtract(lastControlBefore, 'months').format('YYYY-MM-DD')
@@ -36,6 +32,17 @@ function getCubesQuery (control) {
     baseQuery = Parse.Query.and(baseQuery, lastControlQuery)
   }
   orderType && baseQuery.equalTo('order.className', orderType)
+
+  // all with order start date inside quarter
+  if (startQuarter) {
+    const regexes = {
+      Q1: /^(?:\d{4}-(?:01|02|03)-([0-2]\d|3[01]))$/,
+      Q2: /^(?:\d{4}-(?:04|05|06)-([0-2]\d|3[01]))$/,
+      Q3: /^(?:\d{4}-(?:07|08|09)-([0-2]\d|3[01]))$/,
+      Q4: /^(?:\d{4}-(?:10|11|12)-([0-2]\d|3[01]))$/
+    }
+    baseQuery.matches('order.startsAt', regexes[startQuarter])
+  }
 
   const filters = {
     placeKey: { include: [], exclude: [] },
@@ -246,7 +253,8 @@ Parse.Cloud.define('control-create', async ({
     startedBefore,
     lastControlBefore,
     orderType,
-    criteria
+    criteria,
+    startQuarter
   }, user, master
 }) => {
   const control = new Control({
@@ -257,7 +265,8 @@ Parse.Cloud.define('control-create', async ({
     startedBefore,
     lastControlBefore,
     orderType,
-    criteria: master ? criteria : undefined
+    criteria: master ? criteria : undefined,
+    startQuarter: master ? startQuarter : undefined
   })
 
   const audit = { user, fn: 'control-create' }
@@ -338,10 +347,9 @@ Parse.Cloud.define('control-counts-detailed', async ({ params: { id: controlId }
   const companyCounts = {}
   for (const companyId of Object.keys(response)) {
     companyCounts[companyId] = {
-      orders: Object.keys(response[companyId]).length,
-      bookings: Object.keys(response[companyId]).filter(no => no[0] === 'B').length,
-      contracts: Object.keys(response[companyId]).filter(no => no[0] === 'V').length,
-      cubes: Object.values(response[companyId]).reduce((acc, cubes) => acc + cubes.length, 0)
+      bookings: Object.keys(response[companyId]).filter(no => no[0] === 'B'),
+      contracts: Object.keys(response[companyId]).filter(no => no[0] === 'V'),
+      cubesCount: Object.values(response[companyId]).reduce((acc, cubes) => acc + cubes.length, 0)
     }
   }
   return companyCounts

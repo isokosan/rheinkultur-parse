@@ -54,3 +54,9 @@ Leben ist kein Ponyhof.
 Ich verstehe nur Bahnhof.
 
 Klappe zu, Affe tot. => And thats the end of the story
+
+
+/**
+NOTE on controls: we should not plan a Kinetic Q2 control before the start quarter or gestartet vor ends (etc Q2-2024 controls are looking at 6 months ago, so they should be planned accordingly)
+When testing, go to one month before the start of the quarter, sync cube statuses, then generate lists and mark planned.
+**/
