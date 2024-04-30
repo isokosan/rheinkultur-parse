@@ -151,7 +151,7 @@ Parse.Cloud.afterSave(Cube, async ({ object: cube, context: { audit, updating, c
         Parse.Cloud.run('briefings-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
       }
       // in any case remove cube from special-format custom-service
-      Parse.Cloud.run('custom-service-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
+      Parse.Cloud.run('special-format-remove-booked-cube', { cubeId: cube.id }, { useMasterKey: true })
     }
     // if there is a frame mounted then remove from briefings
     if (cube.get('fm')?.qty) {

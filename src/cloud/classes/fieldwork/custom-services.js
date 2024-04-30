@@ -191,7 +191,7 @@ Parse.Cloud.define('custom-service-add-location', async ({ params: { id: customS
     }
   }
   taskList = new TaskList({
-    type: 'special-format',
+    type: customService.get('type'),
     customService,
     ort,
     state,
@@ -292,8 +292,8 @@ Parse.Cloud.define('custom-service-remove-booked-cubes', async ({ params: { id: 
     }, { useMasterKey: true })
 }, $fieldworkManager)
 
-// removes newly booked cube from customServices that are running
-Parse.Cloud.define('custom-service-remove-booked-cube', async ({ params: { cubeId } }) => {
+// removes newly booked cube from special-formats that are running
+Parse.Cloud.define('special-format-remove-booked-cube', async ({ params: { cubeId } }) => {
   return $query('TaskList')
     .equalTo('type', 'special-format')
     .equalTo('cubeIds', cubeId)
