@@ -126,6 +126,7 @@ const INDEXES = {
             scaling_factor: 10
           },
           archived: { type: 'boolean' },
+          pk: { type: 'keyword' },
           ort: { type: 'keyword' },
           stateId: { type: 'keyword' },
           date: {
@@ -747,11 +748,13 @@ Parse.Cloud.define('search-fieldwork', async ({
     dClass, // disassembly parent class (Contract | SpecialFormat)
     dType, // disassembly type (main | extra)
     controlId, // if control is selected
-    sa, // showArchived
+    sb,
+    sd,
     from,
     pagination
   }, user, master
 }) => {
+  const showArchived = status.includes('4sa')
   status = status?.split(',').filter(Boolean).map(parseFloat)
   status.includes(4) && status.push(4.1)
 
@@ -765,18 +768,22 @@ Parse.Cloud.define('search-fieldwork', async ({
 
   if (dueIn) {
     const dueDate = moment(await $today())
+    let lte = dueDate.format('YYYY-MM-DD')
+    let gt
     if (dueIn !== 'passed') {
+      gt = dueDate.format('YYYY-MM-DD')
       const [add, type] = dueIn.split('-')
       dueDate.add(add, type)
+      lte = dueDate.format('YYYY-MM-DD')
     }
-    bool.filter.push({ range: { dueDate: { lte: dueDate.format('YYYY-MM-DD') } } })
+    bool.filter.push({ range: { dueDate: { lte, gt } } })
   }
   (start || end) && bool.filter.push({ range: { date: { gte: start, lte: end } } })
 
   stateId && bool.filter.push({ term: { stateId } })
 
   // hideArchived
-  !sa && bool.must_not.push({ term: { archived: true } })
+  !showArchived && bool.must_not.push({ term: { archived: true } })
 
   if (managerId) {
     managerId === 'none' && bool.must_not.push({ exists: { field: 'managerId' } })
@@ -818,9 +825,15 @@ Parse.Cloud.define('search-fieldwork', async ({
       }
     })
   } else {
-    sort.unshift({ ort: 'asc' })
-    sort.unshift({ stateId: 'asc' })
-    sort.unshift({ dueDate: 'asc' })
+    switch (sb) {
+    case 'location':
+      sort.unshift({ ort: sd })
+      sort.unshift({ stateId: sd })
+      break
+    default :
+      sort.unshift({ [sb]: sd })
+      break
+    }
   }
 
   const searchResponse = await client.search({

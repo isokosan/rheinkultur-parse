@@ -268,7 +268,7 @@ Parse.Cloud.define('control-create', async ({
     lastControlBefore,
     orderType,
     criteria: master ? criteria : undefined,
-    startQuarter: master ? startQuarter : undefined
+    startQuarter
   })
 
   const audit = { user, fn: 'control-create' }
@@ -299,17 +299,18 @@ Parse.Cloud.define('control-update', async ({
     startedBefore,
     lastControlBefore,
     orderType,
-    criteria
+    criteria,
+    startQuarter
   }, user
 }) => {
   // normalize
   orderType === 'all' && (orderType = null)
 
   const control = await $getOrFail(Control, controlId)
-  const changes = $changes(control, { name, date, dueDate, untilDate, startedBefore, lastControlBefore, orderType })
+  const changes = $changes(control, { name, date, dueDate, untilDate, startedBefore, lastControlBefore, orderType, startQuarter })
   changes.criteria = getCriteriaChanges(control.get('criteria'), criteria)
   if (!$cleanDict(changes)) { throw new Error('Keine Änderungen') }
-  control.set({ name, date, dueDate, untilDate, startedBefore, lastControlBefore, orderType, criteria })
+  control.set({ name, date, dueDate, untilDate, startedBefore, lastControlBefore, orderType, criteria, startQuarter })
   const audit = { user, fn: 'control-update', data: { changes } }
   return control.save(null, { useMasterKey: true, context: { audit } })
 }, $fieldworkManager)
