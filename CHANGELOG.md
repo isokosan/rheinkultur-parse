@@ -1,3 +1,10 @@
+## [1.186.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.186.0...1.186.1) (2024-04-30)
+
+
+### Bug Fixes
+
+* custom-task bugs ([12e4a01](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/12e4a01b4483b0ec65916f1d30a973d5e6aec1b4))
+
 # [1.186.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.185.0...1.186.0) (2024-04-30)
 
 
