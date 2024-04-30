@@ -2,6 +2,21 @@ async function switchCube (contractNo, fromId, toId) {
   const contract = await $query('Contract').equalTo('no', contractNo).first({ useMasterKey: true })
   const toCube = await $getOrFail('Cube', toId)
   if (!contract) { throw new Error('Contract not found') }
+
+  // if contract does not have from cube throw an error
+  if (!contract.get('cubeIds').includes(fromId)) {
+    throw new Error(`Cube ${fromId} not found in contract ${contractNo}`)
+  }
+
+  // if from cube has any contract related photo throw an error
+  const photos = await $query('CubePhoto')
+    .equalTo('cubeId', fromId)
+    .contains('scope', contract.id)
+    .count({ useMasterKey: true })
+  if (photos) {
+    throw new Error(`Cube ${fromId} has contract related photos`)
+  }
+
   const cubeIds = contract.get('cubeIds')
   if (cubeIds.includes(fromId) && !cubeIds.includes(toId)) {
     console.log(`Switching cube ${fromId} to ${toId}`)
@@ -66,4 +81,4 @@ async function switchCube (contractNo, fromId, toId) {
   console.log(comment)
 }
 
-require('./run')(() => switchCube('V24-0110', 'TLK-71525A42', 'TLK-71525A514'))
+require('./run')(() => switchCube('V23-0190', 'TLK-622130A44', 'TLK-622130A37'))
