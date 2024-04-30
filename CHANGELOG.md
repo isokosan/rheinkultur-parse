@@ -1,3 +1,10 @@
+# [1.186.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.185.0...1.186.0) (2024-04-30)
+
+
+### Features
+
+* dueDate filter, sorting in task lists, pk in task lists ([77a7063](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/77a706373eb0d9c707590742e06244572a65ff69))
+
 # [1.185.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.184.3...1.185.0) (2024-04-29)
 
 
