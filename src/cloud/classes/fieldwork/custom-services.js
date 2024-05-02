@@ -73,7 +73,8 @@ Parse.Cloud.define('custom-service-create', async ({
     name,
     companyId,
     date,
-    dueDate
+    dueDate,
+    description
   }, user
 }) => {
   if (!['special-format', 'custom-task'].includes(type)) {
@@ -84,7 +85,8 @@ Parse.Cloud.define('custom-service-create', async ({
     name,
     company: companyId ? await $getOrFail('Company', companyId) : undefined,
     date,
-    dueDate
+    dueDate,
+    description
   })
 
   const audit = { user, fn: 'custom-service-create' }
@@ -97,12 +99,13 @@ Parse.Cloud.define('custom-service-update', async ({
     name,
     companyId,
     date,
-    dueDate
+    dueDate,
+    description
   }, user
 }) => {
   const customService = await $getOrFail(CustomService, customServiceId)
-  const changes = $changes(customService, { name, date, dueDate })
-  customService.set({ name, date, dueDate })
+  const changes = $changes(customService, { name, date, dueDate, description })
+  customService.set({ name, date, dueDate, description })
   if (companyId !== customService.get('company')?.id) {
     changes.companyId = [customService.get('company')?.id, companyId]
     const company = companyId ? await $getOrFail('Company', companyId) : null
