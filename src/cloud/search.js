@@ -825,15 +825,7 @@ Parse.Cloud.define('search-fieldwork', async ({
       }
     })
   } else {
-    switch (sb) {
-    case 'location':
-      sort.unshift({ ort: sd })
-      sort.unshift({ stateId: sd })
-      break
-    default :
-      sort.unshift({ [sb]: sd })
-      break
-    }
+    sort.unshift({ [sb]: sd })
   }
 
   const searchResponse = await client.search({

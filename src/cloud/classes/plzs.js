@@ -42,8 +42,16 @@ Parse.Cloud.beforeSave(PLZ, async ({ object: plz, context: { skipSyncCubes } }) 
 
 Parse.Cloud.afterFind(PLZ, async ({ objects, query }) => {
   if (query._include.includes('cubeCount')) {
+    const plzs = objects.map(plz => plz.id)
+    const counts = await $query('Cube')
+      .equalTo('lc', 'TLK')
+      .containedIn('plz', plzs)
+      .aggregate([
+        { $group: { _id: '$plz', cubeCount: { $sum: 1 } } }
+      ])
+    consola.warn(counts)
     for (const plz of objects) {
-      plz.set('cubeCount', await $query('Cube').equalTo('plz', plz.id).count({ useMasterKey: true }))
+      plz.set('cubeCount', counts.find(c => c.objectId === plz.id)?.cubeCount || 0)
     }
   }
 })
