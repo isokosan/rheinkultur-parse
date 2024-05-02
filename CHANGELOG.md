@@ -1,3 +1,10 @@
+# [1.187.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.186.1...1.187.0) (2024-05-02)
+
+
+### Features
+
+* add cube count to plzs ([9dc03a3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9dc03a3b3df1a1a7dbf12d0341945df20300ca3e))
+
 ## [1.186.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.186.0...1.186.1) (2024-04-30)
 
 
