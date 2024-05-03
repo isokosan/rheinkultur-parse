@@ -1,3 +1,10 @@
+# [1.189.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.188.0...1.189.0) (2024-05-03)
+
+
+### Features
+
+* start adding test assembly ([d2cce35](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d2cce352a62e2705a6b64ce043835c3f362c11e8))
+
 # [1.188.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.187.0...1.188.0) (2024-05-02)
 
 
