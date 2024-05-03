@@ -1,3 +1,10 @@
+# [1.190.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.189.2...1.190.0) (2024-05-03)
+
+
+### Features
+
+* wip in offer share ([e7151e6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e7151e6a082bd4ad2d9373920fa1f3c9af8ce1ef))
+
 ## [1.189.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.189.1...1.189.2) (2024-05-03)
 
 
