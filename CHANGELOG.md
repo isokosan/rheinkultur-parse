@@ -1,3 +1,10 @@
+## [1.189.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.189.1...1.189.2) (2024-05-03)
+
+
+### Bug Fixes
+
+* not found & approvable counts ([23bab97](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/23bab973ad96c5e2aec74d7184e97e9cb553fa37))
+
 ## [1.189.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.189.0...1.189.1) (2024-05-03)
 
 
