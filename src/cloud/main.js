@@ -99,7 +99,7 @@ Parse.Cloud.define('enums', () => ({
   fieldworkStatuses,
   cubeFlags,
   excludeCitiesPerPartner
-}), { requireUser: true })
+}))
 
 Parse.Cloud.define('counts', async ({ user }) => {
   let counts = await redis.hgetall('counts')

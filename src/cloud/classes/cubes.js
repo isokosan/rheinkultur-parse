@@ -183,7 +183,7 @@ Parse.Cloud.beforeFind(Cube, async ({ query, user, master }) => {
   query._include.includes('fm') && query.include('fm.frameMount')
 })
 
-const PUBLIC_FIELDS = ['media', 'hti', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'p1', 'p2', 'vAt']
+const PUBLIC_FIELDS = ['media', 'hti', 'str', 'hsnr', 'plz', 'ort', 'stateId', 's', 'gp', 'p1', 'p2', 'vAt']
 Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
   const isPublic = !user && !master
   // everything that is set here is necessary for indexing when the cube is saved

@@ -402,7 +402,8 @@ Parse.Cloud.define('search', async ({
   const isPublic = !master && !user
   // public can only search for '0' => available or '' => all
   if (isPublic) {
-    s = s === 'all' ? '' : '0'
+    s === 'all' && (s = '')
+    !['', '0', 'ml'].includes(s) && (s = '0')
   }
   const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
   // partner can only search for '0' => available, my_bookings or '' => all
