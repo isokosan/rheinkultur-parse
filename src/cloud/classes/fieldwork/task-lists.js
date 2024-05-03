@@ -157,18 +157,16 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     statuses[cubeId] = 'approved'
   }
 
-  const statusVals = Object.values(statuses)
-
   const counts = {
     total: cubeIds.length,
-    pending: statusVals.filter(x => x === 'pending').length,
-    approved: statusVals.filter(x => x === 'approved').length,
-    rejected: statusVals.filter(x => x === 'rejected').length
+    pending: submissions.filter(s => s.get('status') === 'pending').length,
+    approved: submissions.filter(s => s.get('status') === 'approved').length,
+    rejected: submissions.filter(s => s.get('status') === 'rejected').length
   }
   counts.completed = parseInt(counts.pending + counts.approved)
   // should only be consist of verified cubes that were not in admin approved cube ids and not scouted
   if (taskType === 'scout') {
-    counts.approvable = statusVals.filter(x => x === 'approvable').length
+    counts.approvable = Object.values(statuses).filter(x => x === 'approvable').length
   }
 
   if (!taskList.isNew()) {
