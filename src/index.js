@@ -93,7 +93,8 @@ const initApp = async () => {
         bucket: process.env.AWS_S3_BUCKET,
         region: process.env.AWS_S3_REGION
       })
-      : undefined
+      : undefined,
+    allowHeaders: ['sentry-trace', 'baggage']
   })
 
   const app = express()

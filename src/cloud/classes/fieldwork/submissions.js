@@ -3,6 +3,7 @@ const { ensureUniqueField } = require('@/utils')
 
 const TaskList = Parse.Object.extend('TaskList')
 const ScoutSubmission = Parse.Object.extend('ScoutSubmission')
+const AssemblySubmission = Parse.Object.extend('AssemblySubmission')
 const ControlSubmission = Parse.Object.extend('ControlSubmission')
 const DisassemblySubmission = Parse.Object.extend('DisassemblySubmission')
 const SpecialFormatSubmission = Parse.Object.extend('SpecialFormatSubmission')
@@ -233,6 +234,61 @@ Parse.Cloud.define('scout-submission-reject', async ({ params: { id: submissionI
   // Notify scout if the list is in progress
   TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('scout', taskList, submission, cube, rejectionReason)
   return { message: 'Scouting abgelehnt.', data: submission }
+}, { requireUser: true })
+
+Parse.Cloud.define('assembly-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, result, photoIds, comments, approve }, user }) => {
+  const { taskList, submission } = await fetchSubmission(taskListId, cubeId, AssemblySubmission, submissionId)
+  submission.set('status', 'pending')
+  // !approve is for the case where scouts are using the scout app, in which case the scout should always be updated
+  // in the other case, the submission is new so no scout is present, as the approving admin will set as the  scout
+  const manual = (approve && !submission.id) || undefined
+  if (manual || !approve) {
+    submission.set('scout', user).set('lastSubmittedAt', new Date())
+  }
+
+  let changes
+  if (submission.id) {
+    changes = $changes(submission, { result, comments })
+  }
+  const photos = await $query('CubePhoto').containedIn('objectId', photoIds).find({ useMasterKey: true })
+  submission.set({ result, photos, comments })
+  await submission.save(null, { useMasterKey: true })
+  const audit = { fn: 'assembly-submission-submit', data: { cubeId, changes, manual, approved: approve || undefined } }
+  if (approve) {
+    return Parse.Cloud.run('assembly-submission-approve', { id: submission.id, auditCarry: audit }, { sessionToken: user.getSessionToken() })
+  }
+  audit.user = user
+  taskList.set({ status: 3 })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  return { message: 'Montage eingereicht.', data: submission }
+}, { requireUser: true })
+
+Parse.Cloud.define('assembly-submission-approve', async ({ params: { id: submissionId, auditCarry }, user }) => {
+  validateApprove(user)
+  const submission = await $getOrFail(AssemblySubmission, submissionId, ['taskList', 'cube', 'assembly.contract', 'assembly.booking'])
+  submission.set({ status: 'approved' })
+  const cubeId = submission.get('cube').id
+  const audit = auditCarry || { fn: 'assembly-submission-approve', data: { cubeId } }
+  audit.user = user
+  await submission.save(null, { useMasterKey: true })
+  await submission.get('taskList').save(null, { useMasterKey: true, context: { audit } })
+  await removeRejectedNotifications('assembly', submission)
+  return {
+    message: auditCarry ? 'Montage gespeichert und genehmigt.' : 'Montage genehmigt.',
+    data: submission
+  }
+}, { requireUser: true })
+
+Parse.Cloud.define('assembly-submission-reject', async ({ params: { id: submissionId, rejectionReason }, user }) => {
+  const submission = await $getOrFail(AssemblySubmission, submissionId, ['taskList', 'cube'])
+  const taskList = submission.get('taskList')
+  submission.set({ status: 'rejected', rejectionReason })
+  const cube = submission.get('cube')
+  const audit = { user, fn: 'assembly-submission-reject', data: { cubeId: cube.id } }
+  await submission.save(null, { useMasterKey: true, context: { audit } })
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('assembly', taskList, submission, cube, rejectionReason)
+  return { message: 'Montage abgelehnt.', data: submission }
 }, { requireUser: true })
 
 Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoIds, afterPhotoIds, comments, disassemblyId, approve }, user }) => {

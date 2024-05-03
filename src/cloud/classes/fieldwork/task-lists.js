@@ -48,7 +48,7 @@ function getParentStatus (parent, statusCounts) {
   return 1
 }
 
-async function getStatusAndCounts ({ briefing, control, disassembly, customService }) {
+async function getStatusAndCounts ({ briefing, assembly, control, disassembly, customService }) {
   // count how many task lists each status has
   const statuses = {}
   const counts = {
@@ -65,6 +65,7 @@ async function getStatusAndCounts ({ briefing, control, disassembly, customServi
   let allArchived = null
   await $query('TaskList')
     .equalTo('briefing', briefing)
+    .equalTo('assembly', assembly)
     .equalTo('control', control)
     .equalTo('disassembly', disassembly)
     .equalTo('customService', customService)
@@ -82,7 +83,7 @@ async function getStatusAndCounts ({ briefing, control, disassembly, customServi
         allArchived === true && !taskList.get('archivedAt') && (allArchived = false)
       }
     }, { useMasterKey: true })
-  const status = allArchived ? 5 : getParentStatus(briefing || control || disassembly || customService, statuses)
+  const status = allArchived ? 5 : getParentStatus(briefing || assembly || control || disassembly || customService, statuses)
   return { status, counts }
 }
 
@@ -359,12 +360,12 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 
   // set auto-erledigt if approved matches total
   const { status, counts } = taskList.attributes
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
+  const parent = taskList.get('briefing') || taskList.get('assembly') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
 
   // marking lists automatically erledigt / geplant
   const isCompletedAndChecked = !counts.pending && counts.approved >= counts.total
   // control or disassembly can't be completed until rejections are cleared
-  const hasRejectionsAndNeedsChecking = counts.rejected && ['control', 'disassembly'].includes(taskList.get('type'))
+  const hasRejectionsAndNeedsChecking = counts.rejected && ['assembly', 'control', 'disassembly'].includes(taskList.get('type'))
 
   // force update to completed for special-format extras that have all been approved
   const isSpecialFormatExtraDisassemblyGettingPreapproved =
@@ -390,7 +391,15 @@ Parse.Cloud.afterSave(TaskList, async ({ object: taskList, context: { audit, not
 })
 
 Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
-  query.include(['briefing', 'control', 'disassembly', 'customService', ...ORDER_FIELDS.map(fieldName => 'disassembly.' + fieldName)])
+  query.include([
+    'briefing',
+    'assembly',
+    'control',
+    'disassembly',
+    'customService',
+    ...ORDER_FIELDS.map(fieldName => 'assembly.' + fieldName),
+    ...ORDER_FIELDS.map(fieldName => 'disassembly.' + fieldName)
+  ])
   query._include.includes('all') && query.include('submissions')
   if (master) { return }
   if (user.get('permissions')?.includes('manage-scouts')) {
@@ -406,7 +415,7 @@ Parse.Cloud.beforeFind(TaskList, async ({ query, user, master }) => {
 Parse.Cloud.afterFind(TaskList, async ({ objects: taskLists, query }) => {
   const today = await $today()
   for (const taskList of taskLists) {
-    taskList.set('parent', taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService'))
+    taskList.set('parent', taskList.get('briefing') || taskList.get('assembly') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService'))
     taskList.set('dueDays', moment(taskList.get('dueDate')).diff(today, 'days'))
     if (query._include.includes('submissions')) {
       const submissionClass = getSubmissionClass(taskList.get('type'))

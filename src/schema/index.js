@@ -724,21 +724,24 @@ const schemaDefinitions = {
       status: { type: 'String' }
     }
   },
-  // Assembly: {
-  //   CLP: { ...readAuthOnly, ...writeMasterOnly },
-  //   fields: {
-  //     contract: { type: 'Pointer', targetClass: 'Contract' },
-  //     booking: { type: 'Pointer', targetClass: 'Booking' },
-  //     date: { type: 'String', required: true },
-  //     dueDate: { type: 'String', required: true },
-  //     status: { type: 'Number', required: true }
-  //   }
-  // },
+  Assembly: {
+    CLP: { ...readAuthOnly, ...writeMasterOnly },
+    fields: {
+      contract: { type: 'Pointer', targetClass: 'Contract' },
+      booking: { type: 'Pointer', targetClass: 'Booking' },
+
+      date: { type: 'String', required: true },
+      dueDate: { type: 'String', required: true },
+      status: { type: 'Number', required: true }
+    }
+  },
   Disassembly: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       contract: { type: 'Pointer', targetClass: 'Contract' },
       booking: { type: 'Pointer', targetClass: 'Booking' },
+      SpecialFormat: { type: 'Pointer', targetClass: 'SpecialFormat' },
+
       type: { type: 'String', required: true },
       date: { type: 'String', required: true },
       dueDate: { type: 'String', required: true },
@@ -768,6 +771,7 @@ const schemaDefinitions = {
     fields: {
       type: { type: 'String', required: true }, // scout, control or disassembly
       briefing: { type: 'Pointer', targetClass: 'Briefing' },
+      assembly: { type: 'Pointer', targetClass: 'Assembly' },
       control: { type: 'Pointer', targetClass: 'Control' },
       disassembly: { type: 'Pointer', targetClass: 'Disassembly' },
       customService: { type: 'Pointer', targetClass: 'CustomService' },
@@ -824,7 +828,9 @@ const schemaDefinitions = {
   AssemblySubmission: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
-      ...taskSubmissionFields
+      ...taskSubmissionFields,
+      result: { type: 'String' },
+      photos: { type: 'Array' }
     }
   },
   DisassemblySubmission: {
