@@ -380,7 +380,7 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
     const monthly = getCubeMonthlyMedia(cube, order)
 
     const row = worksheet.addRow({
-      fmCount: order.get('fmCounts')[cube.id] || 0,
+      fmCount: order.get('fmCounts')?.[cube.id] || 0,
       orderNo: order.get('no'),
       motive,
       externalOrderNo,

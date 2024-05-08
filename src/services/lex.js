@@ -201,7 +201,7 @@ Parse.Cloud.define('lex-contact-create', async ({ params: { name, allowTaxFreeIn
   // if the same name already exists, throw an error with already exists
   const contacts = await getContacts({ params: { name } })
   if (contacts.find(contact => contact.name.trim() === name)) {
-    throw new Error('Kontakt mit dem Namen ' + name + ' existiert bereits.')
+    throw new Error('Lex-Kontakt mit dem Namen ' + name + ' existiert bereits.')
   }
   const { id } = await lexApi('/contacts', 'POST', {
     version: 0,
