@@ -1,3 +1,10 @@
+# [1.191.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.190.0...1.191.0) (2024-05-08)
+
+
+### Features
+
+* agency monthly totals ([e1b61c0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/e1b61c09c13a3067129dc4db55cae337913d73e5))
+
 # [1.190.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.189.2...1.190.0) (2024-05-03)
 
 
