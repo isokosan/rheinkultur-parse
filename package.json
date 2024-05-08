@@ -33,6 +33,7 @@
     "@googlemaps/google-maps-services-js": "3.3.42",
     "@parse/s3-files-adapter": "2.2.0",
     "bull": "4.12.2",
+    "csv-writer": "^1.6.0",
     "csvtojson": "2.0.10",
     "dotenv": "16.3.2",
     "exceljs": "4.4.0",
