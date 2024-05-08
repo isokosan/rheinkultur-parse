@@ -1,3 +1,10 @@
+## [1.191.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.191.0...1.191.1) (2024-05-08)
+
+
+### Bug Fixes
+
+*  frame mount exports ([b40adfa](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b40adfaa462b281c407cc658df847988656d7f07))
+
 # [1.191.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.190.0...1.191.0) (2024-05-08)
 
 
