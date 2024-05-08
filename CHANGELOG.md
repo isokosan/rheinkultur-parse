@@ -1,3 +1,10 @@
+# [1.192.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.191.2...1.192.0) (2024-05-08)
+
+
+### Features
+
+* finish offers v1 ([c6d5c43](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c6d5c437816f10d2e64d8bd3263ac317368f04c8))
+
 ## [1.191.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.191.1...1.191.2) (2024-05-08)
 
 
