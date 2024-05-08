@@ -1488,6 +1488,93 @@ router.get('/quarterly-reports/:quarter', handleErrorAsync(async (req, res) => {
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
 }))
 
+router.get('/agency-monthly/:agencyId/:yearMonth', handleErrorAsync(async (req, res) => {
+  const { agencyId, yearMonth } = req.params
+  const agency = await $getOrFail('Company', agencyId)
+  const filename = `Umsatzbericht ${agency.get('name')}} ${yearMonth}`
+  const workbook = new excel.Workbook()
+  const worksheet = workbook.addWorksheet('Sheet 1')
+  const fields = {
+    orderNo: { header: 'Auftragsnr.', width: 15 },
+    companyName: { header: 'Kunde', width: 40 },
+    motive: { header: 'Motiv', width: 20 },
+    externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
+    campaignNo: { header: 'Kampagnenname', width: 20 },
+    objectId: { header: 'CityCube ID', width: 20 },
+    htCode: { header: 'Gehäusetyp', width: 20 },
+    str: { header: 'Straße', width: 20 },
+    hsnr: { header: 'Hsnr.', width: 10 },
+    plz: { header: 'PLZ', width: 10 },
+    ort: { header: 'Ort', width: 20 },
+    stateName: { header: 'Bundesland', width: 20 },
+    start: { header: 'Startdatum', width: 12, style: dateStyle },
+    end: { header: 'Enddatum', width: 12, style: dateStyle },
+    duration: { header: 'Laufzeit', width: 10, style: alignRight },
+    periodStart: { header: 'Zeitraumstart', width: 12, style: dateStyle },
+    periodEnd: { header: 'Zeitraumende', width: 12, style: dateStyle },
+    monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
+    months: { header: 'Monate', width: 10, style: monthsStyle },
+    total: { header: 'Zeitraumsumme', width: 15, style: priceStyle },
+    agencyRate: { header: 'Agentur %', width: 10, style: percentStyle },
+    agencyTotal: { header: 'Agentursumme', width: 15, style: priceStyle },
+    regionalRate: { header: 'Region %', width: 10, style: percentStyle },
+    regionalTotal: { header: 'Regionsumme', width: 15, style: priceStyle },
+    serviceRate: { header: 'Service %', width: 10, style: percentStyle },
+    serviceTotal: { header: 'Servicepauschale', width: 15, style: priceStyle },
+    totalNet: { header: 'Rheinkultur Netto', width: 15, style: priceStyle },
+    lessorRate: { header: 'Pacht %', width: 10, style: percentStyle },
+    lessorTotal: { header: 'Pachtsumme', width: 15, style: priceStyle },
+    voucherNos: { header: 'Belege.', width: 20 }
+  }
+
+  function findFieldKey (header) {
+    for (const [key, dict] of Object.entries(fields)) {
+      if (header === dict.header) {
+        return key
+      }
+    }
+    return null
+  }
+
+  const rows = await Parse.Cloud.run('agency-monthly', { agencyId, yearMonth }, { useMasterKey: true })
+    .then((rows) => rows.map((row) => {
+      row.start = dateString(row.start)
+      row.end = dateString(row.end)
+      row.periodStart = dateString(row.periodStart)
+      row.periodEnd = dateString(row.periodEnd)
+      for (const [header, value] of Object.entries(row.extraCols || {})) {
+        const fieldKey = findFieldKey(header)
+        if (fieldKey) {
+          row[fieldKey] = value
+        }
+      }
+      return row
+    }))
+
+  // remove externalOrderNo / campaignNo columns if empty
+  !rows.find(row => row.externalOrderNo) && (delete fields.externalOrderNo)
+  !rows.find(row => row.campaignNo) && (delete fields.campaignNo)
+
+  const { columns, headerRowValues } = getColumnHeaders(fields)
+  worksheet.columns = columns
+  const headerRow = worksheet.addRow(headerRowValues)
+  headerRow.font = { name: 'Calibri', bold: true, size: 10 }
+  worksheet.addRows(rows)
+
+  // add total row
+  const keys = ['monthly', 'total', 'agencyTotal', 'regionalTotal', 'serviceTotal', 'totalNet', 'lessorTotal']
+  const totals = {}
+  for (const key of keys.filter(key => key in fields)) {
+    totals[key] = rows.reduce((sum, row) => round2(sum + (row[key] || 0)), 0)
+  }
+  const totalRow = worksheet.addRow(totals)
+  totalRow.font = { name: 'Calibri', bold: true }
+
+  res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+  res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
+  return workbook.xlsx.write(res).then(function () { res.status(200).end() })
+}))
+
 router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
   const partnerQuarter = await $getOrFail('PartnerQuarter', req.params.quarterId, 'rows')
   if (partnerQuarter.get('company').id !== req.user.get('company').id) {
@@ -1541,8 +1628,6 @@ router.get('/partner-quarter/:quarterId', handleErrorAsync(async (req, res) => {
       }
       return dict
     }, {}))
-
-  consola.info(extraFields)
 
   const rows = partnerQuarter.get('rows').map((row) => {
     row.start = dateString(row.start)
