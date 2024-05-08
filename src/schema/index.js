@@ -219,16 +219,57 @@ const schemaDefinitions = {
       deletedAt: { type: 'Date' }, // soft deletes
 
       name: { type: 'String', required: true },
+      branch: { type: 'String' },
+      email: { type: 'String' }, // company main email
+      persons: { type: 'Array' },
+
       address: { type: 'Pointer', targetClass: 'Address' },
       invoiceAddress: { type: 'Pointer', targetClass: 'Address' },
 
       paymentType: { type: 'Number' },
       dueDays: { type: 'Number' },
 
+      lead: { type: 'Object' }, // Lead Info
       distributor: { type: 'Object' }, // DistributorOptions | null
       agency: { type: 'Object' }, // AgencyOptions or null
       lessor: { type: 'Object' }, // LessorOptions | null
       scoutor: { type: 'Object' }, // ScoutorOptions or null
+
+      docs: { type: 'Array' },
+      tags: { type: 'Array' },
+      responsibles: { type: 'Array' }
+    }
+  },
+  Offer: {
+    CLP: {
+      get: { '*': true },
+      find: { requiresAuthentication: true },
+      count: { requiresAuthentication: true },
+      create: {},
+      update: {},
+      delete: {}
+    },
+    fields: {
+      no: { type: 'String', required: true },
+      status: { type: 'Number', required: true },
+      company: { type: 'Pointer', targetClass: 'Company' },
+      companyPerson: { type: 'Pointer', targetClass: 'Person' },
+      ...durationFields,
+
+      // offer fiels
+      // motive: { type: 'String' },
+      requirements: { type: 'Object' },
+      additionalServices: { type: 'Object' },
+
+      // listPrices: { type: 'Object' },
+      // discounts: { type: 'Object' },
+      // monthlyMedia: { type: 'Object' },
+      production: { type: 'Object' },
+
+      // all cube ids selected in the offer
+      cubeIds: { type: 'Array', default: [] },
+      // TODO: add recommended cubes
+      // TODO: add favorited cubes by client
 
       docs: { type: 'Array' },
       tags: { type: 'Array' },
@@ -571,13 +612,14 @@ const schemaDefinitions = {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
       company: { type: 'Pointer', targetClass: 'Company' },
-      prefix: { type: 'String', required: true },
+      prefix: { type: 'String' },
       firstName: { type: 'String', required: true },
-      lastName: { type: 'String', required: true },
+      lastName: { type: 'String' },
       title: { type: 'String' },
       email: { type: 'String' },
       pbx: { type: 'String' },
-      mobile: { type: 'String' }
+      mobile: { type: 'String' },
+      token: { type: 'String' }
     }
   },
   PrintPackage: {
@@ -595,6 +637,7 @@ const schemaDefinitions = {
   Production: {
     CLP: { ...readAuthOnly, ...writeMasterOnly },
     fields: {
+      offer: { type: 'Pointer', targetClass: 'Offer' },
       contract: { type: 'Pointer', targetClass: 'Contract' },
       booking: { type: 'Pointer', targetClass: 'Booking' },
       billing: { type: 'Number' }, // invoicing and installments combined into billing: null or 0 for no invoice, 1 for single payment, 12, 24 or 36 for installments

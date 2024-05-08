@@ -45,6 +45,15 @@ function getDocumentTotals (allowTaxFreeInvoices, lineItems, date) {
   return { netTotal, taxTotal, total }
 }
 
+function getCommissionForYear (order, year) {
+  if (order.get('commissions')) {
+    return order.get('commissions')[year] !== undefined
+      ? order.get('commissions')[year]
+      : order.get('commission')
+  }
+  return order.get('commission')
+}
+
 const getPeriodTotal = function (periodStart, periodEnd, monthlyTotal) {
   const carry = moment(periodStart)
   periodEnd = moment(periodEnd)
@@ -677,6 +686,7 @@ module.exports = {
   getOrderClassName,
   getDocumentTotals,
   getTaxRatePercentage,
+  getCommissionForYear,
   getCubeSummary,
   getCubeSummaries,
   getQuarterStartEnd,

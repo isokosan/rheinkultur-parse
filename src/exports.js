@@ -657,8 +657,8 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   const housingTypes = await fetchHousingTypes()
   const states = await fetchStates()
   const production = await $getOrFail('Production', req.query.id, ['booking', 'contract'])
-  const bookingOrContract = await production.get('booking') || production.get('contract')
-  const company = await bookingOrContract.get('company').fetch({ useMasterKey: true })
+  const order = await production.get('booking') || production.get('contract')
+  const company = await order.get('company').fetch({ useMasterKey: true })
 
   if (company.id !== 'FNFCxMgEEr') {
     throw new Error('This function is only available for Kinetic orders.')
@@ -667,12 +667,12 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
   const workbook = new excel.Workbook()
   const worksheet = workbook.addWorksheet('CityCubes')
 
-  const period = [bookingOrContract.get('startsAt'), bookingOrContract.get('endsAt')]
+  const period = [order.get('startsAt'), order.get('endsAt')]
     .map(d => moment(d).format('DD.MM.YYYY')).join(' - ')
   const assemblyStart = moment(production.get('assemblyStart')).format('DD.MM.YYYY')
 
   const firstRow = worksheet.getRow(1)
-  firstRow.values = [bookingOrContract?.get('motive')]
+  firstRow.values = [order?.get('motive')]
   firstRow.height = 20
   firstRow.font = { bold: true, size: 10 }
   firstRow.alignment = { vertical: 'middle', horizontal: 'left' }
@@ -683,7 +683,7 @@ router.get('/assembly-list', handleErrorAsync(async (req, res) => {
     { label: 'Produkt / Medium', content: 'CityCube', bold: true },
     { label: 'Belegungsart', content: 'jeweils (Strassenzugewandte) Frontbelegung' },
     { label: 'Werbemittel', content: 'Trägerplatten (ALU-Dibond o.ä.)' },
-    { label: 'Buchungszeitraum', content: `${period} (${bookingOrContract.get('initialDuration')} Monate)` },
+    { label: 'Buchungszeitraum', content: `${period} (${order.get('initialDuration')} Monate)` },
     { label: 'Lieferung der Druckdaten', content: `bis spätestens ${moment(production.get('printFilesDue')).format('DD.MM.YYYY')}` },
     { label: 'Montagebeginn:', content: `ab ${assemblyStart}` }
   ]

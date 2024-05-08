@@ -7,10 +7,10 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
   if (production.get('booking') && production.get('contract')) {
     throw new Error('Production cannot be tied to a booking and a contract simultaneously')
   }
-  const bookingOrContract = production.get('booking') || production.get('contract')
-  await bookingOrContract.fetch({ useMasterKey: true })
+  const order = production.get('booking') || production.get('contract') || production.get('offer')
+  await order.fetch({ useMasterKey: true })
 
-  const cubeIds = bookingOrContract.get('cubeIds') || []
+  const cubeIds = order.get('cubeIds') || []
   // remove cubes that are not in booking/contract from dictionaries
   for (const key of [
     'printPackages',
@@ -56,9 +56,9 @@ Parse.Cloud.beforeSave(Production, async ({ object: production }) => {
     .unset('printNotes')
   if (production.get('assembly')) {
     const defaultDates = {
-      dueDate: bookingOrContract.get('startsAt'),
-      // printFilesDue: moment(bookingOrContract.get('startsAt')).subtract(1, 'month').format('YYYY-MM-DD'),
-      assemblyStart: moment(bookingOrContract.get('startsAt')).subtract(1, 'week').format('YYYY-MM-DD')
+      dueDate: order.get('startsAt'),
+      // printFilesDue: moment(order.get('startsAt')).subtract(1, 'month').format('YYYY-MM-DD'),
+      assemblyStart: moment(order.get('startsAt')).subtract(1, 'week').format('YYYY-MM-DD')
     }
     for (const key of Object.keys(defaultDates)) {
       !production.get(key) && production.set(key, defaultDates[key])
@@ -113,12 +113,12 @@ const getPrintFileIds = printFiles => [...new Set(Object.values(printFiles || {}
 )]
 
 Parse.Cloud.beforeFind(Production, ({ query }) => {
-  query.include(['booking', 'contract'])
+  query.include(['booking', 'contract', 'offer'])
 })
 
 Parse.Cloud.afterFind(Production, async ({ query, objects }) => {
   for (const production of objects) {
-    production.set('bookingOrContract', production.get('booking') || production.get('contract'))
+    production.set('order', production.get('booking') || production.get('contract') || production.get('offer'))
   }
   if (query._include.includes('printFiles')) {
     const fileIds = [...new Set(objects.map(production => getPrintFileIds(production.get('printFiles'))).flat())]
@@ -164,7 +164,7 @@ Parse.Cloud.define('production-update-assembly', async ({
     assemblyStart
   })
 
-  const cubeIds = (production.get('booking') || production.get('contract')).get('cubeIds')
+  const cubeIds = (production.get('booking') || production.get('contract') || production.get('offer')).get('cubeIds')
 
   const printFiles = {}
   for (const key of Object.keys(printFileIds)) {

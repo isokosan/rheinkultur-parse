@@ -1,7 +1,7 @@
 const { sum, isEqual } = require('lodash')
 const { contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/normalizers')
 const { round2, round5, priceString } = require('@/utils')
-const { getNewNo, getDocumentTotals, getPeriodTotal, validateOrderFinalize, setOrderCubeStatuses, getLastRemovedCubeIds, earlyCancelSpecialFormats } = require('@/shared')
+const { getNewNo, getDocumentTotals, getPeriodTotal, validateOrderFinalize, getCommissionForYear, setOrderCubeStatuses, getLastRemovedCubeIds, earlyCancelSpecialFormats } = require('@/shared')
 const { generateContract } = require('@/docs')
 const sendMail = require('@/services/email')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
@@ -93,7 +93,7 @@ Parse.Cloud.afterFind(Contract, async ({ objects: contracts, query }) => {
     if (query._include.includes('lastRemovedCubeIds') && contract.get('status') >= 0 && contract.get('status') <= 2.1) {
       contract.set('lastRemovedCubeIds', await getLastRemovedCubeIds('Contract', contract.id))
     }
-    contract.set('commissionRate', getContractCommissionForYear(contract, year))
+    contract.set('commissionRate', getCommissionForYear(contract, year))
   }
   return contracts
 })
@@ -115,15 +115,6 @@ Parse.Cloud.afterDelete(Contract, async ({ object: contract }) => {
   production && await production.destroy({ useMasterKey: true })
   $deleteAudits({ object: contract })
 })
-
-function getContractCommissionForYear (contract, year) {
-  if (contract.get('commissions')) {
-    return contract.get('commissions')[year] !== undefined
-      ? contract.get('commissions')[year]
-      : contract.get('commission')
-  }
-  return contract.get('commission')
-}
 
 function getInvoiceLineItems ({ production, media }) {
   if (!media) {
@@ -337,7 +328,7 @@ async function getInvoicesPreview (contract) {
       invoice.total = total
       // commissions
       if (invoice.media?.total && invoice.agency) {
-        invoice.commissionRate = getContractCommissionForYear(contract, moment(invoice.date).year())
+        invoice.commissionRate = getCommissionForYear(contract, moment(invoice.date).year())
         if (!invoice.commissionRate) {
           delete invoice.agency
           return invoice
@@ -529,7 +520,7 @@ Parse.Cloud.define('contracts-wip-calculate-invoices', async ({ params: { contra
       invoice.total = total
       // commissions
       if (invoice.media?.total && invoice.agency) {
-        invoice.commissionRate = getContractCommissionForYear(contract, moment(invoice.date).year())
+        invoice.commissionRate = getCommissionForYear(contract, moment(invoice.date).year())
         if (!invoice.commissionRate) {
           delete invoice.agency
           return invoice
@@ -632,7 +623,7 @@ Parse.Cloud.define('contracts-wip-find-missing-periods', async ({ params: { cont
       invoice.total = total
       // commissions
       if (invoice.media?.total && invoice.agency) {
-        invoice.commissionRate = getContractCommissionForYear(contract, moment(invoice.date).year())
+        invoice.commissionRate = getCommissionForYear(contract, moment(invoice.date).year())
         if (!invoice.commissionRate) {
           delete invoice.agency
           return invoice
@@ -1307,7 +1298,7 @@ Parse.Cloud.define('contract-regenerate-canceled-invoice', async ({ params: { id
   })
   // recalculate commission rate at date
   invoice.get('agency')
-    ? invoice.set('commissionRate', getContractCommissionForYear(contract, moment(invoice.get('date')).year()))
+    ? invoice.set('commissionRate', getCommissionForYear(contract, moment(invoice.get('date')).year()))
     : invoice.unset('commissionRate')
   const audit = { user, fn: 'invoice-regenerate-from-canceled', data: { invoiceNo: canceledInvoice.get('lexNo') } }
   return invoice.save(null, { useMasterKey: true, context: { audit, rewriteIntroduction: true } })
@@ -1575,7 +1566,7 @@ Parse.Cloud.define('contract-change-commission', async ({
     .find({ useMasterKey: true })
 
   for (const invoice of invoices) {
-    const commissionRate = getContractCommissionForYear(contract, moment(invoice.get('date')).year())
+    const commissionRate = getCommissionForYear(contract, moment(invoice.get('date')).year())
     const invoiceChanges = $changes(invoice, { commissionRate })
     const invoiceAgencyId = commissionRate ? agencyId : null
     if (invoiceAgencyId !== invoice.get('agency')?.id) {
@@ -1714,7 +1705,7 @@ async function generateExtensionInvoices (contractId, newEndsAt, previousEndsAt)
       }
 
       if (invoice.agency) {
-        const commissionRate = getContractCommissionForYear(contract, periodStart.year())
+        const commissionRate = getCommissionForYear(contract, periodStart.year())
         if (commissionRate) {
           invoice.commissionRate = commissionRate
         } else {

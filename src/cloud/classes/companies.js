@@ -1,5 +1,6 @@
 const { isEqual, cloneDeep } = require('lodash')
 const { companies: { normalizeFields } } = require('@/schema/normalizers')
+const { ensureUniqueField } = require('@/utils')
 const Company = Parse.Object.extend('Company')
 
 /*
@@ -68,6 +69,10 @@ Parse.Cloud.afterFind(Company, async ({ query, objects: companies }) => {
   return companies
 })
 
+Parse.Cloud.beforeSave(Company, async ({ object: company }) => {
+  company.isNew() && await ensureUniqueField(company, 'name')
+})
+
 Parse.Cloud.afterSave(Company, async ({ object: company, context: { audit } }) => { $audit(company, audit) })
 
 Parse.Cloud.beforeDelete(Company, ({ object: company }) => {
@@ -78,19 +83,14 @@ Parse.Cloud.beforeDelete(Company, ({ object: company }) => {
 
 Parse.Cloud.define('company-create', async ({
   params: {
-    // only for seeding
-    importNo,
-    distributor,
-    agency,
-    lessor,
-    scoutor,
-    tagIds,
-    // form data
+    isLead,
+    // isAgency,
     ...params
   }, user, master
 }) => {
   const {
     name,
+    branch,
     email,
     paymentType,
     dueDays,
@@ -99,25 +99,14 @@ Parse.Cloud.define('company-create', async ({
 
   const company = new Company({
     name,
+    branch,
     email,
     paymentType,
     dueDays,
     contractDefaults,
     responsibles: user ? [user] : undefined
   })
-
-  // only for seeding
-  if (master) {
-    tagIds && company.set({ tags: await $query('Tag').containedIn('objectId', tagIds).find({ useMasterKey: true }) })
-    company.set({
-      importNo,
-      distributor,
-      agency,
-      lessor,
-      scoutor
-    })
-  }
-
+  isLead && company.set('lead', {})
   const audit = { user, fn: 'company-create' }
   return company.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
@@ -133,7 +122,6 @@ Parse.Cloud.define('company-update-info', async ({
     email,
     paymentType,
     dueDays
-
   } = normalizeFields(params)
 
   const company = await $getOrFail(Company, companyId)
@@ -352,6 +340,8 @@ Parse.Cloud.define('company-restore', async ({ params: { id: companyId }, user }
   const audit = { user, fn: 'company-restore' }
   return company.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
+
+Parse.Cloud.define('company-branches', () => $query('Company').distinct('branch', { useMasterKey: true }), { requireUser: true })
 
 // TODO: watch for limit
 const fetchCompanies = () => $query(Company)

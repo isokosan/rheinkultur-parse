@@ -29,7 +29,7 @@ Parse.Cloud.define('person-save', async ({ params: { id: personId, ...params }, 
 
   if (!personId) {
     const person = new Person({
-      company: await $getOrFail('Company', companyId),
+      company: companyId ? await $getOrFail('Company', companyId) : null,
       prefix,
       firstName,
       lastName,
@@ -62,3 +62,5 @@ Parse.Cloud.define('person-delete', async ({ params: { id: personId }, user }) =
   const audit = { user, fn: 'person-delete', data: { prefix, firstName, lastName } }
   return person.destroy({ useMasterKey: true, context: { audit } })
 }, { requireUser: true })
+
+Parse.Cloud.define('person-titles', () => $query('Person').distinct('title', { useMasterKey: true }), { requireUser: true })

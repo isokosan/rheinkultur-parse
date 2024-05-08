@@ -34,6 +34,16 @@ module.exports.PERMISSIONS = {
   */
 }
 
+module.exports.OFFER_STATUSES = {
+  '-1': 'Archiviert',
+  0: 'Entwurf',
+  1: 'Gesendet',
+  2: 'In Bearbeitung',
+  3: 'Abgeschlossen',
+  4: 'Abgelehnt',
+  5: 'Ausgelaufen'
+}
+
 module.exports.ORDER_STATUSES = {
   '-1': 'Storniert',
   0: 'Entwurf',

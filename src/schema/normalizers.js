@@ -96,6 +96,7 @@ module.exports = {
       const FIELD_NORMALIZERS = {
         name: normalizeString,
         email: normalizeString,
+        branch: normalizeString,
         dueDays: x => normalizeInt(x) ?? 14,
         paymentType: x => parseInt(['0', '1'].includes(x) ? x : '0'),
         contractDefaults (defaults = {}) {
@@ -181,6 +182,28 @@ module.exports = {
         normalized.name = normalized.lex.name
       }
       return normalized
+    }
+  },
+  offers: {
+    UNSET_NULL_FIELDS: [
+      ...ORDER_UNSET_NULL_FIELDS,
+      'companyPerson',
+      'monthlyMedia'
+    ],
+    normalizeFields (form) {
+      const FIELD_NORMALIZERS = {
+        ...ORDER_FIELD_NORMALIZERS,
+        companyId: defined,
+        companyText: defined,
+        companyPersonId: defined,
+        companyPersonText: defined,
+        companyPersonEmail: defined
+      }
+      const normalized = {}
+      for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
+        normalized[key] = FIELD_NORMALIZERS[key](form[key])
+      }
+      return normalizeOrderFields(normalized)
     }
   },
   contracts: {

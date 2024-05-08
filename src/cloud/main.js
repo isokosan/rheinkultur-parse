@@ -4,6 +4,7 @@ const redis = require('@/services/redis')
 
 const {
   ACC_TYPES: accTypes,
+  OFFER_STATUSES: offerStatuses,
   ORDER_STATUSES: orderStatuses,
   BOOKING_REQUEST_TYPES: bookingRequestTypes,
   BOOKING_REQUEST_STATUSES: bookingRequestStatuses,
@@ -82,6 +83,7 @@ Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
 Parse.Cloud.define('enums', () => ({
   version,
   accTypes,
+  offerStatuses,
   orderStatuses,
   bookingRequestTypes,
   bookingRequestStatuses,
