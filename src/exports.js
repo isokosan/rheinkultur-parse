@@ -314,7 +314,10 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
   const workbook = new excel.Workbook()
   const [className, objectId] = req.params.orderKey.split('-')
   const order = await $getOrFail(className, objectId)
-  const cubeIds = req.query.cubeIds ? decodeURIComponent(req.query.cubeIds || '').split(',') : order.get('cubeIds')
+  let cubeIds = req.query.cubeIds ? decodeURIComponent(req.query.cubeIds || '').split(',') : order.get('cubeIds')
+  if (className === 'FrameMount' && !req.query.cubeIds) {
+    cubeIds = cubeIds.filter(id => order.get('fmCounts')[id] > 0)
+  }
 
   const fields = {
     orderNo: { header: 'Auftragsnr.', width: 15 },
@@ -322,6 +325,7 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
     externalOrderNo: { header: 'Extern. Auftragsnr.', width: 20 },
     campaignNo: { header: 'Kampagnenname', width: 20 },
     objectId: { header: 'CityCube ID', width: 20 },
+    fmCount: { header: 'Anzahl Rahmen', width: 16, style: alignRight },
     htCode: { header: 'Gehäusetyp', width: 20 },
     str: { header: 'Straße', width: 20 },
     hsnr: { header: 'Hsnr.', width: 10 },
@@ -334,6 +338,20 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
     monthly: { header: 'Monatsmiete', width: 15, style: priceStyle },
     pp: { header: 'Belegungspaket', width: 20 }
   }
+  if (className === 'FrameMount') {
+    delete fields.orderNo
+    delete fields.motive
+    delete fields.externalOrderNo
+    delete fields.campaignNo
+    delete fields.start
+    delete fields.end
+    delete fields.duration
+    delete fields.monthly
+    delete fields.pp
+  } else {
+    delete fields.fmCount
+    // delete fields.takedownCount
+  }
 
   // Add cube features
   for (const cubeFeature of Object.keys(CUBE_FEATURES)) {
@@ -342,7 +360,7 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
 
   const { columns, headerRowValues } = getColumnHeaders(fields)
 
-  const worksheet = workbook.addWorksheet(safeName(order.get('no')))
+  const worksheet = workbook.addWorksheet(safeName(order.get('no') || order.get('pk')))
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
   headerRow.font = { name: 'Calibri', bold: true, size: 12 }
@@ -362,6 +380,7 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
     const monthly = getCubeMonthlyMedia(cube, order)
 
     const row = worksheet.addRow({
+      fmCount: order.get('fmCounts')[cube.id] || 0,
       orderNo: order.get('no'),
       motive,
       externalOrderNo,
@@ -386,7 +405,7 @@ router.get('/order/:orderKey', handleErrorAsync(async (req, res) => {
     canceledEarly && (row.getCell(13).font = { name: 'Calibri', color: { argb: 'ff2222' } })
   }
 
-  const filename = `${order.get('no')} (Stand ${moment().format('DD.MM.YYYY')})`
+  const filename = `${order.get('no') || order.get('pk')} (Stand ${moment().format('DD.MM.YYYY')})`
   res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
   res.set('Content-Disposition', getAttachmentContentDisposition(filename, 'xlsx'))
   return workbook.xlsx.write(res).then(function () { res.status(200).end() })
