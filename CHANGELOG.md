@@ -1,3 +1,11 @@
+# [1.193.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.192.0...1.193.0) (2024-05-10)
+
+
+### Features
+
+* new controls ([61ea982](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/61ea982af6028e21a298d89f38b668dd34a2cef3))
+* offers ([b5cccfe](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b5cccfe088b9a56f16975c07392c787090a41170))
+
 # [1.192.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.191.2...1.192.0) (2024-05-08)
 
 
