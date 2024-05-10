@@ -1184,6 +1184,10 @@ async function findStartedDisassemblyForControlTask (cubeId, taskListId) {
   if (!orderKey) {
     throw new Error('Für diesen CityCube kann kein laufender Auftrag innerhalb des Kontrols gefunden werden.')
   }
+  const [className, objectId] = orderKey.split('$')
+  const order = await $getOrFail(className, objectId)
+  // disassemble missing ads if groupm
+  const disassembleWhenMissing = order.get('company').id === 'FNFCxMgEEr'
   const disassemblyIdPrefix = orderKey.replace('$', '-')
   const disassembliesQuery = $query('Disassembly').startsWith('objectId', disassemblyIdPrefix)
   // When do we match a disassembly task to a control task?
@@ -1198,7 +1202,7 @@ async function findStartedDisassemblyForControlTask (cubeId, taskListId) {
     .matchesQuery('disassembly', disassembliesQuery)
     .equalTo('cubeIds', cubeId)
     .first({ useMasterKey: true })
-  return { orderKey, disassemblyTask }
+  return { orderKey, disassembleWhenMissing, disassemblyTask }
 }
 
 Parse.Cloud.define('task-list-get-control-order-status', ({ params: { cubeId, taskListId } }) => {

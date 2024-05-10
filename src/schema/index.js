@@ -861,6 +861,7 @@ const schemaDefinitions = {
     fields: {
       ...taskSubmissionFields,
       condition: { type: 'String' },
+      form: { type: 'Object' },
       orderKey: { type: 'String' }, // order key
       // photos are via scope in CubePhotos
       beforePhotos: { type: 'Array' },

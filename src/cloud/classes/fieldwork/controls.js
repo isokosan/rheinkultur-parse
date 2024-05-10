@@ -578,7 +578,7 @@ Parse.Cloud.define('control-generate-reports', async ({ params: { id: controlId 
   const taskListQuery = $query('TaskList').equalTo('control', control)
   await $query('ControlSubmission')
     .matchesQuery('taskList', taskListQuery)
-    .containedIn('condition', ['no_ad', 'ill'])
+    .containedIn('condition', ['damaged', 'missing', 'ill', 'no_ad'])
     .select(['objectId', 'condition', 'orderKey'])
     .eachBatch((submissions) => {
       for (const submission of submissions) {

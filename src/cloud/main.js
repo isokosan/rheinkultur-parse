@@ -43,7 +43,7 @@ DEVELOPMENT && require('@/queues')
 DEVELOPMENT && require('@/development')
 
 Parse.Cloud.define('init', async ({ params: { keys = [] }, user }) => {
-  if (!user) { keys = ['states'] }
+  if (!user) { keys = ['states', 'printPackages'] }
   const dictionary = {
     version,
     development: DEVELOPMENT,

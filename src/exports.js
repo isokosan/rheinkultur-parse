@@ -1079,6 +1079,9 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
     stateName: { header: 'Bundesland', width: 20 },
     end: { header: 'Enddatum', width: 12, style: dateStyle },
     condition: { header: 'Zustand', width: 20 },
+    missingDisassembled: { header: 'Demontiert (fehlte)', width: 20 },
+    pruned: { header: 'Grünschnitt', width: 20 },
+    painted: { header: 'Streichen', width: 20 },
     comments: { header: 'Kommentar', width: 20 },
     cost: { header: 'Reparaturkosten', width: 20, style: priceStyle }
   })
@@ -1089,6 +1092,8 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
 
   const REPORT_CONDITIONS = {
     no_ad: 'Fehlt/Beschädigt',
+    missing: 'Fehlt',
+    damaged: 'Beschädigt',
     ill: 'Verschmutzt'
   }
   const submissionIds = Object.keys(report.get('submissions'))
@@ -1118,6 +1123,9 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
       stateName: states[cube.get('state')?.id]?.name || '',
       ...getCubeOrderDates(cube, submission.get('order')),
       condition: REPORT_CONDITIONS[submission.get('condition')] || '',
+      missingDisassembled: submission.get('form')?.missingDisassembled ? 'Demontiert' : '',
+      pruned: submission.get('form')?.pruned === 'yes' ? 'Erledigt' : '',
+      painted: submission.get('form')?.painted === 'yes' ? 'Erledigt' : '',
       comments: report.get('submissions')[submission.id].comments || submission.comments || '',
       cost: report.get('submissions')[submission.id].cost
     })

@@ -291,7 +291,7 @@ Parse.Cloud.define('assembly-submission-reject', async ({ params: { id: submissi
   return { message: 'Montage abgelehnt.', data: submission }
 }, { requireUser: true })
 
-Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, beforePhotoIds, afterPhotoIds, comments, disassemblyId, approve }, user }) => {
+Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListId, cubeId, submissionId, condition, pruned, painted, missingDisassembled, beforePhotoIds, afterPhotoIds, comments, disassemblyId, approve }, user }) => {
   const { taskList, submission } = await fetchSubmission(taskListId, cubeId, ControlSubmission, submissionId)
   if (!submission.get('orderKey')) {
     // find orderKey from control
@@ -314,11 +314,14 @@ Parse.Cloud.define('control-submission-submit', async ({ params: { id: taskListI
   if (condition === 'disassembled' && disassemblyId) {
     disassembly = await $getOrFail('DisassemblySubmission', disassemblyId)
   }
+  if (condition !== 'missing' && missingDisassembled) {
+    missingDisassembled = undefined
+  }
   let changes
   if (submission.id) {
-    changes = $changes(submission, { condition, comments, disassembly })
+    changes = $changes(submission, { condition, pruned, painted, missingDisassembled, comments, disassembly })
   }
-  submission.set({ condition, comments })
+  submission.set({ condition, form: { pruned, painted, missingDisassembled }, comments })
   disassembly ? submission.set({ disassembly }) : submission.unset('disassembly')
 
   const pointerPhotos = ids => ids?.length ? ids.map(id => $pointer('CubePhoto', id)) : null
