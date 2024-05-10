@@ -194,10 +194,7 @@ module.exports = {
       const FIELD_NORMALIZERS = {
         ...ORDER_FIELD_NORMALIZERS,
         companyId: defined,
-        companyText: defined,
-        companyPersonId: defined,
-        companyPersonText: defined,
-        companyPersonEmail: defined
+        companyPersonId: defined
       }
       const normalized = {}
       for (const key of Object.keys(form).filter(key => key in FIELD_NORMALIZERS)) {
@@ -224,6 +221,7 @@ module.exports = {
     normalizeFields (form) {
       const FIELD_NORMALIZERS = {
         ...ORDER_FIELD_NORMALIZERS,
+        offerId: defined,
         companyId: defined,
         addressId: defined,
         companyPersonId: defined,

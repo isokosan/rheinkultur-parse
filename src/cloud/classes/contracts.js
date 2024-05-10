@@ -61,6 +61,7 @@ Parse.Cloud.afterSave(Contract, async ({ object: contract, context: { audit, set
 
 Parse.Cloud.beforeFind(Contract, ({ query }) => {
   query._include.includes('all') && query.include([
+    'offer',
     'company',
     'address',
     'companyPerson',
@@ -112,7 +113,15 @@ Parse.Cloud.beforeDelete(Contract, async ({ object: contract }) => {
 
 Parse.Cloud.afterDelete(Contract, async ({ object: contract }) => {
   const production = await $query('Production').equalTo('contract', contract).first({ useMasterKey: true })
-  production && await production.destroy({ useMasterKey: true })
+  if (production) {
+    production.get('offer')
+      ? await production.unset('contract').save(null, { useMasterKey: true })
+      : await production.destroy({ useMasterKey: true })
+  }
+  const offer = await $query('Offer').equalTo('contract', contract).first({ useMasterKey: true })
+  if (offer) {
+    await offer.unset('contract').save(null, { useMasterKey: true, context: { audit: { fn: 'contract-delete' } } })
+  }
   $deleteAudits({ object: contract })
 })
 
@@ -671,6 +680,7 @@ Parse.Cloud.define('contract-invoices-preview', async ({ params: { id: contractI
 
 Parse.Cloud.define('contract-create', async ({ params, user, master }) => {
   const {
+    offerId,
     companyId,
     addressId,
     companyPersonId,
@@ -696,9 +706,11 @@ Parse.Cloud.define('contract-create', async ({ params, user, master }) => {
   } = normalizeFields(params)
 
   const company = await $getOrFail('Company', companyId)
+  const offer = offerId ? await $getOrFail('Offer', offerId, 'production') : null
   const contract = new Contract({
     no: master ? params.no : undefined,
     status: 2,
+    offer,
     company,
     address: await $getOrFail('Address', addressId),
     companyPerson: companyPersonId ? await $getOrFail('Person', companyPersonId) : undefined,
@@ -727,8 +739,23 @@ Parse.Cloud.define('contract-create', async ({ params, user, master }) => {
       : null
   })
 
+  offer && contract.set({
+    cubeIds: offer.get('cubeIds'),
+    monthlyMedia: offer.get('monthlyMedia'),
+    tags: offer.get('tags'),
+    responsibles: [...new Set([...(offer.get('responsibles') || []), ...(contract.get('responsibles') || [])].map(user => user.id))]
+      .filter(Boolean)
+      .map(id => $pointer(Parse.User, id))
+  })
+
   const audit = { user, fn: 'contract-create' }
-  return contract.save(null, { useMasterKey: true, context: { audit } })
+  await contract.save(null, { useMasterKey: true, context: { audit } })
+  await offer.set({ contract, status: 3 }).save(null, { useMasterKey: true, context: { audit } })
+  if (offer && offer.get('production')) {
+    const production = offer.get('production')
+    production.save({ contract }, { useMasterKey: true })
+  }
+  return contract
 }, $internOrAdmin)
 
 Parse.Cloud.define('contract-update-cubes', async ({ params: { id: contractId, ...params }, user }) => {

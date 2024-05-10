@@ -7,8 +7,12 @@ const Offer = Parse.Object.extend('Offer')
 Parse.Cloud.beforeSave(Offer, async ({ object: offer }) => {
   offer.isNew() && !offer.get('no') && offer.set({ no: await getNewNo('A' + moment(await $today()).format('YY') + '-', Offer, 'no') })
   UNSET_NULL_FIELDS.forEach(field => !offer.get(field) && offer.unset(field))
+  offer.set('status', offer.get('contract') ? 3 : 0)
 
-  !offer.get('status') && offer.set('status', 0)
+  offer.get('autoExtendsBy') && offer.get('endsAt')
+    ? offer.set('autoExtendsAt', moment(offer.get('endsAt')).subtract(offer.get('noticePeriod') || 0, 'months').format('YYYY-MM-DD'))
+    : offer.unset('autoExtendsAt')
+
   const cubeIds = offer.get('cubeIds') || []
   cubeIds.sort()
   offer.set('cubeIds', cubeIds).set('cubeCount', cubeIds.length)
@@ -24,13 +28,11 @@ Parse.Cloud.afterSave(Offer, async ({ object: offer, context: { audit } }) => {
 
 Parse.Cloud.beforeFind(Offer, ({ query }) => {
   query._include.includes('all') && query.include([
+    'contract',
     'company',
-    // 'address',
     'companyPerson',
-    // 'invoiceAddress',
-    // 'cubeData',
-    'agency',
-    'agencyPerson',
+    // 'agency',
+    // 'agencyPerson',
     'production',
     'docs',
     'tags',

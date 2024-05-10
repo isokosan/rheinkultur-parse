@@ -252,6 +252,7 @@ const schemaDefinitions = {
     fields: {
       no: { type: 'String', required: true },
       status: { type: 'Number', required: true },
+      contract: { type: 'Pointer', targetClass: 'Contract' },
       company: { type: 'Pointer', targetClass: 'Company' },
       companyPerson: { type: 'Pointer', targetClass: 'Person' },
       ...durationFields,
@@ -286,6 +287,7 @@ const schemaDefinitions = {
       delete: {}
     },
     fields: {
+      offer: { type: 'Pointer', targetClass: 'Offer' },
       ...orderFields,
       earlyCancellations: { type: 'Object' },
       // freeExtensions: { type: 'Object' }, // to be used if we want to allow per contract free extensions
