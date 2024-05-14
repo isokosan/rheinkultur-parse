@@ -1,9 +1,13 @@
 require('./run')(async () => {
-  const scout = await $query(Parse.User).get('GOsshefDf3', { useMasterKey: true })
-  const assignedListIds = await $query('TaskList')
-    .equalTo('scouts', scout)
-    .containedIn('status', [2, 3])
-    .distinct('objectId', { useMasterKey: true })
-  await $query('Audit')
-    .containedIn('itemId', assignedListIds)
+  // delete all VOD cubes
+  await $query('Cube')
+    .equalTo('lc', 'VOD')
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        await cube.destroy({ useMasterKey: true })
+        console.log(cube.id)
+      }
+      console.log(cubes.length)
+    }, { useMasterKey: true })
+  console.log('OK')
 })

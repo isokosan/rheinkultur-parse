@@ -21,7 +21,18 @@ const seedCube = async (body) => axios({
   data: body
 })
 async function start () {
-  const filename = process.argv[2] || 'vodafone_combined.csv'
+  // delete all VOD cubes
+  await $query('Cube')
+    .equalTo('lc', 'VOD')
+    .eachBatch(async (cubes) => {
+      for (const cube of cubes) {
+        await cube.destroy({ useMasterKey: true })
+        console.log(cube.id)
+      }
+      console.log(cubes.length)
+    }, { useMasterKey: true })
+  console.log('ALL VOD CUBES DELETED')
+  const filename = process.argv[2] || 'vod_dusseldorf_final.csv'
   const csvFilePath = path.resolve(__dirname, 'data', filename)
   const data = await csv().fromFile(csvFilePath)
   const state = $pointer('State', 'NW')

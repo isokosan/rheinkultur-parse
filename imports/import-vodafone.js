@@ -18,35 +18,57 @@ const parseAsDigitString = function (num, digits = 4) {
   return string
 }
 async function start () {
-  const filename = process.argv[2] || 'vodafone.csv'
-  const csvFilePath = path.resolve(__dirname, 'data', filename)
-  const data = await csv().fromFile(csvFilePath)
-  let i = 1
+  const data = await csv().fromFile(path.resolve(__dirname, 'data', 'vod_dusseldorf.csv'))
+  const processed = await csv().fromFile(path.resolve(__dirname, 'data', 'vodafone_combined.csv'))
+  let i = 0
   for (const row of data) {
-    row.id = 'VOD-RMV' + parseAsDigitString(i)
     i++
-    const nominatim = await Parse.Cloud.run('nominatim', { lat: row.latitude, lon: row.longitude }, { useMasterKey: true })
-    row.node = row.node?.trim()
-    row.str = nominatim.address.road
-    row.hsnr = nominatim.address.house_number
-    row.ort = nominatim.address.city
-    row.plz = nominatim.address.postcode
-    row.stateName = nominatim.address.state
     console.log(i)
+    row.id = 'VOD-RMV' + parseAsDigitString(i)
+    // try to find the same latitude and longitude in processed
+    const found = processed.find(p => p.latitude === row.latitude && p.longitude === row.longitude)
+    if (found) {
+      // console.log('Found in processed', found)
+      row.node = found.node
+      row.str = found.str
+      row.hsnr = found.hsnr
+      row.ort = found.ort
+      row.plz = found.plz
+      row.stateName = found.stateName
+      continue
+    }
+    console.log('Not found in processed')
+    // get nominatim data
+    try {
+      const nominatim = await Parse.Cloud.run('nominatim', { lat: row.latitude, lon: row.longitude }, { useMasterKey: true })
+      row.node = row.node?.trim()
+      row.str = nominatim.address.road
+      row.hsnr = nominatim.address.house_number
+      row.ort = nominatim.address.city
+      row.plz = nominatim.address.postcode
+      row.stateName = nominatim.address.state
+    } catch (error) {
+      console.error('Error in nominatim', error)
+    }
   }
   // save data in json
-  const jsonFilePath = path.resolve(__dirname, 'data', filename.replace('.csv', '.json'))
+  const jsonFilePath = path.resolve(__dirname, 'data', 'vod_dusseldorf_with-address.json')
   fs.writeFileSync(jsonFilePath, JSON.stringify(data, null, 2))
   console.log('Data saved in', jsonFilePath)
   // save as vodafone_fixed.csv
-  const csvFilePathFixed = path.resolve(__dirname, 'data', filename.replace('.csv', '_fixed.csv'))
   const csvWriter = require('csv-writer').createObjectCsvWriter({
-    path: csvFilePathFixed,
+    path: path.resolve(__dirname, 'data', 'vod_dusseldorf_with-address.csv'),
     header: [
-      { id: 'CityCubeID', title: 'id' },
       { id: 'node', title: 'node' },
+      { id: 'plz', title: 'plz' },
+      { id: 'ort', title: 'ort' },
+      { id: 'stadtteil', title: 'stadtteil' },
+      { id: 'str hsnr', title: 'str hsnr' },
+      { id: 'plz', title: 'plz' },
+      { id: 'address', title: 'address' },
       { id: 'latitude', title: 'latitude' },
       { id: 'longitude', title: 'longitude' },
+      { id: 'CityCubeID', title: 'id' },
       { id: 'str', title: 'str' },
       { id: 'hsnr', title: 'hsnr' },
       { id: 'ort', title: 'ort' },
@@ -55,6 +77,6 @@ async function start () {
     ]
   })
   await csvWriter.writeRecords(data)
-  console.log('Data saved in', csvFilePathFixed)
+  console.log('Data saved')
 }
 start()
