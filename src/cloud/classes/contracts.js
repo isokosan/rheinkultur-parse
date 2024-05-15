@@ -750,10 +750,12 @@ Parse.Cloud.define('contract-create', async ({ params, user, master }) => {
 
   const audit = { user, fn: 'contract-create' }
   await contract.save(null, { useMasterKey: true, context: { audit } })
-  await offer.set({ contract, status: 3 }).save(null, { useMasterKey: true, context: { audit } })
-  if (offer && offer.get('production')) {
-    const production = offer.get('production')
-    production.save({ contract }, { useMasterKey: true })
+  if (offer) {
+    await offer.set({ contract, status: 3 }).save(null, { useMasterKey: true, context: { audit } })
+    if (offer.get('production')) {
+      const production = offer.get('production')
+      production.save({ contract }, { useMasterKey: true })
+    }
   }
   return contract
 }, $internOrAdmin)
