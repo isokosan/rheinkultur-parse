@@ -53,6 +53,16 @@ Parse.Cloud.afterFind(Offer, async ({ objects: offers, query }) => {
       offer.set('lastRemovedCubeIds', await getLastRemovedCubeIds('Contract', offer.id))
     }
     offer.set('commissionRate', getCommissionForYear(offer, year))
+    // set monthly media list and discounts
+    const cubeIds = offer.get('cubeIds') || []
+    const monthlyMedia = offer.get('monthlyMedia') || {}
+    const monthlyMediaList = offer.get('monthlyMediaList') || {}
+    for (const cubeId of cubeIds) {
+      if (!monthlyMediaList[cubeId]) {
+        monthlyMediaList[cubeId] = monthlyMedia[cubeId]
+      }
+    }
+    offer.set('monthlyMediaList', monthlyMediaList)
   }
   return offers
 })
@@ -114,11 +124,13 @@ Parse.Cloud.define('offer-update-cubes', async ({ params: { id: offerId, ...para
     throw new Error('Keine Änderungen')
   }
   offer.set({ cubeIds })
-  const monthlyMedia = offer.get('monthlyMedia') || {}
-  for (const cubeId of cubeIds) {
-    monthlyMedia[cubeId] = monthlyMedia[cubeId] || 0
+  for (const key of ['monthlyMediaList', 'monthlyMediaDiscount', 'monthlyMedia']) {
+    const dict = offer.get('monthlyMedia') || {}
+    for (const cubeId of cubeIds) {
+      dict[cubeId] = dict[cubeId] || 0
+    }
+    offer.set(key, $cleanDict(dict, cubeIds))
   }
-  offer.set({ monthlyMedia })
 
   const production = await $query('Production').equalTo('offer', offer).first({ useMasterKey: true })
   production && production.save(null, { useMasterKey: true })
@@ -127,11 +139,21 @@ Parse.Cloud.define('offer-update-cubes', async ({ params: { id: offerId, ...para
   return offer.save(null, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
-Parse.Cloud.define('offer-update', async ({ params: { id: offerId, requirements, additionalServices, monthlyMedia, production, ...params }, user }) => {
+Parse.Cloud.define('offer-update', async ({
+  params: {
+    id: offerId,
+    requirements,
+    additionalServices,
+    monthlyMediaList,
+    monthlyMediaDiscount,
+    monthlyMedia,
+    production,
+    ...params
+  }, user
+}) => {
   const {
     cubeIds,
     companyId,
-    // addressId,
     companyPersonId,
     startsAt,
     initialDuration,
@@ -151,6 +173,8 @@ Parse.Cloud.define('offer-update', async ({ params: { id: offerId, requirements,
     endsAt,
     noticePeriod,
     autoExtendsBy,
+    monthlyMediaList,
+    monthlyMediaDiscount,
     monthlyMedia,
     requirements,
     additionalServices
@@ -161,6 +185,8 @@ Parse.Cloud.define('offer-update', async ({ params: { id: offerId, requirements,
     endsAt,
     noticePeriod,
     autoExtendsBy,
+    monthlyMediaList,
+    monthlyMediaDiscount,
     monthlyMedia,
     requirements,
     additionalServices
@@ -174,7 +200,6 @@ Parse.Cloud.define('offer-update', async ({ params: { id: offerId, requirements,
     const company = companyId ? await $getOrFail('Company', companyId) : null
     changes.company = [offer.get('company')?.id || null, companyId]
     company ? offer.set({ company }) : offer.unset('company')
-    // override company tags
     company.get('tags') ? offer.set('tags', company.get('tags')) : offer.unset('tags')
   }
   if (companyPersonId !== offer.get('companyPerson')?.id) {
