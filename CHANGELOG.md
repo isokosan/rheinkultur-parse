@@ -1,3 +1,10 @@
+# [1.194.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.193.2...1.194.0) (2024-05-16)
+
+
+### Features
+
+* update task list statuses ([fcba395](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fcba3952ec097cbb8b291ec78c2fa88f6c1b31c5))
+
 ## [1.193.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.193.1...1.193.2) (2024-05-16)
 
 
