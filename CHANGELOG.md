@@ -1,3 +1,10 @@
+# [1.195.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.194.0...1.195.0) (2024-05-16)
+
+
+### Features
+
+* offer remove ([b41c3cf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b41c3cf8455e2c3086247a0cc1ad863662534fb7))
+
 # [1.194.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.193.2...1.194.0) (2024-05-16)
 
 
