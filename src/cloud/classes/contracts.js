@@ -1637,7 +1637,7 @@ Parse.Cloud.define('contract-generate-doc', async ({ params: { id: contractId },
   return contract.get('driveFileId')
 }, $internOrAdmin)
 
-Parse.Cloud.define('contract-remove', async ({ params: { id: contractId }, user }) => {
+Parse.Cloud.define('contract-remove', async ({ params: { id: contractId } }) => {
   const contract = await $getOrFail(Contract, contractId)
   if (contract.get('status') !== 0 && contract.get('status') !== 2) {
     throw new Error('Nur Entwürfe können gelöscht werden.')

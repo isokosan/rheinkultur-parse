@@ -31,8 +31,6 @@ Parse.Cloud.beforeFind(Offer, ({ query }) => {
     'contract',
     'company',
     'companyPerson',
-    // 'agency',
-    // 'agencyPerson',
     'production',
     'docs',
     'tags',
@@ -237,3 +235,11 @@ Parse.Cloud.define('offer-fetch', async ({ params: { key } }) => {
   const order = await $getOrFail(className, objectId, ['all', 'responsibles'])
   return order.toJSON()
 })
+
+Parse.Cloud.define('offer-remove', async ({ params: { id: offerId } }) => {
+  const offer = await $getOrFail(Offer, offerId)
+  if (offer.get('status')) {
+    throw new Error('Nur Entwürfe können gelöscht werden.')
+  }
+  return offer.destroy({ useMasterKey: true })
+}, $internOrAdmin)
