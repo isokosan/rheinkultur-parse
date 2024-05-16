@@ -218,21 +218,15 @@ Parse.Cloud.define('briefing-revert', async ({ params: { id: briefingId }, user 
   if (briefing.get('status') !== 1) {
     throw new Error('Nur geplante Briefings können zurückgezogen werden.')
   }
-  const counts = briefing.get('counts')
-  if (counts.completed || counts.rejected) {
-    throw new Error('Briefings mit erledigten Listen können nicht zurückgezogen werden.')
+  const taskListQuery = $query('TaskList').equalTo('briefing', briefing)
+  const submissions = await $query('ScoutSubmission').matchesQuery('taskList', taskListQuery).count({ useMasterKey: true })
+  if (submissions) {
+    throw new Error('Briefings mit eingereichten Listen können nicht zurückgezogen werden.')
   }
-  await $query('TaskList')
-    .equalTo('briefing', briefing)
-    .select('statuses')
-    .eachBatch(async (taskLists) => {
-      for (const taskList of taskLists) {
-        if (Object.keys(taskList.get('statuses')).length) {
-          throw new Error('Briefings mit erledigten Listen können nicht zurückgezogen werden.')
-        }
-      }
-    }, { useMasterKey: true })
-
+  const anyNotInPlannedStatus = await taskListQuery.greaterThan('status', 1).count({ useMasterKey: true })
+  if (anyNotInPlannedStatus) {
+    throw new Error('Alle Listen müssen im geplanten Status sein.')
+  }
   const taskListAudit = { user, fn: 'task-list-revert' }
   await $query('TaskList')
     .equalTo('briefing', briefing)

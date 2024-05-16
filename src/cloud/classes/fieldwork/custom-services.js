@@ -2,6 +2,17 @@ const CustomService = Parse.Object.extend('CustomService')
 const TaskList = Parse.Object.extend('TaskList')
 const { getStatusAndCounts } = require('./task-lists')
 
+function getSubmissionClass (type) {
+  switch (type) {
+  case 'special-format':
+    return 'SpecialFormatSubmission'
+  case 'custom-task':
+    return 'CustomTaskSubmission'
+  default:
+    throw new Error('Submission type not supported!')
+  }
+}
+
 Parse.Cloud.beforeSave(CustomService, async ({ object: customService, context: { syncStatus } }) => {
   !customService.get('status') && customService.set('status', 0)
 
@@ -233,9 +244,18 @@ Parse.Cloud.define('custom-service-revert', async ({ params: { id: customService
   if (customService.get('status') !== 1) {
     throw new Error('Nur geplante Sonderdiensleistungen können zurückgezogen werden.')
   }
-  const counts = customService.get('counts')
-  if (counts.completed || counts.rejected) {
-    throw new Error('Sonderdiensleistungen mit erledigten Listen können nicht zurückgezogen werden.')
+
+  // check if there are any submissions
+  const taskListQuery = $query('TaskList').equalTo('customService', customService)
+  const submissions = await $query(getSubmissionClass(customService.get('type')))
+    .matchesQuery('taskList', taskListQuery)
+    .count({ useMasterKey: true })
+  if (submissions) {
+    throw new Error('Sonderdiensleistungen mit eingereichten Listen können nicht zurückgezogen werden.')
+  }
+  const anyNotInPlannedStatus = await taskListQuery.greaterThan('status', 1).count({ useMasterKey: true })
+  if (anyNotInPlannedStatus) {
+    throw new Error('Alle Listen müssen im geplanten Status sein.')
   }
   await $query('TaskList')
     .equalTo('customService', customService)

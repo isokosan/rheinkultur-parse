@@ -466,9 +466,15 @@ Parse.Cloud.define('control-revert', async ({ params: { id: controlId }, user })
   if (control.get('status') !== 1) {
     throw new Error('Nur geplante Kontrollen können zurückgezogen werden.')
   }
-  const counts = control.get('counts')
-  if (counts.completed || counts.rejected) {
-    throw new Error('Kontrollen mit erledigten Listen können nicht zurückgezogen werden.')
+
+  const taskListQuery = $query('TaskList').equalTo('control', control)
+  const submissions = await $query('ControlSubmission').matchesQuery('taskList', taskListQuery).count({ useMasterKey: true })
+  if (submissions) {
+    throw new Error('Kontrollen mit eingereichten Listen können nicht zurückgezogen werden.')
+  }
+  const anyNotInPlannedStatus = await taskListQuery.greaterThan('status', 1).count({ useMasterKey: true })
+  if (anyNotInPlannedStatus) {
+    throw new Error('Alle Listen müssen im geplanten Status sein.')
   }
   await $query('TaskList')
     .equalTo('control', control)
