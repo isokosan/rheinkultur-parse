@@ -9,7 +9,7 @@ Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MAS
 Parse.serverURL = serverURL
 require('./../src/globals')
 
-const parseAsDigitString = function (num, digits = 4) {
+const parseAsDigitString = function (num, digits = 6) {
   if (num === null || num === undefined) { return num }
   let string = `${num}`
   while (string.length < digits) {
@@ -19,7 +19,7 @@ const parseAsDigitString = function (num, digits = 4) {
 }
 async function start () {
   const data = await csv().fromFile(path.resolve(__dirname, 'data', 'vod_dusseldorf.csv'))
-  const processed = await csv().fromFile(path.resolve(__dirname, 'data', 'vodafone_combined.csv'))
+  const processed = await csv().fromFile(path.resolve(__dirname, 'data', 'vod_dusseldorf_with-address.csv'))
   let i = 0
   for (const row of data) {
     i++
@@ -68,7 +68,7 @@ async function start () {
       { id: 'address', title: 'address' },
       { id: 'latitude', title: 'latitude' },
       { id: 'longitude', title: 'longitude' },
-      { id: 'CityCubeID', title: 'id' },
+      { id: 'id', title: 'id' },
       { id: 'str', title: 'str' },
       { id: 'hsnr', title: 'hsnr' },
       { id: 'ort', title: 'ort' },
