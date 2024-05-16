@@ -740,6 +740,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     c,
     state: stateId,
     type,
+    types,
     dueIn,
     start,
     end,
@@ -809,6 +810,17 @@ Parse.Cloud.define('search-fieldwork', async ({
       dType && bool.filter.push({ match: { parentId: `*${dType}$` } })
     }
     if (type === 'control') {
+      controlId && bool.filter.push({ term: { 'parentId.keyword': controlId } })
+    }
+  }
+
+  if (types) {
+    bool.filter.push({ terms: { 'type.keyword': types.split(',') } })
+    if (types === 'disassembly') {
+      dClass && bool.filter.push({ prefix: { 'parentId.keyword': dClass } })
+      dType && bool.filter.push({ match: { parentId: `*${dType}$` } })
+    }
+    if (types === 'control') {
       controlId && bool.filter.push({ term: { 'parentId.keyword': controlId } })
     }
   }

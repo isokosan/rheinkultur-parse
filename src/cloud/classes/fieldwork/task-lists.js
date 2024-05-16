@@ -31,21 +31,25 @@ async function getCenterOfCubes (cubeIds) {
 
 function getParentStatus (parent, statusCounts) {
   if (parent.get('status') === 0) { return 0 }
-  if (parent.get('status') === 4.1) { return 4.1 }
+  if (parent.get('status') > 4) { return parent.get('status') }
   const statuses = Object.keys(statusCounts).map(parseFloat)
+  const minStatus = Math.min(...statuses)
   // all complete
-  if (Math.min(...statuses) >= 4) {
-    return 4
+  if (minStatus >= 4) { return 4 }
+  // all are beauftragt, some are in progress or complete
+  // some are complete => Teilweise Erledigt
+  if (statuses.includes(4)) { return 3.9 }
+  // some are in progress => In Bearbeitung
+  if (statuses.includes(3)) { return 3 }
+
+  if (statuses.includes(2)) {
+    return minStatus === 2 ? 2 : 1.9
   }
-  // some are assigned, progress or complete
-  if (Math.max(...statuses) >= 2) {
-    return 3
+  if (statuses.includes(1)) {
+    return minStatus === 1 ? 1 : 0.9
   }
-  // all appointed
-  if (Math.max(...statuses) >= 1) {
-    return 2
-  }
-  return 1
+  // geplant
+  return 0.1
 }
 
 async function getStatusAndCounts ({ briefing, assembly, control, disassembly, customService }) {

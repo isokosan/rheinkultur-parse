@@ -162,9 +162,13 @@ module.exports.TASK_LIST_IN_PROGRESS_STATUSES = [2, 3]
 // Briefing, Control, Disassembly, CustomService
 module.exports.FIELDWORK_STATUSES = {
   0: 'Entwurf',
-  1: 'Geplant',
-  2: 'Vorbereitet',
+  0.1: 'Geplant',
+  0.9: 'Teilweise Ernannt',
+  1: 'Ernannt',
+  1.9: 'Teilweise Beauftragt',
+  2: 'Beauftragt',
   3: 'In Bearbeitung',
+  3.9: 'Teilweise Erledigt',
   4: 'Erledigt',
   5: 'Archiviert'
 }
