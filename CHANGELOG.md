@@ -1,3 +1,10 @@
+# [1.196.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.195.0...1.196.0) (2024-05-16)
+
+
+### Features
+
+* add discounts ([03de15a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/03de15acac9def497a5e78f10fae454146889992))
+
 # [1.195.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.194.0...1.195.0) (2024-05-16)
 
 
