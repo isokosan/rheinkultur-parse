@@ -1,3 +1,10 @@
+## [1.193.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.193.1...1.193.2) (2024-05-16)
+
+
+### Bug Fixes
+
+* fieldwork revert checks ([d51b7c8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d51b7c8909c212bac2a6776c36555a6c96f10487))
+
 ## [1.193.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.193.0...1.193.1) (2024-05-15)
 
 
