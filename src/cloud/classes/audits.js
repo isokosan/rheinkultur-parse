@@ -17,6 +17,7 @@ const FIELDWORK_FUNCTIONS = [
   'task-list-retract-complete',
   'scout-submission-submit',
   'scout-submission-preapprove',
+  'scout-submission-toggle-can-online-scout',
   'scout-submission-approve',
   'scout-submission-reject',
   'control-submission-submit',

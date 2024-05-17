@@ -838,6 +838,7 @@ const schemaDefinitions = {
       selectionRatings: { type: 'Object' }, // used to store info on how good a selected cube is
 
       // only for scout and parent briefing
+      cantOnlineScout: { type: 'Array' }, // case when fieldwork manager marks as not online scoutable
       scoutAddedCubeIds: { type: 'Array' }, // // case for briefings when scout adds extra cube (briefings)
       markedDisassembledCubeIds: { type: 'Array' }, // case for controls when admin marks a cube disassembled
       adminApprovedCubeIds: { type: 'Array' }, // case when admin marks as approved (skipped) (for all)

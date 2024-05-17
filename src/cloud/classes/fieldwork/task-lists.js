@@ -102,7 +102,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.set('gp', await getCenterOfCubes(cubeIds))
   taskList.set('pk', $pk(taskList))
 
-  for (const cubeIdField of ['adminApprovedCubeIds', 'scoutAddedCubeIds', 'markedDisassembledCubeIds']) {
+  for (const cubeIdField of ['adminApprovedCubeIds', 'scoutAddedCubeIds', 'markedDisassembledCubeIds', 'cantOnlineScout']) {
     taskList.get(cubeIdField) && taskList.set(cubeIdField, intersection([...new Set(taskList.get(cubeIdField))], cubeIds))
   }
 
@@ -150,6 +150,8 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
     statuses[cubeId] = 'approved'
   }
 
+  // make sure to remove cantOnlineScout cubes that have been scouted
+  taskList.set('cantOnlineScout', (taskList.get('cantOnlineScout') || []).filter(cubeId => !statuses[cubeId]))
   const statusVals = Object.values(statuses)
   const counts = {
     total: cubeIds.length,
@@ -161,6 +163,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   // should only be consist of verified cubes that were not in admin approved cube ids and not scouted
   if (taskType === 'scout') {
     counts.approvable = statusVals.filter(x => x === 'approvable').length
+    counts.cantOnlineScout = taskList.get('cantOnlineScout').length
   }
 
   if (!taskList.isNew()) {
@@ -689,7 +692,7 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
   await validateScoutManagerOrFieldworkManager(taskList, user)
   const cube = await $getOrFail('Cube', cubeId)
   if (taskList.get('type') === 'scout' && approved && !cube.get('vAt')) {
-    throw new Error('Nur verifizierte CityCubes können als gescouted markiert werden.')
+    throw new Error('Nur verifizierte CityCubes können als gescoutet markiert werden.')
   }
   let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
 
@@ -750,13 +753,38 @@ Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: tas
   await taskList.save(null, { useMasterKey: true, context: { audit } })
 }, { requireUser: true })
 
+Parse.Cloud.define('task-list-cube-toggle-can-scout-online', async ({ params: { id: taskListId, cubeId, can }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (taskList.get('type') !== 'scout') {
+    throw new Error('Nur Scout-Listen können online gescoutet werden.')
+  }
+  await validateScoutManagerOrFieldworkManager(taskList, user)
+  await $getOrFail('Cube', cubeId)
+  let cantOnlineScout = taskList.get('cantOnlineScout') || []
+  if ((!can && cantOnlineScout.includes(cubeId)) || (can && !cantOnlineScout.includes(cubeId))) {
+    throw new Error('Keine Änderungen')
+  }
+
+  cantOnlineScout = !can
+    ? [...cantOnlineScout, cubeId]
+    : cantOnlineScout.filter(id => id !== cubeId)
+
+  taskList.set('cantOnlineScout', [...new Set(cantOnlineScout)])
+  const audit = { user, fn: 'scout-submission-toggle-can-online-scout', data: { cubeId, can } }
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  return {
+    data: taskList.get('cantOnlineScout'),
+    message: can ? 'Online Scouten als möglich markiert.' : 'Online Scouten als nicht möglich markiert.'
+  }
+}, { requireUser: true })
+
 Parse.Cloud.define('task-list-mass-preapprove', async ({ params: { id: taskListId, cubeIds, approved }, user, master }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   !master && await validateScoutManagerOrFieldworkManager(taskList, user)
   if (taskList.get('type') === 'scout' && approved) {
     // check if any cubes that are not verified exist
     if (await $query('Cube').containedIn('objectId', cubeIds).equalTo('vAt', null).count({ useMasterKey: true })) {
-      throw new Error('Nur verifizierte CityCubes können als gescouted markiert werden.')
+      throw new Error('Nur verifizierte CityCubes können als gescoutet markiert werden.')
     }
   }
   let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
