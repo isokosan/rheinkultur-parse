@@ -1,3 +1,10 @@
+# [1.198.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.197.0...1.198.0) (2024-05-17)
+
+
+### Features
+
+* add offer sent status ([dfb2437](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dfb24379ace8bc1e92af96916344cd9f8cd7f056))
+
 # [1.197.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.196.1...1.197.0) (2024-05-17)
 
 
