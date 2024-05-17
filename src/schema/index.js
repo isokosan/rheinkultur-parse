@@ -94,7 +94,9 @@ const schemaDefinitions = {
       pbx: { type: 'String' },
       mobile: { type: 'String' },
       accType: { type: 'String', required: true },
-      permissions: { type: 'Array' }
+      permissions: { type: 'Array' },
+      // temporary until we have more settings / notifs
+      screenNotifLastDismissedAt: { type: 'Date' }
     }
   },
   ApiToken: {

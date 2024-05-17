@@ -1,4 +1,5 @@
 const { lowerFirst } = require('lodash')
+const TASK_LIST_PARENTS = ['briefing', 'control', 'assembly', 'disassembly', 'customService']
 
 Parse.Cloud.define('fieldwork-map', async ({ user }) => {
   const query = $query(Parse.User)
@@ -22,7 +23,7 @@ Parse.Cloud.define('fieldwork-outstanding', async ({ user }) => {
     .containedIn('status', [2, 3])
     .lessThanOrEqualTo('date', await $today())
   await taskListQuery
-    .select(['scouts', 'counts', 'type', 'gp', 'pk', 'briefing', 'control', 'disassembly', 'customService'])
+    .select(['scouts', 'counts', 'type', 'gp', 'pk', ...TASK_LIST_PARENTS])
     .eachBatch((lists) => {
       for (const list of lists) {
         const { completed, total } = list.get('counts')
