@@ -1,3 +1,10 @@
+# [1.199.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.198.0...1.199.0) (2024-05-17)
+
+
+### Features
+
+* make sure to not show VOD cubes on pubilc pages ([9265120](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9265120096ef518c19103788a3506530e5b22380))
+
 # [1.198.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.197.0...1.198.0) (2024-05-17)
 
 
