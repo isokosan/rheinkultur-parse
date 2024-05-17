@@ -399,11 +399,13 @@ Parse.Cloud.define('search', async ({
 }) => {
   let orderClass
   let fmqty
+  let excludeLC
   const isPublic = !master && !user
   // public can only search for '0' => available or '' => all
   if (isPublic) {
     s === 'all' && (s = '')
     !['', '0', 'ml'].includes(s) && (s = '0')
+    excludeLC = 'VOD'
   }
   const isPartner = !master && user && user.get('accType') === 'partner' && user.get('company')
   // partner can only search for '0' => available, my_bookings or '' => all
@@ -440,6 +442,7 @@ Parse.Cloud.define('search', async ({
   id && bool.must.push({ wildcard: { 'objectId.keyword': `*${id}*` } })
   klsId && bool.filter.push({ match_phrase_prefix: { klsId } })
   lc && bool.filter.push({ term: { 'lc.keyword': lc } })
+  excludeLC && bool.must_not.push({ term: { 'lc.keyword': excludeLC } })
   media && bool.filter.push({ term: { 'media.keyword': media } })
   htId && bool.filter.push({ term: { 'ht.objectId.keyword': htId } })
 
