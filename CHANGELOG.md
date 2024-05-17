@@ -1,3 +1,10 @@
+# [1.197.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.196.1...1.197.0) (2024-05-17)
+
+
+### Features
+
+* fieldwork cant online scout ([4db63c4](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4db63c418fa92d61f421eb6ca27b782f8a484d3f))
+
 ## [1.196.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.196.0...1.196.1) (2024-05-17)
 
 
