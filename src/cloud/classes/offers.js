@@ -7,7 +7,7 @@ const Offer = Parse.Object.extend('Offer')
 Parse.Cloud.beforeSave(Offer, async ({ object: offer }) => {
   offer.isNew() && !offer.get('no') && offer.set({ no: await getNewNo('A' + moment(await $today()).format('YY') + '-', Offer, 'no') })
   UNSET_NULL_FIELDS.forEach(field => !offer.get(field) && offer.unset(field))
-  offer.set('status', offer.get('contract') ? 3 : 0)
+  !offer.get('status') && offer.set('status', offer.get('contract') ? 3 : 0)
 
   offer.get('autoExtendsBy') && offer.get('endsAt')
     ? offer.set('autoExtendsAt', moment(offer.get('endsAt')).subtract(offer.get('noticePeriod') || 0, 'months').format('YYYY-MM-DD'))
@@ -253,6 +253,15 @@ Parse.Cloud.define('offer-update', async ({
 
   const audit = { user, fn: 'offer-update', data: { changes, cubeChanges, productionChanges } }
   return offer.save(null, { useMasterKey: true, context: { audit } })
+}, $internOrAdmin)
+
+Parse.Cloud.define('offer-mark-as-sent', async ({ params: { id: offerId }, user }) => {
+  const offer = await $getOrFail(Offer, offerId)
+  if (offer.get('status') !== 0) {
+    throw new Error('Angebot ist bereits gesendet.')
+  }
+  const audit = { user, fn: 'offer-mark-as-sent' }
+  return offer.save({ status: 1 }, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
 Parse.Cloud.define('offer-fetch', async ({ params: { key } }) => {
