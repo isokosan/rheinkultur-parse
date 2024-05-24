@@ -511,6 +511,9 @@ Parse.Cloud.define('frame-mount-request-accept', async ({ params: { id: frameMou
     changes.fmCounts[1][cubeId] = changes.fmCounts[0][cubeId]
   }
   const rejectionCount = rejectedCubeIds.length
+  if (rejectionCount && !comments) {
+    throw new Error('Bitte geben Sie einen Grund für die Einzelablehnungen an.')
+  }
   frameMount
     .set({ requestHistory, fmCounts: changes.fmCounts[1] })
     .unset('request')

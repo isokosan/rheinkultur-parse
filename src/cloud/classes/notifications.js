@@ -96,8 +96,9 @@ const NOTIFICATIONS = {
   },
   'frame-mount-request-accept-comments': {
     mailSubject: () => 'Bemerkungen zu Ihrer genehmigten Anfrage',
-    mailContent: ({ pk, comments }) => `
+    mailContent: ({ pk, rejectionCount, comments }) => `
       <p>Ihre Anfrage für die Moskitorahmen in <strong>${pk.split(':')[1]}</strong> wurde genehmight.</p>
+      ${rejectionCount ? `<p><strong>${rejectionCount} Standort${rejectionCount === 1 ? ' wurde' : 'e wurden'} abgelehnt.</strong></p>` : ''}
       <p><strong>Bemerkungen zur Anfrage:</strong></p>
       <p>${comments?.replace(/\n/g, '<br>')}</p>
     `,
