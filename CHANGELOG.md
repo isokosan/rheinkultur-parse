@@ -1,3 +1,10 @@
+# [1.200.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.199.0...1.200.0) (2024-05-24)
+
+
+### Features
+
+* single rejections in frame mounts ([c2b4f54](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c2b4f546e5396e9887149c4a18eb972c09033207))
+
 # [1.199.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.198.0...1.199.0) (2024-05-17)
 
 
