@@ -474,6 +474,11 @@ Parse.Cloud.define('invoice-issue', async ({ params: { id: invoiceId, email }, u
       : 'Bitte geben Sie bei der Überweisung die Rechnungsnummer an, nur so können wir ihre Zahlung korrekt zuordnen.'
   })
 
+  if (!lexId || !lexUri) {
+    consola.error('LexOffice hat die Rechnung nicht erstellt.', invoice.id)
+    throw new Error('LexOffice hat die Rechnung nicht erstellt.')
+  }
+
   invoice.set({ lexId, lexUri })
   invoice.set('status', 2).unset('shouldMail')
   await invoice.save(null, { useMasterKey: true, context: { audit: { user, fn: 'invoice-issue' } } })

@@ -373,14 +373,7 @@ Parse.Cloud.define('frame-mount-request-draft', async ({ params: { id: frameMoun
   return frameMount.save(null, { useMasterKey: true, context: { audit } })
 }, $isFramePartner)
 
-Parse.Cloud.define('frame-mount-request-submit', async ({ params: { id: frameMountId, date, comments }, user }) => {
-  const frameMount = await $getOrFail(FrameMount, frameMountId)
-  const request = frameMount.get('request')
-  if (request.status !== 'draft') {
-    throw new Error('Nur Entwurfsanfragen können abgesendet werden.')
-  }
-
-  const [before, after] = request.changes.fmCounts
+function calculateAddedRemovedFmCounts ([before, after]) {
   // number of added and removed frames
   let added = 0
   let removed = 0
@@ -398,6 +391,15 @@ Parse.Cloud.define('frame-mount-request-submit', async ({ params: { id: frameMou
       removed += before[key]
     }
   }
+  return { added, removed }
+}
+Parse.Cloud.define('frame-mount-request-submit', async ({ params: { id: frameMountId, date, comments }, user }) => {
+  const frameMount = await $getOrFail(FrameMount, frameMountId)
+  const request = frameMount.get('request')
+  if (request.status !== 'draft') {
+    throw new Error('Nur Entwurfsanfragen können abgesendet werden.')
+  }
+  const { added, removed } = calculateAddedRemovedFmCounts(request.changes.fmCounts)
   request.changes.added = added
   request.changes.removed = removed
   request.status = 'pending'
@@ -416,6 +418,17 @@ Parse.Cloud.define('frame-mount-request-revert', async ({ params: { id: frameMou
   if (!['pending', 'rejected'].includes(request.status)) {
     throw new Error('Nur ausstehende Anfragen können zurückgezogen werden')
   }
+
+  // remove all rejections
+  for (const cubeId of Object.keys(request.rejections || {})) {
+    request.changes.fmCounts[1][cubeId] = request.changes.fmCounts[0][cubeId]
+  }
+  delete request.rejections
+  const { added, removed } = calculateAddedRemovedFmCounts(request.changes.fmCounts)
+  request.changes.added = added
+  request.changes.removed = removed
+  delete request.rejectedAdded
+  delete request.rejectedRemoved
   request.status = 'draft'
   request.updatedAt = new Date()
   frameMount.set({ request })
@@ -456,6 +469,28 @@ Parse.Cloud.define('frame-mount-request-reject', async ({ params: { id: frameMou
   return 'Anfrage abgelehnt.'
 }, $internFrameManager)
 
+Parse.Cloud.define('frame-mount-request-toggle-cube-rejection', async ({ params: { id: frameMountId, cubeId } }) => {
+  const frameMount = await $getOrFail(FrameMount, frameMountId)
+  const request = frameMount.get('request')
+  if (!request) { throw new Error('Anfrage nicht gefunden.') }
+  if (['accepted', 'rejected'].includes(request.status)) { throw new Error('Diese Anfrage wurde bereits akzeptiert oder abgelehnt.') }
+  const { fmCounts } = request.changes
+  if (!fmCounts[0]?.[cubeId] && !fmCounts[1]?.[cubeId]) {
+    throw new Error('Cube nicht in Anfrage')
+  }
+  const rejections = request.rejections || {}
+  rejections[cubeId] = rejections[cubeId] ? undefined : (fmCounts[1][cubeId] || 0) - (fmCounts[0][cubeId] || 0)
+  request.rejections = $cleanDict(rejections, frameMount.get('cubeIds'))
+  request.changes.rejectedAdded = Object.values(rejections).filter(qty => qty > 0).reduce((a, b) => a + b, 0)
+  request.changes.rejectedRemoved = Object.values(rejections).filter(qty => qty < 0).reduce((a, b) => a + b, 0)
+  if (((request.changes.rejectedAdded || 0) === (request.changes.added || 0)) && (((request.changes.rejectedRemoved || 0) * -1) === (request.changes.removed || 0))) {
+    throw new Error('Sie können anstatt den gesamte Anfrage ablehnen')
+  }
+  frameMount.set({ request })
+  await frameMount.save(null, { useMasterKey: true })
+  return request
+}, $internFrameManager)
+
 Parse.Cloud.define('frame-mount-request-accept', async ({ params: { id: frameMountId, comments }, user }) => {
   const frameMount = await $getOrFail(FrameMount, frameMountId)
   const request = frameMount.get('request')
@@ -470,17 +505,21 @@ Parse.Cloud.define('frame-mount-request-accept', async ({ params: { id: frameMou
   const requestHistory = frameMount.get('requestHistory') || []
   requestHistory.push(request)
 
-  const { changes } = request
-  const fmCounts = changes.fmCounts[1]
+  const { changes, rejections } = request
+  const rejectedCubeIds = Object.keys(rejections)
+  for (const cubeId of rejectedCubeIds) {
+    changes.fmCounts[1][cubeId] = changes.fmCounts[0][cubeId]
+  }
+  const rejectionCount = rejectedCubeIds.length
   frameMount
-    .set({ requestHistory, fmCounts })
+    .set({ requestHistory, fmCounts: changes.fmCounts[1] })
     .unset('request')
   const audit = { user, fn: 'frame-mount-request-accept', data: { changes } }
   await frameMount.save(null, { useMasterKey: true, context: { audit, setCubeStatuses: true } })
   request.acceptComments && request.user && await $notify({
     user: request.user,
     identifier: 'frame-mount-request-accept-comments',
-    data: { frameMountId, requestId: request.id, pk: frameMount.get('pk'), comments: request.acceptComments }
+    data: { frameMountId, requestId: request.id, pk: frameMount.get('pk'), rejectionCount, comments: request.acceptComments }
   })
 }, $internFrameManager)
 
