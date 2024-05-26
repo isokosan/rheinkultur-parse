@@ -37,8 +37,9 @@ module.exports.PERMISSIONS = {
 module.exports.OFFER_STATUSES = {
   '-1': 'Archiviert',
   0: 'Entwurf',
+  0.1: 'In Bearbeitung',
   1: 'Gesendet',
-  2: 'In Bearbeitung',
+  // 2: ,
   3: 'Abgeschlossen',
   4: 'Abgelehnt',
   5: 'Ausgelaufen'

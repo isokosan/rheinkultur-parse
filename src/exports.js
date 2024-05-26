@@ -26,7 +26,8 @@ const EXPORT_MASTER_ROUTES = [
   '/invoice-pdf',
   '/credit-note-pdf',
   '/invoice-summary',
-  '/contract-extend-pdf'
+  '/contract-extend-pdf',
+  '/offer-pdf'
 ]
 router.use(async (req, res, next) => {
   req.master = EXPORT_MASTER_ROUTES.includes(req._parsedUrl.pathname) && req.headers['x-exports-master-key'] === process.env.EXPORTS_MASTER_KEY
@@ -1944,6 +1945,30 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
   if (fetchResponse.ok) {
     res.setHeader('Content-Type', 'application/pdf')
     const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung'
+    res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
+    fetchResponse.body.pipe(res)
+    return
+  }
+  console.error('FETCH ERRORED')
+  console.error(fetchResponse)
+  res.status(fetchResponse.status).send(fetchResponse)
+}))
+
+router.get('/offer-pdf', handleErrorAsync(async (req, res) => {
+  const offer = await $getOrFail('Offer', req.query.id)
+  const url = `https://city-cubes.de/of/${req.query.id}?sid=${req.sessionToken}`
+  const fetchResponse = await fetch(process.env.HTML_TO_PDF_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      url,
+      pdfOptions: { timeout: 0 },
+      timeout: 30 * 60 * 1000 // 30 minutes navigation timeout
+    })
+  })
+  if (fetchResponse.ok) {
+    res.setHeader('Content-Type', 'application/pdf')
+    const filename = offer.get('no') + ' Angebot'
     res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
     fetchResponse.body.pipe(res)
     return

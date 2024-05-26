@@ -257,11 +257,20 @@ Parse.Cloud.define('offer-update', async ({
 
 Parse.Cloud.define('offer-mark-as-sent', async ({ params: { id: offerId }, user }) => {
   const offer = await $getOrFail(Offer, offerId)
-  if (offer.get('status') !== 0) {
+  if (offer.get('status') >= 1) {
     throw new Error('Angebot ist bereits gesendet.')
   }
   const audit = { user, fn: 'offer-mark-as-sent' }
   return offer.save({ status: 1 }, { useMasterKey: true, context: { audit } })
+}, $internOrAdmin)
+
+Parse.Cloud.define('offer-undo-finalize', async ({ params: { id: offerId }, user }) => {
+  const offer = await $getOrFail(Offer, offerId)
+  if (offer.get('status') !== 1) {
+    throw new Error('Angebot ist nicht gesendet.')
+  }
+  const audit = { user, fn: 'offer-undo-finalize' }
+  return offer.save({ status: 0.1 }, { useMasterKey: true, context: { audit } })
 }, $internOrAdmin)
 
 Parse.Cloud.define('offer-fetch', async ({ params: { key } }) => {
