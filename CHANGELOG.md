@@ -1,3 +1,10 @@
+# [1.201.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.200.0...1.201.0) (2024-05-26)
+
+
+### Features
+
+* add revert for offers ([ca2df60](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ca2df60743f15a21288e172d87a754b65b0e1862))
+
 # [1.200.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.199.0...1.200.0) (2024-05-24)
 
 
