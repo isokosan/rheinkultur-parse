@@ -1,6 +1,6 @@
 {
   "name": "rheinkultur-wawi",
-  "version": "1.201.0",
+  "version": "1.201.1",
   "private": true,
   "description": "Rheinkultur WaWi Parse Server",
   "main": "index.js",

@@ -1,3 +1,10 @@
+## [1.201.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.0...1.201.1) (2024-05-27)
+
+
+### Bug Fixes
+
+* exports url ([c7c1537](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c7c1537ee5a664bb804bacbd562155ccebfaa6dc))
+
 # [1.201.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.200.0...1.201.0) (2024-05-26)
 
 
