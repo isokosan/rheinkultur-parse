@@ -1,3 +1,10 @@
+## [1.201.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.1...1.201.2) (2024-05-27)
+
+
+### Bug Fixes
+
+* selection status contains bug ([718fa10](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/718fa10f18abcd58c94e88b1865cce64b9f32e5d))
+
 ## [1.201.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.0...1.201.1) (2024-05-27)
 
 
