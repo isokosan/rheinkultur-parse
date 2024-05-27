@@ -1956,7 +1956,7 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
 
 router.get('/offer-pdf', handleErrorAsync(async (req, res) => {
   const offer = await $getOrFail('Offer', req.query.id)
-  const url = `https://city-cubes.de/of/${req.query.id}?sid=${req.sessionToken}`
+  const url = `https://city-cubes.de/op/${req.query.id}?sid=${req.sessionToken}`
   const fetchResponse = await fetch(process.env.HTML_TO_PDF_API, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
