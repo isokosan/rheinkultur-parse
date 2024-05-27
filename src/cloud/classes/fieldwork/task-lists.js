@@ -985,7 +985,9 @@ async function getQueryFromSelection (selection, count, user) {
   } else {
     query.greaterThan('status', 0)
   }
-  !selection.status?.contains('4sa') && query.equalTo('archivedAt', null)
+  if (!selection.status || !selection.status.contains('4sa')) {
+    query.equalTo('archivedAt', null)
+  }
 
   const queryCount = await query.count({ useMasterKey: true })
   if (count !== queryCount) {
