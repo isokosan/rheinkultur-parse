@@ -506,7 +506,7 @@ Parse.Cloud.define('frame-mount-request-accept', async ({ params: { id: frameMou
   requestHistory.push(request)
 
   const { changes, rejections } = request
-  const rejectedCubeIds = Object.keys(rejections)
+  const rejectedCubeIds = Object.keys(rejections || {})
   for (const cubeId of rejectedCubeIds) {
     changes.fmCounts[1][cubeId] = changes.fmCounts[0][cubeId]
   }
