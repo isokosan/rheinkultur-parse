@@ -1,3 +1,10 @@
+## [1.203.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.203.0...1.203.1) (2024-05-29)
+
+
+### Bug Fixes
+
+* attempt to fix status contains bug ([a57a3af](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/a57a3af5027cd565b7be09efd6741903acc5deb1))
+
 # [1.203.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.202.0...1.203.0) (2024-05-29)
 
 
