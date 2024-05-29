@@ -1,3 +1,10 @@
+# [1.202.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.4...1.202.0) (2024-05-29)
+
+
+### Features
+
+* add and fix order finalize issues with offers ([44a3a5f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/44a3a5feedb065426b9cfda4a238f60269fc58f6))
+
 ## [1.201.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.3...1.201.4) (2024-05-29)
 
 
