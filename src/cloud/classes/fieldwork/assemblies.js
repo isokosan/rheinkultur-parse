@@ -163,10 +163,12 @@ Parse.Cloud.define('assembly-generate', async ({ params: { className, objectId }
   return assembly
 }, $internOrAdmin)
 
-Parse.Cloud.define('assembly-photos', async ({ params: { scope, className, objectId } }) => {
+Parse.Cloud.define('assembly-photos', async ({ params: { className, objectId, cubeId } }) => {
   const response = {}
-  await $query('CubePhoto')
-    .equalTo('scope', scope)
+  const scope = `assembly-${className[0]}-${objectId}`
+  const scopeQuery = $query('CubePhoto').equalTo('scope', scope)
+  cubeId && scopeQuery.equalTo('cubeId', cubeId)
+  await scopeQuery
     .eachBatch((photos) => {
       for (const photo of photos) {
         const cubeId = photo.get('cubeId')
@@ -177,16 +179,20 @@ Parse.Cloud.define('assembly-photos', async ({ params: { scope, className, objec
       }
     }, { useMasterKey: true })
 
-  // append assembly form photos in any case
   const scopes = []
+  // append assembly form photos in any case
   if (className === 'SpecialFormat') {
     const specialFormat = await $getOrFail(className, objectId, 'customService')
     const customService = specialFormat.get('customService')
-    const taskListIds = await $query('TaskList').equalTo('customService', customService).distinct('objectId', { useMasterKey: true })
+    const taskListsQuery = $query('TaskList').equalTo('customService', customService)
+    cubeId && taskListsQuery.equalTo('cubeIds', cubeId)
+    const taskListIds = await taskListsQuery.distinct('objectId', { useMasterKey: true })
     scopes.push(...taskListIds.map(id => 'special-format-TL-' + id))
   } else {
     const orderKey = [className, objectId].join('-')
-    const taskListIds = await $query('TaskList').equalTo('assembly', $parsify('Assembly', orderKey)).distinct('objectId', { useMasterKey: true })
+    const taskListsQuery = $query('TaskList').equalTo('assembly', $parsify('Assembly', orderKey))
+    cubeId && taskListsQuery.equalTo('cubeIds', cubeId)
+    const taskListIds = await taskListsQuery.distinct('objectId', { useMasterKey: true })
     scopes.push(...taskListIds.map(id => 'assembly-TL-' + id))
   }
   await $query('CubePhoto')
@@ -201,5 +207,5 @@ Parse.Cloud.define('assembly-photos', async ({ params: { scope, className, objec
       }
     }
     , { useMasterKey: true })
-  return response
+  return cubeId ? response[cubeId] : response
 }, { requireUser: true })
