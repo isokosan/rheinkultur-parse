@@ -1,3 +1,11 @@
+# [1.203.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.202.0...1.203.0) (2024-05-29)
+
+
+### Features
+
+* add assembly submission to assembly photos ([1ca0e34](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1ca0e344109363aa12c79a998f889e471c329e65))
+* assembly submission in assembly photos ([1475546](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1475546df972a4120783def252df8088e885a22c))
+
 # [1.202.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.4...1.202.0) (2024-05-29)
 
 
