@@ -1968,7 +1968,10 @@ router.get('/offer-pdf', handleErrorAsync(async (req, res) => {
   })
   if (fetchResponse.ok) {
     res.setHeader('Content-Type', 'application/pdf')
-    const filename = offer.get('no') + ' Angebot'
+    let filename = 'Angebot ' + offer.get('no')
+    if (offer.status < 1) {
+      filename += ' (In Bearbeitung)'
+    }
     res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
     fetchResponse.body.pipe(res)
     return

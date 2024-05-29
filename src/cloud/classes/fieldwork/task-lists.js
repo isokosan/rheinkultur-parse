@@ -985,7 +985,7 @@ async function getQueryFromSelection (selection, count, user) {
   } else {
     query.greaterThan('status', 0)
   }
-  if (!selection.status || !selection.status.contains('4sa')) {
+  if (!selection.status || !selection.status.contains?.('4sa')) {
     query.equalTo('archivedAt', null)
   }
 
