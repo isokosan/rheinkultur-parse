@@ -360,9 +360,9 @@ async function randomCubes (bool, size) {
     },
     size
   })
-  const { hits: { hits, total: { value: count } } } = searchResponse
+  const { hits: { hits, total } } = searchResponse
   const results = hits.map(hit => hit._source)
-  return { results, count }
+  return { results, count: total.value }
 }
 
 Parse.Cloud.define('search', async ({
@@ -702,7 +702,7 @@ Parse.Cloud.define('search', async ({
     from,
     size: pagination || 50
   })
-  const { hits: { hits, total: { value: count } } } = searchResponse
+  const { hits: { hits, total } } = searchResponse
   let results = hits.map(hit => hit._source)
   if (isPublic || isPartner) {
     results = results.map(result => {
@@ -734,7 +734,7 @@ Parse.Cloud.define('search', async ({
       return result
     })
   }
-  return { results, count }
+  return { results, count: total.value }
 }, { validateMasterKey: true })
 
 // runs only on fieldwork list view
@@ -854,7 +854,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     from,
     size: pagination || 50
   })
-  const { hits: { hits, total: { value: count } } } = searchResponse
+  const { hits: { hits, total } } = searchResponse
   const taskLists = await $query('TaskList')
     .containedIn('objectId', hits.map(hit => hit._id))
     .limit(hits.length)
@@ -868,7 +868,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     c && obj.set('distance', hit.sort[0])
     return obj.toJSON()
   })
-  return { results, count }
+  return { results, count: total.value }
 }, { requireUser: true, validateMasterKey: true })
 
 Parse.Cloud.define('search-bookings', async ({
@@ -948,7 +948,7 @@ Parse.Cloud.define('search-bookings', async ({
     from,
     size: pagination || 50
   })
-  const { hits: { hits, total: { value: count } } } = searchResponse
+  const { hits: { hits, total } } = searchResponse
   const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
   const bookings = await $query('Booking')
     .containedIn('objectId', bookingIds)
@@ -960,7 +960,7 @@ Parse.Cloud.define('search-bookings', async ({
     if (!booking) { return null }
     return booking.toJSON()
   }).filter(Boolean)
-  return { results, count }
+  return { results, count: total.value }
 }, { requireUser: true, validateMasterKey: true })
 
 // runs only on booking-requests list view
@@ -1000,7 +1000,7 @@ Parse.Cloud.define('search-booking-requests', async ({
     from,
     size: pagination || 50
   })
-  const { hits: { hits, total: { value: count } } } = searchResponse
+  const { hits: { hits, total } } = searchResponse
   const bookingIds = [...new Set(hits.map(hit => hit._source.bookingId))]
   const bookings = await $query('Booking')
     .containedIn('objectId', bookingIds)
@@ -1013,7 +1013,7 @@ Parse.Cloud.define('search-booking-requests', async ({
     hit._source.booking = booking.toJSON()
     return hit._source
   }).filter(Boolean)
-  return { results, count }
+  return { results, count: total.value }
 }, { requireUser: true, validateMasterKey: true })
 
 // runs only on frame-mount-requests list view
@@ -1022,6 +1022,7 @@ Parse.Cloud.define('search-frame-mount-requests', async ({
     requestId,
     pk,
     status,
+    count,
     from,
     pagination
   }, user, master
@@ -1033,6 +1034,11 @@ Parse.Cloud.define('search-frame-mount-requests', async ({
   pk && bool.filter.push({ term: { 'pk.keyword': pk } })
   status && bool.filter.push({ term: { 'status.keyword': status } })
 
+  if (count) {
+    return client.count({ index: 'rheinkultur-frame-mount-requests', body: { query: { bool } } })
+      .then(({ count }) => count)
+  }
+
   const searchResponse = await client.search({
     index: 'rheinkultur-frame-mount-requests',
     body: {
@@ -1043,8 +1049,8 @@ Parse.Cloud.define('search-frame-mount-requests', async ({
     from,
     size: pagination || 50
   })
-  const { hits: { hits, total: { value: count } } } = searchResponse
-  return { results: hits.map(hit => hit._source), count }
+  const { hits: { hits, total } } = searchResponse
+  return { results: hits.map(hit => hit._source), count: total.value }
 }, { requireUser: true, validateMasterKey: true })
 
 // runs only on frame-mount-takedowns view
@@ -1053,7 +1059,8 @@ Parse.Cloud.define('search-frame-mount-takedowns', async ({
     pk,
     status,
     from,
-    pagination
+    pagination,
+    count
   }, user, master
 }) => {
   // BUILD QUERY
@@ -1065,6 +1072,11 @@ Parse.Cloud.define('search-frame-mount-takedowns', async ({
   status === 'pending' && bool.must_not.push({ exists: { field: 'date' } })
   status === 'accepted' && bool.must.push({ exists: { field: 'date' } })
 
+  if (count) {
+    return client.count({ index: 'rheinkultur-frame-mount-takedowns', body: { query: { bool } } })
+      .then(({ count }) => count)
+  }
+
   const searchResponse = await client.search({
     index: 'rheinkultur-frame-mount-takedowns',
     body: {
@@ -1075,7 +1087,7 @@ Parse.Cloud.define('search-frame-mount-takedowns', async ({
     from,
     size: pagination || 50
   })
-  const { hits: { hits, total: { value: count } } } = searchResponse
+  const { hits: { hits, total } } = searchResponse
   const frameMountIds = [...new Set(hits.map(hit => hit._source.frameMountId))]
   const frameMounts = await $query('FrameMount')
     .containedIn('objectId', frameMountIds)
@@ -1095,7 +1107,7 @@ Parse.Cloud.define('search-frame-mount-takedowns', async ({
     hit._source.cube = cube.toJSON()
     return hit._source
   }).filter(Boolean)
-  return { results, count }
+  return { results, count: total.value }
 }, { requireUser: true, validateMasterKey: true })
 
 Parse.Cloud.define('booked-cubes', async () => {
