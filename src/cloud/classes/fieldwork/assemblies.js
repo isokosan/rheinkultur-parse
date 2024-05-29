@@ -177,24 +177,29 @@ Parse.Cloud.define('assembly-photos', async ({ params: { scope, className, objec
       }
     }, { useMasterKey: true })
 
-  // append customService photos if special format
+  // append assembly form photos in any case
+  const scopes = []
   if (className === 'SpecialFormat') {
     const specialFormat = await $getOrFail(className, objectId, 'customService')
     const customService = specialFormat.get('customService')
     const taskListIds = await $query('TaskList').equalTo('customService', customService).distinct('objectId', { useMasterKey: true })
-    const scopes = taskListIds.map(id => 'special-format-TL-' + id)
-    await $query('CubePhoto')
-      .containedIn('scope', scopes)
-      .eachBatch((photos) => {
-        for (const photo of photos) {
-          const cubeId = photo.get('cubeId')
-          if (!response[cubeId]) {
-            response[cubeId] = []
-          }
-          response[cubeId].push(photo)
-        }
-      }
-      , { useMasterKey: true })
+    scopes.push(...taskListIds.map(id => 'special-format-TL-' + id))
+  } else {
+    const orderKey = [className, objectId].join('-')
+    const taskListIds = await $query('TaskList').equalTo('assembly', $parsify('Assembly', orderKey)).distinct('objectId', { useMasterKey: true })
+    scopes.push(...taskListIds.map(id => 'assembly-TL-' + id))
   }
+  await $query('CubePhoto')
+    .containedIn('scope', scopes)
+    .eachBatch((photos) => {
+      for (const photo of photos) {
+        const cubeId = photo.get('cubeId')
+        if (!response[cubeId]) {
+          response[cubeId] = []
+        }
+        response[cubeId].push(photo)
+      }
+    }
+    , { useMasterKey: true })
   return response
 }, { requireUser: true })
