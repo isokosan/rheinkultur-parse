@@ -12,53 +12,62 @@ const updateJobs = {
     name: 'Sync Cube Statuses',
     cron: '0 3 * * *', // at 03:00 AM
     timeoutMinutes: 120,
+    attempts: 2,
     notificationDuration: 24
   },
   calculate_stats: {
     name: 'Monatliche Statistiken',
     cron: '0 4 * * *', // at 04:00 AM
     timeoutMinutes: 30,
+    attempts: 2,
     notificationDuration: 24
   },
   reindex_cities: {
     name: 'Suchindex von Orte aktualisieren',
     timeoutMinutes: 30,
+    attempts: 3,
     cron: '0 4 * * *', // at 04:00 AM
     notificationDuration: 24
   },
   sync_disassemblies: {
     name: 'Demontage synchronizieren.',
     timeoutMinutes: 120,
+    attempts: 3,
     cron: '0 4 * * *', // at 04:00 AM
     notificationDuration: 24
   },
   reindex_streets: {
     name: 'Suchindex von Straßen aktualisieren',
     timeoutMinutes: 10,
+    attempts: 3,
     cron: '30 4 * * *', // at 04:30 AM
     notificationDuration: 24
   },
   reindex_fieldwork: {
     name: 'Suchindex von Dienseistungen aktualisieren',
     timeoutMinutes: 20,
+    attempts: 3,
     cron: '40 4 * * *', // at 04:40 AM
     notificationDuration: 24
   },
   reindex_bookings: {
     name: 'Suchindex von Buchungen aktualisieren',
     timeoutMinutes: 10,
+    attempts: 2,
     cron: '0 5 * * *', // at 05:00 AM
     notificationDuration: 24
   },
   reindex_booking_requests: {
     name: 'Suchindex von Buchungsanfragen aktualisieren',
     timeoutMinutes: 10,
+    attempts: 2,
     cron: '10 5 * * *', // at 05:10 AM
     notificationDuration: 24
   },
   reindex_frame_mounts: {
     name: 'Suchindex von Moskitorahmen aktualisieren',
     timeoutMinutes: 10,
+    attempts: 2,
     cron: '10 5 * * *', // at 05:10 AM
     notificationDuration: 24
   },
@@ -71,12 +80,14 @@ const updateJobs = {
   reindex_cubes: {
     name: 'Suchindex von CityCubes aktualisieren',
     timeoutMinutes: 120,
+    attempts: 2,
     cron: '0 6 * * *', // at 06:00 AM
     notificationDuration: 24
   },
   notify_scouts: {
     name: 'Benachrichtigung von Scouts in Abfahrslisten die heute starten',
     timeoutMinutes: 120,
+    attempts: 3,
     cron: '0 8 * * *', // at 06:00 AM
     notificationDuration: 24
   },
@@ -123,7 +134,8 @@ const updateJobs = {
   },
   sync_flags: {
     name: 'Sync Flags',
-    timeoutMinutes: 120
+    timeoutMinutes: 120,
+    attempts: 3
   }
 }
 
@@ -175,6 +187,7 @@ const cleanAndStartupQueue = async function ({ schedule, key }) {
   const {
     debug,
     cron: defaultCron,
+    attempts,
     timeoutMinutes: defaultTimeoutMinutes
   } = updateJobs[key]
   const cron = (schedule[key] || {}).cron || defaultCron
@@ -195,6 +208,7 @@ const cleanAndStartupQueue = async function ({ schedule, key }) {
     queue.add({}, {
       repeat: { tz, cron },
       timeout,
+      attempts,
       removeOnComplete: {
         age: 60 * 60 * 24 * 7 // 7 days
       },
