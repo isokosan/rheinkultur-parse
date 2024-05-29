@@ -215,24 +215,55 @@ Parse.Cloud.define('order-finalize-issues', async ({ params: { className, object
         return acc
       }, {})
     )
-  const orders = await Promise.all(ORDER_CLASSES.map((orderClass) => {
-    const query = $query(orderClass)
-    if (orderClass === className) {
-      query.notEqualTo('objectId', objectId)
-    }
-    cubeIds.length === 1 ? query.equalTo('cubeIds', cubeIds[0]) : query.containedBy('cubeIds', cubeIds)
+  const draftOrders = await Promise.all(ORDER_CLASSES.map((orderClass) => {
+    const query = $query(orderClass).containedIn('cubeIds', cubeIds)
+    orderClass === className && query.notEqualTo('objectId', objectId)
     return query
       .greaterThanOrEqualTo('status', 0)
       .lessThanOrEqualTo('status', 2.1)
       .find({ useMasterKey: true })
       .then(orders => orders.map(order => ({ className: orderClass, ...order.toJSON() })))
   })).then(orders => orders.flat())
-  for (const order of orders) {
+  for (const order of draftOrders) {
     for (const cubeId of intersection(order.cubeIds, cubeIds)) {
       issues[cubeId] = issues[cubeId] || {}
       issues[cubeId].draftOrders = issues[cubeId].draftOrders || []
       issues[cubeId].draftOrders.push(order)
     }
+  }
+  const offersQuery = $query('Offer').containedIn('cubeIds', cubeIds)
+  className === 'Offer' && offersQuery.notEqualTo('objectId', objectId)
+  const offers = await offersQuery
+    .equalTo('contract', null)
+    .find({ useMasterKey: true })
+    .then(offers => offers.map(offer => ({ className: 'Offer', ...offer.toJSON() })))
+  for (const offer of offers) {
+    for (const cubeId of intersection(offer.cubeIds, cubeIds)) {
+      issues[cubeId] = issues[cubeId] || {}
+      issues[cubeId].openOffers = issues[cubeId].openOffers || []
+      issues[cubeId].openOffers.push(offer)
+    }
+  }
+
+  // check to see if any cubes are not verified
+  const unverifiedCubeIds = await $query('Cube')
+    .equalTo('vAt', null)
+    .containedIn('objectId', cubeIds)
+    .distinct('objectId', { useMasterKey: true })
+  for (const cubeId of unverifiedCubeIds) {
+    issues[cubeId] = issues[cubeId] || {}
+    issues[cubeId].notVerified = true
+  }
+  // check to see if any cubes are missing photos
+  const missingPhotoCubeIds = await Parse.Query.or(
+    $query('Cube').equalTo('p1', null),
+    $query('Cube').equalTo('p2', null)
+  )
+    .containedIn('objectId', cubeIds)
+    .distinct('objectId', { useMasterKey: true })
+  for (const cubeId of missingPhotoCubeIds) {
+    issues[cubeId] = issues[cubeId] || {}
+    issues[cubeId].missingPhotos = true
   }
   return issues
 })

@@ -250,7 +250,6 @@ Parse.Cloud.afterFind(Cube, async ({ objects: cubes, query, user, master }) => {
           })))
       })).then(orders => orders.flat().sort((a, b) => a.endsAt < b.endsAt ? 1 : -1))
       cube.set('orders', orders)
-      cube.set('draftOrders', cube.get('orders').filter(order => order.status >= 0 && order.status <= 2.1))
     }
 
     if (query._include.includes('scoutSubmissions')) {
