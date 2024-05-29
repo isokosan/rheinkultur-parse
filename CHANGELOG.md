@@ -1,3 +1,10 @@
+## [1.201.4](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.3...1.201.4) (2024-05-29)
+
+
+### Bug Fixes
+
+* add search count for frame mount requests ([3963d2a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3963d2ac4e146ec2f3d79e05d76bb26f4671e8ff))
+
 ## [1.201.3](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.201.2...1.201.3) (2024-05-28)
 
 
