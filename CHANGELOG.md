@@ -1,3 +1,10 @@
+# [1.204.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.203.1...1.204.0) (2024-05-29)
+
+
+### Features
+
+* add attempts to jobs ([cf78ad1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/cf78ad16b0e8644b8b3ed4048df0afb02ec6283d))
+
 ## [1.203.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.203.0...1.203.1) (2024-05-29)
 
 
