@@ -1,3 +1,15 @@
+# [1.205.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.204.0...1.205.0) (2024-06-04)
+
+
+### Bug Fixes
+
+* exports bug with montage ([0dcdd3e](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0dcdd3e52ef3b1c9fe55d1991d7e9698826b2459))
+
+
+### Features
+
+* add assembled or not to task list exports ([c5b191c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/c5b191cc0b6b25af45bb12ef115bf6d2820ad5c0))
+
 # [1.204.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.203.1...1.204.0) (2024-05-29)
 
 
