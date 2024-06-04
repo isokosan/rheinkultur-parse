@@ -953,10 +953,15 @@ router.get('/task-lists', handleErrorAsync(async (req, res) => {
   const [className] = req.query.parent.split('-')
   let name
   const parentQuery = $query(className)
-  if (className === 'Disassembly') {
+  if (['Assembly', 'Disassembly'].includes(className)) {
     const [, orderClass, orderId] = req.query.parent.split('-')
     const order = await $getOrFail(orderClass, orderId)
-    name = 'Demontage ' + order.get('no')
+    if (className === 'Assembly') {
+      name = 'Montage ' + order.get('no')
+    }
+    if (className === 'Disassembly') {
+      name = 'Demontage ' + order.get('no')
+    }
     parentQuery.equalTo(lowerFirst(orderClass), order)
   } else {
     const objectId = req.query.parent.replace(`${className}-`, '')
