@@ -852,6 +852,17 @@ const addTaskListSheet = async (workbook, taskList) => {
     delete taskListHeaders.motive
   }
 
+  let assembled
+  if (taskList.get('type') === 'assembly') {
+    taskListHeaders.assembled = { header: 'Montiert', width: 15 }
+    assembled = await $query('AssemblySubmission')
+      .equalTo('taskList', taskList)
+      .containedIn('result', ['true', 'marked'])
+      .equalTo('status', 'approved')
+      .distinct('cube', { useMasterKey: true })
+      .then(cubes => cubes.map(cube => cube.objectId))
+  }
+
   const { columns, headerRowValues } = getColumnHeaders(taskListHeaders)
   worksheet.columns = columns
   const headerRow = worksheet.addRow(headerRowValues)
@@ -876,7 +887,8 @@ const addTaskListSheet = async (workbook, taskList) => {
       hsnr: cube.get('hsnr'),
       plz: cube.get('plz'),
       ort: cube.get('ort'),
-      stateName: cube.get('state').get('name')
+      stateName: cube.get('state').get('name'),
+      assembled: assembled?.includes(cube.id) ? 'Ja' : 'Nein'
     })
     for (let r = 1; r <= columns.length; r++) {
       const cell = row.getCell(r)
@@ -937,9 +949,12 @@ router.get('/task-list', handleErrorAsync(async (req, res) => {
   const taskList = await $query('TaskList')
     .include(['state', 'briefing', 'control', 'disassembly', 'customService'])
     .get(req.query.id, { useMasterKey: true })
-  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('disassembly') || taskList.get('customService')
+  const parent = taskList.get('briefing') || taskList.get('control') || taskList.get('assembly') || taskList.get('disassembly') || taskList.get('customService')
   await parent.get('order')?.fetch({ useMasterKey: true })
   let name = parent.get('name') || parent.get('order')?.get('no')
+  if (taskList.get('type') === 'assembly') {
+    name = 'Montage ' + name
+  }
   if (taskList.get('type') === 'disassembly') {
     name = 'Demontage ' + name
   }
