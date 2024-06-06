@@ -1,3 +1,10 @@
+## [1.205.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.205.0...1.205.1) (2024-06-06)
+
+
+### Bug Fixes
+
+* task lists counts with scouts empty array issue ([96362e1](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/96362e10d7f31134f195faeda8d224b51c74f17d))
+
 # [1.205.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.204.0...1.205.0) (2024-06-04)
 
 
