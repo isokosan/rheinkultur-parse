@@ -1,23 +1,19 @@
 require('./run')(async () => {
+  const total = await $query('TaskList').notEqualTo('scouts', null).count({ useMasterKey: true })
+  console.log('going over tasks with scouts', total)
+  let t = 0
   let i = 0
-  await $query('Invoice')
-    .equalTo('date', '2024-05-18')
-    .equalTo('status', 2)
-    .equalTo('lexId', null)
-    .equalTo('lexUri', null)
-    .equalTo('lexNo', null)
-    .each(async (invoice) => {
-      if (invoice.get('lexId')) {
-        console.log('Invoice already has lexId', invoice.id)
-        return
+  await $query('TaskList')
+    .notEqualTo('scouts', null)
+    .select('scouts')
+    .eachBatch(async (tasks) => {
+      const empty = tasks.filter(task => !task.get('scouts').length)
+      if (empty.length) {
+        await Parse.Object.saveAll(empty, { useMasterKey: true })
+        console.log('empty scouts', empty.length)
+        i += empty.length
       }
-      invoice
-        .set('status', 1)
-        .set('date', '2024-05-21')
-        .unset('voucherDate')
-      await invoice.save(null, { useMasterKey: true })
-      i++
-    }, { useMasterKey: true })
-  console.log('OK')
-  console.log(i)
+      t += tasks.length
+    }, { useMasterKey: true, batchSize: 1000 })
+  console.log('total tasks', t, 'empty scouts', i)
 })

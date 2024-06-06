@@ -1,9 +1,9 @@
+const { inspect } = require('util')
 const { lowerFirst, upperFirst, camelCase, sum, intersection, isArray, difference } = require('lodash')
 const { taskLists: { normalizeFields } } = require('@/schema/normalizers')
 const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const { ORDER_FIELDS } = require('@/shared')
 const TaskList = Parse.Object.extend('TaskList')
-
 const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
 
 const getSubmissionClass = type => upperFirst(camelCase(type)) + 'Submission'
@@ -101,6 +101,7 @@ Parse.Cloud.beforeSave(TaskList, async ({ object: taskList }) => {
   taskList.set('cubeCount', cubeIds.length)
   taskList.set('gp', await getCenterOfCubes(cubeIds))
   taskList.set('pk', $pk(taskList))
+  taskList.get('scouts') && !taskList.get('scouts')?.length && taskList.unset('scouts')
 
   for (const cubeIdField of ['adminApprovedCubeIds', 'scoutAddedCubeIds', 'markedDisassembledCubeIds', 'cantOnlineScout']) {
     taskList.get(cubeIdField) && taskList.set(cubeIdField, intersection([...new Set(taskList.get(cubeIdField))], cubeIds))
@@ -954,7 +955,7 @@ async function getQueryFromSelection (selection, count, user) {
   selection.customService && query.equalTo('customService', $parsify('CustomService', selection.customService))
 
   selection.state && query.equalTo('state', $parsify('State', selection.state))
-  selection.type && query.equalTo('type', selection.type)
+  selection.types && query.containedIn('type', selection.types.split(',').filter(Boolean))
 
   selection.start && query.greaterThanOrEqualTo('date', selection.start)
   selection.end && query.lessThanOrEqualTo('date', selection.end)
@@ -991,6 +992,10 @@ async function getQueryFromSelection (selection, count, user) {
 
   const queryCount = await query.count({ useMasterKey: true })
   if (count !== queryCount) {
+    // DEBUG WHY THE COUNT IS NOT THE SAME
+    const searchQuery = await Parse.Cloud.run('search-fieldwork', { ...selection, returnQuery: true }, { useMasterKey: true })
+    consola.info(inspect(query._where, false, null, true))
+    consola.info(inspect(searchQuery, false, null, true))
     throw new Error(`Count mismatch should ${count} !== was ${queryCount}`)
   }
   return query

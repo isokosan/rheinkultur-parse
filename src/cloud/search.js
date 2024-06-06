@@ -158,7 +158,9 @@ const INDEXES = {
           }
           : undefined,
         managerId: taskList.get('manager')?.id,
-        scoutIds: taskList.get('scouts')?.map(scout => scout.id),
+        scoutIds: taskList.get('scouts')?.length
+          ? taskList.get('scouts')?.map(scout => scout.id)
+          : undefined,
         date: taskList.get('date'),
         dueDate: taskList.get('dueDate')
       }
@@ -756,8 +758,9 @@ Parse.Cloud.define('search-fieldwork', async ({
     sb,
     sd,
     from,
-    pagination
-  }, user, master
+    pagination,
+    returnQuery
+  }, user
 }) => {
   const showArchived = status.includes('4sa')
   status = status?.split(',').filter(Boolean).map(parseFloat)
@@ -843,7 +846,13 @@ Parse.Cloud.define('search-fieldwork', async ({
   } else {
     sort.unshift({ [sb]: sd })
   }
-
+  if (returnQuery) {
+    return {
+      index: 'rheinkultur-fieldwork',
+      query: { bool },
+      sort
+    }
+  }
   const searchResponse = await client.search({
     index: 'rheinkultur-fieldwork',
     body: {
@@ -863,13 +872,13 @@ Parse.Cloud.define('search-fieldwork', async ({
     const obj = taskLists.find(obj => obj.id === hit._id)
     if (!obj) {
       Parse.Cloud.run('triggerScheduledJob', { job: 'reindex_fieldwork' }, { useMasterKey: true })
-      throw new Error('The search index is being re-synced, please try again in a minute.')
+      throw new Error('Suchindex wird aktualisiert, bitte versuchen Sie es in einer Minute erneut.')
     }
     c && obj.set('distance', hit.sort[0])
     return obj.toJSON()
   })
   return { results, count: total.value }
-}, { requireUser: true, validateMasterKey: true })
+}, { requireUser: true })
 
 Parse.Cloud.define('search-bookings', async ({
   params: {
@@ -895,7 +904,7 @@ Parse.Cloud.define('search-bookings', async ({
     from,
     pagination,
     returnQuery
-  }, user, master
+  }, user
 }) => {
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
@@ -961,8 +970,7 @@ Parse.Cloud.define('search-bookings', async ({
     return booking.toJSON()
   }).filter(Boolean)
   return { results, count: total.value }
-}, { requireUser: true, validateMasterKey: true })
-
+}, { requireUser: true })
 // runs only on booking-requests list view
 Parse.Cloud.define('search-booking-requests', async ({
   params: {
@@ -974,7 +982,7 @@ Parse.Cloud.define('search-booking-requests', async ({
     status,
     from,
     pagination
-  }, user, master
+  }, user
 }) => {
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
@@ -1014,8 +1022,7 @@ Parse.Cloud.define('search-booking-requests', async ({
     return hit._source
   }).filter(Boolean)
   return { results, count: total.value }
-}, { requireUser: true, validateMasterKey: true })
-
+}, { requireUser: true })
 // runs only on frame-mount-requests list view
 Parse.Cloud.define('search-frame-mount-requests', async ({
   params: {
@@ -1025,7 +1032,7 @@ Parse.Cloud.define('search-frame-mount-requests', async ({
     count,
     from,
     pagination
-  }, user, master
+  }, user
 }) => {
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
@@ -1051,8 +1058,7 @@ Parse.Cloud.define('search-frame-mount-requests', async ({
   })
   const { hits: { hits, total } } = searchResponse
   return { results: hits.map(hit => hit._source), count: total.value }
-}, { requireUser: true, validateMasterKey: true })
-
+}, { requireUser: true })
 // runs only on frame-mount-takedowns view
 Parse.Cloud.define('search-frame-mount-takedowns', async ({
   params: {
@@ -1061,7 +1067,7 @@ Parse.Cloud.define('search-frame-mount-takedowns', async ({
     from,
     pagination,
     count
-  }, user, master
+  }, user
 }) => {
   // BUILD QUERY
   const bool = { should: [], must: [], must_not: [], filter: [] }
@@ -1108,7 +1114,7 @@ Parse.Cloud.define('search-frame-mount-takedowns', async ({
     return hit._source
   }).filter(Boolean)
   return { results, count: total.value }
-}, { requireUser: true, validateMasterKey: true })
+}, { requireUser: true })
 
 Parse.Cloud.define('booked-cubes', async () => {
   const cached = await redis.get('cubes:everything')
