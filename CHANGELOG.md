@@ -1,3 +1,10 @@
+## [1.207.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.207.0...1.207.1) (2024-06-10)
+
+
+### Bug Fixes
+
+* attempt to install node-gyp ([daf3ab7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/daf3ab76fce2ae44adf046a4e5cf03197470094a))
+
 # [1.207.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.206.0...1.207.0) (2024-06-10)
 
 
