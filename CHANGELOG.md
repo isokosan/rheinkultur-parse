@@ -1,3 +1,15 @@
+# [1.208.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.207.1...1.208.0) (2024-06-10)
+
+
+### Bug Fixes
+
+* cleanup everything with from emails and set rheinkultur-medien.de as from ([0fd483f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/0fd483f36a91f790cf68e5f335328f26e105ea37))
+
+
+### Features
+
+* add testing emails and bcc f.nithammer ([dd9618a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/dd9618aaf57ada243ab286a435955907398dc3a3))
+
 ## [1.207.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.207.0...1.207.1) (2024-06-10)
 
 
