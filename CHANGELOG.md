@@ -1,3 +1,10 @@
+## [1.205.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.205.1...1.205.2) (2024-06-10)
+
+
+### Bug Fixes
+
+* selection show archived bug in task list query count ([fae0950](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fae0950edf1116638bcef48280468195811c1dd6))
+
 ## [1.205.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.205.0...1.205.1) (2024-06-06)
 
 
