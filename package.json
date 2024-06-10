@@ -51,6 +51,7 @@
     "openai": "^4.25.0",
     "parse-server": "5.4.3",
     "parse-smtp-template": "2.2.2",
+    "pdf-lib": "^1.17.1",
     "pdf2pic": "3.1.1",
     "proj4": "2.10.0",
     "redis-info": "3.1.0",

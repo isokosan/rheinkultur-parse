@@ -7,8 +7,10 @@ Parse.serverURL = process.env.PUBLIC_SERVER_URL
 Parse.initialize(process.env.APP_ID, process.env.JAVASCRIPT_KEY, process.env.MASTER_KEY)
 
 const excel = require('exceljs')
-const fetch = require('node-fetch')
+const { PDFDocument } = require('pdf-lib')
+const { PassThrough } = require('stream')
 
+const fetch = require('node-fetch')
 const { lowerFirst } = require('lodash')
 
 const elastic = require('@/services/elastic')
@@ -21,14 +23,17 @@ const { fetchStates } = require('@/cloud/classes/states')
 const { generateContractExtend } = require('@/docs')
 const { CUBE_STATUSES, CUBE_FEATURES } = require('@/schema/enums')
 
-// validate session and attach user from Parse,
+// use master for nodemailer
 const EXPORT_MASTER_ROUTES = [
+  '/invoice-summary',
   '/invoice-pdf',
   '/credit-note-pdf',
-  '/invoice-summary',
   '/contract-extend-pdf',
-  '/offer-pdf'
+  '/offer-pdf',
+  '/assembly-instructions-pdf'
 ]
+
+// Exports cannot be accessed if not master or a valid session id is present
 router.use(async (req, res, next) => {
   req.master = EXPORT_MASTER_ROUTES.includes(req._parsedUrl.pathname) && req.headers['x-exports-master-key'] === process.env.EXPORTS_MASTER_KEY
   req.sessionToken = req.query.sid
@@ -70,6 +75,17 @@ const parseCubeFeatures = (features = {}) => Object.keys(features).reduce((acc, 
   acc[key] = CUBE_FEATURES[key].values[features[key]] || ''
   return acc
 }, {})
+
+const htmlToPdf = url => fetch(process.env.HTML_TO_PDF_API, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    url,
+    pdfOptions: { timeout: 0 },
+    waitUntil: 'networkidle0',
+    timeout: 30 * 60 * 1000
+  })
+})
 
 const alignCenter = { alignment: { horizontal: 'center' } }
 const alignRight = { alignment: { horizontal: 'right' } }
@@ -1128,7 +1144,6 @@ router.get('/control-report/:reportId', handleErrorAsync(async (req, res) => {
   for (const submission of submissions) {
     const cube = submission.get('cube')
     const { no: orderNo, motive, externalOrderNo, campaignNo } = submission.get('order')
-    console.log(submission.get('order'))
     worksheet.addRow({
       objectId: cube.id,
       orderNo,
@@ -1952,53 +1967,68 @@ router.get('/credit-note-pdf', handleErrorAsync(async (req, res) => {
 
 router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
   const production = await $getOrFail('Production', req.query.production)
-  const url = `${process.env.WEBAPP_URL}/assembly-instructions/${production.id}?sid=${req.sessionToken}`
-  const fetchResponse = await fetch(process.env.HTML_TO_PDF_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      url,
-      pdfOptions: { timeout: 0 },
-      timeout: 30 * 60 * 1000 // 30 minutes navigation timeout
-    })
-  })
-  if (fetchResponse.ok) {
-    res.setHeader('Content-Type', 'application/pdf')
-    const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung'
-    res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
-    fetchResponse.body.pipe(res)
-    return
+  const pages = production.get('order').get('cubeIds').length
+  if (!pages) { throw new Error('Keine CityCubes in der Produktion') }
+
+  const filename = production.get('order').get('no') + ' Montageanweisung'
+  const pdfStream = new PassThrough()
+  res.setHeader('Content-Type', 'application/pdf')
+  res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
+  pdfStream.pipe(res)
+
+  // Create a new PDFDocument
+  const combinedPdf = await PDFDocument.create()
+
+  // Function to add a PDF buffer to the combined PDF and stream the result
+  async function addPdfBufferToStream (pdfBuffer) {
+    const pdf = await PDFDocument.load(pdfBuffer)
+    const copiedPages = await combinedPdf.copyPages(pdf, pdf.getPageIndices())
+    for (const page of copiedPages) {
+      combinedPdf.addPage(page)
+    }
+    const combinedPdfBytes = await combinedPdf.save({ useObjectStreams: false })
+    pdfStream.write(Buffer.from(combinedPdfBytes))
   }
-  console.error('FETCH ERRORED')
-  console.error(fetchResponse)
-  res.status(fetchResponse.status).send(fetchResponse)
+
+  let baseUrl = `https://wawi.rheinkultur-medien.de/assembly-instructions/${production.id}?sid=${req.sessionToken}`
+  const limit = req.query.l ? parseInt(req.query.l) : 20
+  const from = req.query.f ? parseInt(req.query.f) : 0
+  const to = req.query.t ? parseInt(req.query.t) : pages
+
+  // add order into the query, currently only "ort" supported in ascending
+  if (req.query.o) {
+    baseUrl += '&o=' + req.query.o
+  }
+
+  let skip = Math.max(from - 1, 0)
+  while (skip < to) {
+    const url = baseUrl + `&s=${skip}&l=${Math.min(limit, to - skip)}`
+    console.log({ skip, limit, from, to })
+    console.log(url)
+    const pdfBuffer = await htmlToPdf(url).then(response => response.arrayBuffer())
+    await addPdfBufferToStream(pdfBuffer)
+    skip += limit
+  }
+
+  // End the stream once all PDFs are combined
+  return pdfStream.end()
 }))
 
 router.get('/offer-pdf', handleErrorAsync(async (req, res) => {
   const offer = await $getOrFail('Offer', req.query.id)
-  const url = `https://city-cubes.de/op/${req.query.id}?sid=${req.sessionToken}`
-  const fetchResponse = await fetch(process.env.HTML_TO_PDF_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      url,
-      pdfOptions: { timeout: 0 },
-      timeout: 30 * 60 * 1000 // 30 minutes navigation timeout
-    })
-  })
-  if (fetchResponse.ok) {
+  const url = `https://city-cubes.de/op/${req.query.id}`
+  const response = await htmlToPdf(url)
+  if (response.ok) {
     res.setHeader('Content-Type', 'application/pdf')
     let filename = 'Angebot ' + offer.get('no')
     if (offer.status < 1) {
       filename += ' (In Bearbeitung)'
     }
     res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'pdf'))
-    fetchResponse.body.pipe(res)
+    response.body.pipe(res)
     return
   }
-  console.error('FETCH ERRORED')
-  console.error(fetchResponse)
-  res.status(fetchResponse.status).send(fetchResponse)
+  res.status(response.status).send(response)
 }))
 
 router.get('/cube-mismatches', handleErrorAsync(async (req, res) => {
@@ -2069,7 +2099,6 @@ router.get('/cube-mismatches', handleErrorAsync(async (req, res) => {
       workbook.removeWorksheet(worksheet.id)
       continue
     }
-    console.log(stateName, tl)
     worksheet.name = `${stateName} ${i}` + (tl ? ` (${tl})` : '')
   }
   const filename = 'Wrong Bundesländer'
@@ -2079,3 +2108,30 @@ router.get('/cube-mismatches', handleErrorAsync(async (req, res) => {
 }))
 
 module.exports = router
+
+/*
+  // const archiver = require('archiver')
+  // Archive version
+  // const archive = archiver('zip', { zlib: { level: 9 } })
+  // res.setHeader('Content-Type', 'application/zip')
+  // const filename = (production.get('contract') || production.get('booking')).get('no') + ' Montageanweisung'
+  // res.setHeader('Content-Disposition', getAttachmentContentDisposition(filename, 'zip'))
+  // archive.pipe(res)
+
+  // const urls = Array.from({ length: pdfsToRender }, (_, part) => {
+  //   const start = part * 100
+  //   return start ? `${url}&s=${start}` : url
+  // })
+  // // Fetch each PDF and append it to the zip archive
+  // await Promise.all(urls.map(async (url, index) => {
+  //   const pages = [(index * 100) + 1, Math.min((index + 1) * 100, totalPages)]
+  //   const name = pages[0] === pages[1] ? `Seite ${pages[0]}` : `Seite ${pages.join('-')}`
+  //   const response = await htmlToPdf(url)
+  //   if (!response.ok) {
+  //     throw new Error(`Failed to fetch PDF from ${url}`)
+  //   }
+  //   const pdfStream = response.body
+  //   return archive.append(pdfStream, { name: name + '.pdf' })
+  // }))
+  // return archive.finalize()
+*/
