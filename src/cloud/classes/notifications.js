@@ -210,9 +210,3 @@ module.exports = {
 }
 
 global.$notify = notify
-
-sendMail({
-  to: 'denizar@gmail.com',
-  subject: 'Testing',
-  html: '<p>testing</p>'
-}).then(console.log)

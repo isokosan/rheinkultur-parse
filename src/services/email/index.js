@@ -33,7 +33,7 @@ const buildMailHtml = ({ template, variables }) => fs
   .readFile(path.join(BASE_DIR, `/services/email/templates/${template}.html`))
   .then(async file => eval('`' + file.toString() + '`') + await getSignatureHtml()) // eslint-disable-line no-eval
 
-const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template, variables, attachments }, skip) {
+const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template, variables, attachments }, testing) {
   if (!html && template) {
     html = await buildMailHtml({ template, variables })
   }
@@ -51,11 +51,11 @@ const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template
     attachments
   }
   process.env.NODE_ENV === 'development' && consola.info('sending email', mail)
-  if (skip) {
-    return { skipped: 'skip', sentAt: (new Date()).toISOString(), accepted: [to], rejected: [] }
-  }
   const response = await transporter.sendMail(mail)
   process.env.NODE_ENV === 'development' && consola.success('Preview message:', nodemailer.getTestMessageUrl(response) || response)
+  if (testing) {
+    return { mail, response }
+  }
   const { accepted, rejected } = response
   if (!accepted.length) {
     throw new Error('E-Mail Adresse nicht akzeptiert.')
@@ -66,9 +66,9 @@ const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template
 
 module.exports = sendMail
 module.exports.test = async () => {
-  const to = 'denizar@gmail.com'
-  const response = await sendMail({
-    to,
+  return sendMail({
+    to: 'denizar@gmail.com',
+    bcc: 'f.nithammer@mammutmedia.eu',
     subject: 'Test E-Mail',
     template: 'test',
     variables: {
@@ -78,6 +78,5 @@ module.exports.test = async () => {
       },
       message: 'Test message'
     }
-  }, DEVELOPMENT)
-  return response?.accepted?.includes(to)
+  }, true)
 }
