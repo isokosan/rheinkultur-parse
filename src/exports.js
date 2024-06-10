@@ -1991,7 +1991,7 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
   }
 
   let baseUrl = `https://wawi.rheinkultur-medien.de/assembly-instructions/${production.id}?sid=${req.sessionToken}`
-  const limit = req.query.l ? parseInt(req.query.l) : 20
+  const limit = req.query.l ? parseInt(req.query.l) : 200
   const from = req.query.f ? parseInt(req.query.f) : 0
   const to = req.query.t ? parseInt(req.query.t) : pages
 
@@ -2000,11 +2000,10 @@ router.get('/assembly-instructions-pdf', handleErrorAsync(async (req, res) => {
     baseUrl += '&o=' + req.query.o
   }
 
+  // TOFIX: combining these pdfs makes the filesize explode
   let skip = Math.max(from - 1, 0)
   while (skip < to) {
     const url = baseUrl + `&s=${skip}&l=${Math.min(limit, to - skip)}`
-    console.log({ skip, limit, from, to })
-    console.log(url)
     const pdfBuffer = await htmlToPdf(url).then(response => response.arrayBuffer())
     await addPdfBufferToStream(pdfBuffer)
     skip += limit
