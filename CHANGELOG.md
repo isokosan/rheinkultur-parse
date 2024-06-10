@@ -1,3 +1,10 @@
+# [1.207.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.206.0...1.207.0) (2024-06-10)
+
+
+### Features
+
+* reinstall dependencies with node 18.18.2 ([6ab8d10](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6ab8d104eb5a09133ecb4d264ee3f5bf4efb4800))
+
 # [1.206.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.205.2...1.206.0) (2024-06-10)
 
 
