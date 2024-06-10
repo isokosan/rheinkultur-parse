@@ -1,3 +1,15 @@
+# [1.206.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.205.2...1.206.0) (2024-06-10)
+
+
+### Bug Fixes
+
+* node_version update ([d0f52f8](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/d0f52f8a0e81bd1097dab4aee96de86cbb5cf2b0))
+
+
+### Features
+
+* add pdf lib for combining pdf pages ([fa8d967](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fa8d9676ed151852da5f84971d53f1790bf19893))
+
 ## [1.205.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.205.1...1.205.2) (2024-06-10)
 
 
