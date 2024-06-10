@@ -5,7 +5,7 @@ services:
     build:
       dockerfile: dev.Dockerfile
       args:
-        NODE_VERSION: 18
+        NODE_VERSION: 18.18.2
     env_file:
       - .env
     expose:
