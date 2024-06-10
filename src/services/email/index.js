@@ -40,7 +40,7 @@ const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template
   const text = htmlToText(html, { wordwrap: 130 })
   const devTo = DEVELOPMENT && process.env.MAIL_DEV_TO
   const mail = {
-    from: process.env.MAIL_FROM,
+    from: '"Rheinkultur Medien & Verlags GmbH" <rechnung@rheinkultur-medien.de>',
     to: devTo || to,
     cc: cc !== undefined ? cc : (devTo ? null : process.env.MAIL_CC),
     bcc: bcc !== undefined ? bcc : (devTo ? null : process.env.MAIL_BCC),

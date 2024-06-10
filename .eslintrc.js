@@ -19,7 +19,6 @@ module.exports = {
     DEVELOPMENT: true,
     PLAYGROUND: true,
     moment: true,
-    sendMail: true,
     $cleanDict: true,
     $adminOnly: true,
     $internOrAdmin: true,
