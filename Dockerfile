@@ -48,6 +48,11 @@ RUN ldconfig
 
 RUN apt-get install -y ghostscript graphicsmagick imagemagick
 
+# Update npm to the latest version
+RUN npm install -g npm@latest
+# Install node-gyp globally
+RUN npm install -g node-gyp@latest
+
 RUN mkdir -p /usr/src/app/node_modules && chown -R node:node /usr/src/app
 WORKDIR /usr/src/app
 COPY package.json ./
