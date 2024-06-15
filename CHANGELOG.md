@@ -1,3 +1,10 @@
+## [1.208.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.208.0...1.208.1) (2024-06-15)
+
+
+### Bug Fixes
+
+* test changing to direct access true ([987cb0a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/987cb0a38f5e9186e84f8cdda8574e17331632d0))
+
 # [1.208.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.207.1...1.208.0) (2024-06-10)
 
 
