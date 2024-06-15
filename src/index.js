@@ -78,7 +78,7 @@ const initApp = async () => {
       resetTokenValidityDuration: 24 * 60 * 60 // expire after 24 hours
     },
     enforcePrivateUsers: true,
-    directAccess: true,
+    directAccess: false,
     // logs
     logLevel: 'error',
     maxLogFiles: '7d',
