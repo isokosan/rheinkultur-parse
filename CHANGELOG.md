@@ -1,3 +1,10 @@
+## [1.208.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.208.1...1.208.2) (2024-06-15)
+
+
+### Reverts
+
+* Revert "fix: test changing to direct access true" ([2ab4229](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/2ab422918cd65c9047693f516e0b3805ed7a4ce0))
+
 ## [1.208.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.208.0...1.208.1) (2024-06-15)
 
 
