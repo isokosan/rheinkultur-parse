@@ -50,7 +50,7 @@ const initApp = async () => {
         port: process.env.SMTP_PORT,
         user: process.env.SMTP_USER,
         password: process.env.SMTP_PASS,
-        fromAddress: '"Rheinkultur Medien & Verlags GmbH" <noreply@rheinkultur-medien.de>',
+        fromAddress: '"Rheinkultur Medien & Verlags GmbH" <info@rheinkultur-medien.de>',
         multiTemplate: true,
         passwordTemplatePath: '/src/services/email/templates/password-template.html',
         passwordOptions: {

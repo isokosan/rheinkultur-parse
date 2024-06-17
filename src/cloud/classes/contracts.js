@@ -3,7 +3,7 @@ const { contracts: { UNSET_NULL_FIELDS, normalizeFields } } = require('@/schema/
 const { round2, round5, priceString } = require('@/utils')
 const { getNewNo, getDocumentTotals, getPeriodTotal, validateOrderFinalize, getCommissionForYear, setOrderCubeStatuses, getLastRemovedCubeIds, earlyCancelSpecialFormats } = require('@/shared')
 const { generateContract } = require('@/docs')
-const sendMail = require('@/services/email')
+const { sendInfoMail } = require('@/services/email')
 const { getPredictedCubeGradualPrice } = require('./gradual-price-maps')
 const { addressAudit } = require('@/cloud/classes/addresses')
 
@@ -1456,7 +1456,7 @@ Parse.Cloud.define('contract-extend-send-mail', async ({ params: { id: contractI
     }
   }]
   const template = 'contract-extend'
-  const mailStatus = await sendMail({
+  const mailStatus = await sendInfoMail({
     to: email,
     subject: `CityCube Vertragsverlängerung ${contract.get('no')}`,
     template,

@@ -8,7 +8,7 @@ const { normalizeString, creditNotes: { normalizeFields } } = require('@/schema/
 const { ORDER_FIELDS, validateSystemStatus, getDocumentTotals, getTaxRatePercentage } = require('@/shared')
 const { durationString } = require('@/utils')
 const { lexApi } = require('@/services/lex')
-const sendMail = require('@/services/email')
+const { sendBillingMail } = require('@/services/email')
 const { addressAudit } = require('@/cloud/classes/addresses')
 
 const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
@@ -403,7 +403,7 @@ Parse.Cloud.define('credit-note-send-mail', async ({ params: { id: creditNoteId,
       href: doc.get('file')._url
     })
   }
-  const mailStatus = await sendMail({
+  const mailStatus = await sendBillingMail({
     to: email,
     subject: `Gutschrift ${creditNote.get('lexNo')}`,
     template: 'credit-note',

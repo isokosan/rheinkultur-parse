@@ -1,7 +1,7 @@
 const path = require('path')
 const { parse: parseRedisInfo } = require('redis-info')
 const createQueue = require('@/services/bull')
-const sendMail = require('@/services/email')
+const { sendInfoMail } = require('@/services/email')
 const tz = 'Europe/Berlin'
 
 // IMPORTANT: Pods might be killed between 10:00PM and 03:00AM. Make sure jobs run between 03-06 AM
@@ -395,7 +395,7 @@ const checkScheduleHealth = async function () {
       <p><strong>${key}:</strong> (Hasn't run in the past ${notificationDuration} hour(s). Last completed on: ${lastCompletedOn ? moment(lastCompletedOn).format('DD.MM.YYYY HH:mm') : '-'}</p>
       `
     }).join('')
-    return sendMail({
+    return sendInfoMail({
       to: await getScheduleNotificationsEmailConfig(),
       bcc: null,
       subject: `${lateJobs.length} failing job${lateJobs.length > 1 ? 's' : ''}`,

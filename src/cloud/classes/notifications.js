@@ -1,6 +1,6 @@
 const { isEqual, kebabCase } = require('lodash')
 const sendPush = require('@/services/push')
-const sendMail = require('@/services/email')
+const { sendInfoMail } = require('@/services/email')
 
 const { TASK_LIST_STATUSES, BOOKING_REQUEST_TYPES } = require('@/schema/enums')
 const Notification = Parse.Object.extend('Notification')
@@ -191,7 +191,7 @@ const send = async (notification) => {
   const message = resolveMessage(notification)
   const subject = resolveMailSubject(notification) || message
   notification.set('push', await sendPush(user.id, message, url))
-  mailContent && notification.set('mail', await sendMail({
+  mailContent && notification.set('mail', await sendInfoMail({
     to: user.get('email'),
     bcc: null,
     subject,

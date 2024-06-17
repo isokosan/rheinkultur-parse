@@ -42,14 +42,17 @@ const buildMailHtml = ({ template, variables }) => fs
   .then(content => eval('`' + content + '`')) // eslint-disable-line no-eval
   .then(body => getWrapperHtml().then(wrapper => eval('`' + wrapper + '`'))) // eslint-disable-line no-eval
 
-const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template, variables, attachments }, testing) {
+const sendMail = async function ({ from, to, cc, bcc, replyTo, subject, html, template, variables, attachments }, testing) {
   if (!html && template) {
     html = await buildMailHtml({ template, variables })
+  }
+  if (!from || !to || !subject || !html) {
+    throw new Error('Missing required parameters')
   }
   const text = htmlToText(html, { wordwrap: 130 })
   const devTo = DEVELOPMENT && process.env.MAIL_DEV_TO
   const mail = {
-    from: '"Rheinkultur Medien & Verlags GmbH" <rechnung@rheinkultur-medien.de>',
+    from,
     to: devTo || to,
     cc: cc !== undefined ? cc : (devTo ? null : process.env.MAIL_CC),
     bcc: bcc !== undefined ? bcc : (devTo ? null : process.env.MAIL_BCC),
@@ -73,20 +76,19 @@ const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template
   return { sentAt, accepted, rejected }
 }
 
-const test = async () => {
-  return sendMail({
-    to: 'denizar@gmail.com',
-    subject: 'Test Mail',
-    template: 'test',
-    variables: {
-      user: {
-        firstName: 'Firstname',
-        lastName: 'Lastname'
-      },
-      message: 'Test message'
-    }
-  }, true)
-}
-
 module.exports = sendMail
-module.exports.test = test
+module.exports.sendInfoMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <info@rheinkultur-medien.de>' }, testing)
+module.exports.sendBillingMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <rechnung@rheinkultur-medien.de>' }, testing)
+module.exports.test = () => sendMail({
+  to: 'denizar@gmail.com',
+  from: 'Rheinkultur Medien & Verlags GmbH <info@rheinkultur-medien.de>',
+  subject: 'Test Mail',
+  template: 'test',
+  variables: {
+    user: {
+      firstName: 'Firstname',
+      lastName: 'Lastname'
+    },
+    message: 'Test message'
+  }
+}, true)

@@ -1,6 +1,6 @@
 const { generateToken, generatePassword, generateDarkColorHex } = require('@/utils')
 const { normalizeUsernameFromEmail, users: { normalizeFields, UNSET_NULL_FIELDS } } = require('@/schema/normalizers')
-const sendMail = require('@/services/email')
+const { sendInfoMail } = require('@/services/email')
 
 // Notes on username and email:
 // Email is only normalized to lowercase, but periods are not removed.
@@ -9,7 +9,7 @@ const sendMail = require('@/services/email')
 Parse.Cloud.beforeSave(Parse.User, async ({ object: user, master }) => {
   UNSET_NULL_FIELDS.forEach(field => !user.get(field) && user.unset(field))
   if (user.isNew() && master && user.get('inviteToken')) {
-    const mailStatus = await sendMail({
+    const mailStatus = await sendInfoMail({
       to: user.get('email'),
       subject: 'Einladung zum ' + process.env.APP_NAME,
       template: 'invitation',

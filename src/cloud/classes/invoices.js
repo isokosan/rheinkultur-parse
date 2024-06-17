@@ -3,7 +3,7 @@ const { ORDER_FIELDS, validateSystemStatus, getDocumentTotals, getTaxRatePercent
 const { round2, round5, priceString, durationString } = require('@/utils')
 const { lexApi } = require('@/services/lex')
 const { getPredictedCubeGradualPrice, getGradualPrice, getGradualCubeCount } = require('./gradual-price-maps')
-const sendMail = require('@/services/email')
+const { sendBillingMail } = require('@/services/email')
 const { addressAudit } = require('@/cloud/classes/addresses')
 
 const { updateUnsyncedLexDocument } = require('@/cloud/system-status')
@@ -524,7 +524,7 @@ Parse.Cloud.define('invoice-send-mail', async ({ params: { id: invoiceId, email 
       href: doc.get('file')._url
     })
   }
-  const mailStatus = await sendMail({
+  const mailStatus = await sendBillingMail({
     to: email,
     subject: `Rechnung ${invoice.get('lexNo')}`,
     template: 'invoice',
