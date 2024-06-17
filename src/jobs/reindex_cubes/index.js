@@ -1,6 +1,9 @@
 const { client, INDEXES, createOrUpdateIndex } = require('@/cloud/search')
 
 module.exports = async function (job) {
+  job.log('Syncing blacklisted plzs and cubes')
+  await $query('PLZ').each(plz => plz.save(null, { useMasterKey: true, context: { skipSyncCubes: true } }), { useMasterKey: true })
+  job.log('Synced blacklisted plzs')
   const index = 'rheinkultur-cubes'
   await createOrUpdateIndex(index)
   const query = INDEXES[index].parseQuery

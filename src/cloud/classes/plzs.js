@@ -37,7 +37,9 @@ Parse.Cloud.beforeSave(PLZ, async ({ object: plz, context: { skipSyncCubes } }) 
     await redis[isBlacklisted ? 'sadd' : 'srem']('blacklisted-plzs', plz.id + ':' + pk)
   }
   if (skipSyncCubes) { return }
-  await syncBlacklistCubeFlags(plz)
+  console.log('synccing blacklist cubes')
+  const synced = await syncBlacklistCubeFlags(plz)
+  console.log(`synced ${synced} cubes`)
 })
 
 Parse.Cloud.afterFind(PLZ, async ({ objects, query }) => {
