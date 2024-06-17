@@ -33,6 +33,7 @@ let signature
 const getSignatureHtml = async () => {
   if (!signature) {
     signature = await fs.readFile(path.join(BASE_DIR, '/services/email/signature.html')).then(file => file.toString())
+    // signature = await Parse.Config.get().then(config => config.get('mailSignature'))
   }
   return signature
 }
