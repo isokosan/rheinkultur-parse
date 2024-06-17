@@ -1,3 +1,15 @@
+# [1.212.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.211.1...1.212.0) (2024-06-17)
+
+
+### Bug Fixes
+
+* blacklist sync before cube reindex ([736c615](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/736c615d75e8330711d112afcb7cb585904fdf64))
+
+
+### Features
+
+* add plz recache fn ([39f5c5d](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/39f5c5d64c6e44277cd444704b331db77c8b0fbe))
+
 ## [1.211.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.211.0...1.211.1) (2024-06-17)
 
 
