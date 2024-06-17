@@ -1,3 +1,15 @@
+# [1.210.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.209.0...1.210.0) (2024-06-17)
+
+
+### Bug Fixes
+
+* tmp file ([5ff93d3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5ff93d3e9351b6fcd407c1fa46f1374558e5b347))
+
+
+### Features
+
+* update signature on emails ([71744cf](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/71744cfba2802fdc302748bd5b18d324e56ade78))
+
 # [1.209.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.208.2...1.209.0) (2024-06-17)
 
 
