@@ -1,3 +1,10 @@
+## [1.211.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.211.0...1.211.1) (2024-06-17)
+
+
+### Bug Fixes
+
+* add dynamic from address into email wrapper ([1a2e0a0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/1a2e0a0dc65a84ac3e060dba4e27c8a4e2018c5b))
+
 # [1.211.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.210.1...1.211.0) (2024-06-17)
 
 
