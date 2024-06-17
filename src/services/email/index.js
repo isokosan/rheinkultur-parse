@@ -36,18 +36,17 @@ const getWrapperHtml = async () => {
   }
   return wrapper
 }
-const buildMailHtml = ({ template, variables }) => fs
-  .readFile(path.join(BASE_DIR, `/services/email/templates/${template}.html`))
-  .then(file => file.toString())
-  .then(content => eval('`' + content + '`')) // eslint-disable-line no-eval
-  .then(body => getWrapperHtml().then(wrapper => eval('`' + wrapper + '`'))) // eslint-disable-line no-eval
 
 const sendMail = async function ({ from, to, cc, bcc, replyTo, subject, html, template, variables, attachments }, testing) {
-  if (!html && template) {
-    html = await buildMailHtml({ template, variables })
-  }
-  if (!from || !to || !subject || !html) {
+  if (!from || !to || !subject || (!html && !template)) {
     throw new Error('Missing required parameters')
+  }
+  if (!html && template) {
+    const fromAddress = from.includes('<') ? from.match(/<(.+)>/)[1] : from // eslint-disable-line no-unused-vars
+    html = await fs.readFile(path.join(BASE_DIR, `/services/email/templates/${template}.html`))
+      .then(file => file.toString())
+      .then(content => eval('`' + content + '`')) // eslint-disable-line no-eval
+      .then(body => getWrapperHtml().then(wrapper => eval('`' + wrapper + '`'))) // eslint-disable-line no-eval
   }
   const text = htmlToText(html, { wordwrap: 130 })
   const devTo = DEVELOPMENT && process.env.MAIL_DEV_TO
@@ -76,10 +75,7 @@ const sendMail = async function ({ from, to, cc, bcc, replyTo, subject, html, te
   return { sentAt, accepted, rejected }
 }
 
-module.exports = sendMail
-module.exports.sendInfoMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <info@rheinkultur-medien.de>' }, testing)
-module.exports.sendBillingMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <rechnung@rheinkultur-medien.de>' }, testing)
-module.exports.test = () => sendMail({
+const sendTestMail = () => sendMail({
   to: 'denizar@gmail.com',
   from: 'Rheinkultur Medien & Verlags GmbH <info@rheinkultur-medien.de>',
   subject: 'Test Mail',
@@ -92,3 +88,8 @@ module.exports.test = () => sendMail({
     message: 'Test message'
   }
 }, true)
+
+module.exports = sendMail
+module.exports.sendInfoMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <info@rheinkultur-medien.de>' }, testing)
+module.exports.sendBillingMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <rechnung@rheinkultur-medien.de>' }, testing)
+module.exports.test = sendTestMail
