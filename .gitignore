@@ -42,6 +42,8 @@ dashboard.config.local
 backups/**
 dashboard.config.*
 
+src/services/email/cache/**
+!src/services/email/cache/README.md
 elasticsearch
 *.env_*
 .googlekey

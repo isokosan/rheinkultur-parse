@@ -23,9 +23,9 @@ const transporter = nodemailer.createTransport({
   dkim: {
     domainName: 'rheinkultur-medien.de',
     keySelector: 'default',
-    privateKey: process.env.SMTP_DKIM_KEY || fs.readFile(path.join(BASE_DIR, './../.dkimkey')).then(file => file.toString())
+    privateKey: process.env.SMTP_DKIM_KEY
   },
-  cacheDir: '/tmp/nodemailer',
+  cacheDir: path.join(BASE_DIR, '/services/email/cache'),
   debug: true
 })
 
