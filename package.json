@@ -32,7 +32,7 @@
     "@faker-js/faker": "8.4.1",
     "@googlemaps/google-maps-services-js": "3.4.0",
     "@parse/s3-files-adapter": "2.2.0",
-    "bull": "4.12.9",
+    "bull": "4.13.0",
     "csv-writer": "^1.6.0",
     "csvtojson": "2.0.10",
     "dotenv": "16.4.5",

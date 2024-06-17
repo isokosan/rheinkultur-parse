@@ -19,7 +19,14 @@ const transporter = nodemailer.createTransport({
   //  – is the count of maximum simultaneous connections to make against the SMTP server (defaults to 5)
   maxConnections: 5,
   //  – limits the message count to be sent using a single connection (defaults to 100). After maxMessages is reached the connection is dropped and a new one is created for the following messages
-  maxMessages: 100
+  maxMessages: 100,
+  dkim: {
+    domainName: 'rheinkultur-medien.de',
+    keySelector: 'default',
+    privateKey: process.env.SMTP_DKIM_KEY || fs.readFile(path.join(BASE_DIR, './../.dkimkey')).then(file => file.toString())
+  },
+  cacheDir: '/tmp/nodemailer',
+  debug: true
 })
 
 let signature
@@ -64,8 +71,7 @@ const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template
   return { sentAt, accepted, rejected }
 }
 
-module.exports = sendMail
-module.exports.test = async () => {
+const test = async () => {
   return sendMail({
     to: 'denizar@gmail.com',
     bcc: 'f.nithammer@mammutmedia.eu',
@@ -80,3 +86,6 @@ module.exports.test = async () => {
     }
   }, true)
 }
+
+module.exports = sendMail
+module.exports.test = test

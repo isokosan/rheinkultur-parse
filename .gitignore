@@ -45,6 +45,7 @@ dashboard.config.*
 elasticsearch
 *.env_*
 .googlekey
+.dkimkey
 .helm/secrets
 .github/secrets
 *.secret.yaml

@@ -33,3 +33,5 @@ env:
   secretName: rheinkultur-wawi-env
 googlekey:
   secretName: rheinkultur-wawi-googlekey
+dkimkey:
+  secretName: rheinkultur-wawi-dkimkey
