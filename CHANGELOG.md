@@ -1,3 +1,11 @@
+## [1.210.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.210.0...1.210.1) (2024-06-17)
+
+
+### Bug Fixes
+
+* email line height ([9cab7ed](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/9cab7edc8357e16505fc521c4779ba8854e95be5))
+* email signature and wrapper ([98067f0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/98067f0475d3bdd37957a39f508b490d76705d24))
+
 # [1.210.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.209.0...1.210.0) (2024-06-17)
 
 
