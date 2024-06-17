@@ -37,7 +37,7 @@ Parse.Cloud.beforeSave(PLZ, async ({ object: plz, context: { skipSyncCubes } }) 
     await redis[isBlacklisted ? 'sadd' : 'srem']('blacklisted-plzs', plz.id + ':' + pk)
   }
   if (skipSyncCubes) { return }
-  console.log('synccing blacklist cubes')
+  console.log('syncing blacklist cubes')
   const synced = await syncBlacklistCubeFlags(plz)
   console.log(`synced ${synced} cubes`)
 })
@@ -77,5 +77,21 @@ Parse.Cloud.define('plz-update', async ({ params: { id, blk } }) => {
     message: `PLZ ${plz.id} gespeichert. ${updatedCubes} CityCubes aktualisiert.`
   }
 }, $adminOnly)
+
+async function recache () {
+  console.log('syncing plzs')
+  let i = 0
+  const total = await $query('PLZ').count({ useMasterKey: true })
+  await $query('PLZ').each(async (plz) => {
+    await plz.save(null, { useMasterKey: true })
+    console.log(`synced ${++i}/${total}, ${parseInt(100 * i / total)}%`)
+  }, { useMasterKey: true })
+  console.log('synced plzs')
+}
+
+Parse.Cloud.define('plz-recache', () => {
+  recache()
+  return 'OK'
+}, { requireMaster: true })
 
 module.exports = { syncBlacklistCubeFlags }
