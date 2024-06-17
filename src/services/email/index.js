@@ -90,4 +90,3 @@ const test = async () => {
 
 module.exports = sendMail
 module.exports.test = test
-test()
