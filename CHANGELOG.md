@@ -1,3 +1,10 @@
+# [1.211.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.210.1...1.211.0) (2024-06-17)
+
+
+### Features
+
+* use info and rechnung for different email types ([3d2f862](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3d2f862ca6dc7cdad4f10351f3f8c77922d56dd0))
+
 ## [1.210.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.210.0...1.210.1) (2024-06-17)
 
 
