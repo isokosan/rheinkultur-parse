@@ -138,11 +138,9 @@ jobs:
           mkdir ./secrets
           echo "$ENVFILE" > ./secrets/env
           echo "$GOOGLEKEY" > ./secrets/googlekey
-          echo "$DKIMKEY" > ./secrets/dkimkey
         env:
           ENVFILE: ${{ secrets.ENV }}
           GOOGLEKEY: ${{ secrets.GOOGLEKEY }}
-          DKIMKEY: ${{ secrets.DKIMKEY }}
 
       - name: Generate kubeconfig
         run: |
@@ -166,8 +164,6 @@ jobs:
           kubectl create secret generic ${{ env.RELEASE_NAME }}-env --from-env-file=./secrets/env -n ${{ env.NAMESPACE }}
           kubectl delete secret ${{ env.RELEASE_NAME }}-googlekey -n ${{ env.NAMESPACE }} --ignore-not-found
           kubectl create secret generic ${{ env.RELEASE_NAME }}-googlekey --from-file=./secrets/googlekey -n ${{ env.NAMESPACE }}
-          kubectl delete secret ${{ env.RELEASE_NAME }}-dkimkey -n ${{ env.NAMESPACE }} --ignore-not-found
-          kubectl create secret generic ${{ env.RELEASE_NAME }}-dkimkey --from-file=./secrets/dkimkey -n ${{ env.NAMESPACE }}
 
   deploy:
     needs: [build, merge, create-secrets]

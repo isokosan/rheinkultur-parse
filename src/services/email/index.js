@@ -29,17 +29,18 @@ const transporter = nodemailer.createTransport({
   debug: true
 })
 
-let signature
-const getSignatureHtml = async () => {
-  if (!signature) {
-    signature = await fs.readFile(path.join(BASE_DIR, '/services/email/signature.html')).then(file => file.toString())
-    // signature = await Parse.Config.get().then(config => config.get('mailSignature'))
+let wrapper
+const getWrapperHtml = async () => {
+  if (!wrapper) {
+    wrapper = await fs.readFile(path.join(BASE_DIR, '/services/email/wrapper.html')).then(file => file.toString())
   }
-  return signature
+  return wrapper
 }
 const buildMailHtml = ({ template, variables }) => fs
   .readFile(path.join(BASE_DIR, `/services/email/templates/${template}.html`))
-  .then(async file => eval('`' + file.toString() + '`') + await getSignatureHtml()) // eslint-disable-line no-eval
+  .then(file => file.toString())
+  .then(content => eval('`' + content + '`')) // eslint-disable-line no-eval
+  .then(body => getWrapperHtml().then(wrapper => eval('`' + wrapper + '`'))) // eslint-disable-line no-eval
 
 const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template, variables, attachments }, testing) {
   if (!html && template) {
@@ -75,8 +76,7 @@ const sendMail = async function ({ to, cc, bcc, replyTo, subject, html, template
 const test = async () => {
   return sendMail({
     to: 'denizar@gmail.com',
-    bcc: 'f.nithammer@mammutmedia.eu',
-    subject: 'Test E-Mail',
+    subject: 'Test Mail',
     template: 'test',
     variables: {
       user: {
@@ -90,3 +90,4 @@ const test = async () => {
 
 module.exports = sendMail
 module.exports.test = test
+test()
