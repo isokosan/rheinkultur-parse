@@ -1,3 +1,10 @@
+# [1.209.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.208.2...1.209.0) (2024-06-17)
+
+
+### Features
+
+* add dkimkey to nodemailer transport ([ce8d430](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/ce8d430b4e895c2da312de1468c9f6f6152a78d2))
+
 ## [1.208.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.208.1...1.208.2) (2024-06-15)
 
 
