@@ -1,3 +1,10 @@
+## [1.212.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.212.0...1.212.1) (2024-06-19)
+
+
+### Bug Fixes
+
+* rechnung bcc ([fce747f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/fce747f0fe8216c51a527cd683dbb22cfb8811f2))
+
 # [1.212.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.211.1...1.212.0) (2024-06-17)
 
 
