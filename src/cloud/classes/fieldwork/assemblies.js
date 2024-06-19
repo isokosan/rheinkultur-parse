@@ -209,3 +209,31 @@ Parse.Cloud.define('assembly-photos', async ({ params: { className, objectId, cu
     , { useMasterKey: true })
   return cubeId ? response[cubeId] : response
 }, { requireUser: true })
+
+Parse.Cloud.define('assembly-report', async ({ params: { id: productionId } }) => {
+  const production = await $getOrFail('Production', productionId)
+  const order = production.get('order')
+  // append assembly form photos in any case
+  console.log(order.get('cubeIds'))
+  const submissionsQuery = $query('AssemblySubmission').containedIn('cube', order.get('cubeIds').map(id => $parsify('Cube', id)))
+  if (order.className === 'SpecialFormat') {
+    const customService = order.get('customService')
+    const taskListsQuery = $query('TaskList').equalTo('customService', customService)
+    submissionsQuery.matchesQuery('taskList', taskListsQuery)
+  } else {
+    const orderKey = [order.className, order.id].join('-')
+    const taskListsQuery = $query('TaskList').equalTo('assembly', $parsify('Assembly', orderKey))
+    submissionsQuery.matchesQuery('taskList', taskListsQuery)
+  }
+  const submissions = {}
+  await submissionsQuery.include('photos').select(['status', 'cube', 'photos', 'result']).eachBatch((batch) => {
+    for (const submission of batch) {
+      submissions[submission.get('cube').id] = submission.toJSON()
+    }
+  }, { useMasterKey: true })
+  return {
+    production,
+    order,
+    submissions
+  }
+})
