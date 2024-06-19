@@ -1,3 +1,11 @@
+## [1.212.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.212.1...1.212.2) (2024-06-19)
+
+
+### Bug Fixes
+
+* add persons delete check ([9298741](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/929874123adb8d4c95adb0ccecdb3d1af1664e83))
+* change email logo ([6b69dd7](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6b69dd7bff78403bbd36d0ff483e7a3a99aaaa00))
+
 ## [1.212.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.212.0...1.212.1) (2024-06-19)
 
 
