@@ -1,5 +1,5 @@
 const { persons: { normalizeFields, UNSET_NULL_FIELDS } } = require('@/schema/normalizers')
-
+const { ORDER_CLASSES } = require('@/shared')
 const Person = Parse.Object.extend('Person')
 
 Parse.Cloud.beforeSave(Person, ({ object: person }) => {
@@ -7,6 +7,22 @@ Parse.Cloud.beforeSave(Person, ({ object: person }) => {
 })
 
 Parse.Cloud.afterSave(Person, async ({ object: person, context: { audit } }) => { $audit(person.get('company'), audit) })
+
+Parse.Cloud.beforeDelete(Person, async ({ object: person }) => {
+  await Promise.all([
+    ...ORDER_CLASSES.map(orderClass => $query(orderClass).equalTo('companyPerson', person)),
+    $query('Contract').equalTo('agencyPerson', person),
+    $query('Offer').equalTo('companyPerson', person),
+    $query('Invoice').equalTo('companyPerson', person),
+    $query('CreditNote').equalTo('companyPerson', person)
+  ].map(async query => {
+    const count = await query.count({ useMasterKey: true })
+    if (count) {
+      throw new Error('Die Ansprechpartner:in ist mit einem Auftrag, Angebot, Rechnung oder Gutschrift verbunden und kann nicht gelöscht werden.')
+    }
+  }))
+})
+
 Parse.Cloud.afterDelete(Person, async ({ object: person, context: { audit } }) => { $audit(person.get('company'), audit) })
 
 Parse.Cloud.afterFind(Person, ({ objects: persons }) => {

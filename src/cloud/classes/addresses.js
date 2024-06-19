@@ -18,15 +18,6 @@ Parse.Cloud.beforeSave(Address, async ({ object: address }) => {
 Parse.Cloud.afterSave(Address, async ({ object: address, context: { audit } }) => { $audit(address.get('company'), audit) })
 
 Parse.Cloud.beforeDelete(Address, async ({ object: address }) => {
-  // check primaryAddress / secondaryAddress
-  const company = address.get('company')
-  await company.fetch({ useMasterKey: true })
-  if (company.get('address')?.id === address.id) {
-    throw new Error('Please unset as primary address before deleting it.')
-  }
-  if (company.get('invoiceAddress')?.id === address.id) {
-    throw new Error('Please unset as primary invoice address before deleting it.')
-  }
   // check all contracts
   // check all invoices
   // check all creditNotes
@@ -38,9 +29,19 @@ Parse.Cloud.beforeDelete(Address, async ({ object: address }) => {
   ].map(async query => {
     const count = await query.count({ useMasterKey: true })
     if (count) {
-      throw new Error('Address is used in a contract, invoice or credit note.')
+      throw new Error('Die Adresse wird in einem Vertrag, einer Rechnung oder einer Gutschrift verwendet und kann nicht mehr gelöscht werden.')
     }
   }))
+
+  // check primaryAddress / secondaryAddress
+  const company = address.get('company')
+  await company.fetch({ useMasterKey: true })
+  if (company.get('address')?.id === address.id) {
+    throw new Error('Bitte entfernen Sie die Adresse als primäre Adresse, bevor Sie sie löschen.')
+  }
+  if (company.get('invoiceAddress')?.id === address.id) {
+    throw new Error('Bitte entfernen Sie die Adresse als primäre Rechnungsadresse, bevor Sie sie löschen.')
+  }
 })
 
 Parse.Cloud.afterDelete(Address, async ({ object: address, context: { audit } }) => { $audit(address.get('company'), audit) })
