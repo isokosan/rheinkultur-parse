@@ -91,5 +91,5 @@ const sendTestMail = () => sendMail({
 
 module.exports = sendMail
 module.exports.sendInfoMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <info@rheinkultur-medien.de>' }, testing)
-module.exports.sendBillingMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <rechnung@rheinkultur-medien.de>' }, testing)
+module.exports.sendBillingMail = (mail, testing) => sendMail({ ...mail, from: 'Rheinkultur Medien & Verlags GmbH <rechnung@rheinkultur-medien.de>', bcc: 'rechnung@rheinkultur-medien.de' }, testing)
 module.exports.test = sendTestMail
