@@ -1,3 +1,10 @@
+# [1.213.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.212.2...1.213.0) (2024-06-19)
+
+
+### Features
+
+* expose housing types to public ([f3a38b6](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/f3a38b64b7eaebd99f1cc94119af11ff0da87342))
+
 ## [1.212.2](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.212.1...1.212.2) (2024-06-19)
 
 
