@@ -853,30 +853,48 @@ Parse.Cloud.define('task-list-mass-action', async ({ params: { id: taskListId, a
   }
 
   if (action === 'approve') {
-    if (taskList.get('type') !== 'disassembly') {
-      throw new Error('Nur Demontage-Listen können mass-genehmigt werden.')
+    if (!['assembly', 'disassembly'].includes(taskList.get('type'))) {
+      throw new Error('Nur Montage und Demontage können mass-genehmigt werden.')
     }
-    const updatedCubeIds = []
-    await $query('DisassemblySubmission')
-      .equalTo('taskList', taskList)
-      .containedIn('cube', cubeIds)
-      .include(['cube', 'disassembly.contract', 'disassembly.booking'])
-      .eachBatch(async (submissions) => {
-        for (const submission of submissions) {
-          const wasRejected = submission.get('status') === 'rejected'
-          if (submission.get('status') === 'approved') { continue }
-          await submission.set('status', 'approved').save(null, { useMasterKey: true })
-          wasRejected && await removeRejectedNotifications('disassembly', submission)
-          updatedCubeIds.push(submission.get('cube').id)
-          // control-disassembled
-          await $query('ControlSubmission')
-            .equalTo('disassembly', submission)
-            .notEqualTo('status', 'approved')
-            .each(controlSubmission => Parse.Cloud.run('control-submission-approve', { id: controlSubmission.id }, { sessionToken: user.getSessionToken() }), { useMasterKey: true })
-        }
-      }, { useMasterKey: true })
-    const audit = { fn: 'disassembly-submission-approve', data: { cubeIds: updatedCubeIds }, user }
-    return taskList.save(null, { useMasterKey: true, context: { audit } })
+    if (taskList.get('type') === 'disassembly') {
+      const updatedCubeIds = []
+      await $query('DisassemblySubmission')
+        .equalTo('taskList', taskList)
+        .containedIn('cube', cubeIds)
+        .eachBatch(async (submissions) => {
+          for (const submission of submissions) {
+            const wasRejected = submission.get('status') === 'rejected'
+            if (submission.get('status') === 'approved') { continue }
+            await submission.set('status', 'approved').save(null, { useMasterKey: true })
+            wasRejected && await removeRejectedNotifications('disassembly', submission)
+            updatedCubeIds.push(submission.get('cube').id)
+            // control-disassembled
+            await $query('ControlSubmission')
+              .equalTo('disassembly', submission)
+              .notEqualTo('status', 'approved')
+              .each(controlSubmission => Parse.Cloud.run('control-submission-approve', { id: controlSubmission.id }, { sessionToken: user.getSessionToken() }), { useMasterKey: true })
+          }
+        }, { useMasterKey: true })
+      const audit = { fn: 'disassembly-submission-approve', data: { cubeIds: updatedCubeIds }, user }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
+    if (taskList.get('type') === 'assembly') {
+      const updatedCubeIds = []
+      await $query('AssemblySubmission')
+        .equalTo('taskList', taskList)
+        .containedIn('cube', cubeIds)
+        .eachBatch(async (submissions) => {
+          for (const submission of submissions) {
+            const wasRejected = submission.get('status') === 'rejected'
+            if (submission.get('status') === 'approved') { continue }
+            await submission.set('status', 'approved').save(null, { useMasterKey: true })
+            wasRejected && await removeRejectedNotifications('assembly', submission)
+            updatedCubeIds.push(submission.get('cube').id)
+          }
+        }, { useMasterKey: true })
+      const audit = { fn: 'assembly-submission-approve', data: { cubeIds: updatedCubeIds }, user }
+      return taskList.save(null, { useMasterKey: true, context: { audit } })
+    }
   }
   throw new Error('Unbekannte Aktion')
 }, $fieldworkManager)
