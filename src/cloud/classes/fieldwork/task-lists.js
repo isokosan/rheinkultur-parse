@@ -5,6 +5,7 @@ const { indexTaskList, unindexTaskList } = require('@/cloud/search')
 const { ORDER_FIELDS } = require('@/shared')
 const TaskList = Parse.Object.extend('TaskList')
 const { TASK_LIST_IN_PROGRESS_STATUSES } = require('@/schema/enums')
+const { removeRejectedNotifications } = require('./submissions')
 
 const getSubmissionClass = type => upperFirst(camelCase(type)) + 'Submission'
 
@@ -779,74 +780,106 @@ Parse.Cloud.define('task-list-cube-toggle-can-scout-online', async ({ params: { 
   }
 }, { requireUser: true })
 
-Parse.Cloud.define('task-list-mass-preapprove', async ({ params: { id: taskListId, cubeIds, approved }, user, master }) => {
+Parse.Cloud.define('task-list-mass-action', async ({ params: { id: taskListId, action, cubeIds }, user, master }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   !master && await validateScoutManagerOrFieldworkManager(taskList, user)
-  if (taskList.get('type') === 'scout' && approved) {
-    // check if any cubes that are not verified exist
-    if (await $query('Cube').containedIn('objectId', cubeIds).equalTo('vAt', null).count({ useMasterKey: true })) {
-      throw new Error('Nur verifizierte CityCubes können als gescoutet markiert werden.')
-    }
-  }
-  let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
-  cubeIds = approved
-    ? cubeIds.filter(id => !adminApprovedCubeIds.includes(id))
-    : cubeIds.filter(id => adminApprovedCubeIds.includes(id))
-  if (!cubeIds.length) { throw new Error('Keine Änderungen') }
-  adminApprovedCubeIds = approved
-    ? [...adminApprovedCubeIds, ...cubeIds]
-    : adminApprovedCubeIds.filter(id => !cubeIds.includes(id))
-  taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
-  const audit = { user, fn: taskList.get('type') + '-submission-preapprove', data: { cubeIds, approved } }
 
-  // update statuses if disassembly
-  if (taskList.get('disassembly')) {
-    await taskList.get('disassembly').fetchWithInclude(ORDER_FIELDS, { useMasterKey: true })
-    const order = taskList.get('disassembly').get('order')
-    const disassembly = order.get('disassembly')
-    const statuses = disassembly.statuses || {}
-    for (const cubeId of cubeIds) {
-      approved
-        ? (statuses[cubeId] = 'marked')
-        : (delete statuses[cubeId])
+  if (['preapprove-true', 'preapprove-false'].includes(action)) {
+    const approved = action === 'preapprove-true'
+    if (taskList.get('type') === 'scout' && approved) {
+      // check if any cubes that are not verified exist
+      if (await $query('Cube').containedIn('objectId', cubeIds).equalTo('vAt', null).count({ useMasterKey: true })) {
+        throw new Error('Nur verifizierte CityCubes können als gescoutet markiert werden.')
+      }
     }
-    disassembly.statuses = $cleanDict(statuses)
-    await order.set({ disassembly }).save(null, { useMasterKey: true })
+    let adminApprovedCubeIds = taskList.get('adminApprovedCubeIds') || []
+    cubeIds = approved
+      ? cubeIds.filter(id => !adminApprovedCubeIds.includes(id))
+      : cubeIds.filter(id => adminApprovedCubeIds.includes(id))
+    if (!cubeIds.length) { throw new Error('Keine Änderungen') }
+    adminApprovedCubeIds = approved
+      ? [...adminApprovedCubeIds, ...cubeIds]
+      : adminApprovedCubeIds.filter(id => !cubeIds.includes(id))
+    taskList.set('adminApprovedCubeIds', [...new Set(adminApprovedCubeIds)])
+    const audit = { user, fn: taskList.get('type') + '-submission-preapprove', data: { cubeIds, approved } }
 
-    // control-disassembled
-    const orderKey = [order.className, order.id].join('$')
-    for (const cubeId of cubeIds) {
-      const controlIds = await $query('Control')
-        .greaterThan('status', 0)
-        .equalTo(`cubeOrderKeys.${cubeId}`, orderKey)
-        .distinct('objectId', { useMasterKey: true })
-      if (!controlIds) { return }
-      approved
-        ? await $query('TaskList')
-          .equalTo('type', 'control')
-          .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
-          .equalTo('cubeIds', cubeId)
-          .equalTo(`statuses.${cubeId}`, null) // no activity yet
-          .each(async (list) => {
-            const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
-            markedDisassembledCubeIds.push(cubeId)
-            list.set('markedDisassembledCubeIds', markedDisassembledCubeIds)
-            await list.save(null, { useMasterKey: true, context: { audit } })
-          }, { useMasterKey: true })
-        : await $query('TaskList')
-          .equalTo('type', 'control')
-          .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
-          .equalTo('cubeIds', cubeId)
-          .equalTo('markedDisassembledCubeIds', cubeId)
-          .each(async (list) => {
-            const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
-            list.set('markedDisassembledCubeIds', markedDisassembledCubeIds.filter(id => id !== cubeId))
-            await list.save(null, { useMasterKey: true, context: { audit } })
-          }, { useMasterKey: true })
+    // update statuses if disassembly
+    if (taskList.get('disassembly')) {
+      await taskList.get('disassembly').fetchWithInclude(ORDER_FIELDS, { useMasterKey: true })
+      const order = taskList.get('disassembly').get('order')
+      const disassembly = order.get('disassembly')
+      const statuses = disassembly.statuses || {}
+      for (const cubeId of cubeIds) {
+        approved
+          ? (statuses[cubeId] = 'marked')
+          : (delete statuses[cubeId])
+      }
+      disassembly.statuses = $cleanDict(statuses)
+      await order.set({ disassembly }).save(null, { useMasterKey: true })
+
+      // control-disassembled
+      const orderKey = [order.className, order.id].join('$')
+      for (const cubeId of cubeIds) {
+        const controlIds = await $query('Control')
+          .greaterThan('status', 0)
+          .equalTo(`cubeOrderKeys.${cubeId}`, orderKey)
+          .distinct('objectId', { useMasterKey: true })
+        if (!controlIds) { return }
+        approved
+          ? await $query('TaskList')
+            .equalTo('type', 'control')
+            .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
+            .equalTo('cubeIds', cubeId)
+            .equalTo(`statuses.${cubeId}`, null) // no activity yet
+            .each(async (list) => {
+              const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
+              markedDisassembledCubeIds.push(cubeId)
+              list.set('markedDisassembledCubeIds', markedDisassembledCubeIds)
+              await list.save(null, { useMasterKey: true, context: { audit } })
+            }, { useMasterKey: true })
+          : await $query('TaskList')
+            .equalTo('type', 'control')
+            .matchesQuery('control', $query('Control').containedIn('objectId', controlIds))
+            .equalTo('cubeIds', cubeId)
+            .equalTo('markedDisassembledCubeIds', cubeId)
+            .each(async (list) => {
+              const markedDisassembledCubeIds = list.get('markedDisassembledCubeIds') || []
+              list.set('markedDisassembledCubeIds', markedDisassembledCubeIds.filter(id => id !== cubeId))
+              await list.save(null, { useMasterKey: true, context: { audit } })
+            }, { useMasterKey: true })
+      }
     }
+    return taskList.save(null, { useMasterKey: true, context: { audit } })
   }
-  await taskList.save(null, { useMasterKey: true, context: { audit } })
-}, { requireUser: true })
+
+  if (action === 'approve') {
+    if (taskList.get('type') !== 'disassembly') {
+      throw new Error('Nur Demontage-Listen können mass-genehmigt werden.')
+    }
+    const updatedCubeIds = []
+    await $query('DisassemblySubmission')
+      .equalTo('taskList', taskList)
+      .containedIn('cube', cubeIds)
+      .include(['cube', 'disassembly.contract', 'disassembly.booking'])
+      .eachBatch(async (submissions) => {
+        for (const submission of submissions) {
+          const wasRejected = submission.get('status') === 'rejected'
+          if (submission.get('status') === 'approved') { continue }
+          await submission.set('status', 'approved').save(null, { useMasterKey: true })
+          wasRejected && await removeRejectedNotifications('disassembly', submission)
+          updatedCubeIds.push(submission.get('cube').id)
+          // control-disassembled
+          await $query('ControlSubmission')
+            .equalTo('disassembly', submission)
+            .notEqualTo('status', 'approved')
+            .each(controlSubmission => Parse.Cloud.run('control-submission-approve', { id: controlSubmission.id }, { sessionToken: user.getSessionToken() }), { useMasterKey: true })
+        }
+      }, { useMasterKey: true })
+    const audit = { fn: 'disassembly-submission-approve', data: { cubeIds: updatedCubeIds }, user }
+    return taskList.save(null, { useMasterKey: true, context: { audit } })
+  }
+  throw new Error('Unbekannte Aktion')
+}, $fieldworkManager)
 
 Parse.Cloud.define('task-list-archive', async ({ params: { id: taskListId, skipSyncParentStatus }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)

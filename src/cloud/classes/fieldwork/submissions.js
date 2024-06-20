@@ -623,3 +623,5 @@ Parse.Cloud.define('custom-task-submission-reject', async ({ params: { id: submi
   TASK_LIST_IN_PROGRESS_STATUSES.includes(taskList.get('status')) && await notifySubmissionRejected('custom-task', taskList, submission, cube, rejectionReason)
   return { message: 'Aufgabe abgelehnt.', data: submission }
 }, { requireUser: true })
+
+module.exports.removeRejectedNotifications = removeRejectedNotifications

@@ -113,8 +113,7 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
     throw error
   }
   if (cubeId) {
-    const cubePhoto = new Parse.Object(CubePhoto)
-    cubePhoto.set({ cubeId, klsId, file, thumb, createdBy: user, scope, form })
+    const cubePhoto = new CubePhoto({ cubeId, klsId, file, thumb, createdBy: user, scope, form })
     return cubePhoto.save(null, { useMasterKey: true })
   }
   if (originalId) {
@@ -147,7 +146,7 @@ Parse.Cloud.beforeFind(CubePhoto, async ({ query, user, master }) => {
 
   const isIntern = user && ['admin', 'intern'].includes(user.get('accType'))
   if (isIntern) {
-    !query._where.scope && query.equalTo('scope', null) // show assembly photos only if specified
+    !query._where.scope && !query._include.includes('all') && query.equalTo('scope', null) // show assembly photos only if specified
     return
   }
 
