@@ -7,7 +7,7 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
     .lessThanOrEqualTo('date', await $today())
     .eachBatch((taskLists) => {
       for (const taskList of taskLists) {
-        const { pk: placeKey, ort, state, gp, type, counts } = taskList.attributes
+        const { pk: placeKey, priority, ort, state, gp, type, counts } = taskList.attributes
         if (!locations[placeKey]) {
           locations[placeKey] = {
             placeKey,
@@ -19,6 +19,7 @@ Parse.Cloud.define('tasks-locations', async ({ user }) => {
         }
         if (!locations[placeKey].tasks[type]) {
           locations[placeKey].tasks[type] = {
+            priority,
             completed: 0,
             total: 0
           }
