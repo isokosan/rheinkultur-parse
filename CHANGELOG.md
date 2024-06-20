@@ -1,3 +1,10 @@
+## [1.213.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.213.0...1.213.1) (2024-06-20)
+
+
+### Bug Fixes
+
+* special format and manual uploaded photos in assembly report ([4d17e3f](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/4d17e3f133bc6e11554410ab8ae41ad89ec3c05d))
+
 # [1.213.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.212.2...1.213.0) (2024-06-19)
 
 
