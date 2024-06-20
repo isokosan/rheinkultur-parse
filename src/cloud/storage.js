@@ -5,6 +5,7 @@ const { difference } = require('lodash')
 
 const { PRINT_PACKAGE_FILES } = require('@/schema/enums')
 const FileObject = Parse.Object.extend('FileObject')
+const CubePhoto = Parse.Object.extend('CubePhoto')
 
 function handleFileDestroyError (error) {
   consola.error('Skipped destroy file:', error.message)
@@ -112,12 +113,12 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
     throw error
   }
   if (cubeId) {
-    const cubePhoto = new Parse.Object('CubePhoto')
+    const cubePhoto = new Parse.Object(CubePhoto)
     cubePhoto.set({ cubeId, klsId, file, thumb, createdBy: user, scope, form })
     return cubePhoto.save(null, { useMasterKey: true })
   }
   if (originalId) {
-    const cubePhoto = await $getOrFail('CubePhoto', originalId)
+    const cubePhoto = await $getOrFail(CubePhoto, originalId)
     const original = cubePhoto.get('original') || cubePhoto.get('file')
     await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
     cubePhoto.set({ original, file, thumb })
@@ -133,7 +134,7 @@ Parse.Cloud.afterSaveFile(async ({ file, fileSize, user, headers }) => {
   return fileObject
 })
 
-Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
+Parse.Cloud.beforeFind(CubePhoto, async ({ query, user, master }) => {
   if (master) { return }
   // if public, just return clean and approved photos.
   if (!user) {
@@ -160,8 +161,8 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
   // return Parse.Query.and(
   //   query,
   //   Parse.Query.or(
-  //     $query('CubePhoto').equalTo('approved', true),
-  //     $query('CubePhoto').matchesQuery('createdBy', userQuery)
+  //     $query(CubePhoto).equalTo('approved', true),
+  //     $query(CubePhoto).matchesQuery('createdBy', userQuery)
   //   )
   // )
 
@@ -175,17 +176,16 @@ Parse.Cloud.beforeFind('CubePhoto', async ({ query, user, master }) => {
       .distinct('objectId', { useMasterKey: true })
       .then(ids => ids.map(id => $pointer('_User', id)))
     : [user]
-
   return Parse.Query.and(
     query,
     Parse.Query.or(
-      $query('CubePhoto').equalTo('approved', true),
-      $query('CubePhoto').containedIn('createdBy', users)
+      $query(CubePhoto).equalTo('approved', true),
+      $query(CubePhoto).containedIn('createdBy', users)
     )
   )
 })
 
-Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regenerateThumb, regenerateSize1000 } }) => {
+Parse.Cloud.beforeSave(CubePhoto, async ({ object: cubePhoto, context: { regenerateThumb, regenerateSize1000 } }) => {
   if (regenerateThumb) {
     await cubePhoto.get('thumb')?.destroy({ useMasterKey: true }).catch(handleFileDestroyError)
     cubePhoto.unset('thumb')
@@ -222,7 +222,7 @@ Parse.Cloud.beforeSave('CubePhoto', async ({ object: cubePhoto, context: { regen
 })
 
 // The CubePhoto will not be deleted unless the file associated with it is successfuly deleted, or is already not found
-Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user, master }) => {
+Parse.Cloud.beforeDelete(CubePhoto, async ({ object, user, master }) => {
   const cube = await $getOrFail('Cube', object.get('cubeId'))
   if (cube.get('p1')?.id === object.id) {
     await cube.unset('p1').save(null, { useMasterKey: true })
@@ -252,7 +252,7 @@ Parse.Cloud.beforeDelete('CubePhoto', async ({ object, user, master }) => {
 })
 
 // Run another p1 & p2 cleanup check after deletion
-Parse.Cloud.afterDelete('CubePhoto', async ({ object }) => {
+Parse.Cloud.afterDelete(CubePhoto, async ({ object }) => {
   const cube = await $getOrFail('Cube', object.get('cubeId'))
   if (cube.get('p1')?.id === object.id) {
     await cube.unset('p1').save(null, { useMasterKey: true })
