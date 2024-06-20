@@ -689,6 +689,17 @@ Parse.Cloud.define('task-list-retract', async ({ params: { id: taskListId }, use
   }
 }, { requireUser: true })
 
+Parse.Cloud.define('task-list-prioritize', async ({ params: { id: taskListId, priority }, user }) => {
+  const taskList = await $getOrFail(TaskList, taskListId)
+  if (priority === 1 && taskList.get('status') >= 4) {
+    throw new Error('Sie können keine erledigte Abfahrtsliste priorisieren.')
+  }
+  priority ? taskList.set({ priority }) : taskList.unset('priority')
+  const audit = { user, fn: 'task-list-prioritize', data: { priority } }
+  await taskList.save(null, { useMasterKey: true, context: { audit } })
+  return priority
+}, $fieldworkManager)
+
 Parse.Cloud.define('task-list-submission-preapprove', async ({ params: { id: taskListId, cubeId, approved }, user }) => {
   const taskList = await $getOrFail(TaskList, taskListId)
   await validateScoutManagerOrFieldworkManager(taskList, user)

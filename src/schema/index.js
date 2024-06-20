@@ -822,14 +822,16 @@ const schemaDefinitions = {
       control: { type: 'Pointer', targetClass: 'Control' },
       disassembly: { type: 'Pointer', targetClass: 'Disassembly' },
       customService: { type: 'Pointer', targetClass: 'CustomService' },
+
       ort: { type: 'String' },
       state: { type: 'Pointer', targetClass: 'State' },
-
       pk: { type: 'String' }, // placekey
-
       gp: { type: 'GeoPoint' }, // GeoPoint
+
       date: { type: 'String', required: true }, // start date
       dueDate: { type: 'String', required: true },
+      priority: { type: 'Number' },
+
       manager: { type: 'Pointer', targetClass: '_User' },
       scouts: { type: 'Array' },
       status: { type: 'Number', required: true },

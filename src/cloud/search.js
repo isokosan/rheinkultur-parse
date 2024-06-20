@@ -162,7 +162,8 @@ const INDEXES = {
           ? taskList.get('scouts')?.map(scout => scout.id)
           : undefined,
         date: taskList.get('date'),
-        dueDate: taskList.get('dueDate')
+        dueDate: taskList.get('dueDate'),
+        priority: taskList.get('priority')
       }
       return { _id: taskList.id, doc }
     })
@@ -747,6 +748,7 @@ Parse.Cloud.define('search-fieldwork', async ({
     type,
     types,
     dueIn,
+    priority,
     start,
     end,
     managerId,
@@ -786,7 +788,11 @@ Parse.Cloud.define('search-fieldwork', async ({
     }
     bool.filter.push({ range: { dueDate: { lte, gt } } })
   }
-  (start || end) && bool.filter.push({ range: { date: { gte: start, lte: end } } })
+  priority && bool.filter.push({ term: { priority: 1 } })
+
+  if (start || end) {
+    bool.filter.push({ range: { date: { gte: start, lte: end } } })
+  }
 
   stateId && bool.filter.push({ term: { stateId } })
 
