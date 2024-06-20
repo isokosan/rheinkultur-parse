@@ -1,3 +1,16 @@
+# [1.214.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.213.1...1.214.0) (2024-06-20)
+
+
+### Bug Fixes
+
+* storage fix bug ([b241d3a](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/b241d3aeaca0ae786ab050248ebc3555247cb9a7))
+
+
+### Features
+
+* add mass approe to disassemblies ([3b6f706](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/3b6f7066a1a818b55f4f80085d7d3835285d4954))
+* add priority to task lists ([5bb5bd3](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/5bb5bd32c8a9f7ee9cf9dff6698dd5b629a3c55f))
+
 ## [1.213.1](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.213.0...1.213.1) (2024-06-20)
 
 
