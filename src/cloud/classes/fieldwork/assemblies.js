@@ -210,27 +210,37 @@ Parse.Cloud.define('assembly-photos', async ({ params: { className, objectId, cu
   return cubeId ? response[cubeId] : response
 }, { requireUser: true })
 
-Parse.Cloud.define('assembly-report', async ({ params: { id: productionId } }) => {
-  const production = await $getOrFail('Production', productionId)
-  const order = production.get('order')
+Parse.Cloud.define('assembly-report', async ({ params: { orderKey } }) => {
+  const [className, objectId] = orderKey.split('-')
+  const order = await $getOrFail(className, objectId, 'production')
+  const production = order.get('production')
   // append assembly form photos in any case
-  console.log(order.get('cubeIds'))
-  const submissionsQuery = $query('AssemblySubmission').containedIn('cube', order.get('cubeIds').map(id => $parsify('Cube', id)))
-  if (order.className === 'SpecialFormat') {
-    const customService = order.get('customService')
-    const taskListsQuery = $query('TaskList').equalTo('customService', customService)
-    submissionsQuery.matchesQuery('taskList', taskListsQuery)
-  } else {
-    const orderKey = [order.className, order.id].join('-')
-    const taskListsQuery = $query('TaskList').equalTo('assembly', $parsify('Assembly', orderKey))
-    submissionsQuery.matchesQuery('taskList', taskListsQuery)
-  }
+  const submissionsQuery = className === 'SpecialFormat'
+    ? $query('SpecialFormatSubmission')
+      .matchesQuery('taskList', $query('TaskList').equalTo('customService', order.get('customService')))
+      .containedIn('cube', order.get('cubeIds').map(id => $parsify('Cube', id)))
+    : $query('AssemblySubmission')
+      .matchesQuery('taskList', $query('TaskList').equalTo('assembly', $parsify('Assembly', orderKey)))
+      .containedIn('cube', order.get('cubeIds').map(id => $parsify('Cube', id)))
   const submissions = {}
   await submissionsQuery.include('photos').select(['status', 'cube', 'photos', 'result']).eachBatch((batch) => {
     for (const submission of batch) {
       submissions[submission.get('cube').id] = submission.toJSON()
     }
   }, { useMasterKey: true })
+
+  const scope = `assembly-${className[0]}-${objectId}`
+  const scopeQuery = $query('CubePhoto').equalTo('scope', scope)
+  await scopeQuery
+    .eachBatch((photos) => {
+      for (const photo of photos) {
+        const cubeId = photo.get('cubeId')
+        if (!submissions[cubeId]) {
+          submissions[cubeId] = { photos: [] }
+        }
+        submissions[cubeId].photos.push(photo.toJSON())
+      }
+    }, { useMasterKey: true })
   return {
     production,
     order,
