@@ -642,3 +642,16 @@ Parse.Cloud.define('cubes-early-cancel', async ({ params: { itemClass, itemId, c
 Parse.Cloud.define('cube-pks', async ({ params: { cubeIds } }) => {
   return await $query('Cube').containedIn('objectId', cubeIds).distinct('pk', { useMasterKey: true })
 }, { requireUser: true })
+
+// Used in marklist to display counts
+Parse.Cloud.define('cube-locations', async ({ params: { cubeIds } }) => {
+  return $query('Cube')
+    .aggregate([
+      { $match: { objectId: { $in: cubeIds } } },
+      { $group: { _id: '$pk', count: { $sum: 1 } } }
+    ], { useMasterKey: true })
+    .then(results => results.reduce((acc, { objectId, count }) => {
+      acc[objectId] = count
+      return acc
+    }, {}))
+}, $internOrAdmin)
