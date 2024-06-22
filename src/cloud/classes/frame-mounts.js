@@ -654,3 +654,15 @@ Parse.Cloud.define('frame-mount-toggle-star', async ({ params: { id: frameMountI
   await frameMount.save(null, { useMasterKey: true })
   return starred
 }, $internFrameManager)
+
+// Used in RkFrameLocations to display counts
+Parse.Cloud.define('frame-mount-locations', () => {
+  return $query('FrameMount')
+    .aggregate([
+      { $group: { _id: '$pk', count: { $sum: 1 } } }
+    ], { useMasterKey: true })
+    .then(results => results.reduce((acc, { objectId, count }) => {
+      acc[objectId] = count
+      return acc
+    }, {}))
+}, $internOrAdmin)
