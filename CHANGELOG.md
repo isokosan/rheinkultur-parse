@@ -1,3 +1,12 @@
+# [1.215.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.214.0...1.215.0) (2024-06-22)
+
+
+### Features
+
+* add controls to mass-approve task list ([7cf3a8c](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/7cf3a8cb166ce6e6946d18aef0992d40f9b63326))
+* add location fetching via cube ids ([6be49ac](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/6be49ac4c037caa27bb4a3f2aa39dc4fa5b8bcfb))
+* add priority to scout locations ([58200d0](https://github.com/mammutmedia/rheinkultur-wawi-parse/commit/58200d04098f2ce06ecdd50211c8715b94d08ef9))
+
 # [1.214.0](https://github.com/mammutmedia/rheinkultur-wawi-parse/compare/1.213.1...1.214.0) (2024-06-20)
 
 
