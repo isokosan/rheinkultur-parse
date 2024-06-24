@@ -1,0 +1,4 @@
+services:
+  parse:
+    command: yarn start
+    restart: always
