@@ -27,4 +27,4 @@ aws s3 cp s3://rheinkultur-wawi/db-backups/mongodump_lastest.gz ./"$foldername"/
 docker compose exec mongo bash -c 'mongosh rheinkultur-wawi --eval "db.dropDatabase()"'
 docker compose exec mongo bash -c 'mongorestore --host localhost:27017 --gzip --drop --nsInclude=rheinkultur-wawi.* --archive=./'"$foldername"/"$filename"
 
-node updates/development-reset.js
+# node updates/development-reset.js
