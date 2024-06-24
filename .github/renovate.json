@@ -1,24 +1,24 @@
-{
-  "extends": [
-    "config:base",
-    "schedule:nonOfficeHours",
-    ":pinAllExceptPeerDependencies",
-    ":separateMultipleMajorReleases",
-    ":combinePatchMinorReleases",
-    ":renovatePrefix",
-    ":prNotPending",
-    ":maintainLockFilesMonthly",
-    ":pinSkipCi",
-    ":enableVulnerabilityAlertsWithLabel(security)",
-    ":semanticCommits",
-    ":timezone(Europe/Berlin)",
-    "docker:disableMajor",
-    "group:allNonMajor",
-    "npm:unpublishSafe",
-    "preview:dockerCompose",
-    "replacements:all"
-  ],
-  "labels": ["dependencies"],
-  "assigneesFromCodeOwners": true,
-  "postUpdateOptions": ["yarnDedupeFewer"]
-}
+// {
+//   "extends": [
+//     "config:base",
+//     "schedule:nonOfficeHours",
+//     ":pinAllExceptPeerDependencies",
+//     ":separateMultipleMajorReleases",
+//     ":combinePatchMinorReleases",
+//     ":renovatePrefix",
+//     ":prNotPending",
+//     ":maintainLockFilesMonthly",
+//     ":pinSkipCi",
+//     ":enableVulnerabilityAlertsWithLabel(security)",
+//     ":semanticCommits",
+//     ":timezone(Europe/Berlin)",
+//     "docker:disableMajor",
+//     "group:allNonMajor",
+//     "npm:unpublishSafe",
+//     "preview:dockerCompose",
+//     "replacements:all"
+//   ],
+//   "labels": ["dependencies"],
+//   "assigneesFromCodeOwners": true,
+//   "postUpdateOptions": ["yarnDedupeFewer"]
+// }

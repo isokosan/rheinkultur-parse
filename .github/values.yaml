@@ -1,35 +1,35 @@
-replicaCount: 6
+# replicaCount: 6
 
-imagePullSecrets:
-  - name: image-pull-secret
+# imagePullSecrets:
+#   - name: image-pull-secret
 
-ingress:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.class: traefik
-    cert-manager.io/cluster-issuer: letsencrypt-production
-    traefik.frontend.passHostHeader: "true"
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
-  hosts:
-    - host: prod.wawi.rheinkultur.mammut-cluster.de
-      paths:
-        - path: /
-          pathType: Prefix
-  tls:
-    - secretName: prod.wawi.rheinkultur.mammut-cluster.de
-      hosts:
-        - prod.wawi.rheinkultur.mammut-cluster.de
+# ingress:
+#   enabled: true
+#   annotations:
+#     kubernetes.io/ingress.class: traefik
+#     cert-manager.io/cluster-issuer: letsencrypt-production
+#     traefik.frontend.passHostHeader: "true"
+#     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+#     traefik.ingress.kubernetes.io/router.tls: "true"
+#   hosts:
+#     - host: prod.wawi.rheinkultur.mammut-cluster.de
+#       paths:
+#         - path: /
+#           pathType: Prefix
+#   tls:
+#     - secretName: prod.wawi.rheinkultur.mammut-cluster.de
+#       hosts:
+#         - prod.wawi.rheinkultur.mammut-cluster.de
 
-resources:
-  limits: {}
-  requests:
-    cpu: 750m
-    memory: 2Gi
+# resources:
+#   limits: {}
+#   requests:
+#     cpu: 750m
+#     memory: 2Gi
 
-maxUnavailable: 1
+# maxUnavailable: 1
 
-env:
-  secretName: rheinkultur-wawi-env
-googlekey:
-  secretName: rheinkultur-wawi-googlekey
+# env:
+#   secretName: rheinkultur-wawi-env
+# googlekey:
+#   secretName: rheinkultur-wawi-googlekey

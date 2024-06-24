@@ -1,52 +1,52 @@
-name: Node CI
+# name: Node CI
 
-on:
-  pull_request:
-    branches:
-      - "**"
-    paths:
-      - "src/**"
-      - "package.json"
-      - "yarn.lock"
-      - ".nvmrc"
-      - ".nycrc"
-      - ".eslintignore"
-      - ".eslintrc.js"
+# on:
+#   pull_request:
+#     branches:
+#       - "**"
+#     paths:
+#       - "src/**"
+#       - "package.json"
+#       - "yarn.lock"
+#       - ".nvmrc"
+#       - ".nycrc"
+#       - ".eslintignore"
+#       - ".eslintrc.js"
 
-  workflow_dispatch:
+#   workflow_dispatch:
 
-jobs:
-  check-ci:
-    name: Node Engine Check
-    timeout-minutes: 15
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
-      - name: Use Node.js
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
-        with:
-          node-version-file: ".nvmrc"
-          cache: "yarn"
+# jobs:
+#   check-ci:
+#     name: Node Engine Check
+#     timeout-minutes: 15
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
+#       - name: Use Node.js
+#         uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
+#         with:
+#           node-version-file: ".nvmrc"
+#           cache: "yarn"
 
-      - name: Install Dependencies
-        run: yarn install --frozen-lockfile --non-interactive --no-progress --prefer-offline
+#       - name: Install Dependencies
+#         run: yarn install --frozen-lockfile --non-interactive --no-progress --prefer-offline
 
-      - name: CI Node Engine Check
-        run: yarn ci:checkNodeEngine
+#       - name: CI Node Engine Check
+#         run: yarn ci:checkNodeEngine
 
-  lint:
-    runs-on: ubuntu-latest
-    name: Lint
-    steps:
-      - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
-      - name: Use Node.js
-        uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
-        with:
-          node-version-file: ".nvmrc"
-          cache: "yarn"
+#   lint:
+#     runs-on: ubuntu-latest
+#     name: Lint
+#     steps:
+#       - uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab # v3
+#       - name: Use Node.js
+#         uses: actions/setup-node@64ed1c7eab4cce3362f8c340dee64e5eaeef8f7c # v3
+#         with:
+#           node-version-file: ".nvmrc"
+#           cache: "yarn"
 
-      - name: Install Dependencies
-        run: yarn install --frozen-lockfile --non-interactive --no-progress --prefer-offline
+#       - name: Install Dependencies
+#         run: yarn install --frozen-lockfile --non-interactive --no-progress --prefer-offline
 
-      - name: Check Linting
-        run: yarn lint
+#       - name: Check Linting
+#         run: yarn lint
